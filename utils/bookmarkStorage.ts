@@ -48,11 +48,6 @@ export async function addBookmark(
   try {
     const bookmarks = await getBookmarks();
     const dateStr = date.toISOString().split("T")[0];
-    
-    // Don't add duplicate
-    if (bookmarks.some((b) => b.date === dateStr)) {
-      return;
-    }
 
     const newBookmark: BookmarkData = {
       date: dateStr,
@@ -61,10 +56,18 @@ export async function addBookmark(
       timestamp: Date.now(),
     };
 
-    await AsyncStorage.setItem(
-      BOOKMARKS_KEY,
-      JSON.stringify([...bookmarks, newBookmark])
-    );
+    // If a bookmark for this date already exists, update it so the
+    // title always matches the current reading title.
+    const existingIndex = bookmarks.findIndex((b) => b.date === dateStr);
+    if (existingIndex !== -1) {
+      bookmarks[existingIndex] = newBookmark;
+      await AsyncStorage.setItem(BOOKMARKS_KEY, JSON.stringify(bookmarks));
+    } else {
+      await AsyncStorage.setItem(
+        BOOKMARKS_KEY,
+        JSON.stringify([...bookmarks, newBookmark])
+      );
+    }
   } catch (error) {
     console.error("Error adding bookmark:", error);
     throw error;

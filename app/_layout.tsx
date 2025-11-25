@@ -14,6 +14,7 @@ import {
   Lora_400Regular_Italic,
 } from "@expo-google-fonts/lora";
 import { colors } from "../constants/theme";
+import { SettingsProvider } from "../hooks/useSettings";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
 
 export default function RootLayout() {
@@ -36,12 +37,14 @@ export default function RootLayout() {
   }
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: colors.pearl },
-      }}
-    />
+    <SettingsProvider>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.pearl },
+        }}
+      />
+    </SettingsProvider>
   );
 }
 

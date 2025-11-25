@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, ActivityIndicator, StyleSheet, AppState } from "react-native";
+import { View, Text, ActivityIndicator, StyleSheet, Share } from "react-native";
 import { ReadingScreen } from "../components/ReadingScreen";
 import { DatePickerModal } from "../components/DatePickerModal";
 import { BookmarkListModal } from "../components/BookmarkListModal";
+import { SettingsModal } from "../components/SettingsModal";
+import { SettingsContent } from "../components/SettingsContent";
 import { useReading } from "../hooks/useReading";
 import { useBookmarkManager } from "../hooks/useBookmarkManager";
 import { useAvailableDates } from "../hooks/useAvailableDates";
@@ -15,6 +17,7 @@ export default function Index() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showBookmarkList, setShowBookmarkList] = useState(false);
   const [showInstruction, setShowInstruction] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   
   const { reading, loading, error } = useReading(currentDate);
   const {
@@ -23,7 +26,7 @@ export default function Index() {
     toggleBookmark,
     refreshBookmarks,
   } = useBookmarkManager(currentDate, reading?.id || "", reading?.title || "");
-  const { availableDates } = useAvailableDates();
+  const { availableDaysOfYear } = useAvailableDates();
 
   // Check if instruction should be shown on mount
   useEffect(() => {
@@ -32,20 +35,6 @@ export default function Index() {
       setShowInstruction(!seen);
     }
     checkInstruction();
-  }, []);
-
-  // Reset to today's date when app comes to foreground
-  useEffect(() => {
-    const subscription = AppState.addEventListener("change", (nextAppState) => {
-      if (nextAppState === "active") {
-        // Reset to today when app becomes active
-        setCurrentDate(new Date());
-      }
-    });
-
-    return () => {
-      subscription.remove();
-    };
   }, []);
 
   const handlePrevDate = () => {
@@ -78,20 +67,36 @@ export default function Index() {
     await markInstructionSeen();
   };
 
+  const handleShowInstruction = () => {
+    setShowInstruction(true);
+  };
+
   const handleOpenBookmarks = () => {
     setShowBookmarkList(true);
   };
 
-  const handleHighlight = () => {
-    console.log("Highlight - to be implemented");
-  };
-
-  const handleShare = () => {
-    console.log("Share - to be implemented");
-  };
-
   const handleSettingsPress = () => {
-    console.log("Settings - to be implemented");
+    setShowSettings(true);
+  };
+
+  const handleShare = async () => {
+    if (!reading) return;
+
+    const dateLabel = reading.date.toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+
+    const bodyText = reading.body.join("\n\n");
+
+    const message = `${reading.title}\n\n${reading.opening}\n\n${bodyText}\n\nToday's Application: ${reading.todaysApplication}\n\nThought for the Day: ${reading.thoughtForDay}\n\n---\nFrom Al-Anon Daily Paths\n${dateLabel}`;
+
+    try {
+      await Share.share({ message });
+    } catch (err) {
+      console.error("Error sharing reading:", err);
+    }
   };
 
   // Show loading only on initial load, not when navigating
@@ -140,18 +145,18 @@ export default function Index() {
         onSettingsPress={handleSettingsPress}
         isBookmarked={isBookmarked}
         onBookmarkToggle={toggleBookmark}
-        onHighlight={handleHighlight}
         onShare={handleShare}
         onOpenBookmarks={handleOpenBookmarks}
         showInstruction={showInstruction}
         onDismissInstruction={handleDismissInstruction}
+        onShowInstruction={handleShowInstruction}
       />
       <DatePickerModal
         visible={showDatePicker}
         selectedDate={currentDate}
         onSelectDate={handleSelectDate}
         onClose={() => setShowDatePicker(false)}
-        availableDates={availableDates}
+        availableDaysOfYear={availableDaysOfYear}
       />
       <BookmarkListModal
         visible={showBookmarkList}
@@ -159,6 +164,9 @@ export default function Index() {
         onClose={() => setShowBookmarkList(false)}
         onSelectBookmark={handleSelectBookmark}
       />
+      <SettingsModal visible={showSettings} onClose={() => setShowSettings(false)}>
+        <SettingsContent />
+      </SettingsModal>
     </>
   );
 }

@@ -46,7 +46,7 @@ export const BookmarkToast: React.FC<BookmarkToastProps> = ({
   return (
     <Animated.View style={[styles.container, { opacity }]}>
       <View style={styles.toast}>
-        <Ionicons name="bookmark" size={20} color="#fff" style={styles.icon} />
+        <Ionicons name="heart" size={20} color="#fff" style={styles.icon} />
         <Text style={styles.message}>{message}</Text>
       </View>
     </Animated.View>

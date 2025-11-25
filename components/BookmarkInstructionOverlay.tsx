@@ -19,7 +19,7 @@ export const BookmarkInstructionOverlay: React.FC<
       <View style={styles.instructionWrapper}>
         <BlurView intensity={20} tint="light" style={styles.instruction}>
           <Text style={styles.instructionText}>
-            👆 Long press the reading to bookmark
+            💖 Long press the reading to add it to your favorites
           </Text>
           <TouchableOpacity style={styles.gotItButton} onPress={onDismiss}>
             <Text style={styles.gotItText}>Got it</Text>

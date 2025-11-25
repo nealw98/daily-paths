@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { DailyReading } from "../types/readings";
-import { formatDateLocal, getDayOfYear } from "../utils/dateUtils";
+import { formatDateLocal, getScheduledDayOfYear } from "../utils/dateUtils";
+import { getCachedReading, setCachedReading } from "../utils/readingCache";
 
 export function useReading(date: Date) {
   const [reading, setReading] = useState<DailyReading | null>(null);
@@ -17,9 +18,16 @@ export function useReading(date: Date) {
       setLoading(true);
       setError(null);
 
-      // Calculate day of year (1-366)
-      const dayOfYear = getDayOfYear(date);
-      
+      // 1) Attempt to load from local cache for instant/offline display
+      const cached = await getCachedReading(date);
+      if (cached?.reading) {
+        setReading(cached.reading);
+      }
+
+      // 2) Always try to refresh from Supabase when possible
+      // Calculate scheduled day of year (1-366), leap-year aware
+      const dayOfYear = getScheduledDayOfYear(date);
+
       console.log("Fetching reading for day of year:", dayOfYear);
       console.log("Date:", formatDateLocal(date));
 
@@ -31,31 +39,52 @@ export function useReading(date: Date) {
 
       if (fetchError) {
         console.error("Error fetching reading:", fetchError);
-        setError(fetchError.message);
+        // If we have a cached reading, treat this as a soft error
+        if (!cached?.reading) {
+          setError(fetchError.message);
+        }
         return;
       }
 
       console.log("Fetched data:", data);
 
       if (data) {
-        // Transform the data to match our DailyReading interface
-        // Split body text by double newlines to create paragraphs
-        const bodyParagraphs = data.body
-          .split(/\n\n+/)
-          .map((p: string) => p.trim())
-          .filter((p: string) => p.length > 0);
+        // If Supabase rows include an updated_at column, use it for freshness checks
+        const remoteUpdatedAt =
+          (data as { updated_at?: string }).updated_at ?? null;
 
-        const transformedReading: DailyReading = {
-          id: data.id,
-          date: date, // Use the date parameter that was passed in
-          title: data.title,
-          opening: data.opening,
-          body: bodyParagraphs,
-          todaysApplication: data.todays_application,
-          thoughtForDay: data.thought_for_day,
-        };
-        console.log("Transformed reading:", transformedReading);
-        setReading(transformedReading);
+        const isNewer =
+          !cached?.updatedAt ||
+          (remoteUpdatedAt && remoteUpdatedAt > cached.updatedAt);
+
+        if (!cached?.reading || isNewer) {
+          // Transform the data to match our DailyReading interface
+          // Normalize literal "\n" sequences and split body text by double newlines
+          const normalizedBody =
+            (data.body as string | null | undefined)?.replace(/\\n/g, "\n") ??
+            "";
+          const bodyParagraphs = normalizedBody
+            .split(/\n{2,}/)
+            .map((p: string) => p.trim())
+            .filter((p: string) => p.length > 0);
+
+          const transformedReading: DailyReading = {
+            id: data.id,
+            date: date, // Use the date parameter that was passed in
+            title: data.title,
+            opening: data.opening,
+            body: bodyParagraphs,
+            todaysApplication: data.todays_application,
+            thoughtForDay: data.thought_for_day,
+          };
+          console.log("Transformed reading:", transformedReading);
+          setReading(transformedReading);
+
+          await setCachedReading(date, {
+            reading: transformedReading,
+            updatedAt: remoteUpdatedAt,
+          });
+        }
       }
     } catch (err) {
       console.error("Error:", err);

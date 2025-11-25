@@ -11,13 +11,14 @@ import {
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, fonts } from "../constants/theme";
+import { getScheduledDayOfYear } from "../utils/dateUtils";
 
 interface DatePickerModalProps {
   visible: boolean;
   selectedDate: Date;
   onSelectDate: (date: Date) => void;
   onClose: () => void;
-  availableDates?: Date[];
+  availableDaysOfYear?: number[];
 }
 
 export const DatePickerModal: React.FC<DatePickerModalProps> = ({
@@ -25,7 +26,7 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
   selectedDate,
   onSelectDate,
   onClose,
-  availableDates,
+  availableDaysOfYear,
 }) => {
   const [currentMonth, setCurrentMonth] = useState(
     new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
@@ -72,7 +73,7 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
   };
 
   const isDateAvailable = (day: number) => {
-    if (!availableDates || availableDates.length === 0) return true;
+    if (!availableDaysOfYear || availableDaysOfYear.length === 0) return true;
 
     const checkDate = new Date(
       currentMonth.getFullYear(),
@@ -80,12 +81,8 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
       day
     );
 
-    return availableDates.some(
-      (d) =>
-        d.getFullYear() === checkDate.getFullYear() &&
-        d.getMonth() === checkDate.getMonth() &&
-        d.getDate() === checkDate.getDate()
-    );
+    const scheduledDay = getScheduledDayOfYear(checkDate);
+    return availableDaysOfYear.includes(scheduledDay);
   };
 
   const isSelectedDate = (day: number) => {

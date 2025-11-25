@@ -11,6 +11,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { colors, fonts } from "../constants/theme";
 import { BookmarkData } from "../utils/bookmarkStorage";
+import { useSettings, getTextSizeMetrics } from "../hooks/useSettings";
 
 interface BookmarkListModalProps {
   visible: boolean;
@@ -25,6 +26,8 @@ export const BookmarkListModal: React.FC<BookmarkListModalProps> = ({
   onClose,
   onSelectBookmark,
 }) => {
+  const { settings } = useSettings();
+  const typography = getTextSizeMetrics(settings.textSize);
   const slideAnim = React.useRef(new Animated.Value(0)).current;
 
   React.useEffect(() => {
@@ -67,14 +70,30 @@ export const BookmarkListModal: React.FC<BookmarkListModalProps> = ({
       }}
     >
       <Ionicons
-        name="bookmark"
+        name="heart"
         size={18}
         color="rgba(90, 124, 126, 1)"
         style={styles.bookmarkIcon}
       />
       <View style={styles.bookmarkContent}>
-        <Text style={styles.bookmarkDate}>{formatDate(item.date)}</Text>
-        <Text style={styles.bookmarkTitle} numberOfLines={2}>
+        <Text
+          style={[
+            styles.bookmarkDate,
+            { fontSize: typography.favoriteDateFontSize },
+          ]}
+        >
+          {formatDate(item.date)}
+        </Text>
+        <Text
+          style={[
+            styles.bookmarkTitle,
+            {
+              fontSize: typography.favoriteFontSize,
+              lineHeight: typography.favoriteLineHeight,
+            },
+          ]}
+          numberOfLines={2}
+        >
           {item.title}
         </Text>
       </View>
@@ -84,14 +103,14 @@ export const BookmarkListModal: React.FC<BookmarkListModalProps> = ({
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Ionicons
-        name="bookmark-outline"
+        name="heart-outline"
         size={64}
         color={colors.mist}
         style={styles.emptyIcon}
       />
-      <Text style={styles.emptyTitle}>No bookmarks yet</Text>
+      <Text style={styles.emptyTitle}>No favorites yet</Text>
       <Text style={styles.emptyMessage}>
-        Long press any reading to save it for later
+        Long press any reading to add it to your favorites
       </Text>
     </View>
   );
@@ -116,7 +135,7 @@ export const BookmarkListModal: React.FC<BookmarkListModalProps> = ({
           onStartShouldSetResponder={() => true}
         >
           <View style={styles.header}>
-            <Text style={styles.title}>Bookmarks</Text>
+            <Text style={styles.title}>Favorites</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={colors.ink} />
             </TouchableOpacity>

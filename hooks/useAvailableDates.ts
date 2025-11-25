@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
-import { dateFromDayOfYear } from "../utils/dateUtils";
 
 export function useAvailableDates() {
-  const [availableDates, setAvailableDates] = useState<Date[]>([]);
+  const [availableDaysOfYear, setAvailableDaysOfYear] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,12 +27,8 @@ export function useAvailableDates() {
       }
 
       if (data) {
-        // Convert day_of_year to dates in the current year
-        const currentYear = new Date().getFullYear();
-        const dates = data.map((row) => 
-          dateFromDayOfYear(row.day_of_year, currentYear)
-        );
-        setAvailableDates(dates);
+        const days = data.map((row) => row.day_of_year as number);
+        setAvailableDaysOfYear(days);
       }
     } catch (err) {
       console.error("Error:", err);
@@ -43,6 +38,6 @@ export function useAvailableDates() {
     }
   }
 
-  return { availableDates, loading, error };
+  return { availableDaysOfYear, loading, error };
 }
 
