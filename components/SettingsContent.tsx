@@ -1,400 +1,391 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import {
   View,
   Text,
   StyleSheet,
+  ScrollView,
   TouchableOpacity,
   Switch,
-  Alert,
+  Linking,
 } from "react-native";
+import Constants from "expo-constants";
 import { Ionicons } from "@expo/vector-icons";
-import * as Notifications from "expo-notifications";
 import { colors, fonts } from "../constants/theme";
-import { TextSize, useSettings, getTextSizeMetrics } from "../hooks/useSettings";
+import { useSettings, TextSize } from "../hooks/useSettings";
 
-async function ensureNotificationPermissions(): Promise<boolean> {
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  if (existingStatus === "granted") {
-    return true;
-  }
-  const { status } = await Notifications.requestPermissionsAsync();
-  return status === "granted";
+const textSizeLabels: { key: TextSize; label: string; description: string }[] =
+  [
+    { key: "small", label: "Small", description: "More text on screen" },
+    { key: "medium", label: "Medium", description: "Balanced for most" },
+    { key: "large", label: "Large", description: "Easier to read" },
+    { key: "extraLarge", label: "Extra large", description: "Maximum size" },
+  ];
+
+function parseTimeToDate(time: string): Date {
+  const [h = "8", m = "0"] = time.split(":");
+  const d = new Date();
+  d.setHours(Number(h), Number(m), 0, 0);
+  return d;
 }
 
-async function scheduleDailyReminder(time: string) {
-  const [hourStr, minuteStr] = time.split(":");
-  const hour = Number(hourStr);
-  const minute = Number(minuteStr);
+function formatTimeDisplay(date: Date): string {
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const suffix = hours >= 12 ? "PM" : "AM";
+  const displayHour = ((hours + 11) % 12) + 1;
+  const minuteStr = minutes.toString().padStart(2, "0");
+  return `${displayHour}:${minuteStr} ${suffix}`;
+}
 
-  // Clear any existing scheduled reminders for simplicity
-  await Notifications.cancelAllScheduledNotificationsAsync();
-
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title: "Daily Paths",
-      body: "Take a moment for today's reading.",
-    },
-    trigger: {
-      hour,
-      minute,
-      repeats: true,
-    },
-  });
+function formatTimeStorage(date: Date): string {
+  const h = date.getHours().toString().padStart(2, "0");
+  const m = date.getMinutes().toString().padStart(2, "0");
+  return `${h}:${m}`;
 }
 
 export const SettingsContent: React.FC = () => {
   const { settings, setTextSize, setDailyReminderEnabled, setDailyReminderTime } =
     useSettings();
-  const [isScheduling, setIsScheduling] = useState(false);
 
-  const metrics = useMemo(() => getTextSizeMetrics(settings.textSize), [
-    settings.textSize,
-  ]);
+  const appVersion =
+    Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? "dev";
+  const buildNumber = Constants.nativeBuildVersion ?? "dev";
+
+  const reminderDate = useMemo(
+    () => parseTimeToDate(settings.dailyReminderTime),
+    [settings.dailyReminderTime]
+  );
 
   const handleTextSizePress = async (size: TextSize) => {
-    if (size === settings.textSize) return;
+    if (settings.textSize === size) return;
     await setTextSize(size);
   };
 
-  const handleToggleReminder = async (enabled: boolean) => {
-    if (isScheduling) return;
-
-    if (enabled) {
-      setIsScheduling(true);
-      try {
-        const granted = await ensureNotificationPermissions();
-        if (!granted) {
-          Alert.alert(
-            "Notifications not enabled",
-            "To turn on daily reminders, enable notifications for Daily Paths in your device settings."
-          );
-          return;
-        }
-        await setDailyReminderEnabled(true);
-        await scheduleDailyReminder(settings.dailyReminderTime);
-      } catch (e) {
-        console.warn("Failed to enable daily reminder", e);
-        Alert.alert(
-          "Could not enable reminder",
-          "Something went wrong while setting up your daily reminder."
-        );
-      } finally {
-        setIsScheduling(false);
-      }
-    } else {
-      setIsScheduling(true);
-      try {
-        await setDailyReminderEnabled(false);
-        await Notifications.cancelAllScheduledNotificationsAsync();
-      } catch (e) {
-        console.warn("Failed to disable daily reminder", e);
-      } finally {
-        setIsScheduling(false);
-      }
-    }
-  };
-
-  const handleSelectTime = async (value: string) => {
-    if (value === settings.dailyReminderTime) return;
-    setIsScheduling(true);
-    try {
-      await setDailyReminderTime(value);
-      if (settings.dailyReminderEnabled) {
-        await scheduleDailyReminder(value);
-      }
-    } catch (e) {
-      console.warn("Failed to update reminder time", e);
-    } finally {
-      setIsScheduling(false);
-    }
-  };
-
-  const formatReminderLabel = (value: string) => {
-    const [hourStr, minuteStr] = value.split(":");
-    const hour = Number(hourStr);
-    const minute = Number(minuteStr) || 0;
-    if (Number.isNaN(hour)) return "Set time";
-
-    const isPM = hour >= 12;
-    const displayHour = ((hour + 11) % 12) + 1;
-    const paddedMinute = minute.toString().padStart(2, "0");
-    const suffix = isPM ? "PM" : "AM";
-    return `${displayHour}:${paddedMinute} ${suffix}`;
+  const handleReminderToggle = async (enabled: boolean) => {
+    await setDailyReminderEnabled(enabled);
   };
 
   const adjustReminderTime = async (deltaMinutes: number) => {
-    const [hourStr, minuteStr] = settings.dailyReminderTime.split(":");
-    const hour = Number(hourStr) || 8;
-    const minute = Number(minuteStr) || 0;
-    const totalMinutes = (hour * 60 + minute + deltaMinutes + 24 * 60) % (24 * 60);
-    const nextHour = Math.floor(totalMinutes / 60)
-      .toString()
-      .padStart(2, "0");
-    const nextMinute = (totalMinutes % 60).toString().padStart(2, "0");
-    await handleSelectTime(`${nextHour}:${nextMinute}`);
+    const next = new Date(reminderDate);
+    // Apply raw delta
+    next.setMinutes(next.getMinutes() + deltaMinutes);
+
+    // Snap minutes to nearest 15-minute increment: 00, 15, 30, 45
+    const minutes = next.getMinutes();
+    const snapped = Math.round(minutes / 15) * 15;
+
+    if (snapped === 60) {
+      // Roll over to next hour at :00
+      next.setHours(next.getHours() + 1, 0, 0, 0);
+    } else {
+      next.setMinutes(snapped, 0, 0);
+    }
+
+    await setDailyReminderTime(formatTimeStorage(next));
   };
 
   return (
-    <View>
-      {/* Reading section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Reading</Text>
-        <Text style={styles.sectionSubtitle}>
-          Adjust the size of the reading and favorites text.
-        </Text>
-        <View style={styles.chipRow}>
-          {(["small", "medium", "large", "extraLarge"] as TextSize[]).map(
-            (size) => {
-              const isActive = settings.textSize === size;
-              const label =
-                size === "small"
-                  ? "Small"
-                  : size === "medium"
-                  ? "Medium"
-                  : size === "large"
-                  ? "Large"
-                  : "Extra Large";
-              return (
-                <TouchableOpacity
-                  key={size}
-                  style={[styles.chip, isActive && styles.chipActive]}
-                  onPress={() => handleTextSizePress(size)}
-                  activeOpacity={0.85}
-                >
-                  <Text
-                    style={[styles.chipLabel, isActive && styles.chipLabelActive]}
+    <View style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.mainContent}>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Reading text size</Text>
+            <Text style={styles.sectionSubtitle}>
+              Adjust how large the daily reading appears.
+            </Text>
+
+            <View style={styles.chipRow}>
+              {textSizeLabels.map((item) => {
+                const selected = settings.textSize === item.key;
+                return (
+                  <TouchableOpacity
+                    key={item.key}
+                    style={[
+                      styles.chip,
+                      selected && styles.chipSelected,
+                    ]}
+                    activeOpacity={0.8}
+                    onPress={() => handleTextSizePress(item.key)}
                   >
-                    {label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            }
-          )}
-        </View>
-        <View style={styles.previewCard}>
-          <Text style={styles.previewLabel}>Preview</Text>
-          <Text
+                    <Text
+                      style={[
+                        styles.chipLabel,
+                        selected && styles.chipLabelSelected,
+                      ]}
+                    >
+                      {item.label}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.chipDescription,
+                        selected && styles.chipDescriptionSelected,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {item.description}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Daily reminder</Text>
+            <Text style={styles.sectionSubtitle}>
+              Get a gentle nudge to read each day.
+            </Text>
+
+            <View style={styles.row}>
+              <View style={styles.rowText}>
+                <Text style={styles.rowLabel}>Enable reminder</Text>
+                <Text style={styles.rowHelper}>
+                  You can change this anytime.
+                </Text>
+              </View>
+              <Switch
+                value={settings.dailyReminderEnabled}
+                onValueChange={handleReminderToggle}
+                trackColor={{ false: colors.mist, true: colors.seafoam }}
+                thumbColor={settings.dailyReminderEnabled ? colors.deepTeal : "#fff"}
+              />
+            </View>
+
+          <View
             style={[
-              styles.previewText,
-              {
-                fontSize: metrics.bodyFontSize,
-                lineHeight: metrics.bodyLineHeight,
-              },
+              styles.timeRow,
+              !settings.dailyReminderEnabled && styles.timeRowDisabled,
             ]}
           >
-            This is how your daily reading and favorites will look.
-          </Text>
-        </View>
-      </View>
+            <View style={styles.rowText}>
+              <Text style={styles.rowLabel}>Reminder time</Text>
+            </View>
 
-      {/* Notifications section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Notifications</Text>
-        <View style={styles.row}>
-          <View style={styles.rowTextContainer}>
-            <Text style={styles.rowTitle}>Daily reminder</Text>
-            <Text style={styles.rowSubtitle}>
-              Get a gentle nudge to read at the same time each day.
-            </Text>
-          </View>
-          <Switch
-            value={settings.dailyReminderEnabled}
-            onValueChange={handleToggleReminder}
-            thumbColor="#fff"
-            trackColor={{ false: colors.mist, true: colors.ocean }}
-          />
-        </View>
-        {settings.dailyReminderEnabled && (
-          <View style={styles.timeRow}>
-            <Text style={styles.timeLabel}>Reminder time</Text>
-            <View style={styles.timeControls}>
+            <View style={styles.timeStepperContainer}>
               <TouchableOpacity
-                style={styles.timeAdjustButton}
                 onPress={() => adjustReminderTime(-15)}
-                activeOpacity={0.8}
+                disabled={!settings.dailyReminderEnabled}
+                style={styles.timeStepperButton}
+                activeOpacity={0.7}
               >
-                <Ionicons name="remove" size={18} color={colors.ocean} />
+                <Ionicons
+                  name="chevron-back"
+                  size={18}
+                  color={
+                    settings.dailyReminderEnabled ? colors.ocean : colors.mist
+                  }
+                />
               </TouchableOpacity>
-              <Text style={styles.timeValue}>
-                {formatReminderLabel(settings.dailyReminderTime)}
-              </Text>
-              <TouchableOpacity
-                style={styles.timeAdjustButton}
-                onPress={() => adjustReminderTime(15)}
-                activeOpacity={0.8}
+
+              <Text
+                style={[
+                  styles.timeValue,
+                  !settings.dailyReminderEnabled && styles.timeValueDisabled,
+                ]}
               >
-                <Ionicons name="add" size={18} color={colors.ocean} />
+                {formatTimeDisplay(reminderDate)}
+              </Text>
+
+              <TouchableOpacity
+                onPress={() => adjustReminderTime(15)}
+                disabled={!settings.dailyReminderEnabled}
+                style={styles.timeStepperButton}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={
+                    settings.dailyReminderEnabled ? colors.ocean : colors.mist
+                  }
+                />
               </TouchableOpacity>
             </View>
           </View>
-        )}
-      </View>
+          </View>
+        </View>
 
-      {/* Legal section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Privacy & Terms</Text>
-        <View style={styles.legalCard}>
-          <Ionicons
-            name="lock-closed-outline"
-            size={22}
-            color={colors.ocean}
-            style={styles.legalIcon}
-          />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.legalSummary}>
-              Daily Paths does not require an account. Your favorites and
-              settings are stored locally on this device and are not synced to a
-              server.
-            </Text>
-            <Text style={styles.legalLink}>
-              Privacy Policy · Terms of Use (draft)
+        <View style={styles.divider} />
+
+        <View style={styles.legalSection}>
+          <View style={styles.legalRow}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => Linking.openURL("https://dailypaths.org/privacy")}
+            >
+              <Text style={styles.linkLabel}>Privacy Policy</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => Linking.openURL("https://dailypaths.org/terms")}
+            >
+              <Text style={styles.linkLabel}>Terms of Use</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.versionContainer}>
+            <Text style={styles.versionText}>
+              Version {appVersion} (build {buildNumber})
             </Text>
           </View>
         </View>
-      </View>
+      </ScrollView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+  },
+  contentContainer: {
+    paddingHorizontal: 0,
+    paddingTop: 24,
+    paddingBottom: 16,
+    flexGrow: 1,
+  },
+  mainContent: {
+    flexGrow: 1,
+  },
   section: {
-    marginTop: 16,
-    marginBottom: 8,
+    marginBottom: 40,
   },
   sectionTitle: {
-    fontFamily: fonts.headerFamilyBoldItalic,
-    fontSize: 20,
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 18,
     color: colors.deepTeal,
     marginBottom: 4,
   },
   sectionSubtitle: {
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
-    color: colors.ocean,
-    marginBottom: 12,
+    fontSize: 15,
+    color: "#5B8B89",
+    marginBottom: 16,
   },
   chipRow: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    marginHorizontal: -4,
   },
   chip: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.mist,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "#e5e7eb",
     backgroundColor: "#fff",
+    marginHorizontal: 4,
+    marginVertical: 4,
+    minWidth: "45%",
   },
-  chipActive: {
-    backgroundColor: colors.ocean,
-    borderColor: colors.ocean,
+  chipSelected: {
+    backgroundColor: colors.deepTeal,
+    borderColor: colors.deepTeal,
   },
   chipLabel: {
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
-    color: colors.ink,
+    fontSize: 15,
+    color: "#374151",
   },
-  chipLabelActive: {
+  chipLabelSelected: {
     color: "#fff",
-    fontWeight: "600",
   },
-  previewCard: {
-    marginTop: 16,
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: colors.cloud,
+  chipDescription: {
+    display: "none",
   },
-  previewLabel: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 12,
-    color: colors.ocean,
-    marginBottom: 6,
-    textTransform: "uppercase",
-    letterSpacing: 0.7,
-  },
-  previewText: {
-    fontFamily: fonts.loraRegular,
-    color: colors.ink,
+  chipDescriptionSelected: {
+    color: "#E8F3F3",
   },
   row: {
-    marginTop: 8,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 12,
+    paddingVertical: 12,
   },
-  rowTextContainer: {
+  rowText: {
     flex: 1,
+    paddingRight: 12,
   },
-  rowTitle: {
+  rowLabel: {
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
+    fontSize: 15,
     color: colors.ink,
-    marginBottom: 2,
   },
-  rowSubtitle: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 13,
+  rowHelper: {
+    fontFamily: fonts.bodyFamily,
+    fontSize: 12,
     color: colors.ocean,
+    marginTop: 2,
   },
   timeRow: {
-    marginTop: 12,
-  },
-  timeLabel: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
-    color: colors.ocean,
-    marginBottom: 6,
-  },
-  timeControls: {
-    marginTop: 4,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "flex-start",
-    gap: 12,
+    justifyContent: "space-between",
+    paddingVertical: 16,
   },
-  timeAdjustButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#fff",
+  timeRowDisabled: {
+    opacity: 0.5,
+  },
+  timeStepperContainer: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: colors.mist,
+    gap: 8,
+  },
+  timeStepperButton: {
+    paddingHorizontal: 4,
+    paddingVertical: 4,
   },
   timeValue: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 15,
-    color: colors.ink,
-    minWidth: 90,
-    textAlign: "center",
+    color: colors.deepTeal,
   },
-  legalCard: {
-    marginTop: 8,
+  timeValueDisabled: {
+    color: colors.mist,
+  },
+  footerSpacer: {
+    height: 12,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#f3f4f6",
+    marginTop: 24,
+    marginBottom: 0,
+  },
+  legalSection: {
+    paddingTop: 32,
+    paddingHorizontal: 0,
+    paddingBottom: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#f3f4f6",
+  },
+  legalRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: colors.mist,
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 4,
   },
-  legalIcon: {
-    marginRight: 10,
-    marginTop: 2,
+  linkRow: {
   },
-  legalSummary: {
+  linkLabel: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
-    color: colors.ink,
-    marginBottom: 6,
+    color: colors.deepTeal,
   },
-  legalLink: {
+  versionContainer: {
+    paddingTop: 8,
+    paddingHorizontal: 0,
+    paddingBottom: 0,
+    alignItems: "center",
+  },
+  versionText: {
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 13,
-    color: colors.ocean,
+    fontSize: 12,
+    color: "#9ca3af",
+    textAlign: "center",
   },
 });
 

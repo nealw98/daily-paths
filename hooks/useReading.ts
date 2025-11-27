@@ -35,13 +35,22 @@ export function useReading(date: Date) {
         .from("readings")
         .select("*")
         .eq("day_of_year", dayOfYear)
-        .single();
+        .maybeSingle();
 
+      // If there is a real fetch error (network, permission, etc.), handle it.
       if (fetchError) {
         console.error("Error fetching reading:", fetchError);
-        // If we have a cached reading, treat this as a soft error
         if (!cached?.reading) {
           setError(fetchError.message);
+        }
+        return;
+      }
+
+      // No row for this date is a valid condition in dev; treat it as "no reading"
+      if (!data) {
+        if (!cached?.reading) {
+          setReading(null);
+          setError("No reading available for this date.");
         }
         return;
       }

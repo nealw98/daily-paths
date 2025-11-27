@@ -339,78 +339,39 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
           style={{ flex: 1, transform: [{ translateX }] }}
           {...panResponder.panHandlers}
         >
-          <Pressable style={{ flex: 1 }} onPress={handleContentPress}>
-            <ScrollView
-              ref={scrollViewRef}
-              style={styles.content}
-              contentContainerStyle={styles.contentContainer}
-              showsVerticalScrollIndicator={false}
-              scrollEnabled={!isSwiping}
-            >
-            <View style={styles.titleRow}>
-              <Text
-                style={[
-                  styles.title,
-                  { fontSize: headingTypography.titleFontSize },
-                ]}
-              >
-                {reading.title}
-              </Text>
-              <TouchableOpacity
-                onPress={handleBookmarkToggle}
-                style={styles.inlineFavorite}
-                activeOpacity={0.8}
-              >
-                <Ionicons
-                  name={localBookmarked ? "heart" : "heart-outline"}
-                  size={26}
-                  color={colors.deepTeal}
-                />
-              </TouchableOpacity>
-            </View>
-
-            {openingParagraphs.map((paragraph, index) => (
-              <Text
-                key={`opening-${index}`}
-                style={[
-                  styles.bodyText,
-                  {
-                    fontSize: typography.bodyFontSize,
-                    lineHeight: typography.bodyLineHeight,
-                  },
-                ]}
-              >
-                {paragraph}
-              </Text>
-            ))}
-
-            {reading.body.map((paragraph, index) => (
-              <Text
-                key={index}
-                style={[
-                  styles.bodyText,
-                  {
-                    fontSize: typography.bodyFontSize,
-                    lineHeight: typography.bodyLineHeight,
-                  },
-                ]}
-              >
-                {paragraph}
-              </Text>
-            ))}
-
-            <View style={styles.section}>
-              <Text
-                style={[
-                  styles.sectionHeading,
-                  { fontSize: headingTypography.sectionHeadingFontSize },
-                ]}
-              >
-                Today's Application
-              </Text>
-              {applicationParagraphs.map((paragraph, index) => (
+          <ScrollView
+            ref={scrollViewRef}
+            style={styles.content}
+            contentContainerStyle={styles.contentContainer}
+            showsVerticalScrollIndicator={false}
+            scrollEnabled={!isSwiping}
+          >
+            <Pressable onPress={handleContentPress}>
+              <View style={styles.titleRow}>
                 <Text
-                  key={`app-${index}`}
+                  style={[
+                    styles.title,
+                    { fontSize: headingTypography.titleFontSize },
+                  ]}
+                >
+                  {reading.title}
+                </Text>
+                <TouchableOpacity
+                  onPress={handleBookmarkToggle}
+                  style={styles.inlineFavorite}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name={localBookmarked ? "heart" : "heart-outline"}
+                    size={26}
+                    color={colors.deepTeal}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {openingParagraphs.map((paragraph, index) => (
+                <Text
+                  key={`opening-${index}`}
                   style={[
                     styles.bodyText,
                     {
@@ -423,38 +384,77 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                 </Text>
               ))}
 
-              <View style={styles.thoughtCardContainer}>
-                <View style={styles.thoughtCard}>
-                  <BlurView
-                    intensity={20}
-                    tint="light"
-                    style={styles.thoughtGradient}
+              {reading.body.map((paragraph, index) => (
+                <Text
+                  key={index}
+                  style={[
+                    styles.bodyText,
+                    {
+                      fontSize: typography.bodyFontSize,
+                      lineHeight: typography.bodyLineHeight,
+                    },
+                  ]}
+                >
+                  {paragraph}
+                </Text>
+              ))}
+
+              <View style={styles.section}>
+                <Text
+                  style={[
+                    styles.sectionHeading,
+                    { fontSize: headingTypography.sectionHeadingFontSize },
+                  ]}
+                >
+                  Today's Application
+                </Text>
+                {applicationParagraphs.map((paragraph, index) => (
+                  <Text
+                    key={`app-${index}`}
+                    style={[
+                      styles.bodyText,
+                      {
+                        fontSize: typography.bodyFontSize,
+                        lineHeight: typography.bodyLineHeight,
+                      },
+                    ]}
                   >
-                    <Text
-                      style={[
-                        styles.thoughtLabel,
-                        { fontSize: headingTypography.thoughtLabelFontSize },
-                      ]}
+                    {paragraph}
+                  </Text>
+                ))}
+
+                <View style={styles.thoughtCardContainer}>
+                  <View style={styles.thoughtCard}>
+                    <BlurView
+                      intensity={20}
+                      tint="light"
+                      style={styles.thoughtGradient}
                     >
-                      Thought for the Day
-                    </Text>
-                    <Text
-                      style={[
-                        styles.thoughtText,
-                        {
-                          fontSize: headingTypography.thoughtTextFontSize,
-                          lineHeight: headingTypography.thoughtTextLineHeight,
-                        },
-                      ]}
-                    >
-                      {reading.thoughtForDay}
-                    </Text>
-                  </BlurView>
+                      <Text
+                        style={[
+                          styles.thoughtLabel,
+                          { fontSize: headingTypography.thoughtLabelFontSize },
+                        ]}
+                      >
+                        Thought for the Day
+                      </Text>
+                      <Text
+                        style={[
+                          styles.thoughtText,
+                          {
+                            fontSize: headingTypography.thoughtTextFontSize,
+                            lineHeight: headingTypography.thoughtTextLineHeight,
+                          },
+                        ]}
+                      >
+                        {reading.thoughtForDay}
+                      </Text>
+                    </BlurView>
+                  </View>
                 </View>
               </View>
-            </View>
-            </ScrollView>
-          </Pressable>
+            </Pressable>
+          </ScrollView>
         </Animated.View>
 
         <View style={styles.actionBar}>
