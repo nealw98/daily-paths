@@ -10,6 +10,7 @@ import { useBookmarkManager } from "../hooks/useBookmarkManager";
 import { useAvailableDates } from "../hooks/useAvailableDates";
 import { hasSeenInstruction, markInstructionSeen } from "../utils/bookmarkStorage";
 import { colors } from "../constants/theme";
+import * as Notifications from "expo-notifications";
 
 export default function Index() {
   // Start with today's date
@@ -27,6 +28,21 @@ export default function Index() {
     refreshBookmarks,
   } = useBookmarkManager(currentDate, reading?.id || "", reading?.title || "");
   const { availableDaysOfYear } = useAvailableDates();
+
+  // If the app is opened from a notification, jump to today's reading.
+  const lastNotificationResponse = Notifications.useLastNotificationResponse();
+
+  useEffect(() => {
+    if (!lastNotificationResponse) return;
+
+    // For this app, any notification tap should bring us to today's reading.
+    if (
+      lastNotificationResponse.actionIdentifier ===
+      Notifications.DEFAULT_ACTION_IDENTIFIER
+    ) {
+      setCurrentDate(new Date());
+    }
+  }, [lastNotificationResponse]);
 
   // Check if instruction should be shown on mount
   useEffect(() => {
@@ -89,8 +105,9 @@ export default function Index() {
     });
 
     const bodyText = reading.body.join("\n\n");
+    const quoteText = (reading as any).quote ?? (reading as any).todaysApplication ?? "";
 
-    const message = `${reading.title}\n\n${reading.opening}\n\n${bodyText}\n\nToday's Application: ${reading.todaysApplication}\n\nThought for the Day: ${reading.thoughtForDay}\n\n---\nFrom Al-Anon Daily Paths\n${dateLabel}`;
+    const message = `${reading.title}\n\n${reading.opening}\n\n${bodyText}\n\nQuote: ${quoteText}\n\nThought for the Day: ${reading.thoughtForDay}\n\n---\nFrom Al-Anon Daily Paths\n${dateLabel}`;
 
     try {
       await Share.share({ message });

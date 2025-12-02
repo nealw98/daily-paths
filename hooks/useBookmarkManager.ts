@@ -5,6 +5,7 @@ import {
   toggleBookmark as toggleBookmarkStorage,
   BookmarkData,
 } from "../utils/bookmarkStorage";
+import { getDayOfYear, parseDateLocal } from "../utils/dateUtils";
 
 interface UseBookmarkManagerReturn {
   bookmarks: BookmarkData[];
@@ -28,9 +29,25 @@ export function useBookmarkManager(
   const refreshBookmarks = useCallback(async () => {
     try {
       const allBookmarks = await getBookmarks();
-      // Sort by timestamp, newest first
-      allBookmarks.sort((a, b) => b.timestamp - a.timestamp);
-      setBookmarks(allBookmarks);
+      // Sort by calendar position in the year (Jan 1 -> Dec 31),
+      // regardless of when the items were actually favorited.
+      const sortedByDayOfYear = [...allBookmarks].sort((a, b) => {
+        const dateA = parseDateLocal(a.date);
+        const dateB = parseDateLocal(b.date);
+
+        const dayA = getDayOfYear(dateA);
+        const dayB = getDayOfYear(dateB);
+
+        if (dayA !== dayB) {
+          return dayA - dayB;
+        }
+
+        // If same calendar day (unlikely but possible across years),
+        // fall back to title to keep ordering stable.
+        return a.title.localeCompare(b.title);
+      });
+
+      setBookmarks(sortedByDayOfYear);
     } catch (error) {
       console.error("Error refreshing bookmarks:", error);
     }

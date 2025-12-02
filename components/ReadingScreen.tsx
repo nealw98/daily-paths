@@ -14,12 +14,50 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
+import * as Haptics from "expo-haptics";
 import { colors, fonts } from "../constants/theme";
 import { useSettings, getTextSizeMetrics } from "../hooks/useSettings";
 import { DailyReading } from "../types/readings";
 import { BookmarkToast } from "./BookmarkToast";
 // Legacy instruction modal import kept for possible future use:
 // import { BookmarkInstructionOverlay } from "./BookmarkInstructionOverlay";
+
+/**
+ * Very small inline markdown helper.
+ *
+ * Supports *italic* or _italic_ spans inside a single Text block.
+ * Returns an array of strings and nested <Text> nodes that can be used
+ * as the children of a <Text> component.
+ */
+const renderInlineMarkdown = (text: string, italicStyle: any) => {
+  const parts: React.ReactNode[] = [];
+  const regex = /(\*([^*]+)\*|_([^_]+)_)/g;
+
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let key = 0;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+
+    const italicText = match[2] ?? match[3];
+    parts.push(
+      <Text key={`italic-${key++}`} style={italicStyle}>
+        {italicText}
+      </Text>
+    );
+
+    lastIndex = match.index + match[0]!.length;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts;
+};
 
 interface ReadingScreenProps {
   reading: DailyReading;
@@ -58,6 +96,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   const [toastMessage, setToastMessage] = useState("");
   const scrollViewRef = useRef<ScrollView>(null);
   const translateX = useRef(new Animated.Value(0)).current;
+  const heartScale = useRef(new Animated.Value(1)).current;
   const screenWidth = Dimensions.get("window").width;
   const [isSwiping, setIsSwiping] = useState(false);
   const prevDateRef = useRef(onPrevDate);
@@ -71,15 +110,13 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   );
 
   const headingTypography = useMemo(() => {
-    const baseBody = 20;
-    const scale = typography.bodyFontSize / baseBody;
-
     return {
-      titleFontSize: 28 * scale,
-      sectionHeadingFontSize: 24 * scale,
-      thoughtLabelFontSize: 14 * Math.max(scale, 0.9),
-      thoughtTextFontSize: 22 * scale,
-      thoughtTextLineHeight: 26 * scale,
+      // Title is always body size + 2 for a subtle hierarchy
+      titleFontSize: typography.bodyFontSize + 2,
+      sectionHeadingFontSize: 24,
+      thoughtLabelFontSize: 14,
+      thoughtTextFontSize: 22,
+      thoughtTextLineHeight: 26,
     };
   }, [typography.bodyFontSize]);
 
@@ -92,7 +129,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
     nextDateRef.current = onNextDate;
   }, [onNextDate]);
 
-  // Opening and application paragraphs (support \n\n markers in text)
+  // Opening paragraphs (support \n\n markers in text)
   const openingParagraphs = useMemo(
     () =>
       (reading.opening || "")
@@ -103,25 +140,46 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
     [reading.opening]
   );
 
-  const applicationParagraphs = useMemo(
-    () =>
-      (reading.todaysApplication || "")
+  // Application quote + reference (extract trailing parenthetical, if present)
+  const { applicationQuote, applicationReference } = useMemo(() => {
+    const source =
+      (reading as any).quote ?? (reading as any).todaysApplication ?? "";
+
+    const raw =
+      source
         .replace(/\\n/g, "\n")
-        .split(/\n{2,}/)
-        .map((p) => p.trim())
-        .filter((p) => p.length > 0),
-    [reading.todaysApplication]
-  );
+        .split(/\n{2,}/)[0]
+        ?.trim() ?? "";
+
+    if (!raw) {
+      return { applicationQuote: "", applicationReference: "" };
+    }
+
+    // Match trailing parenthetical, e.g. `"Quote text..." (BOOK, p. 89)`
+    const match = raw.match(/^(.*?)(\s*\(([^()]*)\))\s*$/);
+    if (match) {
+      return {
+        applicationQuote: match[1].trim(),
+        // inner text of the parentheses only
+        applicationReference: match[3].trim(),
+      };
+    }
+
+    return { applicationQuote: raw, applicationReference: "" };
+  }, [reading.quote]);
 
   // Horizontal swipe gesture for previous/next readings
-  const SWIPE_THRESHOLD = 40;
+  const SWIPE_THRESHOLD = 48;
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_evt, gestureState) => {
         const { dx, dy } = gestureState;
-        // Start handling when horizontal movement is dominant
-        const shouldSet =
-          Math.abs(dx) > 20 && Math.abs(dx) > Math.abs(dy);
+        // Only capture when the intent is clearly horizontal:
+        // - horizontal movement above a reasonable threshold
+        // - and significantly greater than vertical movement
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
+        const shouldSet = absDx > 32 && absDx > absDy * 1.5;
         if (shouldSet) {
           setIsSwiping(true);
         }
@@ -259,12 +317,34 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   // }, []);
 
   const handleBookmarkToggle = async () => {
-    if (onBookmarkToggle) {
-      await onBookmarkToggle();
-      const newState = !localBookmarked;
-      setLocalBookmarked(newState);
-      console.log("ReadingScreen: Bookmark toggled to:", newState);
+    if (!onBookmarkToggle) return;
+
+    await onBookmarkToggle();
+    const newState = !localBookmarked;
+    setLocalBookmarked(newState);
+    console.log("ReadingScreen: Bookmark toggled to:", newState);
+
+    // Haptic feedback on toggle
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } catch {
+      // best-effort only
     }
+
+    // Heart "pop" animation
+    heartScale.setValue(1);
+    Animated.sequence([
+      Animated.spring(heartScale, {
+        toValue: 1.25,
+        friction: 3,
+        useNativeDriver: true,
+      }),
+      Animated.spring(heartScale, {
+        toValue: 1,
+        friction: 4,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
   const handleContentPress = () => {
@@ -279,6 +359,14 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
       lastTapRef.current = now;
     }
   };
+
+  // Whenever we get a new reading, snap the scroll position back to the top
+  // so paging forward/backward always starts at the beginning.
+  React.useEffect(() => {
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollTo({ y: 0, animated: false });
+    }
+  }, [reading.id]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
@@ -347,6 +435,26 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
             scrollEnabled={!isSwiping}
           >
             <Pressable onPress={handleContentPress}>
+              <View style={styles.favoriteTopContainer}>
+                <TouchableOpacity
+                  onPress={handleBookmarkToggle}
+                  activeOpacity={0.8}
+                >
+                  <Animated.View
+                    style={[
+                      styles.favoriteTopButton,
+                      { transform: [{ scale: heartScale }] },
+                    ]}
+                  >
+                    <Ionicons
+                      name={localBookmarked ? "heart" : "heart-outline"}
+                      size={28}
+                      color={colors.deepTeal}
+                    />
+                  </Animated.View>
+                </TouchableOpacity>
+              </View>
+
               <View style={styles.titleRow}>
                 <Text
                   style={[
@@ -356,18 +464,42 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                 >
                   {reading.title}
                 </Text>
-                <TouchableOpacity
-                  onPress={handleBookmarkToggle}
-                  style={styles.inlineFavorite}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons
-                    name={localBookmarked ? "heart" : "heart-outline"}
-                    size={26}
-                    color={colors.deepTeal}
-                  />
-                </TouchableOpacity>
               </View>
+
+              {!!applicationQuote && (
+                <View style={styles.applicationQuoteContainer}>
+                  <Text
+                    style={[
+                      styles.bodyText,
+                      styles.applicationQuoteText,
+                      {
+                        fontSize: typography.bodyFontSize,
+                        lineHeight: typography.bodyLineHeight,
+                      },
+                    ]}
+                  >
+                    {renderInlineMarkdown(
+                      applicationQuote,
+                      styles.inlineItalic
+                    )}
+                  </Text>
+                  {!!applicationReference && (
+                    <Text
+                      style={[
+                        styles.thoughtLabel,
+                        {
+                          fontSize: headingTypography.thoughtLabelFontSize,
+                          textAlign: "right",
+                          marginTop: 0,
+                          color: "rgba(74, 90, 91, 0.7)", // lighter version of body/quote color
+                        },
+                      ]}
+                    >
+                      {applicationReference}
+                    </Text>
+                  )}
+                </View>
+              )}
 
               {openingParagraphs.map((paragraph, index) => (
                 <Text
@@ -380,7 +512,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                     },
                   ]}
                 >
-                  {paragraph}
+                  {renderInlineMarkdown(paragraph, styles.inlineItalic)}
                 </Text>
               ))}
 
@@ -395,62 +527,37 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                     },
                   ]}
                 >
-                  {paragraph}
+                  {renderInlineMarkdown(paragraph, styles.inlineItalic)}
                 </Text>
               ))}
 
-              <View style={styles.section}>
-                <Text
-                  style={[
-                    styles.sectionHeading,
-                    { fontSize: headingTypography.sectionHeadingFontSize },
-                  ]}
-                >
-                  Today's Application
-                </Text>
-                {applicationParagraphs.map((paragraph, index) => (
-                  <Text
-                    key={`app-${index}`}
-                    style={[
-                      styles.bodyText,
-                      {
-                        fontSize: typography.bodyFontSize,
-                        lineHeight: typography.bodyLineHeight,
-                      },
-                    ]}
+              <View style={styles.thoughtCardContainer}>
+                <View style={styles.thoughtCard}>
+                  <BlurView
+                    intensity={20}
+                    tint="light"
+                    style={styles.thoughtGradient}
                   >
-                    {paragraph}
-                  </Text>
-                ))}
-
-                <View style={styles.thoughtCardContainer}>
-                  <View style={styles.thoughtCard}>
-                    <BlurView
-                      intensity={20}
-                      tint="light"
-                      style={styles.thoughtGradient}
+                    <Text
+                      style={[
+                        styles.thoughtLabel,
+                        { fontSize: headingTypography.thoughtLabelFontSize },
+                      ]}
                     >
-                      <Text
-                        style={[
-                          styles.thoughtLabel,
-                          { fontSize: headingTypography.thoughtLabelFontSize },
-                        ]}
-                      >
-                        Thought for the Day
-                      </Text>
-                      <Text
-                        style={[
-                          styles.thoughtText,
-                          {
-                            fontSize: headingTypography.thoughtTextFontSize,
-                            lineHeight: headingTypography.thoughtTextLineHeight,
-                          },
-                        ]}
-                      >
-                        {reading.thoughtForDay}
-                      </Text>
-                    </BlurView>
-                  </View>
+                      Thought for the Day
+                    </Text>
+                    <Text
+                      style={[
+                        styles.thoughtText,
+                        {
+                          fontSize: headingTypography.thoughtTextFontSize,
+                          lineHeight: headingTypography.thoughtTextLineHeight,
+                        },
+                      ]}
+                    >
+                      {reading.thoughtForDay}
+                    </Text>
+                  </BlurView>
                 </View>
               </View>
             </Pressable>
@@ -521,7 +628,7 @@ const styles = StyleSheet.create({
   },
   logo: {
     fontFamily: fonts.headerFamilyItalic,
-    fontSize: 36,
+    fontSize: 40,
     color: "#fff",
     fontWeight: "600",
   },
@@ -635,24 +742,33 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   title: {
-    fontFamily: fonts.headerFamilyBoldItalic,
-    fontSize: 28,
+    fontFamily: "Inter_500Medium",
     color: colors.deepTeal,
-    marginBottom: 16,
+    textAlign: "center",
+    textTransform: "uppercase",
+    fontWeight: "600",
+    marginBottom: 8,
     flex: 1,
     flexShrink: 1,
   },
   titleRow: {
     flexDirection: "row",
     alignItems: "flex-start",
-    justifyContent: "space-between", // keep heart right-aligned within the card
+    justifyContent: "center",
     width: "100%",
     marginTop: 16,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   inlineFavorite: {
     marginLeft: 12,
     marginTop: 6, // fine-tuned to align with first line of title text
+  },
+  favoriteTopContainer: {
+    alignItems: "center",
+    marginTop: 8,
+  },
+  favoriteTopButton: {
+    padding: 8,
   },
   bodyText: {
     fontFamily: fonts.loraRegular,
@@ -660,6 +776,10 @@ const styles = StyleSheet.create({
     lineHeight: 33,
     color: "#4A5A5B", // Lighter gray-teal for contrast with deepTeal titles
     marginBottom: 16,
+  },
+  inlineItalic: {
+    fontFamily: fonts.loraItalic,
+    fontStyle: "italic",
   },
   section: {
     marginTop: 8,
@@ -669,6 +789,15 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: colors.deepTeal,
     marginBottom: 12,
+  },
+  applicationQuoteContainer: {
+    marginBottom: 16,
+  },
+  applicationQuoteText: {
+    fontFamily: fonts.loraItalic,
+    fontStyle: "italic",
+    textAlign: "center",
+    marginBottom: 4,
   },
   thoughtCardContainer: {
     marginTop: 24,

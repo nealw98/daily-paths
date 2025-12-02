@@ -1,9 +1,10 @@
 import React from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { scheduleDailyReminder, cancelDailyReminder } from "../utils/dailyReminder";
 
 const SETTINGS_STORAGE_KEY = "daily_paths_settings_v1";
 
-export type TextSize = "small" | "medium" | "large" | "extraLarge";
+export type TextSize = "extraSmall" | "small" | "medium" | "large" | "extraLarge";
 
 export interface AppSettings {
   textSize: TextSize;
@@ -12,7 +13,7 @@ export interface AppSettings {
 }
 
 const defaultSettings: AppSettings = {
-  textSize: "medium",
+  textSize: "small",
   dailyReminderEnabled: false,
   dailyReminderTime: "08:00",
 };
@@ -93,16 +94,25 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const setDailyReminderEnabled = React.useCallback(
     async (enabled: boolean) => {
-      await updateSettings({ dailyReminderEnabled: enabled });
+      if (enabled) {
+        const ok = await scheduleDailyReminder(settings.dailyReminderTime);
+        await updateSettings({ dailyReminderEnabled: ok });
+      } else {
+        await cancelDailyReminder();
+        await updateSettings({ dailyReminderEnabled: false });
+      }
     },
-    [updateSettings]
+    [settings.dailyReminderTime, updateSettings]
   );
 
   const setDailyReminderTime = React.useCallback(
     async (time: string) => {
       await updateSettings({ dailyReminderTime: time });
+      if (settings.dailyReminderEnabled) {
+        await scheduleDailyReminder(time);
+      }
     },
-    [updateSettings]
+    [settings.dailyReminderEnabled, updateSettings]
   );
 
   const value = React.useMemo<SettingsContextValue>(
@@ -135,6 +145,14 @@ export function getTextSizeMetrics(textSize: TextSize): {
   favoriteDateFontSize: number;
 } {
   switch (textSize) {
+    case "extraSmall":
+      return {
+        bodyFontSize: 15,
+        bodyLineHeight: 26,
+        favoriteFontSize: 15,
+        favoriteLineHeight: 20,
+        favoriteDateFontSize: 9,
+      };
     case "small":
       return {
         bodyFontSize: 17,

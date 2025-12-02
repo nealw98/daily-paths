@@ -77,13 +77,19 @@ export function useReading(date: Date) {
             .map((p: string) => p.trim())
             .filter((p: string) => p.length > 0);
 
+          const rawQuote =
+            (data as { quote?: string; todays_application?: string }).quote ??
+            (data as { quote?: string; todays_application?: string })
+              .todays_application ??
+            "";
+
           const transformedReading: DailyReading = {
             id: data.id,
             date: date, // Use the date parameter that was passed in
             title: data.title,
             opening: data.opening,
             body: bodyParagraphs,
-            todaysApplication: data.todays_application,
+            quote: rawQuote,
             thoughtForDay: data.thought_for_day,
           };
           console.log("Transformed reading:", transformedReading);

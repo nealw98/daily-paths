@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -7,19 +7,21 @@ import {
   TouchableOpacity,
   Switch,
   Linking,
+  Platform,
 } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import Constants from "expo-constants";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, fonts } from "../constants/theme";
-import { useSettings, TextSize } from "../hooks/useSettings";
+import { useSettings, TextSize, getTextSizeMetrics } from "../hooks/useSettings";
 
-const textSizeLabels: { key: TextSize; label: string; description: string }[] =
-  [
-    { key: "small", label: "Small", description: "More text on screen" },
-    { key: "medium", label: "Medium", description: "Balanced for most" },
-    { key: "large", label: "Large", description: "Easier to read" },
-    { key: "extraLarge", label: "Extra large", description: "Maximum size" },
-  ];
+const textSizeStops: TextSize[] = [
+  "extraSmall",
+  "small",
+  "medium",
+  "large",
+  "extraLarge",
+];
 
 function parseTimeToDate(time: string): Date {
   const [h = "8", m = "0"] = time.split(":");
@@ -47,6 +49,11 @@ export const SettingsContent: React.FC = () => {
   const { settings, setTextSize, setDailyReminderEnabled, setDailyReminderTime } =
     useSettings();
 
+  const [showTimePicker, setShowTimePicker] = useState(false);
+   // Local working copy while the wheel is open so we don't commit
+   // changes until the user confirms.
+  const [tempReminderDate, setTempReminderDate] = useState<Date | null>(null);
+
   const appVersion =
     Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? "dev";
   const buildNumber = Constants.nativeBuildVersion ?? "dev";
@@ -56,6 +63,11 @@ export const SettingsContent: React.FC = () => {
     [settings.dailyReminderTime]
   );
 
+  const typography = useMemo(
+    () => getTextSizeMetrics(settings.textSize),
+    [settings.textSize]
+  );
+
   const handleTextSizePress = async (size: TextSize) => {
     if (settings.textSize === size) return;
     await setTextSize(size);
@@ -63,25 +75,6 @@ export const SettingsContent: React.FC = () => {
 
   const handleReminderToggle = async (enabled: boolean) => {
     await setDailyReminderEnabled(enabled);
-  };
-
-  const adjustReminderTime = async (deltaMinutes: number) => {
-    const next = new Date(reminderDate);
-    // Apply raw delta
-    next.setMinutes(next.getMinutes() + deltaMinutes);
-
-    // Snap minutes to nearest 15-minute increment: 00, 15, 30, 45
-    const minutes = next.getMinutes();
-    const snapped = Math.round(minutes / 15) * 15;
-
-    if (snapped === 60) {
-      // Roll over to next hour at :00
-      next.setHours(next.getHours() + 1, 0, 0, 0);
-    } else {
-      next.setMinutes(snapped, 0, 0);
-    }
-
-    await setDailyReminderTime(formatTimeStorage(next));
   };
 
   return (
@@ -97,39 +90,46 @@ export const SettingsContent: React.FC = () => {
               Adjust how large the daily reading appears.
             </Text>
 
-            <View style={styles.chipRow}>
-              {textSizeLabels.map((item) => {
-                const selected = settings.textSize === item.key;
-                return (
-                  <TouchableOpacity
-                    key={item.key}
-                    style={[
-                      styles.chip,
-                      selected && styles.chipSelected,
-                    ]}
-                    activeOpacity={0.8}
-                    onPress={() => handleTextSizePress(item.key)}
-                  >
-                    <Text
-                      style={[
-                        styles.chipLabel,
-                        selected && styles.chipLabelSelected,
-                      ]}
+            <View style={styles.sliderRow}>
+              <Text style={styles.sliderEdgeLabel}>Smaller</Text>
+              <View style={styles.sliderTrack}>
+                {textSizeStops.map((size, index) => {
+                  const selectedIndex = textSizeStops.indexOf(settings.textSize);
+                  const isActive = index <= selectedIndex;
+                  const isSelected = size === settings.textSize;
+                  return (
+                    <TouchableOpacity
+                      key={size}
+                      style={styles.sliderStopTouch}
+                      activeOpacity={0.8}
+                      onPress={() => handleTextSizePress(size)}
                     >
-                      {item.label}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.chipDescription,
-                        selected && styles.chipDescriptionSelected,
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {item.description}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+                      <View
+                        style={[
+                          styles.sliderStop,
+                          isActive && styles.sliderStopActive,
+                          isSelected && styles.sliderStopSelected,
+                        ]}
+                      />
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              <Text style={styles.sliderEdgeLabel}>Larger</Text>
+            </View>
+
+            <View style={styles.textPreviewContainer}>
+              <Text
+                style={[
+                  styles.textPreview,
+                  {
+                    fontSize: typography.bodyFontSize,
+                    lineHeight: typography.bodyLineHeight,
+                  },
+                ]}
+              >
+                Sample text size preview
+              </Text>
             </View>
           </View>
 
@@ -142,9 +142,6 @@ export const SettingsContent: React.FC = () => {
             <View style={styles.row}>
               <View style={styles.rowText}>
                 <Text style={styles.rowLabel}>Enable reminder</Text>
-                <Text style={styles.rowHelper}>
-                  You can change this anytime.
-                </Text>
               </View>
               <Switch
                 value={settings.dailyReminderEnabled}
@@ -166,45 +163,62 @@ export const SettingsContent: React.FC = () => {
 
             <View style={styles.timeStepperContainer}>
               <TouchableOpacity
-                onPress={() => adjustReminderTime(-15)}
-                disabled={!settings.dailyReminderEnabled}
-                style={styles.timeStepperButton}
                 activeOpacity={0.7}
-              >
-                <Ionicons
-                  name="chevron-back"
-                  size={18}
-                  color={
-                    settings.dailyReminderEnabled ? colors.ocean : colors.mist
-                  }
-                />
-              </TouchableOpacity>
-
-              <Text
-                style={[
-                  styles.timeValue,
-                  !settings.dailyReminderEnabled && styles.timeValueDisabled,
-                ]}
-              >
-                {formatTimeDisplay(reminderDate)}
-              </Text>
-
-              <TouchableOpacity
-                onPress={() => adjustReminderTime(15)}
                 disabled={!settings.dailyReminderEnabled}
-                style={styles.timeStepperButton}
-                activeOpacity={0.7}
-              >
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
-                  color={
-                    settings.dailyReminderEnabled ? colors.ocean : colors.mist
+                onPress={() => {
+                  if (settings.dailyReminderEnabled) {
+                    setTempReminderDate(reminderDate);
+                    setShowTimePicker(true);
                   }
-                />
+                }}
+              >
+                <Text
+                  style={[
+                    styles.timeValue,
+                    !settings.dailyReminderEnabled && styles.timeValueDisabled,
+                  ]}
+                >
+                  {formatTimeDisplay(reminderDate)}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
+          {showTimePicker && settings.dailyReminderEnabled && (
+            <View style={styles.timePickerContainer}>
+              <DateTimePicker
+                value={tempReminderDate ?? reminderDate}
+                mode="time"
+                display={Platform.OS === "ios" ? "spinner" : "default"}
+                onChange={(_, selectedDate) => {
+                  if (!selectedDate) return;
+                  // Just update the working value; don't commit yet.
+                  setTempReminderDate(selectedDate);
+                }}
+              />
+              <View style={styles.timePickerActions}>
+                <TouchableOpacity
+                  style={styles.timePickerButtonSecondary}
+                  onPress={() => {
+                    setShowTimePicker(false);
+                    setTempReminderDate(null);
+                  }}
+                >
+                  <Text style={styles.timePickerButtonSecondaryText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.timePickerButtonPrimary}
+                  onPress={() => {
+                    const finalDate = tempReminderDate ?? reminderDate;
+                    setShowTimePicker(false);
+                    setTempReminderDate(null);
+                    setDailyReminderTime(formatTimeStorage(finalDate));
+                  }}
+                >
+                  <Text style={styles.timePickerButtonPrimaryText}>Set time</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
           </View>
         </View>
 
@@ -255,13 +269,13 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 18,
+    fontSize: 20,
     color: colors.deepTeal,
     marginBottom: 4,
   },
   sectionSubtitle: {
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 15,
+    fontSize: 16,
     color: "#5B8B89",
     marginBottom: 16,
   },
@@ -299,6 +313,51 @@ const styles = StyleSheet.create({
   chipDescriptionSelected: {
     color: "#E8F3F3",
   },
+  sliderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+  },
+  sliderEdgeLabel: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 12,
+    color: "#6b7280",
+  },
+  sliderTrack: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    gap: 4,
+  },
+  sliderStopTouch: {
+    flex: 1,
+    alignItems: "center",
+  },
+  sliderStop: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: "#e5e7eb",
+    backgroundColor: "#ffffff",
+  },
+  sliderStopActive: {
+    borderColor: colors.seafoam,
+    backgroundColor: colors.seafoam,
+  },
+  sliderStopSelected: {
+    borderColor: colors.deepTeal,
+    backgroundColor: colors.deepTeal,
+    transform: [{ scale: 1.1 }],
+  },
+  textPreviewContainer: {
+    marginTop: 16,
+  },
+  textPreview: {
+    fontFamily: fonts.loraRegular,
+    color: "#4b5563",
+  },
   row: {
     flexDirection: "row",
     alignItems: "center",
@@ -311,12 +370,12 @@ const styles = StyleSheet.create({
   },
   rowLabel: {
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 15,
+    fontSize: 16,
     color: colors.ink,
   },
   rowHelper: {
     fontFamily: fonts.bodyFamily,
-    fontSize: 12,
+    fontSize: 13,
     color: colors.ocean,
     marginTop: 2,
   },
@@ -334,20 +393,47 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  timeStepperButton: {
-    paddingHorizontal: 4,
-    paddingVertical: 4,
-  },
   timeValue: {
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 15,
-    color: colors.deepTeal,
+    fontSize: 16,
+    color: colors.ink,
   },
   timeValueDisabled: {
-    color: colors.mist,
+    // No extra dimming; row opacity handles the disabled look
   },
   footerSpacer: {
     height: 12,
+  },
+  timePickerContainer: {
+    marginTop: 8,
+  },
+  timePickerActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 8,
+    gap: 12,
+  },
+  timePickerButtonSecondary: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: "#e5e7eb",
+  },
+  timePickerButtonSecondaryText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 14,
+    color: "#4b5563",
+  },
+  timePickerButtonPrimary: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: colors.deepTeal,
+  },
+  timePickerButtonPrimaryText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 14,
+    color: "#ffffff",
   },
   divider: {
     height: 1,

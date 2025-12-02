@@ -1,6 +1,5 @@
 import React from "react";
 import { Modal, View, StyleSheet, TouchableOpacity, Text } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { colors, fonts } from "../constants/theme";
 
 interface SettingsModalProps {
@@ -33,8 +32,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         >
           <View style={styles.header}>
             <Text style={styles.title}>Settings</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color={colors.ink} />
+            <TouchableOpacity onPress={onClose} style={styles.doneButton}>
+              <Text style={styles.doneButtonText}>Done</Text>
             </TouchableOpacity>
           </View>
 
@@ -75,8 +74,16 @@ const styles = StyleSheet.create({
     fontSize: 32,
     color: colors.deepTeal,
   },
-  closeButton: {
-    padding: 4,
+  doneButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: "transparent",
+  },
+  doneButtonText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 16,
+    color: colors.deepTeal,
   },
 });
 

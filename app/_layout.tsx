@@ -16,6 +16,15 @@ import {
 import { colors } from "../constants/theme";
 import { SettingsProvider } from "../hooks/useSettings";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
+import * as Notifications from "expo-notifications";
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+  }),
+});
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({

@@ -18,14 +18,21 @@ export function parseDateLocal(dateString: string): Date {
 }
 
 /**
- * Gets the day of year (1-366) for a given date
+ * Gets the day of year (1-366) for a given date.
+ *
+ * Uses a UTC-based calculation so that daylight‑saving time changes
+ * (23/25‑hour days) do NOT introduce off‑by‑one errors.
+ *
  * January 1 = 1, December 31 = 365 (or 366 in leap year)
  */
 export function getDayOfYear(date: Date): number {
-  const start = new Date(date.getFullYear(), 0, 0);
-  const diff = date.getTime() - start.getTime();
+  const year = date.getFullYear();
+
+  const startUtc = Date.UTC(year, 0, 1); // Jan 1, 00:00 UTC
+  const currentUtc = Date.UTC(year, date.getMonth(), date.getDate());
+
   const oneDay = 1000 * 60 * 60 * 24;
-  return Math.floor(diff / oneDay);
+  return Math.floor((currentUtc - startUtc) / oneDay) + 1;
 }
 
 /**
@@ -37,23 +44,30 @@ export function dateFromDayOfYear(dayOfYear: number, year: number): Date {
 }
 
 /**
- * Leap-year aware helpers for scheduling readings by day_of_year.
+ * Leap‑year helper.
  */
 export function isLeapYear(year: number): boolean {
   return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
 }
 
 /**
- * Returns the "scheduled" day_of_year for a given calendar date, assuming that
- * the readings table is keyed as if every year were a leap year:
+ * Returns the "scheduled" day_of_year for a given calendar date,
+ * assuming the `readings.day_of_year` column is keyed as if EVERY
+ * year were a leap year:
  *
- *   59 -> Feb 28
- *   60 -> Feb 29
- *   61 -> Mar 1
+ * - 59 → Feb 28
+ * - 60 → Feb 29
+ * - 61 → Mar 1
  *
- * In a leap year, this is just the real day_of_year.
- * In a non-leap year, days after Feb 28 are shifted by +1 so that
- * Mar 1 (real day 60) maps to 61, etc., effectively skipping the Feb 29 slot.
+ * Behaviour:
+ * - In a **leap year**, we just use the real calendar day‑of‑year.
+ * - In a **non‑leap year**, days **after Feb 28** are shifted by +1 so
+ *   that Mar 1 (real day 60) maps to 61, and the Feb 29 slot (60)
+ *   is effectively skipped.
+ *
+ * Result: Mar 1 always uses `day_of_year = 61` in BOTH leap and
+ * non‑leap years; `day_of_year = 60` is only ever used on Feb 29
+ * in leap years.
  */
 export function getScheduledDayOfYear(date: Date): number {
   const real = getDayOfYear(date);
@@ -63,8 +77,6 @@ export function getScheduledDayOfYear(date: Date): number {
     return real;
   }
 
-  // Non-leap year and after Feb 28: shift by +1
+  // Non‑leap year and after Feb 28 → shift by +1 (skip 60).
   return real + 1;
 }
-
-

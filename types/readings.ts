@@ -4,7 +4,7 @@ export interface DailyReading {
   title: string;
   opening: string;
   body: string[];
-  todaysApplication: string;
+  quote: string;
   thoughtForDay: string;
 }
 
