@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Animated } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { colors } from "../constants/theme";
 
 interface BookmarkToastProps {
   visible: boolean;
@@ -43,10 +44,13 @@ export const BookmarkToast: React.FC<BookmarkToastProps> = ({
     return null;
   }
 
+  const isRemoved = message.toLowerCase().startsWith("removed");
+  const iconName = isRemoved ? "heart-outline" : "heart";
+
   return (
     <Animated.View style={[styles.container, { opacity }]}>
       <View style={styles.toast}>
-        <Ionicons name="heart" size={20} color="#fff" style={styles.icon} />
+        <Ionicons name={iconName} size={20} color="#fff" style={styles.icon} />
         <Text style={styles.message}>{message}</Text>
       </View>
     </Animated.View>
@@ -56,16 +60,19 @@ export const BookmarkToast: React.FC<BookmarkToastProps> = ({
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: [{ translateX: -100 }, { translateY: -25 }],
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    justifyContent: "center",
+    alignItems: "center",
     zIndex: 1000,
     pointerEvents: "none",
   },
   toast: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.85)",
+    backgroundColor: colors.deepTeal,
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,

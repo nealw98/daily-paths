@@ -324,6 +324,14 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
     setLocalBookmarked(newState);
     console.log("ReadingScreen: Bookmark toggled to:", newState);
 
+    // Show a lightweight toast message
+    setToastMessage(
+      newState
+        ? "Added this reading to your favorites"
+        : "Removed this reading from your favorites"
+    );
+    setToastVisible(true);
+
     // Haptic feedback on toggle
     try {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
