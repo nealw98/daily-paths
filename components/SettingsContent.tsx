@@ -12,6 +12,7 @@ import {
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Constants from "expo-constants";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { colors, fonts } from "../constants/theme";
 import { useSettings, TextSize, getTextSizeMetrics } from "../hooks/useSettings";
 
@@ -53,10 +54,13 @@ export const SettingsContent: React.FC = () => {
    // Local working copy while the wheel is open so we don't commit
    // changes until the user confirms.
   const [tempReminderDate, setTempReminderDate] = useState<Date | null>(null);
+  const router = useRouter();
 
+  const expoConfig: any = Constants.expoConfig ?? {};
   const appVersion =
-    Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? "dev";
-  const buildNumber = Constants.nativeBuildVersion ?? "dev";
+    expoConfig.version ?? Constants.nativeAppVersion ?? "dev";
+  const iosBuildNumber =
+    expoConfig.ios?.buildNumber ?? Constants.nativeBuildVersion ?? "dev";
 
   const reminderDate = useMemo(
     () => parseTimeToDate(settings.dailyReminderTime),
@@ -242,9 +246,16 @@ export const SettingsContent: React.FC = () => {
           </View>
 
           <View style={styles.versionContainer}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onLongPress={() => {
+              router.push("/qa-logs");
+            }}
+          >
             <Text style={styles.versionText}>
-              Version {appVersion} (build {buildNumber})
+              Version {appVersion} (build {iosBuildNumber})
             </Text>
+          </TouchableOpacity>
           </View>
         </View>
       </ScrollView>

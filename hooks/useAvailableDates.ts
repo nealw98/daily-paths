@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
+import { qaLog } from "../utils/qaLog";
 
 export function useAvailableDates() {
   const [availableDaysOfYear, setAvailableDaysOfYear] = useState<number[]>([]);
@@ -15,6 +16,8 @@ export function useAvailableDates() {
       setLoading(true);
       setError(null);
 
+      qaLog("dates", "Fetching available day_of_year values");
+
       const { data, error: fetchError } = await supabase
         .from("readings")
         .select("day_of_year")
@@ -22,6 +25,10 @@ export function useAvailableDates() {
 
       if (fetchError) {
         console.error("Error fetching available dates:", fetchError);
+        qaLog("dates", "Error fetching available dates", {
+          message: fetchError.message,
+          code: (fetchError as any).code,
+        });
         setError(fetchError.message);
         return;
       }
@@ -29,9 +36,15 @@ export function useAvailableDates() {
       if (data) {
         const days = data.map((row) => row.day_of_year as number);
         setAvailableDaysOfYear(days);
+        qaLog("dates", "Available dates loaded", {
+          count: days.length,
+        });
       }
     } catch (err) {
       console.error("Error:", err);
+      qaLog("dates", "Unexpected error while fetching dates", {
+        message: err instanceof Error ? err.message : String(err),
+      });
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setLoading(false);

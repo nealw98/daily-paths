@@ -2,7 +2,12 @@ import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { DailyReading } from "../types/readings";
 import { formatDateLocal, getScheduledDayOfYear } from "../utils/dateUtils";
-import { getCachedReading, setCachedReading } from "../utils/readingCache";
+import {
+  getCachedReading,
+  setCachedReading,
+  type CachedReading,
+} from "../utils/readingCache";
+import { qaLog } from "../utils/qaLog";
 
 export function useReading(date: Date) {
   const [reading, setReading] = useState<DailyReading | null>(null);
@@ -14,14 +19,24 @@ export function useReading(date: Date) {
   }, [date]);
 
   async function fetchReading() {
+    qaLog("reading", "Fetching reading", {
+      date: formatDateLocal(date),
+    });
+
+    let cached: CachedReading | null = null;
+
     try {
       setLoading(true);
       setError(null);
 
       // 1) Attempt to load from local cache for instant/offline display
-      const cached = await getCachedReading(date);
+      cached = await getCachedReading(date);
       if (cached?.reading) {
         setReading(cached.reading);
+        qaLog("reading", "Loaded reading from cache", {
+          date: formatDateLocal(date),
+          id: cached.reading.id,
+        });
       }
 
       // 2) Always try to refresh from Supabase when possible
@@ -30,6 +45,9 @@ export function useReading(date: Date) {
 
       console.log("Fetching reading for day of year:", dayOfYear);
       console.log("Date:", formatDateLocal(date));
+      qaLog("reading", "Requesting reading from Supabase", {
+        dayOfYear,
+      });
 
       const { data, error: fetchError } = await supabase
         .from("readings")
@@ -40,6 +58,10 @@ export function useReading(date: Date) {
       // If there is a real fetch error (network, permission, etc.), handle it.
       if (fetchError) {
         console.error("Error fetching reading:", fetchError);
+        qaLog("reading", "Error fetching reading from Supabase", {
+          message: fetchError.message,
+          code: (fetchError as any).code,
+        });
         if (!cached?.reading) {
           setError(fetchError.message);
         }
@@ -52,6 +74,10 @@ export function useReading(date: Date) {
           setReading(null);
           setError("No reading available for this date.");
         }
+        qaLog("reading", "No reading row found for date", {
+          date: formatDateLocal(date),
+          dayOfYear,
+        });
         return;
       }
 
@@ -99,10 +125,25 @@ export function useReading(date: Date) {
             reading: transformedReading,
             updatedAt: remoteUpdatedAt,
           });
+          qaLog("reading", "Reading fetched and cached", {
+            date: formatDateLocal(date),
+            id: transformedReading.id,
+          });
         }
       }
     } catch (err) {
       console.error("Error:", err);
+      qaLog("reading", "Unexpected error while fetching reading", {
+        message: err instanceof Error ? err.message : String(err),
+      });
+
+      // If there's no cached reading for this date, clear any stale reading
+      // from the previous date so the UI doesn't keep showing, e.g., Dec 2
+      // when the user navigates to another day.
+      if (!cached?.reading) {
+        setReading(null);
+      }
+
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setLoading(false);
