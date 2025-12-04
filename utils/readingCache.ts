@@ -4,8 +4,8 @@ import { DailyReading } from "../types/readings";
 // Bump this suffix any time we change how readings are fetched / mapped
 // (e.g., changes to day_of_year scheduling logic) so that we don't
 // accidentally reuse stale cached entries tied to an older scheme.
-// v4: updated reading shape (quote field + text sizing tweaks).
-const READING_CACHE_PREFIX = "@daily_paths_reading_v4_";
+// v5: updated reading shape (separate quote + application fields).
+const READING_CACHE_PREFIX = "@daily_paths_reading_v5_";
 
 export interface CachedReading {
   reading: DailyReading;

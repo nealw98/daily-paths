@@ -103,9 +103,12 @@ export function useReading(date: Date) {
             .map((p: string) => p.trim())
             .filter((p: string) => p.length > 0);
 
-          const rawQuote =
-            (data as { quote?: string; todays_application?: string }).quote ??
-            (data as { quote?: string; todays_application?: string })
+          const rawQuote = (data as { quote?: string }).quote ?? "";
+
+          const applicationText =
+            (data as { application?: string; todays_application?: string })
+              .application ??
+            (data as { application?: string; todays_application?: string })
               .todays_application ??
             "";
 
@@ -116,6 +119,7 @@ export function useReading(date: Date) {
             opening: data.opening,
             body: bodyParagraphs,
             quote: rawQuote,
+            application: applicationText,
             thoughtForDay: data.thought_for_day,
           };
           console.log("Transformed reading:", transformedReading);

@@ -7,19 +7,39 @@ import {
   TouchableOpacity,
 } from "react-native";
 import Constants from "expo-constants";
+import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Clipboard from "@react-native-clipboard/clipboard";
 import { colors, fonts } from "../constants/theme";
 import { clearQaLogs, useQaLogs } from "../utils/qaLog";
 
 export default function QaLogsScreen() {
   const insets = useSafeAreaInsets();
   const logs = useQaLogs();
+  const router = useRouter();
 
   const expoConfig: any = Constants.expoConfig ?? {};
   const appVersion =
     expoConfig.version ?? Constants.nativeAppVersion ?? "dev";
   const iosBuildNumber =
     expoConfig.ios?.buildNumber ?? Constants.nativeBuildVersion ?? "dev";
+
+  const handleCopyAll = () => {
+    if (!logs.length) {
+      return;
+    }
+
+    const payload = logs
+      .map((entry) => {
+        const time = new Date(entry.timestamp).toISOString();
+        const header = `[${time}] ${entry.scope} - ${entry.message}`;
+        const details = entry.details ? `\n${entry.details}` : "";
+        return `${header}${details}`;
+      })
+      .join("\n\n");
+
+    Clipboard.setString(payload);
+  };
 
   return (
     <View
@@ -29,7 +49,15 @@ export default function QaLogsScreen() {
       ]}
     >
       <View style={styles.header}>
-        <Text style={styles.title}>QA Diagnostics</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.title}>QA Diagnostics</Text>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.closeText}>Close</Text>
+          </TouchableOpacity>
+        </View>
         <Text style={styles.subtitle}>
           Version {appVersion} (build {iosBuildNumber})
         </Text>
@@ -37,13 +65,22 @@ export default function QaLogsScreen() {
           App ID: {expoConfig.slug ?? "unknown"}{" "}
           {"\n"}Channel: {expoConfig.extra?.eas?.projectId ? "EAS" : "local"}
         </Text>
-        <TouchableOpacity
-          style={styles.clearButton}
-          activeOpacity={0.8}
-          onPress={clearQaLogs}
-        >
-          <Text style={styles.clearButtonText}>Clear logs</Text>
-        </TouchableOpacity>
+        <View style={styles.actionsRow}>
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            activeOpacity={0.8}
+            onPress={handleCopyAll}
+          >
+            <Text style={styles.secondaryButtonText}>Copy all</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.primaryButton}
+            activeOpacity={0.8}
+            onPress={clearQaLogs}
+          >
+            <Text style={styles.primaryButtonText}>Clear logs</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -82,9 +119,19 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.mist,
   },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   title: {
     fontFamily: fonts.headerFamily,
     fontSize: 22,
+    color: colors.deepTeal,
+  },
+  closeText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 14,
     color: colors.deepTeal,
   },
   subtitle: {
@@ -99,18 +146,34 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#6b7280",
   },
-  clearButton: {
+  actionsRow: {
     marginTop: 8,
-    alignSelf: "flex-start",
+    flexDirection: "row",
+    gap: 8,
+  },
+  primaryButton: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
     backgroundColor: colors.deepTeal,
   },
-  clearButtonText: {
+  primaryButtonText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 12,
     color: "#fff",
+  },
+  secondaryButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.deepTeal,
+    backgroundColor: "transparent",
+  },
+  secondaryButtonText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 12,
+    color: colors.deepTeal,
   },
   logContainer: {
     flex: 1,

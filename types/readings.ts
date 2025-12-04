@@ -5,6 +5,7 @@ export interface DailyReading {
   opening: string;
   body: string[];
   quote: string;
+  application?: string;
   thoughtForDay: string;
 }
 

@@ -142,9 +142,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
 
   // Application quote + reference (extract trailing parenthetical, if present)
   const { applicationQuote, applicationReference } = useMemo(() => {
-    const source =
-      (reading as any).quote ?? (reading as any).todaysApplication ?? "";
-
+    const source = reading.quote ?? "";
     const raw =
       source
         .replace(/\\n/g, "\n")
@@ -167,6 +165,17 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
 
     return { applicationQuote: raw, applicationReference: "" };
   }, [reading.quote]);
+
+  // Application body (shown after main body paragraphs)
+  const applicationParagraphs = useMemo(
+    () =>
+      (reading.application || "")
+        .replace(/\\n/g, "\n")
+        .split(/\n{2,}/)
+        .map((p) => p.trim())
+        .filter((p) => p.length > 0),
+    [reading.application]
+  );
 
   // Horizontal swipe gesture for previous/next readings
   const SWIPE_THRESHOLD = 48;
@@ -539,6 +548,28 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                 </Text>
               ))}
 
+              {applicationParagraphs.length > 0 && (
+                <>
+                  <View style={styles.applicationDividerWrapper}>
+                    <View style={styles.applicationDivider} />
+                  </View>
+                  {applicationParagraphs.map((paragraph, index) => (
+                    <Text
+                      key={`application-${index}`}
+                      style={[
+                        styles.applicationText,
+                        {
+                          fontSize: typography.bodyFontSize,
+                          lineHeight: typography.bodyLineHeight,
+                        },
+                      ]}
+                    >
+                      {renderInlineMarkdown(paragraph, styles.inlineItalic)}
+                    </Text>
+                  ))}
+                </>
+              )}
+
               <View style={styles.thoughtCardContainer}>
                 <View style={styles.thoughtCard}>
                   <BlurView
@@ -806,6 +837,24 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     textAlign: "center",
     marginBottom: 4,
+  },
+  applicationDividerWrapper: {
+    alignItems: "center",
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  applicationDivider: {
+    width: 64,
+    height: StyleSheet.hairlineWidth * 2,
+    borderRadius: 999,
+    backgroundColor: "rgba(74, 90, 91, 0.35)", // soft gray-teal line
+  },
+  applicationText: {
+    fontFamily: fonts.loraRegular,
+    fontSize: 19,
+    lineHeight: 33,
+    color: "#4A5A5B",
+    marginBottom: 16,
   },
   thoughtCardContainer: {
     marginTop: 24,
