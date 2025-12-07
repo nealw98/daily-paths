@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.nealwagner.dailypaths",
-      "buildNumber": "1",
+      "buildNumber": "4",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -47,6 +47,12 @@
       "eas": {
         "projectId": "0e915c97-57b3-4269-bbf3-6b382e0e8f39"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/0e915c97-57b3-4269-bbf3-6b382e0e8f39"
     }
   }
 }

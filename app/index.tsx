@@ -182,7 +182,7 @@ export default function Index() {
         onSelectBookmark={handleSelectBookmark}
       />
       <SettingsModal visible={showSettings} onClose={() => setShowSettings(false)}>
-        <SettingsContent />
+        <SettingsContent onOpenQaLogs={() => setShowSettings(false)} />
       </SettingsModal>
     </>
   );

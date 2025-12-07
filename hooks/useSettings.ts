@@ -13,7 +13,8 @@ export interface AppSettings {
 }
 
 const defaultSettings: AppSettings = {
-  textSize: "small",
+  // Default to the middle text size (medium).
+  textSize: "medium",
   dailyReminderEnabled: false,
   dailyReminderTime: "08:00",
 };

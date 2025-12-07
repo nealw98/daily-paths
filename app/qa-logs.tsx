@@ -7,16 +7,30 @@ import {
   TouchableOpacity,
 } from "react-native";
 import Constants from "expo-constants";
+import { useLocalSearchParams } from "expo-router";
+import * as Updates from "expo-updates";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Clipboard from "@react-native-clipboard/clipboard";
 import { colors, fonts } from "../constants/theme";
-import { clearQaLogs, useQaLogs } from "../utils/qaLog";
+import { clearQaLogs, useQaLogs, qaLog } from "../utils/qaLog";
+import {
+  clearJsErrorLog,
+  getErrorLogText,
+  getJsErrorLog,
+  type JsErrorEntry,
+} from "../utils/errorLogger";
 
 export default function QaLogsScreen() {
+  const params = useLocalSearchParams<{
+    checkAndApplyUpdate?: any;
+  }>();
   const insets = useSafeAreaInsets();
   const logs = useQaLogs();
   const router = useRouter();
+  const [jsErrors, setJsErrors] = React.useState<JsErrorEntry[]>([]);
+  const [updating, setUpdating] = React.useState(false);
+  const [updateStatus, setUpdateStatus] = React.useState<string | null>(null);
 
   const expoConfig: any = Constants.expoConfig ?? {};
   const appVersion =
@@ -39,6 +53,62 @@ export default function QaLogsScreen() {
       .join("\n\n");
 
     Clipboard.setString(payload);
+  };
+
+  const loadCrashLog = React.useCallback(async () => {
+    const data = await getJsErrorLog();
+    setJsErrors(data);
+  }, []);
+
+  React.useEffect(() => {
+    loadCrashLog();
+  }, [loadCrashLog]);
+
+  React.useEffect(() => {
+    qaLog("qa", "Opened QA logs screen", {
+      logCount: logs.length,
+      crashCount: jsErrors.length,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleCopyCrashes = async () => {
+    const payload = await getErrorLogText();
+    if (!payload) return;
+    Clipboard.setString(payload);
+  };
+
+  const handleManualUpdate = async () => {
+    if (__DEV__) return;
+    if (updating) return;
+    setUpdating(true);
+    setUpdateStatus("Checking for update...");
+    qaLog("ota", "Manual check started");
+    try {
+      const result = await Updates.checkForUpdateAsync();
+      if (!result.isAvailable) {
+        setUpdateStatus("No update available");
+        qaLog("ota", "No update available");
+        setUpdating(false);
+        return;
+      }
+      setUpdateStatus("Downloading update...");
+      qaLog("ota", "Update available, downloading");
+      await Updates.fetchUpdateAsync();
+      qaLog("ota", "Update downloaded, restarting");
+      setUpdateStatus("Applying update...");
+      await Updates.reloadAsync();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setUpdateStatus(`Update failed: ${msg}`);
+      qaLog("ota", "Update failed", msg);
+      setUpdating(false);
+    }
+  };
+
+  const handleClearCrashes = async () => {
+    await clearJsErrorLog();
+    setJsErrors([]);
   };
 
   return (
@@ -80,6 +150,40 @@ export default function QaLogsScreen() {
           >
             <Text style={styles.primaryButtonText}>Clear logs</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            activeOpacity={0.8}
+            onPress={loadCrashLog}
+          >
+            <Text style={styles.secondaryButtonText}>Refresh crashes</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            activeOpacity={0.8}
+            onPress={handleCopyCrashes}
+          >
+            <Text style={styles.secondaryButtonText}>Copy crashes</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.primaryButton}
+            activeOpacity={0.8}
+            onPress={handleClearCrashes}
+          >
+            <Text style={styles.primaryButtonText}>Clear crashes</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.primaryButton}
+            activeOpacity={0.8}
+            onPress={handleManualUpdate}
+            disabled={updating}
+          >
+            <Text style={styles.primaryButtonText}>
+              {updating ? "Updating..." : "Check for update"}
+            </Text>
+          </TouchableOpacity>
+          {updateStatus && (
+            <Text style={[styles.meta, { width: "100%" }]}>{updateStatus}</Text>
+          )}
         </View>
       </View>
 
@@ -87,6 +191,25 @@ export default function QaLogsScreen() {
         style={styles.logContainer}
         contentContainerStyle={styles.logContent}
       >
+        <Text style={styles.sectionHeader}>JS Crash Log</Text>
+        {jsErrors.length === 0 ? (
+          <Text style={styles.emptyText}>No JS crash log entries yet.</Text>
+        ) : (
+          jsErrors.map((entry, index) => (
+            <View key={`${entry.timestamp}-${index}`} style={styles.logEntry}>
+              <Text style={styles.logMeta}>
+                [{new Date(entry.timestamp).toLocaleTimeString()}]
+                {entry.isFatal ? " (fatal)" : ""}
+              </Text>
+              <Text style={styles.logMessage}>{entry.message}</Text>
+              {entry.stack && (
+                <Text style={styles.logDetails}>{entry.stack}</Text>
+              )}
+            </View>
+          ))
+        )}
+
+        <Text style={[styles.sectionHeader, { marginTop: 12 }]}>QA Logs</Text>
         {logs.length === 0 ? (
           <Text style={styles.emptyText}>No QA log entries yet.</Text>
         ) : (
@@ -150,6 +273,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     flexDirection: "row",
     gap: 8,
+    flexWrap: "wrap",
   },
   primaryButton: {
     paddingHorizontal: 10,
@@ -212,6 +336,12 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 11,
     color: "#4b5563",
+  },
+  sectionHeader: {
+    fontFamily: fonts.headerFamily,
+    fontSize: 16,
+    color: colors.deepTeal,
+    marginBottom: 8,
   },
 });
 

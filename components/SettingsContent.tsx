@@ -46,7 +46,9 @@ function formatTimeStorage(date: Date): string {
   return `${h}:${m}`;
 }
 
-export const SettingsContent: React.FC = () => {
+export const SettingsContent: React.FC<{ onOpenQaLogs?: () => void }> = ({
+  onOpenQaLogs,
+}) => {
   const { settings, setTextSize, setDailyReminderEnabled, setDailyReminderTime } =
     useSettings();
 
@@ -249,6 +251,8 @@ export const SettingsContent: React.FC = () => {
           <TouchableOpacity
             activeOpacity={0.7}
             onLongPress={() => {
+              // Close settings before navigating to QA
+              onOpenQaLogs?.();
               router.push("/qa-logs");
             }}
           >
