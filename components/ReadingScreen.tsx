@@ -64,12 +64,10 @@ interface ReadingScreenProps {
   onPrevDate: () => void;
   onNextDate: () => void;
   onOpenDatePicker: () => void;
-  onSettingsPress: () => void;
   isBookmarked?: boolean;
   onBookmarkToggle?: () => Promise<void>;
   onHighlight?: () => void;
   onShare?: () => void;
-  onOpenBookmarks?: () => void;
   // Legacy instruction modal props kept for possible future use:
   // showInstruction?: boolean;
   // onDismissInstruction?: () => void;
@@ -81,12 +79,10 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   onPrevDate,
   onNextDate,
   onOpenDatePicker,
-  onSettingsPress,
   isBookmarked = false,
   onBookmarkToggle,
   onHighlight,
   onShare,
-  onOpenBookmarks,
   // showInstruction = false,
   // onDismissInstruction,
   // onShowInstruction,
@@ -408,6 +404,9 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
             */}
           </View>
 
+          <View style={styles.heroActionRow}>
+          </View>
+
           <View style={styles.dateNav}>
             <TouchableOpacity onPress={onPrevDate} style={styles.navButton}>
               <BlurView intensity={20} tint="light" style={styles.blurNavButton}>
@@ -452,23 +451,28 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
             scrollEnabled={!isSwiping}
           >
             <Pressable onPress={handleContentPress}>
-              <View style={styles.favoriteTopContainer}>
+              <View style={styles.actionsHeader}>
                 <TouchableOpacity
                   onPress={handleBookmarkToggle}
-                  activeOpacity={0.8}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 >
-                  <Animated.View
-                    style={[
-                      styles.favoriteTopButton,
-                      { transform: [{ scale: heartScale }] },
-                    ]}
-                  >
-                    <Ionicons
-                      name={localBookmarked ? "heart" : "heart-outline"}
-                      size={28}
-                      color={colors.deepTeal}
-                    />
-                  </Animated.View>
+                  <Ionicons
+                    name={localBookmarked ? "heart" : "heart-outline"}
+                    size={20}
+                    color={colors.deepTeal}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={onShare}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                >
+                  <Ionicons
+                    name="arrow-redo-outline"
+                    size={20}
+                    color={colors.deepTeal}
+                  />
                 </TouchableOpacity>
               </View>
 
@@ -603,31 +607,6 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
           </ScrollView>
         </Animated.View>
 
-        <View style={styles.actionBar}>
-          <TouchableOpacity
-            onPress={onOpenBookmarks}
-            style={styles.actionButton}
-          >
-            <Ionicons
-              name="heart-outline"
-              size={24}
-              color={colors.deepTeal}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={onShare} style={styles.actionButton}>
-            <Ionicons
-              name="arrow-redo-outline"
-              size={24}
-              color={colors.deepTeal}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={onSettingsPress} style={styles.actionButton}>
-            <Ionicons name="settings-outline" size={24} color={colors.deepTeal} />
-          </TouchableOpacity>
-        </View>
-
         {/* Toast notification */}
         <BookmarkToast
           visible={toastVisible}
@@ -710,6 +689,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 12,
   },
+  // Removed heroActionRow/heroIconButton as they are now inline with title
   navButton: {
     width: 36,
     height: 36,
@@ -732,42 +712,42 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   calendarCard: {
-    minWidth: 110,
-    borderRadius: 8,
+    minWidth: 70,
+    borderRadius: 6,
     overflow: "hidden",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
-    shadowRadius: 8,
+    shadowRadius: 6,
     elevation: 6,
     borderWidth: 1.5,
     borderColor: "rgba(255, 255, 255, 0.3)",
   },
   calendarMonth: {
     backgroundColor: colors.deepTeal,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    paddingVertical: 3,
+    paddingHorizontal: 4,
     alignItems: "center",
   },
   calendarMonthText: {
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 11,
+    fontSize: 9,
     color: "#fff",
     fontWeight: "700",
-    letterSpacing: 1,
+    letterSpacing: 0.5,
   },
   calendarDay: {
-    paddingVertical: 12,
-    paddingHorizontal: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
     alignItems: "center",
     backgroundColor: "rgba(255, 255, 255, 0.65)",
   },
   calendarDayText: {
     fontFamily: fonts.headerFamily,
-    fontSize: 40,
+    fontSize: 28,
     color: colors.deepTeal,
     fontWeight: "600",
-    lineHeight: 40,
+    lineHeight: 28,
   },
   content: {
     flex: 1,
@@ -795,8 +775,16 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     justifyContent: "center",
     width: "100%",
-    marginTop: 16,
+    marginTop: 4,
     marginBottom: 8,
+  },
+  actionsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 24,
+    marginBottom: 12,
+    marginTop: -4,
   },
   inlineFavorite: {
     marginLeft: 12,
@@ -888,36 +876,6 @@ const styles = StyleSheet.create({
     color: colors.deepTeal,
     lineHeight: 26,
     fontWeight: "600",
-  },
-  actionBar: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    paddingVertical: 16,
-    paddingHorizontal: 40,
-    backgroundColor: colors.pearl,
-    borderTopWidth: 1,
-    borderTopColor: colors.mist,
-  },
-  actionButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  actionButtonActive: {
-    backgroundColor: colors.seafoam,
   },
 });
 

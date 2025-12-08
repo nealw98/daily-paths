@@ -58,7 +58,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 32,
     paddingBottom: 24,
-    maxHeight: "90%",
+    maxHeight: "80%",
+    marginBottom: 82,
   },
   header: {
     flexDirection: "row",

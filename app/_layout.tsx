@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { useFonts } from "expo-font";
 import {
   CormorantGaramond_600SemiBold,
@@ -36,6 +36,7 @@ Notifications.setNotificationHandler({
 });
 
 export default function RootLayout() {
+  const router = useRouter();
   installGlobalErrorHandler();
 
   const [updateReady, setUpdateReady] = useState(false);
@@ -74,6 +75,15 @@ export default function RootLayout() {
       cancelled = true;
     };
   }, []);
+
+  // When a notification is tapped, navigate to the reading screen for today.
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener(() => {
+      // Adding a cache-busting param ensures the navigation runs even if already on the screen.
+      router.push(`/?jump=today&ts=${Date.now()}`);
+    });
+    return () => sub.remove();
+  }, [router]);
 
   const handleRestart = async () => {
     try {

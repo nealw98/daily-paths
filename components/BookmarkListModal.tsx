@@ -69,12 +69,6 @@ export const BookmarkListModal: React.FC<BookmarkListModalProps> = ({
         onClose();
       }}
     >
-      <Ionicons
-        name="heart"
-        size={18}
-        color="rgba(90, 124, 126, 1)"
-        style={styles.bookmarkIcon}
-      />
       <View style={styles.bookmarkContent}>
         <Text
           style={[
@@ -135,7 +129,14 @@ export const BookmarkListModal: React.FC<BookmarkListModalProps> = ({
           onStartShouldSetResponder={() => true}
         >
           <View style={styles.header}>
-            <Text style={styles.title}>Favorites</Text>
+            <Text 
+              style={[
+                styles.title,
+                { fontSize: typography.favoriteFontSize + 10 }
+              ]}
+            >
+              Favorites
+            </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={colors.ink} />
             </TouchableOpacity>
@@ -168,8 +169,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: "80%",
+    maxHeight: "70%",
     paddingBottom: 20,
+    marginBottom: 82,
   },
   header: {
     flexDirection: "row",
@@ -195,13 +197,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 16,
-    paddingHorizontal: 12,
-    backgroundColor: colors.pearl,
+    paddingHorizontal: 16,
+    backgroundColor: "#fff",
     borderRadius: 12,
     marginBottom: 12,
-  },
-  bookmarkIcon: {
-    marginRight: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: "rgba(90, 124, 126, 0.1)",
   },
   bookmarkContent: {
     flex: 1,
@@ -214,10 +220,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   bookmarkTitle: {
-    fontFamily: fonts.headerFamilyItalic,
-    fontSize: 18,
+    fontFamily: "Inter_400Regular",
+    fontSize: 12,
     color: colors.deepTeal,
-    lineHeight: 22,
+    lineHeight: 16,
   },
   emptyState: {
     alignItems: "center",

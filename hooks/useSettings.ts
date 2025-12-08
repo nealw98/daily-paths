@@ -150,42 +150,42 @@ export function getTextSizeMetrics(textSize: TextSize): {
       return {
         bodyFontSize: 15,
         bodyLineHeight: 26,
-        favoriteFontSize: 15,
-        favoriteLineHeight: 20,
-        favoriteDateFontSize: 9,
+        favoriteFontSize: 14,
+        favoriteLineHeight: 18,
+        favoriteDateFontSize: 12,
       };
     case "small":
       return {
         bodyFontSize: 17,
         bodyLineHeight: 29,
-        favoriteFontSize: 17,
-        favoriteLineHeight: 23,
-        favoriteDateFontSize: 10,
+        favoriteFontSize: 15,
+        favoriteLineHeight: 20,
+        favoriteDateFontSize: 13,
       };
     case "large":
       return {
         bodyFontSize: 24,
         bodyLineHeight: 40,
-        favoriteFontSize: 24,
-        favoriteLineHeight: 30,
-        favoriteDateFontSize: 14,
+        favoriteFontSize: 18,
+        favoriteLineHeight: 24,
+        favoriteDateFontSize: 16,
       };
     case "extraLarge":
       return {
         bodyFontSize: 28,
         bodyLineHeight: 46,
-        favoriteFontSize: 28,
-        favoriteLineHeight: 34,
-        favoriteDateFontSize: 16,
+        favoriteFontSize: 20,
+        favoriteLineHeight: 26,
+        favoriteDateFontSize: 18,
       };
     case "medium":
     default:
       return {
         bodyFontSize: 20,
         bodyLineHeight: 34,
-        favoriteFontSize: 20,
-        favoriteLineHeight: 25,
-        favoriteDateFontSize: 12,
+        favoriteFontSize: 16,
+        favoriteLineHeight: 21,
+        favoriteDateFontSize: 14,
       };
   }
 }

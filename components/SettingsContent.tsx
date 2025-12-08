@@ -46,8 +46,12 @@ function formatTimeStorage(date: Date): string {
   return `${h}:${m}`;
 }
 
-export const SettingsContent: React.FC<{ onOpenQaLogs?: () => void }> = ({
+export const SettingsContent: React.FC<{ 
+  onOpenQaLogs?: () => void;
+  scrollToSection?: "textSize" | "reminder";
+}> = ({
   onOpenQaLogs,
+  scrollToSection,
 }) => {
   const { settings, setTextSize, setDailyReminderEnabled, setDailyReminderTime } =
     useSettings();
@@ -57,6 +61,9 @@ export const SettingsContent: React.FC<{ onOpenQaLogs?: () => void }> = ({
    // changes until the user confirms.
   const [tempReminderDate, setTempReminderDate] = useState<Date | null>(null);
   const router = useRouter();
+  const scrollViewRef = React.useRef<ScrollView>(null);
+  const textSizeRef = React.useRef<View>(null);
+  const reminderRef = React.useRef<View>(null);
 
   const expoConfig: any = Constants.expoConfig ?? {};
   const appVersion =
@@ -79,153 +86,60 @@ export const SettingsContent: React.FC<{ onOpenQaLogs?: () => void }> = ({
     await setTextSize(size);
   };
 
+  const handleDecrementTextSize = async () => {
+    const currentIndex = textSizeStops.indexOf(settings.textSize);
+    if (currentIndex > 0) {
+      await setTextSize(textSizeStops[currentIndex - 1]);
+    }
+  };
+
+  const handleIncrementTextSize = async () => {
+    const currentIndex = textSizeStops.indexOf(settings.textSize);
+    if (currentIndex < textSizeStops.length - 1) {
+      await setTextSize(textSizeStops[currentIndex + 1]);
+    }
+  };
+
   const handleReminderToggle = async (enabled: boolean) => {
     await setDailyReminderEnabled(enabled);
   };
 
+  // Scroll to specific section when requested
+  React.useEffect(() => {
+    if (!scrollToSection) return;
+
+    const timer = setTimeout(() => {
+      if (scrollToSection === "textSize" && textSizeRef.current) {
+        textSizeRef.current.measureLayout(
+          scrollViewRef.current as any,
+          (x, y) => {
+            scrollViewRef.current?.scrollTo({ y: y - 20, animated: true });
+          },
+          () => {}
+        );
+      } else if (scrollToSection === "reminder" && reminderRef.current) {
+        reminderRef.current.measureLayout(
+          scrollViewRef.current as any,
+          (x, y) => {
+            scrollViewRef.current?.scrollTo({ y: y - 20, animated: true });
+          },
+          () => {}
+        );
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [scrollToSection]);
+
   return (
     <View style={styles.container}>
       <ScrollView
+        ref={scrollViewRef}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.mainContent}>
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Reading text size</Text>
-            <Text style={styles.sectionSubtitle}>
-              Adjust how large the daily reading appears.
-            </Text>
-
-            <View style={styles.sliderRow}>
-              <Text style={styles.sliderEdgeLabel}>Smaller</Text>
-              <View style={styles.sliderTrack}>
-                {textSizeStops.map((size, index) => {
-                  const selectedIndex = textSizeStops.indexOf(settings.textSize);
-                  const isActive = index <= selectedIndex;
-                  const isSelected = size === settings.textSize;
-                  return (
-                    <TouchableOpacity
-                      key={size}
-                      style={styles.sliderStopTouch}
-                      activeOpacity={0.8}
-                      onPress={() => handleTextSizePress(size)}
-                    >
-                      <View
-                        style={[
-                          styles.sliderStop,
-                          isActive && styles.sliderStopActive,
-                          isSelected && styles.sliderStopSelected,
-                        ]}
-                      />
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-              <Text style={styles.sliderEdgeLabel}>Larger</Text>
-            </View>
-
-            <View style={styles.textPreviewContainer}>
-              <Text
-                style={[
-                  styles.textPreview,
-                  {
-                    fontSize: typography.bodyFontSize,
-                    lineHeight: typography.bodyLineHeight,
-                  },
-                ]}
-              >
-                Sample text size preview
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Daily reminder</Text>
-            <Text style={styles.sectionSubtitle}>
-              Get a gentle nudge to read each day.
-            </Text>
-
-            <View style={styles.row}>
-              <View style={styles.rowText}>
-                <Text style={styles.rowLabel}>Enable reminder</Text>
-              </View>
-              <Switch
-                value={settings.dailyReminderEnabled}
-                onValueChange={handleReminderToggle}
-                trackColor={{ false: colors.mist, true: colors.seafoam }}
-                thumbColor={settings.dailyReminderEnabled ? colors.deepTeal : "#fff"}
-              />
-            </View>
-
-          <View
-            style={[
-              styles.timeRow,
-              !settings.dailyReminderEnabled && styles.timeRowDisabled,
-            ]}
-          >
-            <View style={styles.rowText}>
-              <Text style={styles.rowLabel}>Reminder time</Text>
-            </View>
-
-            <View style={styles.timeStepperContainer}>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                disabled={!settings.dailyReminderEnabled}
-                onPress={() => {
-                  if (settings.dailyReminderEnabled) {
-                    setTempReminderDate(reminderDate);
-                    setShowTimePicker(true);
-                  }
-                }}
-              >
-                <Text
-                  style={[
-                    styles.timeValue,
-                    !settings.dailyReminderEnabled && styles.timeValueDisabled,
-                  ]}
-                >
-                  {formatTimeDisplay(reminderDate)}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-          {showTimePicker && settings.dailyReminderEnabled && (
-            <View style={styles.timePickerContainer}>
-              <DateTimePicker
-                value={tempReminderDate ?? reminderDate}
-                mode="time"
-                display={Platform.OS === "ios" ? "spinner" : "default"}
-                onChange={(_, selectedDate) => {
-                  if (!selectedDate) return;
-                  // Just update the working value; don't commit yet.
-                  setTempReminderDate(selectedDate);
-                }}
-              />
-              <View style={styles.timePickerActions}>
-                <TouchableOpacity
-                  style={styles.timePickerButtonSecondary}
-                  onPress={() => {
-                    setShowTimePicker(false);
-                    setTempReminderDate(null);
-                  }}
-                >
-                  <Text style={styles.timePickerButtonSecondaryText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.timePickerButtonPrimary}
-                  onPress={() => {
-                    const finalDate = tempReminderDate ?? reminderDate;
-                    setShowTimePicker(false);
-                    setTempReminderDate(null);
-                    setDailyReminderTime(formatTimeStorage(finalDate));
-                  }}
-                >
-                  <Text style={styles.timePickerButtonPrimaryText}>Set time</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-          </View>
+          {/* Settings content removed - now handled by separate modals */}
         </View>
 
         <View style={styles.divider} />
@@ -278,21 +192,51 @@ const styles = StyleSheet.create({
   },
   mainContent: {
     flexGrow: 1,
+    paddingHorizontal: 20,
+  },
+  sectionCard: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    padding: 16,
+    paddingBottom: 12,
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+  },
+  sectionHeaderText: {
+    flex: 1,
+  },
+  sectionBody: {
+    padding: 16,
+    paddingTop: 12,
   },
   section: {
     marginBottom: 40,
   },
   sectionTitle: {
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 20,
+    fontSize: 18,
+    fontWeight: "600",
     color: colors.deepTeal,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   sectionSubtitle: {
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
-    color: "#5B8B89",
-    marginBottom: 16,
+    fontSize: 14,
+    color: "#6b7280",
+    lineHeight: 18,
   },
   chipRow: {
     flexDirection: "row",
@@ -331,12 +275,16 @@ const styles = StyleSheet.create({
   sliderRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 4,
+    marginTop: 8,
   },
   sliderEdgeLabel: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 12,
-    color: "#6b7280",
+    color: colors.deepTeal,
+    fontWeight: "600",
+  },
+  sliderEdgeLabelDisabled: {
+    opacity: 0.3,
   },
   sliderTrack: {
     flex: 1,
@@ -367,7 +315,10 @@ const styles = StyleSheet.create({
     transform: [{ scale: 1.1 }],
   },
   textPreviewContainer: {
-    marginTop: 16,
+    marginTop: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#f3f4f6",
   },
   textPreview: {
     fontFamily: fonts.loraRegular,
@@ -377,7 +328,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 12,
+    paddingVertical: 8,
   },
   rowText: {
     flex: 1,
@@ -398,7 +349,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 16,
+    paddingVertical: 8,
   },
   timeRowDisabled: {
     opacity: 0.5,

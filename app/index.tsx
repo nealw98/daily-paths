@@ -1,10 +1,22 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, ActivityIndicator, StyleSheet, Share } from "react-native";
+import {
+  View,
+  Text,
+  ActivityIndicator,
+  StyleSheet,
+  Share,
+  TouchableOpacity,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { ReadingScreen } from "../components/ReadingScreen";
 import { DatePickerModal } from "../components/DatePickerModal";
 import { BookmarkListModal } from "../components/BookmarkListModal";
 import { SettingsModal } from "../components/SettingsModal";
 import { SettingsContent } from "../components/SettingsContent";
+import { TextSizeModal } from "../components/TextSizeModal";
+import { ReminderModal } from "../components/ReminderModal";
+import { DismissibleToast } from "../components/DismissibleToast";
 import { useReading } from "../hooks/useReading";
 import { useBookmarkManager } from "../hooks/useBookmarkManager";
 import { useAvailableDates } from "../hooks/useAvailableDates";
@@ -13,12 +25,17 @@ import { colors } from "../constants/theme";
 import * as Notifications from "expo-notifications";
 
 export default function Index() {
+  const router = useRouter();
+  const params = useLocalSearchParams<{ jump?: string; ts?: string }>();
   // Start with today's date
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showBookmarkList, setShowBookmarkList] = useState(false);
   const [showInstruction, setShowInstruction] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showTextSize, setShowTextSize] = useState(false);
+  const [showReminder, setShowReminder] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   
   const { reading, loading, error } = useReading(currentDate);
   const {
@@ -43,6 +60,25 @@ export default function Index() {
       setCurrentDate(new Date());
     }
   }, [lastNotificationResponse]);
+
+  // Handle navigation params (e.g., from notification tap) to jump to today.
+  useEffect(() => {
+    if (params?.jump === "today") {
+      setCurrentDate(new Date());
+      // Clear params to avoid repeated resets.
+      router.setParams({ jump: undefined, ts: undefined });
+    }
+  }, [params?.jump, params?.ts, router]);
+
+  // Surface non-blocking errors only when we still have content onscreen.
+  useEffect(() => {
+    if (error && reading) {
+      setToastMessage(error);
+    }
+    if (!reading) {
+      setToastMessage(null);
+    }
+  }, [error, reading]);
 
   // Check if instruction should be shown on mount
   useEffect(() => {
@@ -78,6 +114,10 @@ export default function Index() {
     setCurrentDate(date);
   };
 
+  const handleGoToToday = () => {
+    setCurrentDate(new Date());
+  };
+
   const handleDismissInstruction = async () => {
     setShowInstruction(false);
     await markInstructionSeen();
@@ -95,8 +135,23 @@ export default function Index() {
     setShowSettings(true);
   };
 
+  const handleOpenTextSize = () => {
+    setShowTextSize(true);
+  };
+
+  const handleOpenReminder = () => {
+    setShowReminder(true);
+  };
+
   const handleShare = async () => {
     if (!reading) return;
+
+    const formatParagraphs = (text?: string | null) =>
+      (text ?? "")
+        .replace(/\\n/g, "\n")
+        .split(/\n{2,}/)
+        .map((p) => p.trim())
+        .filter((p) => p.length > 0);
 
     const dateLabel = reading.date.toLocaleDateString("en-US", {
       month: "long",
@@ -104,10 +159,73 @@ export default function Index() {
       year: "numeric",
     });
 
-    const bodyText = reading.body.join("\n\n");
-    const quoteText = (reading as any).quote ?? (reading as any).todaysApplication ?? "";
+    const openingParagraphs = formatParagraphs(reading.opening);
+    const bodyParagraphs = (reading.body ?? []).map((p) => p.trim()).filter(Boolean);
+    const applicationParagraphs = formatParagraphs(
+      (reading as any).application ?? (reading as any).todaysApplication
+    );
 
-    const message = `${reading.title}\n\n${reading.opening}\n\n${bodyText}\n\nQuote: ${quoteText}\n\nThought for the Day: ${reading.thoughtForDay}\n\n---\nFrom Al-Anon Daily Paths\n${dateLabel}`;
+    const rawQuote = (reading as any).quote ?? "";
+    let applicationQuote = rawQuote;
+    let applicationReference = "";
+    const match = rawQuote.match(/^(.*?)(\s*\(([^()]*)\))\s*$/);
+    if (match) {
+      applicationQuote = match[1].trim();
+      applicationReference = match[3].trim();
+    }
+
+    const lines: string[] = [];
+    const pushParagraphs = (paras: string[]) => {
+      paras.forEach((p, idx) => {
+        lines.push(p);
+        if (idx < paras.length - 1) {
+          lines.push(""); // blank line between paragraphs
+        }
+      });
+    };
+
+    // Date
+    lines.push(dateLabel);
+
+    // Title (all caps)
+    lines.push("");
+    lines.push(reading.title.toUpperCase());
+
+    // Quote (standalone paragraph; optionally includes reference on next line)
+    if (applicationQuote) {
+      lines.push("");
+      lines.push(applicationQuote);
+      if (applicationReference) {
+        lines.push(`(${applicationReference})`);
+      }
+    }
+
+    // Body
+    if (bodyParagraphs.length) {
+      lines.push("");
+      // Collapse body into a single paragraph with spaces instead of line breaks.
+      lines.push(bodyParagraphs.join(" "));
+    }
+
+    // Application paragraphs (with heading)
+    if (applicationParagraphs.length) {
+      lines.push("");
+      lines.push("Application:");
+      pushParagraphs(applicationParagraphs);
+    }
+
+    // Thought for the Day
+    if (reading.thoughtForDay) {
+      lines.push("");
+      lines.push("Thought for the Day:");
+      lines.push(reading.thoughtForDay.trim());
+    }
+
+    lines.push("");
+    lines.push("-----");
+    lines.push("Shared from Daily Paths");
+
+    const message = lines.join("\n");
 
     try {
       await Share.share({ message });
@@ -116,58 +234,92 @@ export default function Index() {
     }
   };
 
+  let content: React.ReactNode = null;
+
   // Show loading only on initial load, not when navigating
   if (loading && !reading) {
-    return (
+    content = (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color={colors.ocean} />
         <Text style={styles.loadingText}>Loading reading...</Text>
       </View>
     );
-  }
-
-  if (error && !reading) {
-    return (
+  } else if (!reading) {
+    content = (
       <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>Error loading reading</Text>
-        <Text style={styles.errorDetail}>{error}</Text>
-        <Text style={styles.errorHint}>
-          Make sure your .env file is set up correctly
-        </Text>
-      </View>
-    );
-  }
-
-  if (!reading) {
-    return (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorText}>No reading found</Text>
         <Text style={styles.errorDetail}>
-          No reading available for {currentDate.toLocaleDateString()}
+          {error ?? "No reading available for this date."}
         </Text>
-        <Text style={styles.errorHint}>
-          Try a different date (Dec 1-7, 2024 available)
-        </Text>
+        <View style={styles.buttonRow}>
+          <TouchableOpacity style={styles.primaryButton} onPress={handleGoToToday}>
+            <Text style={styles.primaryButtonText}>Go to Today</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={handleOpenDatePicker}
+          >
+            <Text style={styles.secondaryButtonText}>Pick a Date</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
-  }
-
-  return (
-    <>
+  } else {
+    content = (
       <ReadingScreen
         reading={reading}
         onPrevDate={handlePrevDate}
         onNextDate={handleNextDate}
         onOpenDatePicker={handleOpenDatePicker}
-        onSettingsPress={handleSettingsPress}
         isBookmarked={isBookmarked}
         onBookmarkToggle={toggleBookmark}
         onShare={handleShare}
-        onOpenBookmarks={handleOpenBookmarks}
         showInstruction={showInstruction}
         onDismissInstruction={handleDismissInstruction}
         onShowInstruction={handleShowInstruction}
       />
+    );
+  }
+
+  return (
+    <>
+      {content}
+      
+      {/* Persistent Action Bar - stays above modals */}
+      <View style={styles.actionBar}>
+        <TouchableOpacity
+          onPress={handleOpenBookmarks}
+          style={styles.actionButton}
+        >
+          <Ionicons
+            name="list-outline"
+            size={24}
+            color={colors.deepTeal}
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={handleOpenTextSize}
+          style={styles.actionButton}
+        >
+          <Ionicons name="text-outline" size={24} color={colors.deepTeal} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={handleOpenReminder}
+          style={styles.actionButton}
+        >
+          <Ionicons
+            name="notifications-outline"
+            size={24}
+            color={colors.deepTeal}
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={handleSettingsPress} style={styles.actionButton}>
+          <Ionicons name="information-circle-outline" size={24} color={colors.deepTeal} />
+        </TouchableOpacity>
+      </View>
+      
       <DatePickerModal
         visible={showDatePicker}
         selectedDate={currentDate}
@@ -184,6 +336,22 @@ export default function Index() {
       <SettingsModal visible={showSettings} onClose={() => setShowSettings(false)}>
         <SettingsContent onOpenQaLogs={() => setShowSettings(false)} />
       </SettingsModal>
+      
+      <TextSizeModal 
+        visible={showTextSize} 
+        onClose={() => setShowTextSize(false)} 
+      />
+      
+      <ReminderModal 
+        visible={showReminder} 
+        onClose={() => setShowReminder(false)} 
+      />
+      
+      <DismissibleToast
+        visible={!!toastMessage && !!reading}
+        message={toastMessage ?? ""}
+        onDismiss={() => setToastMessage(null)}
+      />
     </>
   );
 }
@@ -196,23 +364,46 @@ const styles = StyleSheet.create({
     backgroundColor: colors.pearl,
     padding: 20,
   },
+  actionBar: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 40,
+    backgroundColor: colors.pearl,
+    borderTopWidth: 1,
+    borderTopColor: colors.mist,
+    zIndex: 1000,
+  },
+  actionButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
     color: colors.ocean,
   },
-  errorText: {
-    fontSize: 18,
+  errorDetail: {
+    fontSize: 20,
     fontWeight: "600",
     color: colors.ink,
-    marginBottom: 8,
+    marginBottom: 12,
     textAlign: "center",
-  },
-  errorDetail: {
-    fontSize: 14,
-    color: colors.ink,
-    marginBottom: 8,
-    textAlign: "center",
+    lineHeight: 26,
   },
   errorHint: {
     fontSize: 14,
@@ -220,4 +411,31 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontStyle: "italic",
   },
+  buttonRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 16,
+  },
+  primaryButton: {
+    backgroundColor: colors.ocean,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  primaryButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+  secondaryButton: {
+    borderColor: colors.ocean,
+    borderWidth: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  secondaryButtonText: {
+    color: colors.ocean,
+    fontWeight: "600",
+  },
 });
+
