@@ -19,6 +19,8 @@ import { colors, fonts } from "../constants/theme";
 import { useSettings, getTextSizeMetrics } from "../hooks/useSettings";
 import { DailyReading } from "../types/readings";
 import { BookmarkToast } from "./BookmarkToast";
+import { ReadingFeedback } from "./ReadingFeedback";
+import { getScheduledDayOfYear } from "../utils/dateUtils";
 // Legacy instruction modal import kept for possible future use:
 // import { BookmarkInstructionOverlay } from "./BookmarkInstructionOverlay";
 
@@ -604,6 +606,13 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                 </View>
               </View>
             </Pressable>
+
+            {/* Reading Feedback */}
+            <ReadingFeedback
+              readingId={reading.id}
+              dayOfYear={getScheduledDayOfYear(reading.date)}
+              readingTitle={reading.title}
+            />
           </ScrollView>
         </Animated.View>
 
