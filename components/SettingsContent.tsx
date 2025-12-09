@@ -139,29 +139,66 @@ export const SettingsContent: React.FC<{
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.mainContent}>
-          {/* Settings content removed - now handled by separate modals */}
+          {(() => {
+            const base = typography.bodyFontSize;
+            const subtitleSize = Math.max(10, base - 2); // 2pt smaller, scaled from user size
+            return (
+              <Text
+                style={[
+                  styles.sectionSubtitle,
+                  { fontSize: subtitleSize, lineHeight: subtitleSize + 6 },
+                ]}
+              >
+                A daily reading companion inspired by the Al‑Anon daily readers, created independently for personal reflection.
+              </Text>
+            );
+          })()}
+          <Text
+            style={[
+              styles.bodyText,
+              {
+                marginTop: 10,
+                fontSize: Math.max(10, typography.bodyFontSize - 2),
+                lineHeight: Math.max(10, typography.bodyFontSize - 2) + 7,
+              },
+            ]}
+          >
+            Daily Paths is not affiliated with Al‑Anon, Alcoholics Anonymous, or any other 12‑step fellowship. The readings are provided for personal use and are not official literature of any organization.
+          </Text>
+        </View>
+      </ScrollView>
+
+      <View style={styles.legalSection}>
+        <View style={styles.legalRow}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => Linking.openURL("https://dailypaths.org/privacy")}
+          >
+            <Text style={styles.linkLabel} allowFontScaling={false}>
+              Privacy Policy
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => Linking.openURL("https://dailypaths.org/support")}
+          >
+            <Text style={styles.linkLabel} allowFontScaling={false}>
+              Support
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => Linking.openURL("https://dailypaths.org/terms")}
+          >
+            <Text style={styles.linkLabel} allowFontScaling={false}>
+              Terms of Use
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.divider} />
-
-        <View style={styles.legalSection}>
-          <View style={styles.legalRow}>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => Linking.openURL("https://dailypaths.org/privacy")}
-            >
-              <Text style={styles.linkLabel}>Privacy Policy</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => Linking.openURL("https://dailypaths.org/terms")}
-            >
-              <Text style={styles.linkLabel}>Terms of Use</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.versionContainer}>
+        <View style={styles.versionContainer}>
           <TouchableOpacity
             activeOpacity={0.7}
             onLongPress={() => {
@@ -170,24 +207,24 @@ export const SettingsContent: React.FC<{
               router.push("/qa-logs");
             }}
           >
-            <Text style={styles.versionText}>
+            <Text style={styles.versionText} allowFontScaling={false}>
               Version {appVersion} (build {iosBuildNumber})
             </Text>
           </TouchableOpacity>
-          </View>
         </View>
-      </ScrollView>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
   },
   contentContainer: {
     paddingHorizontal: 0,
     paddingTop: 24,
-    paddingBottom: 16,
+    paddingBottom: 160,
     flexGrow: 1,
   },
   mainContent: {
@@ -235,8 +272,14 @@ const styles = StyleSheet.create({
   sectionSubtitle: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
-    color: "#6b7280",
+    color: colors.ink,
     lineHeight: 18,
+  },
+  bodyText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 15,
+    color: colors.ink,
+    lineHeight: 22,
   },
   chipRow: {
     flexDirection: "row",
@@ -271,6 +314,19 @@ const styles = StyleSheet.create({
   },
   chipDescriptionSelected: {
     color: "#E8F3F3",
+  },
+  primaryButton: {
+    marginTop: 16,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: colors.deepTeal,
+    alignItems: "center",
+  },
+  primaryButtonText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 16,
+    color: "#fff",
+    fontWeight: "600",
   },
   sliderRow: {
     flexDirection: "row",

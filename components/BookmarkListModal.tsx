@@ -137,8 +137,8 @@ export const BookmarkListModal: React.FC<BookmarkListModalProps> = ({
             >
               Favorites
             </Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color={colors.ink} />
+            <TouchableOpacity onPress={onClose} style={styles.doneButton}>
+              <Text style={styles.doneButtonText}>Done</Text>
             </TouchableOpacity>
           </View>
 
@@ -189,6 +189,17 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: 4,
+  },
+  doneButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: "transparent",
+  },
+  doneButtonText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 16,
+    color: colors.deepTeal,
   },
   listContent: {
     padding: 20,

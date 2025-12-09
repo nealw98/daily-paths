@@ -1,13 +1,5 @@
 import React, { useMemo } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Modal,
-  TouchableOpacity,
-  ScrollView,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView } from "react-native";
 import { colors, fonts } from "../constants/theme";
 import { useSettings, TextSize, getTextSizeMetrics } from "../hooks/useSettings";
 
@@ -72,8 +64,8 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
         >
           <View style={styles.header}>
             <Text style={styles.title}>Reading Text Size</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color={colors.ink} />
+            <TouchableOpacity onPress={onClose} style={styles.doneButton}>
+              <Text style={styles.doneButtonText}>Done</Text>
             </TouchableOpacity>
           </View>
 
@@ -187,8 +179,16 @@ const styles = StyleSheet.create({
     fontSize: 28,
     color: colors.deepTeal,
   },
-  closeButton: {
-    padding: 4,
+  doneButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: "transparent",
+  },
+  doneButtonText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 16,
+    color: colors.deepTeal,
   },
   content: {
     padding: 20,

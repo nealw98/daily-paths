@@ -15,34 +15,75 @@ export const BookmarkToast: React.FC<BookmarkToastProps> = ({
   onHide,
 }) => {
   const [opacity] = useState(new Animated.Value(0));
+  const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const isAnimatingRef = React.useRef(false);
+
+  const FADE_IN_MS = 140;
+  const FADE_OUT_MS = 140;
+  const DISPLAY_MS = 900;
 
   useEffect(() => {
+    // Clear any pending timer when visibility changes.
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+
     if (visible) {
-      // Fade in
+      // Stop any in-flight animation to avoid flashes.
+      if (isAnimatingRef.current) {
+        opacity.stopAnimation();
+      }
+      opacity.setValue(0);
+      isAnimatingRef.current = true;
       Animated.timing(opacity, {
         toValue: 1,
-        duration: 200,
+        duration: FADE_IN_MS,
         useNativeDriver: true,
-      }).start();
+      }).start(() => {
+        isAnimatingRef.current = false;
+      });
 
-      // Auto-hide after 1.5s
-      const timeout = setTimeout(() => {
+      timeoutRef.current = setTimeout(() => {
+        if (isAnimatingRef.current) {
+          opacity.stopAnimation();
+        }
+        isAnimatingRef.current = true;
         Animated.timing(opacity, {
           toValue: 0,
-          duration: 200,
+          duration: FADE_OUT_MS,
           useNativeDriver: true,
         }).start(() => {
+          isAnimatingRef.current = false;
           onHide();
         });
-      }, 1500);
-
-      return () => clearTimeout(timeout);
+      }, DISPLAY_MS);
+    } else {
+      // If parent hides us early, fade out quickly.
+      if (isAnimatingRef.current) {
+        opacity.stopAnimation();
+      }
+      isAnimatingRef.current = true;
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: FADE_OUT_MS,
+        useNativeDriver: true,
+      }).start(() => {
+        isAnimatingRef.current = false;
+      });
     }
-  }, [visible]);
 
-  if (!visible && opacity._value === 0) {
-    return null;
-  }
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      if (isAnimatingRef.current) {
+        opacity.stopAnimation();
+        isAnimatingRef.current = false;
+      }
+    };
+  }, [visible, opacity, onHide]);
 
   const isRemoved = message.toLowerCase().startsWith("removed");
   const iconName = isRemoved ? "heart-outline" : "heart";

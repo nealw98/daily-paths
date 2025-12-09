@@ -31,7 +31,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           onStartShouldSetResponder={() => true}
         >
           <View style={styles.header}>
-            <Text style={styles.title}>Settings</Text>
+            <Text style={styles.title}>About</Text>
             <TouchableOpacity onPress={onClose} style={styles.doneButton}>
               <Text style={styles.doneButtonText}>Done</Text>
             </TouchableOpacity>
@@ -60,6 +60,8 @@ const styles = StyleSheet.create({
     paddingTop: 32,
     paddingBottom: 24,
     maxHeight: "80%",
+    width: "100%",
+    flex: 1,
   },
   header: {
     flexDirection: "row",
