@@ -25,6 +25,7 @@ export default function QaLogsScreen() {
   const router = useRouter();
   const [updating, setUpdating] = React.useState(false);
   const [updateStatus, setUpdateStatus] = React.useState<string | null>(null);
+  const [copyStatus, setCopyStatus] = React.useState<string | null>(null);
 
   const expoConfig: any = Constants.expoConfig ?? {};
   const appVersion =
@@ -34,19 +35,35 @@ export default function QaLogsScreen() {
 
   const handleCopyAll = () => {
     if (!logs.length) {
+      setCopyStatus("No logs to copy");
       return;
     }
 
-    const payload = logs
-      .map((entry) => {
-        const time = new Date(entry.timestamp).toISOString();
-        const header = `[${time}] ${entry.scope} - ${entry.message}`;
-        const details = entry.details ? `\n${entry.details}` : "";
-        return `${header}${details}`;
-      })
-      .join("\n\n");
+    try {
+      const payload = logs
+        .map((entry) => {
+          const time = new Date(entry.timestamp).toISOString();
+          const header = `[${time}] ${entry.scope} - ${entry.message}`;
+          let details: string | undefined;
+          if (entry.details !== undefined && entry.details !== null) {
+            if (typeof entry.details === "string") {
+              details = entry.details;
+            } else {
+              // Make sure objects are captured; keep JSON compact.
+              details = JSON.stringify(entry.details, null, 2);
+            }
+          }
+          return details ? `${header}\n${details}` : header;
+        })
+        .join("\n\n");
 
-    Clipboard.setString(payload);
+      Clipboard.setString(payload);
+      setCopyStatus("Copied logs to clipboard");
+    } catch (err) {
+      setCopyStatus(
+        err instanceof Error ? `Copy failed: ${err.message}` : "Copy failed"
+      );
+    }
   };
 
   React.useEffect(() => {
@@ -127,12 +144,15 @@ export default function QaLogsScreen() {
           >
             <Text style={styles.secondaryButtonText}>Copy all</Text>
           </TouchableOpacity>
+          {copyStatus && (
+            <Text style={[styles.meta, { width: "100%" }]}>{copyStatus}</Text>
+          )}
           <TouchableOpacity
-            style={styles.primaryButton}
+            style={styles.secondaryButton}
             activeOpacity={0.8}
             onPress={clearQaLogs}
           >
-            <Text style={styles.primaryButtonText}>Clear logs</Text>
+            <Text style={styles.secondaryButtonText}>Clear logs</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.secondaryButton}
@@ -142,12 +162,12 @@ export default function QaLogsScreen() {
             <Text style={styles.secondaryButtonText}>Reset Device ID</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.primaryButton}
+            style={styles.secondaryButton}
             activeOpacity={0.8}
             onPress={handleManualUpdate}
             disabled={updating}
           >
-            <Text style={styles.primaryButtonText}>
+            <Text style={styles.secondaryButtonText}>
               {updating ? "Updating..." : "Check for update"}
             </Text>
           </TouchableOpacity>

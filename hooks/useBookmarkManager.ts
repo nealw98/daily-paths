@@ -6,6 +6,9 @@ import {
   BookmarkData,
 } from "../utils/bookmarkStorage";
 import { getDayOfYear, parseDateLocal } from "../utils/dateUtils";
+import { supabase } from "../lib/supabase";
+import { getOrCreateDeviceId } from "../utils/deviceIdentity";
+import { qaLog } from "../utils/qaLog";
 
 interface UseBookmarkManagerReturn {
   bookmarks: BookmarkData[];
@@ -81,6 +84,54 @@ export function useBookmarkManager(
         readingTitle
       );
       setIsBookmarked(newBookmarkState);
+      // Fire-and-forget sync to Supabase for analytics/favorites tracking.
+      (async () => {
+        try {
+          const deviceId = await getOrCreateDeviceId();
+          if (newBookmarkState) {
+            const { error } = await supabase
+              .from("app_favorites")
+              .upsert(
+                {
+                  device_id: deviceId,
+                  reading_id: readingId,
+                },
+                { onConflict: "device_id,reading_id" }
+              );
+            if (error) {
+              qaLog("favorites", "Failed to save favorite", {
+                deviceId,
+                readingId,
+                message: error.message,
+                code: (error as any).code,
+              });
+            } else {
+              qaLog("favorites", "Favorite saved", { deviceId, readingId });
+            }
+          } else {
+            const { error } = await supabase
+              .from("app_favorites")
+              .delete()
+              .eq("device_id", deviceId)
+              .eq("reading_id", readingId);
+            if (error) {
+              qaLog("favorites", "Failed to remove favorite", {
+                deviceId,
+                readingId,
+                message: error.message,
+                code: (error as any).code,
+              });
+            } else {
+              qaLog("favorites", "Favorite removed", { deviceId, readingId });
+            }
+          }
+        } catch (err) {
+          qaLog("favorites", "Unexpected error syncing favorite", {
+            readingId,
+            message: err instanceof Error ? err.message : String(err),
+          });
+        }
+      })();
       await refreshBookmarks();
       return newBookmarkState;
     } catch (error) {

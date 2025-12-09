@@ -1,11 +1,13 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { DailyReading } from "../types/readings";
+import { formatDateLocal } from "./dateUtils";
 
 // Bump this suffix any time we change how readings are fetched / mapped
 // (e.g., changes to day_of_year scheduling logic) so that we don't
 // accidentally reuse stale cached entries tied to an older scheme.
-// v5: updated reading shape (separate quote + application fields).
-const READING_CACHE_PREFIX = "@daily_paths_reading_v5_";
+// v6: cache keys now use LOCAL date (was UTC via toISOString) to avoid
+//     leaking yesterday's reading into today's slot when saving at night.
+const READING_CACHE_PREFIX = "@daily_paths_reading_v6_";
 
 export interface CachedReading {
   reading: DailyReading;
@@ -13,8 +15,9 @@ export interface CachedReading {
 }
 
 function getKey(date: Date): string {
-  const iso = date.toISOString().split("T")[0]; // YYYY-MM-DD (local date already baked into reading)
-  return `${READING_CACHE_PREFIX}${iso}`;
+  // Normalize to local calendar day to avoid UTC-based date rollovers.
+  const localDate = formatDateLocal(date);
+  return `${READING_CACHE_PREFIX}${localDate}`;
 }
 
 export async function getCachedReading(

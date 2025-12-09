@@ -235,12 +235,21 @@ export function useReading(date: Date) {
         // If Supabase rows include an updated_at column, use it for freshness checks
         const remoteUpdatedAt =
           (data as { updated_at?: string }).updated_at ?? null;
+        const remoteId = (data as { id?: string }).id ?? null;
+
+        const cachedDateMismatch =
+          cached?.reading &&
+          formatDateLocal(cached.reading.date) !== formatDateLocal(date);
+        const hasDifferentId = cached?.reading && cached.reading.id !== remoteId;
 
         const isNewer =
           !cached?.updatedAt ||
           (remoteUpdatedAt && remoteUpdatedAt > cached.updatedAt);
 
-        if (!cached?.reading || isNewer) {
+        const shouldReplace =
+          !cached?.reading || isNewer || cachedDateMismatch || hasDifferentId;
+
+        if (shouldReplace) {
           const transformedReading = transformRowToDailyReading(data, date);
           console.log("Transformed reading:", transformedReading);
           setReading(transformedReading);
@@ -254,6 +263,12 @@ export function useReading(date: Date) {
             id: transformedReading.id,
             remoteUpdatedAt,
             cachedUpdatedAt: cached?.updatedAt,
+            replacedBecause: {
+              isNewer,
+              cachedDateMismatch,
+              hasDifferentId,
+              hadCached: !!cached?.reading,
+            },
           });
         } else {
           qaLog("reading", "Cached reading is up to date; skip overwrite", {

@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Share,
   TouchableOpacity,
+  AppState,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -23,6 +24,7 @@ import { useAvailableDates } from "../hooks/useAvailableDates";
 import { hasSeenInstruction, markInstructionSeen } from "../utils/bookmarkStorage";
 import { colors } from "../constants/theme";
 import * as Notifications from "expo-notifications";
+import { formatDateLocal } from "../utils/dateUtils";
 
 export default function Index() {
   const router = useRouter();
@@ -36,6 +38,7 @@ export default function Index() {
   const [showTextSize, setShowTextSize] = useState(false);
   const [showReminder, setShowReminder] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [lastDateKey, setLastDateKey] = useState(formatDateLocal(new Date()));
   
   const { reading, loading, error } = useReading(currentDate);
   const {
@@ -69,6 +72,26 @@ export default function Index() {
       router.setParams({ jump: undefined, ts: undefined });
     }
   }, [params?.jump, params?.ts, router]);
+
+  // When app returns to foreground, ensure we jump to the real "today" if a new
+  // calendar day has started since the last time we rendered.
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state !== "active") return;
+      const today = new Date();
+      const todayKey = formatDateLocal(today);
+      if (todayKey !== lastDateKey) {
+        setCurrentDate(today);
+        setLastDateKey(todayKey);
+      }
+    });
+    return () => sub.remove();
+  }, [lastDateKey]);
+
+  // Keep lastDateKey in sync with currentDate whenever user navigates manually.
+  useEffect(() => {
+    setLastDateKey(formatDateLocal(currentDate));
+  }, [currentDate]);
 
   // Surface non-blocking errors only when we still have content onscreen.
   useEffect(() => {
