@@ -49,6 +49,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "flex-end",
+    paddingBottom: 82,
   },
   modalContainer: {
     backgroundColor: colors.pearl,
@@ -59,7 +60,6 @@ const styles = StyleSheet.create({
     paddingTop: 32,
     paddingBottom: 24,
     maxHeight: "80%",
-    marginBottom: 82,
   },
   header: {
     flexDirection: "row",

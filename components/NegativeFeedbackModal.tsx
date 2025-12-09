@@ -98,7 +98,7 @@ export const NegativeFeedbackModal: React.FC<NegativeFeedbackModalProps> = ({
               onToggle={() => setReasons((r) => ({ ...r, tooLong: !r.tooLong }))}
             />
             <CheckboxOption
-              label="Not applicable to me"
+              label="Not relevant"
               checked={reasons.notApplicable}
               onToggle={() =>
                 setReasons((r) => ({ ...r, notApplicable: !r.notApplicable }))

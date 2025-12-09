@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts } from '../constants/theme';
 import { useReadingFeedback } from '../hooks/useReadingFeedback';
+import { useSettings, getTextSizeMetrics } from '../hooks/useSettings';
 import { NegativeFeedbackModal } from './NegativeFeedbackModal';
 
 interface ReadingFeedbackProps {
@@ -16,10 +17,24 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
   dayOfYear,
   readingTitle,
 }) => {
-  const { currentRating, submitRating, loading } = useReadingFeedback(readingId);
+  const { currentRating: hookRating, submitRating, loading } = useReadingFeedback(readingId);
+  const { settings } = useSettings();
+  const [localRating, setLocalRating] = useState<'positive' | 'neutral' | 'negative' | null>(null);
   const [showNegativeModal, setShowNegativeModal] = useState(false);
   const [showThankYou, setShowThankYou] = useState(false);
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
+
+  const typography = useMemo(
+    () => getTextSizeMetrics(settings.textSize),
+    [settings.textSize]
+  );
+
+  // Sync local rating with hook rating
+  useEffect(() => {
+    setLocalRating(hookRating);
+  }, [hookRating]);
+
+  const currentRating = localRating;
 
   useEffect(() => {
     if (showThankYou) {
@@ -40,12 +55,18 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
   }, [showThankYou]);
 
   const handleRating = async (rating: 'positive' | 'neutral' | 'negative') => {
+    // Optimistically update local state immediately for visual feedback
+    setLocalRating(rating);
+    
     if (rating === 'negative') {
       setShowNegativeModal(true);
     } else {
       const success = await submitRating(rating, dayOfYear, readingTitle);
       if (success) {
         setShowThankYou(true);
+      } else {
+        // Revert on failure
+        setLocalRating(hookRating);
       }
     }
   };
@@ -61,6 +82,9 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
     setShowNegativeModal(false);
     if (success) {
       setShowThankYou(true);
+    } else {
+      // Revert on failure
+      setLocalRating(hookRating);
     }
   };
 
@@ -71,13 +95,16 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
   return (
     <>
       <View style={styles.container}>
-        <Text style={styles.question}>Was this reading helpful?</Text>
+        <Text style={[styles.question, { fontSize: typography.bodyFontSize - 2 }]}>
+          Was this reading helpful?
+        </Text>
 
         <View style={styles.buttonRow}>
           <TouchableOpacity
             style={[
               styles.ratingButton,
               currentRating === 'positive' && styles.ratingButtonSelected,
+              currentRating && currentRating !== 'positive' && styles.ratingButtonInactive,
             ]}
             onPress={() => handleRating('positive')}
             activeOpacity={0.7}
@@ -85,7 +112,7 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
             <Ionicons
               name="thumbs-up"
               size={24}
-              color={currentRating === 'positive' ? colors.deepTeal : colors.ocean}
+              color={currentRating === 'positive' ? '#fff' : colors.ocean}
             />
           </TouchableOpacity>
 
@@ -93,14 +120,15 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
             style={[
               styles.ratingButton,
               currentRating === 'neutral' && styles.ratingButtonSelected,
+              currentRating && currentRating !== 'neutral' && styles.ratingButtonInactive,
             ]}
             onPress={() => handleRating('neutral')}
             activeOpacity={0.7}
           >
             <Ionicons
-              name="remove"
+              name="hand-right"
               size={24}
-              color={currentRating === 'neutral' ? colors.deepTeal : colors.ocean}
+              color={currentRating === 'neutral' ? '#fff' : colors.ocean}
             />
           </TouchableOpacity>
 
@@ -108,6 +136,7 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
             style={[
               styles.ratingButton,
               currentRating === 'negative' && styles.ratingButtonSelected,
+              currentRating && currentRating !== 'negative' && styles.ratingButtonInactive,
             ]}
             onPress={() => handleRating('negative')}
             activeOpacity={0.7}
@@ -115,14 +144,14 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
             <Ionicons
               name="thumbs-down"
               size={24}
-              color={currentRating === 'negative' ? colors.deepTeal : colors.ocean}
+              color={currentRating === 'negative' ? '#fff' : colors.ocean}
             />
           </TouchableOpacity>
         </View>
 
         {showThankYou && (
           <Animated.View style={[styles.thankYouContainer, { opacity: fadeAnim }]}>
-            <Text style={styles.thankYou}>
+            <Text style={[styles.thankYou, { fontSize: typography.bodyFontSize - 2 }]}>
               Thanks for helping improve Daily Paths 💚
             </Text>
           </Animated.View>
@@ -175,7 +204,14 @@ const styles = StyleSheet.create({
   },
   ratingButtonSelected: {
     borderColor: colors.deepTeal,
-    backgroundColor: colors.seafoam + '15',
+    backgroundColor: colors.deepTeal,
+    borderWidth: 3,
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  ratingButtonInactive: {
+    opacity: 0.3,
   },
   thankYouContainer: {
     marginTop: 16,

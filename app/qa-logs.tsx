@@ -12,6 +12,7 @@ import * as Updates from "expo-updates";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Clipboard from "@react-native-clipboard/clipboard";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors, fonts } from "../constants/theme";
 import { clearQaLogs, useQaLogs, qaLog } from "../utils/qaLog";
 
@@ -83,6 +84,17 @@ export default function QaLogsScreen() {
     }
   };
 
+  const handleResetDeviceId = async () => {
+    try {
+      await AsyncStorage.removeItem('@daily_paths_device_id');
+      qaLog('device', 'Device ID cleared from storage');
+      alert('Device ID has been reset. A new ID will be generated on next feedback submission.');
+    } catch (err) {
+      qaLog('device', 'Error clearing device ID', { error: String(err) });
+      alert('Failed to reset device ID');
+    }
+  };
+
   return (
     <View
       style={[
@@ -121,6 +133,13 @@ export default function QaLogsScreen() {
             onPress={clearQaLogs}
           >
             <Text style={styles.primaryButtonText}>Clear logs</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            activeOpacity={0.8}
+            onPress={handleResetDeviceId}
+          >
+            <Text style={styles.secondaryButtonText}>Reset Device ID</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.primaryButton}

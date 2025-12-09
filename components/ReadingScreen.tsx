@@ -111,10 +111,10 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
     return {
       // Title is always body size + 2 for a subtle hierarchy
       titleFontSize: typography.bodyFontSize + 2,
-      sectionHeadingFontSize: 24,
-      thoughtLabelFontSize: 14,
-      thoughtTextFontSize: 22,
-      thoughtTextLineHeight: 26,
+      sectionHeadingFontSize: typography.bodyFontSize + 6,
+      thoughtLabelFontSize: typography.bodyFontSize - 4,
+      thoughtTextFontSize: typography.bodyFontSize + 4,
+      thoughtTextLineHeight: typography.bodyFontSize + 8,
     };
   }, [typography.bodyFontSize]);
 

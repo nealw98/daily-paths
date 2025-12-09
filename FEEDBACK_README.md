@@ -13,7 +13,7 @@ Anonymous user feedback system for daily readings to help identify and improve c
 - When user taps thumbs down, modal appears with:
   - ☐ Content is unclear
   - ☐ Too long or wordy
-  - ☐ Not applicable to me
+  - ☐ Not relevant
   - ☐ Language/tone issues
   - ☐ Other (with text field)
 

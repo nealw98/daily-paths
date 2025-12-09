@@ -340,3 +340,4 @@ ALTER TABLE app_devices ADD COLUMN is_anonymous boolean default true;
 -- while preserving all historical feedback
 ```
 
+
