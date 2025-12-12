@@ -8,13 +8,15 @@ import {
   Switch,
   Linking,
   Platform,
+  Modal,
+  TextInput,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Constants from "expo-constants";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { colors, fonts } from "../constants/theme";
-import { useSettings, TextSize, getTextSizeMetrics } from "../hooks/useSettings";
+import { useSettings, TextSize } from "../hooks/useSettings";
 
 const textSizeStops: TextSize[] = [
   "extraSmall",
@@ -60,6 +62,10 @@ export const SettingsContent: React.FC<{
    // Local working copy while the wheel is open so we don't commit
    // changes until the user confirms.
   const [tempReminderDate, setTempReminderDate] = useState<Date | null>(null);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [feedbackText, setFeedbackText] = useState("");
+  const [feedbackContact, setFeedbackContact] = useState("");
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const router = useRouter();
   const scrollViewRef = React.useRef<ScrollView>(null);
   const textSizeRef = React.useRef<View>(null);
@@ -74,11 +80,6 @@ export const SettingsContent: React.FC<{
   const reminderDate = useMemo(
     () => parseTimeToDate(settings.dailyReminderTime),
     [settings.dailyReminderTime]
-  );
-
-  const typography = useMemo(
-    () => getTextSizeMetrics(settings.textSize),
-    [settings.textSize]
   );
 
   const handleTextSizePress = async (size: TextSize) => {
@@ -97,6 +98,36 @@ export const SettingsContent: React.FC<{
     const currentIndex = textSizeStops.indexOf(settings.textSize);
     if (currentIndex < textSizeStops.length - 1) {
       await setTextSize(textSizeStops[currentIndex + 1]);
+    }
+  };
+
+  const handleSubmitFeedback = async () => {
+    if (!feedbackText.trim()) return;
+
+    const subject = "Daily Paths Feedback";
+    const body = [
+      feedbackText.trim(),
+      "",
+      `Contact: ${feedbackContact.trim() || "N/A"}`,
+      `App version: ${appVersion} (build ${iosBuildNumber})`,
+      `Platform: ${Platform.OS}`,
+    ].join("\n");
+
+    const mailto = `mailto:soberdailies@gmail.com?subject=${encodeURIComponent(
+      subject
+    )}&body=${encodeURIComponent(body)}`;
+
+    try {
+      setSubmittingFeedback(true);
+      const canOpen = await Linking.canOpenURL(mailto);
+      if (canOpen) {
+        await Linking.openURL(mailto);
+      }
+    } finally {
+      setSubmittingFeedback(false);
+      setShowFeedbackModal(false);
+      setFeedbackText("");
+      setFeedbackContact("");
     }
   };
 
@@ -139,32 +170,57 @@ export const SettingsContent: React.FC<{
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.mainContent}>
-          {(() => {
-            const base = typography.bodyFontSize;
-            const subtitleSize = Math.max(10, base - 2); // 2pt smaller, scaled from user size
-            return (
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <Ionicons
+                name="information-circle-outline"
+                size={22}
+                color={colors.deepTeal}
+              />
+              <View style={styles.sectionHeaderText}>
+                <Text style={styles.sectionTitle}>About</Text>
+                <Text style={styles.sectionSubtitle}>
+                  A quick overview of Daily Paths.
+                </Text>
+              </View>
+            </View>
+            <View style={styles.sectionBody}>
               <Text
-                style={[
-                  styles.sectionSubtitle,
-                  { fontSize: subtitleSize, lineHeight: subtitleSize + 6 },
-                ]}
+                style={{
+                  fontSize: 18,
+                  lineHeight: 26,
+                  fontFamily: fonts.loraRegular,
+                  color: colors.ink,
+                }}
               >
-                A daily reading companion inspired by the Al‑Anon daily readers, created independently for personal reflection.
+                A companion to your recovery with 366 original readings based on
+                Al-Anon's Steps, Traditions, and Concepts.{"\n\n"}
+                Not affiliated with Al-Anon, AA, or any 12-step fellowship. All content
+                is original and not official literature.
               </Text>
-            );
-          })()}
-          <Text
-            style={[
-              styles.bodyText,
-              {
-                marginTop: 10,
-                fontSize: Math.max(10, typography.bodyFontSize - 2),
-                lineHeight: Math.max(10, typography.bodyFontSize - 2) + 7,
-              },
-            ]}
-          >
-            Daily Paths is not affiliated with Al‑Anon, Alcoholics Anonymous, or any other 12‑step fellowship. The readings are provided for personal use and are not official literature of any organization.
-          </Text>
+            </View>
+          </View>
+
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="chatbubbles-outline" size={22} color={colors.deepTeal} />
+              <View style={styles.sectionHeaderText}>
+                <Text style={styles.sectionTitle}>Share Feedback</Text>
+                <Text style={styles.sectionSubtitle}>
+                  Tell us what’s working and what to improve.
+                </Text>
+              </View>
+            </View>
+            <View style={styles.sectionBody}>
+              <TouchableOpacity
+                style={styles.primaryButton}
+                onPress={() => setShowFeedbackModal(true)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.primaryButtonText}>Send Feedback</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </ScrollView>
 
@@ -190,10 +246,10 @@ export const SettingsContent: React.FC<{
 
           <TouchableOpacity
             activeOpacity={0.7}
-            onPress={() => Linking.openURL("https://dailypaths.org/terms")}
+            onPress={() => Linking.openURL("https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")}
           >
             <Text style={styles.linkLabel} allowFontScaling={false}>
-              Terms of Use
+              Terms of Service
             </Text>
           </TouchableOpacity>
         </View>
@@ -213,6 +269,66 @@ export const SettingsContent: React.FC<{
           </TouchableOpacity>
         </View>
       </View>
+
+      <Modal
+        visible={showFeedbackModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowFeedbackModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPress={() => setShowFeedbackModal(false)}
+        >
+          <View
+            style={styles.feedbackModal}
+            onStartShouldSetResponder={() => true}
+          >
+            <Text style={styles.feedbackTitle}>We’d love your feedback</Text>
+            <TextInput
+              style={styles.feedbackInput}
+              placeholder="Share your thoughts or suggestions..."
+              placeholderTextColor="#9ca3af"
+              multiline
+              value={feedbackText}
+              onChangeText={setFeedbackText}
+            />
+            <TextInput
+              style={styles.feedbackInput}
+              placeholder="Optional: email for follow-up"
+              placeholderTextColor="#9ca3af"
+              value={feedbackContact}
+              onChangeText={setFeedbackContact}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <View style={styles.feedbackActions}>
+              <TouchableOpacity
+                style={styles.feedbackSecondary}
+                onPress={() => setShowFeedbackModal(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.feedbackSecondaryText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.feedbackPrimary,
+                  !feedbackText.trim() && { opacity: 0.5 },
+                ]}
+                disabled={!feedbackText.trim() || submittingFeedback}
+                onPress={handleSubmitFeedback}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.feedbackPrimaryText}>
+                  {submittingFeedback ? "Sending..." : "Submit"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };
@@ -224,7 +340,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     paddingHorizontal: 0,
     paddingTop: 24,
-    paddingBottom: 160,
+    paddingBottom: 220,
     flexGrow: 1,
   },
   mainContent: {
@@ -494,6 +610,60 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#9ca3af",
     textAlign: "center",
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    justifyContent: "flex-end",
+  },
+  feedbackModal: {
+    backgroundColor: "#fff",
+    padding: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  feedbackTitle: {
+    fontFamily: fonts.headerFamilyItalic,
+    fontSize: 20,
+    color: colors.deepTeal,
+    marginBottom: 12,
+  },
+  feedbackInput: {
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 10,
+    padding: 12,
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 15,
+    color: colors.ink,
+    marginTop: 8,
+  },
+  feedbackActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 12,
+    marginTop: 16,
+  },
+  feedbackSecondary: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: "#e5e7eb",
+  },
+  feedbackSecondaryText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    color: "#4b5563",
+  },
+  feedbackPrimary: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: colors.deepTeal,
+  },
+  feedbackPrimaryText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    color: "#fff",
+    fontWeight: "600",
   },
 });
 

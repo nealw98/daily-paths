@@ -164,13 +164,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "flex-end",
-    paddingBottom: 82,
   },
   modalContainer: {
     backgroundColor: "#fff",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: "70%",
+    maxHeight: "80%",
     paddingBottom: 20,
   },
   header: {

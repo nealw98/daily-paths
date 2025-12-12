@@ -157,13 +157,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "flex-end",
-    paddingBottom: 82,
   },
   modalContainer: {
     backgroundColor: colors.pearl,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: "60%",
+    maxHeight: "80%",
   },
   header: {
     flexDirection: "row",

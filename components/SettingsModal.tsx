@@ -31,7 +31,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           onStartShouldSetResponder={() => true}
         >
           <View style={styles.header}>
-            <Text style={styles.title}>About</Text>
             <TouchableOpacity onPress={onClose} style={styles.doneButton}>
               <Text style={styles.doneButtonText}>Done</Text>
             </TouchableOpacity>
@@ -49,33 +48,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "flex-end",
-    paddingBottom: 82,
   },
   modalContainer: {
     backgroundColor: colors.pearl,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    paddingTop: 32,
+    paddingTop: 20,
     paddingHorizontal: 20,
-    paddingTop: 32,
     paddingBottom: 24,
-    maxHeight: "80%",
+    maxHeight: "90%",
     width: "100%",
     flex: 1,
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingBottom: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
-    marginBottom: 0,
-  },
-  title: {
-    fontFamily: fonts.headerFamilyItalic,
-    fontSize: 32,
-    color: colors.deepTeal,
+    alignItems: "flex-end",
+    justifyContent: "flex-end",
+    paddingBottom: 12,
   },
   doneButton: {
     paddingHorizontal: 8,
