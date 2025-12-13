@@ -10,6 +10,8 @@ import {
   Platform,
   Modal,
   TextInput,
+  KeyboardAvoidingView,
+  Alert,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Constants from "expo-constants";
@@ -17,6 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { colors, fonts } from "../constants/theme";
 import { useSettings, TextSize } from "../hooks/useSettings";
+import { useAppFeedback } from "../hooks/useAppFeedback";
 
 const textSizeStops: TextSize[] = [
   "extraSmall",
@@ -57,6 +60,7 @@ export const SettingsContent: React.FC<{
 }) => {
   const { settings, setTextSize, setDailyReminderEnabled, setDailyReminderTime } =
     useSettings();
+  const { submitting: submittingFeedback, submitFeedback } = useAppFeedback();
 
   const [showTimePicker, setShowTimePicker] = useState(false);
    // Local working copy while the wheel is open so we don't commit
@@ -65,7 +69,6 @@ export const SettingsContent: React.FC<{
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
   const [feedbackContact, setFeedbackContact] = useState("");
-  const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const router = useRouter();
   const scrollViewRef = React.useRef<ScrollView>(null);
   const textSizeRef = React.useRef<View>(null);
@@ -104,30 +107,26 @@ export const SettingsContent: React.FC<{
   const handleSubmitFeedback = async () => {
     if (!feedbackText.trim()) return;
 
-    const subject = "Al-Anon Daily Paths Feedback";
-    const body = [
+    const success = await submitFeedback(
       feedbackText.trim(),
-      "",
-      `Contact: ${feedbackContact.trim() || "N/A"}`,
-      `App version: ${appVersion} (build ${iosBuildNumber})`,
-      `Platform: ${Platform.OS}`,
-    ].join("\n");
+      feedbackContact.trim() || undefined
+    );
 
-    const mailto = `mailto:soberdailies@gmail.com?subject=${encodeURIComponent(
-      subject
-    )}&body=${encodeURIComponent(body)}`;
-
-    try {
-      setSubmittingFeedback(true);
-      const canOpen = await Linking.canOpenURL(mailto);
-      if (canOpen) {
-        await Linking.openURL(mailto);
-      }
-    } finally {
-      setSubmittingFeedback(false);
+    if (success) {
+      Alert.alert(
+        "Thank you!",
+        "Your feedback has been submitted. We appreciate you helping us improve Al-Anon Daily Paths.",
+        [{ text: "OK" }]
+      );
       setShowFeedbackModal(false);
       setFeedbackText("");
       setFeedbackContact("");
+    } else {
+      Alert.alert(
+        "Unable to Submit",
+        "There was a problem submitting your feedback. Please try again later.",
+        [{ text: "OK" }]
+      );
     }
   };
 
@@ -276,58 +275,63 @@ export const SettingsContent: React.FC<{
         animationType="slide"
         onRequestClose={() => setShowFeedbackModal(false)}
       >
-        <TouchableOpacity
-          style={styles.modalBackdrop}
-          activeOpacity={1}
-          onPress={() => setShowFeedbackModal(false)}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
         >
-          <View
-            style={styles.feedbackModal}
-            onStartShouldSetResponder={() => true}
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setShowFeedbackModal(false)}
           >
-            <Text style={styles.feedbackTitle}>We’d love your feedback</Text>
-            <TextInput
-              style={styles.feedbackInput}
-              placeholder="Share your thoughts or suggestions..."
-              placeholderTextColor="#9ca3af"
-              multiline
-              value={feedbackText}
-              onChangeText={setFeedbackText}
-            />
-            <TextInput
-              style={styles.feedbackInput}
-              placeholder="Optional: email for follow-up"
-              placeholderTextColor="#9ca3af"
-              value={feedbackContact}
-              onChangeText={setFeedbackContact}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            <View style={styles.feedbackActions}>
-              <TouchableOpacity
-                style={styles.feedbackSecondary}
-                onPress={() => setShowFeedbackModal(false)}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.feedbackSecondaryText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.feedbackPrimary,
-                  !feedbackText.trim() && { opacity: 0.5 },
-                ]}
-                disabled={!feedbackText.trim() || submittingFeedback}
-                onPress={handleSubmitFeedback}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.feedbackPrimaryText}>
-                  {submittingFeedback ? "Sending..." : "Submit"}
-                </Text>
-              </TouchableOpacity>
+            <View
+              style={styles.feedbackModal}
+              onStartShouldSetResponder={() => true}
+            >
+              <Text style={styles.feedbackTitle}>We'd love your feedback</Text>
+              <TextInput
+                style={styles.feedbackInput}
+                placeholder="Share your thoughts or suggestions..."
+                placeholderTextColor="#9ca3af"
+                multiline
+                value={feedbackText}
+                onChangeText={setFeedbackText}
+              />
+              <TextInput
+                style={styles.feedbackInput}
+                placeholder="Optional: your email if you'd like a reply"
+                placeholderTextColor="#9ca3af"
+                value={feedbackContact}
+                onChangeText={setFeedbackContact}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <View style={styles.feedbackActions}>
+                <TouchableOpacity
+                  style={styles.feedbackSecondary}
+                  onPress={() => setShowFeedbackModal(false)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.feedbackSecondaryText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.feedbackPrimary,
+                    !feedbackText.trim() && { opacity: 0.5 },
+                  ]}
+                  disabled={!feedbackText.trim() || submittingFeedback}
+                  onPress={handleSubmitFeedback}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.feedbackPrimaryText}>
+                    {submittingFeedback ? "Sending..." : "Submit"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );

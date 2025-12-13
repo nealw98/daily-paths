@@ -7,12 +7,16 @@ interface BookmarkToastProps {
   visible: boolean;
   message: string;
   onHide: () => void;
+  icon?: string;
+  autoDismiss?: boolean; // If false, won't auto-hide
 }
 
 export const BookmarkToast: React.FC<BookmarkToastProps> = ({
   visible,
   message,
   onHide,
+  icon,
+  autoDismiss = true, // Default to auto-dismiss behavior
 }) => {
   const [opacity] = useState(new Animated.Value(0));
   const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -20,7 +24,7 @@ export const BookmarkToast: React.FC<BookmarkToastProps> = ({
 
   const FADE_IN_MS = 140;
   const FADE_OUT_MS = 140;
-  const DISPLAY_MS = 900;
+  const DISPLAY_MS = 2000; // Increased from 900ms to 2 seconds
 
   useEffect(() => {
     // Clear any pending timer when visibility changes.
@@ -44,20 +48,23 @@ export const BookmarkToast: React.FC<BookmarkToastProps> = ({
         isAnimatingRef.current = false;
       });
 
-      timeoutRef.current = setTimeout(() => {
-        if (isAnimatingRef.current) {
-          opacity.stopAnimation();
-        }
-        isAnimatingRef.current = true;
-        Animated.timing(opacity, {
-          toValue: 0,
-          duration: FADE_OUT_MS,
-          useNativeDriver: true,
-        }).start(() => {
-          isAnimatingRef.current = false;
-          onHide();
-        });
-      }, DISPLAY_MS);
+      // Only set auto-dismiss timeout if autoDismiss is true
+      if (autoDismiss) {
+        timeoutRef.current = setTimeout(() => {
+          if (isAnimatingRef.current) {
+            opacity.stopAnimation();
+          }
+          isAnimatingRef.current = true;
+          Animated.timing(opacity, {
+            toValue: 0,
+            duration: FADE_OUT_MS,
+            useNativeDriver: true,
+          }).start(() => {
+            isAnimatingRef.current = false;
+            onHide();
+          });
+        }, DISPLAY_MS);
+      }
     } else {
       // If parent hides us early, fade out quickly.
       if (isAnimatingRef.current) {
@@ -83,15 +90,16 @@ export const BookmarkToast: React.FC<BookmarkToastProps> = ({
         isAnimatingRef.current = false;
       }
     };
-  }, [visible, opacity, onHide]);
+  }, [visible, opacity, onHide, autoDismiss]);
 
-  const isRemoved = message.toLowerCase().startsWith("removed");
-  const iconName = isRemoved ? "heart-outline" : "heart";
+  const isRemoved = message.toLowerCase().includes("off") || message.toLowerCase().startsWith("removed");
+  const defaultIcon = isRemoved ? "notifications-off" : "notifications";
+  const iconName = icon || defaultIcon;
 
   return (
     <Animated.View style={[styles.container, { opacity }]}>
       <View style={styles.toast}>
-        <Ionicons name={iconName} size={20} color="#fff" style={styles.icon} />
+        <Ionicons name={iconName as any} size={20} color="#fff" style={styles.icon} />
         <Text style={styles.message}>{message}</Text>
       </View>
     </Animated.View>

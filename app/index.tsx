@@ -18,6 +18,7 @@ import { SettingsContent } from "../components/SettingsContent";
 import { TextSizeModal } from "../components/TextSizeModal";
 import { ReminderModal } from "../components/ReminderModal";
 import { DismissibleToast } from "../components/DismissibleToast";
+import { BookmarkToast } from "../components/BookmarkToast";
 import { useReading } from "../hooks/useReading";
 import { useBookmarkManager } from "../hooks/useBookmarkManager";
 import { useAvailableDates } from "../hooks/useAvailableDates";
@@ -38,6 +39,8 @@ export default function Index() {
   const [showTextSize, setShowTextSize] = useState(false);
   const [showReminder, setShowReminder] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [reminderToast, setReminderToast] = useState<string | null>(null);
+  const [showReminderToast, setShowReminderToast] = useState(false);
   const [lastDateKey, setLastDateKey] = useState(formatDateLocal(new Date()));
   
   const { reading, loading, error } = useReading(currentDate);
@@ -367,13 +370,27 @@ export default function Index() {
       
       <ReminderModal 
         visible={showReminder} 
-        onClose={() => setShowReminder(false)} 
+        onClose={() => {
+          setShowReminder(false);
+          setShowReminderToast(false); // Hide toast when modal closes
+        }}
+        onShowToast={(message) => {
+          setReminderToast(message);
+          setShowReminderToast(true);
+        }}
       />
       
       <DismissibleToast
         visible={!!toastMessage && !!reading}
         message={toastMessage ?? ""}
         onDismiss={() => setToastMessage(null)}
+      />
+      
+      <BookmarkToast
+        visible={showReminderToast}
+        message={reminderToast ?? ""}
+        onHide={() => setShowReminderToast(false)}
+        autoDismiss={false}
       />
     </>
   );

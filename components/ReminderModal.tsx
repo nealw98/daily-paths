@@ -29,11 +29,13 @@ function formatTimeStorage(date: Date): string {
 interface ReminderModalProps {
   visible: boolean;
   onClose: () => void;
+  onShowToast?: (message: string) => void;
 }
 
 export const ReminderModal: React.FC<ReminderModalProps> = ({
   visible,
   onClose,
+  onShowToast,
 }) => {
   const { settings, setDailyReminderEnabled, setDailyReminderTime } = useSettings();
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -46,6 +48,13 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
 
   const handleReminderToggle = async (enabled: boolean) => {
     await setDailyReminderEnabled(enabled);
+    
+    if (enabled && onShowToast) {
+      const timeStr = formatTimeDisplay(reminderDate);
+      onShowToast(`I'll remind you every day at ${timeStr}`);
+    } else if (!enabled && onShowToast) {
+      onShowToast("Daily reminder turned off");
+    }
   };
 
   return (
@@ -152,6 +161,11 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                       setShowTimePicker(false);
                       setTempReminderDate(null);
                       setDailyReminderTime(formatTimeStorage(finalDate));
+                      
+                      if (onShowToast) {
+                        const timeStr = formatTimeDisplay(finalDate);
+                        onShowToast(`I'll remind you every day at ${timeStr}`);
+                      }
                     }}
                   >
                     <Text style={styles.timePickerButtonPrimaryText}>Set time</Text>
