@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Daily Paths",
+    "name": "Al-Anon Daily Paths",
     "slug": "daily-paths",
     "scheme": "dailypaths",
     "version": "1.0.5",
@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.nealwagner.dailypaths",
-      "buildNumber": "6",
+      "buildNumber": "9",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }

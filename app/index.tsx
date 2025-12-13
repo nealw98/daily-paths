@@ -246,7 +246,7 @@ export default function Index() {
 
     lines.push("");
     lines.push("-----");
-    lines.push("Shared from Daily Paths");
+    lines.push("Shared from Al-Anon Daily Paths");
 
     const message = lines.join("\n");
 

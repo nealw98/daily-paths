@@ -393,7 +393,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
           style={styles.header}
         >
           <View style={styles.headerTop}>
-            <Text style={styles.logo}>Daily Paths</Text>
+            <Text style={styles.logo}>Al-Anon Daily Paths</Text>
             {/* Legacy test button to trigger instruction modal kept for possible future use:
             {onShowInstruction && (
               <TouchableOpacity

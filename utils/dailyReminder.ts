@@ -24,6 +24,8 @@ export async function ensureNotificationPermissions(): Promise<boolean> {
  */
 export async function cancelDailyReminder(): Promise<void> {
   try {
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    console.log(`[Reminder] Cancelling ${scheduled.length} scheduled notification(s)`);
     await Notifications.cancelAllScheduledNotificationsAsync();
   } catch (e) {
     console.warn("Failed to cancel scheduled notifications", e);
@@ -31,7 +33,21 @@ export async function cancelDailyReminder(): Promise<void> {
 }
 
 /**
- * Schedule (or reschedule) the static Daily Paths reminder at the given local time.
+ * Get all currently scheduled notifications (for debugging)
+ */
+export async function getScheduledNotifications() {
+  try {
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    console.log(`[Reminder] Currently scheduled notifications:`, scheduled);
+    return scheduled;
+  } catch (e) {
+    console.warn("Failed to get scheduled notifications", e);
+    return [];
+  }
+}
+
+/**
+ * Schedule (or reschedule) the static Al-Anon Daily Paths reminder at the given local time.
  *
  * `time` is "HH:MM" in 24h format, e.g. "08:00".
  * Returns true if a reminder was scheduled, false if permissions were denied.
@@ -50,23 +66,44 @@ export async function scheduleDailyReminder(time: string): Promise<boolean> {
   const hour = Number(hourStr);
   const minute = Number(minuteStr);
 
-  await Notifications.scheduleNotificationAsync({
+  // Create a date for the notification time TODAY in local timezone
+  const now = new Date();
+  const scheduledTime = new Date();
+  scheduledTime.setHours(hour, minute, 0, 0);
+
+  // If that time has already passed today, schedule for tomorrow
+  if (scheduledTime <= now) {
+    scheduledTime.setDate(scheduledTime.getDate() + 1);
+    console.log(`[Reminder] Time ${hour}:${minute.toString().padStart(2, '0')} has passed today, scheduling for tomorrow`);
+  }
+
+  console.log(`[Reminder] Scheduling daily notification for ${scheduledTime.toLocaleString()}`);
+
+  // Use CalendarTrigger with full date components for proper timezone handling
+  const notificationId = await Notifications.scheduleNotificationAsync({
     content: {
-      // Line 1 (system title): "Daily Paths - {Month} {Day}" is not dynamic with a static
-      // local repeating notification, so we use a timeless title.
-      title: "Daily Paths",
-      // Line 2–3 (body): static gentle nudge.
+      title: "Al-Anon Daily Paths",
       body:
         "It\u2019s time for today\u2019s Daily Path. A few quiet moments can shift the whole day.",
-      // Explicitly request the default notification sound to avoid any nil casting issues.
       sound: "default",
     },
     trigger: {
-      hour,
-      minute,
+      // Use specific date components to ensure local timezone
+      type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
       repeats: true,
+      hour: hour,
+      minute: minute,
     },
   });
+
+  console.log(`[Reminder] Notification scheduled with ID: ${notificationId}`);
+
+  // Log what's scheduled for debugging
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  console.log(`[Reminder] Total scheduled notifications: ${scheduled.length}`);
+  if (scheduled.length > 0) {
+    console.log(`[Reminder] Next trigger:`, scheduled[0].trigger);
+  }
 
   return true;
 }

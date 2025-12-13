@@ -65,7 +65,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
           onStartShouldSetResponder={() => true}
         >
           <View style={styles.header}>
-            <Text style={styles.title}>Daily Reminder</Text>
+            <Text style={styles.title}>Al-Anon Daily Paths Reminder</Text>
             <TouchableOpacity onPress={onClose} style={styles.doneButton}>
               <Text style={styles.doneButtonText}>Done</Text>
             </TouchableOpacity>

@@ -104,7 +104,7 @@ export const SettingsContent: React.FC<{
   const handleSubmitFeedback = async () => {
     if (!feedbackText.trim()) return;
 
-    const subject = "Daily Paths Feedback";
+    const subject = "Al-Anon Daily Paths Feedback";
     const body = [
       feedbackText.trim(),
       "",
@@ -180,7 +180,7 @@ export const SettingsContent: React.FC<{
               <View style={styles.sectionHeaderText}>
                 <Text style={styles.sectionTitle}>About</Text>
                 <Text style={styles.sectionSubtitle}>
-                  A quick overview of Daily Paths.
+                  A quick overview of Al-Anon Daily Paths.
                 </Text>
               </View>
             </View>
