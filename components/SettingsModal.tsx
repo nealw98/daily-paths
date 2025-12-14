@@ -1,5 +1,5 @@
 import React from "react";
-import { Modal, View, StyleSheet, TouchableOpacity, Text } from "react-native";
+import { Modal, View, StyleSheet, TouchableOpacity, Text, Animated } from "react-native";
 import { colors, fonts } from "../constants/theme";
 
 interface SettingsModalProps {
@@ -13,6 +13,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   children,
 }) => {
+  const slideAnim = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    if (visible) {
+      Animated.spring(slideAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        tension: 50,
+        friction: 8,
+      }).start();
+    } else {
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [visible]);
+
+  const translateY = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [600, 0],
+  });
+
   return (
     <Modal
       visible={visible}
@@ -25,8 +49,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         activeOpacity={1}
         onPress={onClose}
       >
-        <View
-          style={styles.modalContainer}
+        <Animated.View
+          style={[
+            styles.modalContainer,
+            { transform: [{ translateY }] },
+          ]}
           // Capture taps so inner content doesn't close when interacted with
           onStartShouldSetResponder={() => true}
         >
@@ -37,7 +64,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </View>
 
           {children}
-        </View>
+        </Animated.View>
       </TouchableOpacity>
     </Modal>
   );

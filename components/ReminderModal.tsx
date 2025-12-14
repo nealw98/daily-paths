@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Switch, Platform } from "react-native";
+import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Switch, Platform, Animated } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { colors, fonts } from "../constants/theme";
 import { useSettings } from "../hooks/useSettings";
@@ -40,6 +40,29 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
   const { settings, setDailyReminderEnabled, setDailyReminderTime } = useSettings();
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [tempReminderDate, setTempReminderDate] = useState<Date | null>(null);
+  const slideAnim = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    if (visible) {
+      Animated.spring(slideAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        tension: 50,
+        friction: 8,
+      }).start();
+    } else {
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [visible]);
+
+  const translateY = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [600, 0],
+  });
 
   const reminderDate = useMemo(
     () => parseTimeToDate(settings.dailyReminderTime),
@@ -69,12 +92,15 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
         activeOpacity={1}
         onPress={onClose}
       >
-        <View
-          style={styles.modalContainer}
+        <Animated.View
+          style={[
+            styles.modalContainer,
+            { transform: [{ translateY }] },
+          ]}
           onStartShouldSetResponder={() => true}
         >
           <View style={styles.header}>
-            <Text style={styles.title}>Al-Anon Daily Paths Reminder</Text>
+            <Text style={styles.title}>Daily Paths Reminder</Text>
             <TouchableOpacity onPress={onClose} style={styles.doneButton}>
               <Text style={styles.doneButtonText}>Done</Text>
             </TouchableOpacity>
@@ -174,7 +200,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
               </View>
             )}
           </ScrollView>
-        </View>
+        </Animated.View>
       </TouchableOpacity>
     </Modal>
   );
@@ -191,6 +217,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: "80%",
+    paddingBottom: 40,
   },
   header: {
     flexDirection: "row",
@@ -200,11 +227,13 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#f3f4f6",
+    gap: 12,
   },
   title: {
     fontFamily: fonts.headerFamilyItalic,
-    fontSize: 28,
+    fontSize: 24,
     color: colors.deepTeal,
+    flex: 1,
   },
   doneButton: {
     paddingHorizontal: 8,
@@ -219,6 +248,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
+    paddingBottom: 120,
   },
   subtitle: {
     fontFamily: fonts.bodyFamilyRegular,

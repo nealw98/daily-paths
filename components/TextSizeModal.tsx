@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Animated } from "react-native";
 import { colors, fonts } from "../constants/theme";
 import { useSettings, TextSize, getTextSizeMetrics } from "../hooks/useSettings";
 
@@ -21,6 +21,29 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
   onClose,
 }) => {
   const { settings, setTextSize } = useSettings();
+  const slideAnim = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    if (visible) {
+      Animated.spring(slideAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        tension: 50,
+        friction: 8,
+      }).start();
+    } else {
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [visible]);
+
+  const translateY = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [600, 0],
+  });
 
   const typography = useMemo(
     () => getTextSizeMetrics(settings.textSize),
@@ -58,8 +81,11 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
         activeOpacity={1}
         onPress={onClose}
       >
-        <View
-          style={styles.modalContainer}
+        <Animated.View
+          style={[
+            styles.modalContainer,
+            { transform: [{ translateY }] },
+          ]}
           onStartShouldSetResponder={() => true}
         >
           <View style={styles.header}>
@@ -146,7 +172,7 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
               </Text>
             </View>
           </ScrollView>
-        </View>
+        </Animated.View>
       </TouchableOpacity>
     </Modal>
   );
@@ -163,6 +189,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: "80%",
+    paddingBottom: 40,
   },
   header: {
     flexDirection: "row",
@@ -191,6 +218,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
+    paddingBottom: 60,
   },
   subtitle: {
     fontFamily: fonts.bodyFamilyRegular,
