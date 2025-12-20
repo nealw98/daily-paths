@@ -274,3 +274,4 @@ WHERE created_at < now() - interval '1 year';
 
 The `app_feedback` table references `app_devices(device_id)`. Make sure the reading feedback system is set up first (which creates the `app_devices` table).
 
+

@@ -3,7 +3,7 @@
     "name": "Al-Anon Daily Paths",
     "slug": "daily-paths",
     "scheme": "dailypaths",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.nealwagner.dailypaths",
-      "buildNumber": "11",
+      "buildNumber": "12",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -28,7 +28,7 @@
         "backgroundColor": "#F7FAFA"
       },
       "package": "com.nealw98.dailypaths",
-      "versionCode": 11,
+      "versionCode": 12,
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },

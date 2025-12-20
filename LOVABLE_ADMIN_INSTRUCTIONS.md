@@ -155,3 +155,4 @@ ORDER BY f.created_at DESC;
 Please create this admin page with proper TypeScript types, error handling, and the Lovable-standard UI components. Make it look professional and easy to use for reviewing and improving readings based on user feedback.
 
 
+
