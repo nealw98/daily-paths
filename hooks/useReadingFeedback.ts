@@ -22,8 +22,12 @@ export function useReadingFeedback(readingId: string) {
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Load existing rating on mount
+  // Load existing rating on mount and when readingId changes
   useEffect(() => {
+    // Reset state when readingId changes
+    setCurrentRating(null);
+    setHasSubmitted(false);
+    setLoading(true);
     loadExistingRating();
   }, [readingId]);
 
@@ -43,6 +47,9 @@ export function useReadingFeedback(readingId: string) {
           readingId,
           error: error.message,
         });
+        // On error, ensure we set rating to null
+        setCurrentRating(null);
+        setHasSubmitted(false);
       } else if (data) {
         setCurrentRating(data.rating as Rating);
         setHasSubmitted(true);
@@ -50,6 +57,10 @@ export function useReadingFeedback(readingId: string) {
           readingId,
           rating: data.rating,
         });
+      } else {
+        // No data found - explicitly set to null
+        setCurrentRating(null);
+        setHasSubmitted(false);
       }
     } catch (err) {
       qaLog('feedback', 'Exception loading rating', {
@@ -131,6 +142,7 @@ export function useReadingFeedback(readingId: string) {
     submitRating,
   };
 }
+
 
 
 

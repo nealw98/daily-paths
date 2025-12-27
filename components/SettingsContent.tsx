@@ -20,6 +20,7 @@ import { useRouter } from "expo-router";
 import { colors, fonts } from "../constants/theme";
 import { useSettings, TextSize } from "../hooks/useSettings";
 import { useAppFeedback } from "../hooks/useAppFeedback";
+import { requestReview, shareApp, resetRateShareTracking } from "../utils/rateShareTracking";
 
 const textSizeStops: TextSize[] = [
   "extraSmall",
@@ -69,6 +70,9 @@ export const SettingsContent: React.FC<{
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
   const [feedbackContact, setFeedbackContact] = useState("");
+  const [isSharing, setIsSharing] = useState(false);
+  const versionPressCountRef = React.useRef(0);
+  const versionPressTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
   const scrollViewRef = React.useRef<ScrollView>(null);
   const textSizeRef = React.useRef<View>(null);
@@ -134,6 +138,41 @@ export const SettingsContent: React.FC<{
     await setDailyReminderEnabled(enabled);
   };
 
+  const handleRateApp = async () => {
+    const success = await requestReview();
+    if (!success) {
+      Alert.alert(
+        "Unable to Open Ratings",
+        "We couldn't open the app store ratings. Please visit the app store manually.",
+        [{ text: "OK" }]
+      );
+    }
+  };
+
+  const handleShareApp = async () => {
+    setIsSharing(true);
+    try {
+      await shareApp();
+    } catch (error) {
+      Alert.alert(
+        "Unable to Share",
+        "There was a problem sharing the app. Please try again later.",
+        [{ text: "OK" }]
+      );
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  // Cleanup version press timeout on unmount
+  React.useEffect(() => {
+    return () => {
+      if (versionPressTimeoutRef.current) {
+        clearTimeout(versionPressTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Scroll to specific section when requested
   React.useEffect(() => {
     if (!scrollToSection) return;
@@ -178,25 +217,57 @@ export const SettingsContent: React.FC<{
               />
               <View style={styles.sectionHeaderText}>
                 <Text style={styles.sectionTitle}>About</Text>
-                <Text style={styles.sectionSubtitle}>
-                  A quick overview of Al-Anon Daily Paths.
-                </Text>
               </View>
             </View>
             <View style={styles.sectionBody}>
               <Text
                 style={{
-                  fontSize: 18,
-                  lineHeight: 26,
+                  fontSize: 16,
+                  lineHeight: 24,
                   fontFamily: fonts.loraRegular,
                   color: colors.ink,
                 }}
               >
-                A companion to your recovery with 366 original readings based on
-                Al-Anon's Steps, Traditions, and Concepts.{"\n\n"}
-                Not affiliated with Al-Anon, AA, or any 12-step fellowship. All content
-                is original and not official literature.
+                Daily Paths supports your recovery with 366 original readings based on Al-Anon's Steps, Traditions, and Concepts. It is not affiliated with Al-Anon, AA or any 12-step fellowship.
               </Text>
+            </View>
+          </View>
+
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="star-outline" size={22} color={colors.deepTeal} />
+              <View style={styles.sectionHeaderText}>
+                <Text style={styles.sectionTitle}>Rate & Share</Text>
+                <Text style={styles.sectionSubtitle}>
+                  Help others discover Daily Paths.
+                </Text>
+              </View>
+            </View>
+            <View style={styles.sectionBody}>
+              <Text style={styles.bodyText}>
+                If Daily Paths has been helpful in your recovery journey, please consider rating the app or sharing it with others.
+              </Text>
+              <View style={styles.buttonRow}>
+                <TouchableOpacity
+                  style={styles.secondaryButton}
+                  onPress={handleRateApp}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="star" size={18} color={colors.deepTeal} />
+                  <Text style={styles.secondaryButtonText}>Rate App</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.secondaryButton}
+                  onPress={handleShareApp}
+                  disabled={isSharing}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="share-social" size={18} color={colors.deepTeal} />
+                  <Text style={styles.secondaryButtonText}>
+                    {isSharing ? "Sharing..." : "Share App"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
 
@@ -206,17 +277,18 @@ export const SettingsContent: React.FC<{
               <View style={styles.sectionHeaderText}>
                 <Text style={styles.sectionTitle}>Share Feedback</Text>
                 <Text style={styles.sectionSubtitle}>
-                  Tell us what’s working and what to improve.
+                  Tell us what's working and what to improve.
                 </Text>
               </View>
             </View>
             <View style={styles.sectionBody}>
               <TouchableOpacity
-                style={styles.primaryButton}
+                style={styles.secondaryButton}
                 onPress={() => setShowFeedbackModal(true)}
                 activeOpacity={0.8}
               >
-                <Text style={styles.primaryButtonText}>Send Feedback</Text>
+                <Ionicons name="chatbubble-ellipses" size={18} color={colors.deepTeal} />
+                <Text style={styles.secondaryButtonText}>Send Feedback</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -256,6 +328,26 @@ export const SettingsContent: React.FC<{
         <View style={styles.versionContainer}>
           <TouchableOpacity
             activeOpacity={0.7}
+            onPress={() => {
+              versionPressCountRef.current += 1;
+              
+              // Clear existing timeout
+              if (versionPressTimeoutRef.current) {
+                clearTimeout(versionPressTimeoutRef.current);
+              }
+              
+              // Reset after 1 second if no more presses
+              versionPressTimeoutRef.current = setTimeout(() => {
+                versionPressCountRef.current = 0;
+              }, 1000);
+              
+              // Double press to reset rate/share tracking (debug)
+              if (versionPressCountRef.current === 2) {
+                resetRateShareTracking();
+                Alert.alert("Reset Complete", "Rate & Share tracking has been reset for testing.");
+                versionPressCountRef.current = 0;
+              }
+            }}
             onLongPress={() => {
               // Close settings before navigating to QA
               onOpenQaLogs?.();
@@ -396,10 +488,33 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   bodyText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 15,
+    fontFamily: fonts.loraRegular,
+    fontSize: 16,
     color: colors.ink,
-    lineHeight: 22,
+    lineHeight: 24,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 16,
+  },
+  secondaryButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: "#fff",
+    borderWidth: 2,
+    borderColor: colors.deepTeal,
+  },
+  secondaryButtonText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 16,
+    color: colors.deepTeal,
+    fontWeight: "600",
   },
   chipRow: {
     flexDirection: "row",

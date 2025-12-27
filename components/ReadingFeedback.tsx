@@ -5,6 +5,11 @@ import { colors, fonts } from '../constants/theme';
 import { useReadingFeedback } from '../hooks/useReadingFeedback';
 import { useSettings, getTextSizeMetrics } from '../hooks/useSettings';
 import { NegativeFeedbackModal } from './NegativeFeedbackModal';
+import { RatePrompt } from './RatePrompt';
+import { 
+  shouldShowRatePrompt, 
+  incrementReadingsCompleted 
+} from '../utils/rateShareTracking';
 
 interface ReadingFeedbackProps {
   readingId: string;
@@ -22,6 +27,7 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
   const [localRating, setLocalRating] = useState<'positive' | 'neutral' | 'negative' | null>(null);
   const [showNegativeModal, setShowNegativeModal] = useState(false);
   const [showThankYou, setShowThankYou] = useState(false);
+  const [showRatePrompt, setShowRatePrompt] = useState(false);
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
   const typography = useMemo(
@@ -64,6 +70,22 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
       const success = await submitRating(rating, dayOfYear, readingTitle);
       if (success) {
         setShowThankYou(true);
+        
+        // If positive feedback, increment readings and maybe show rate prompt
+        if (rating === 'positive') {
+          await incrementReadingsCompleted();
+          
+          // Check if we should show the rate prompt after a brief delay
+          setTimeout(async () => {
+            const shouldShow = await shouldShowRatePrompt();
+            if (shouldShow) {
+              // Wait for thank you message to fade, then show rate prompt
+              setTimeout(() => {
+                setShowRatePrompt(true);
+              }, 2500);
+            }
+          }, 100);
+        }
       } else {
         // Revert on failure
         setLocalRating(hookRating);
@@ -162,6 +184,11 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
         visible={showNegativeModal}
         onClose={() => setShowNegativeModal(false)}
         onSubmit={handleNegativeFeedback}
+      />
+      
+      <RatePrompt
+        visible={showRatePrompt}
+        onClose={() => setShowRatePrompt(false)}
       />
     </>
   );
