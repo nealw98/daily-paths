@@ -44,18 +44,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <TouchableOpacity
-        style={styles.backdrop}
-        activeOpacity={1}
-        onPress={onClose}
-      >
+      <View style={styles.backdrop}>
+        {/* Backdrop tap area - closes modal when tapping dark area */}
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={onClose}
+        />
+
+        {/* Modal content - NOT inside TouchableOpacity so scrolling works */}
         <Animated.View
           style={[
             styles.modalContainer,
             { transform: [{ translateY }] },
           ]}
-          // Capture taps so inner content doesn't close when interacted with
-          onStartShouldSetResponder={() => true}
         >
           <View style={styles.header}>
             <TouchableOpacity onPress={onClose} style={styles.doneButton}>
@@ -65,7 +67,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           {children}
         </Animated.View>
-      </TouchableOpacity>
+      </View>
     </Modal>
   );
 };
