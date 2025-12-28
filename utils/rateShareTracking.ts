@@ -1,7 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as StoreReview from "expo-store-review";
-import * as Sharing from "expo-sharing";
-import { Platform } from "react-native";
+import { Platform, Share, Linking } from "react-native";
 
 const STORAGE_KEYS = {
   READINGS_COMPLETED: "readings_completed_count",
@@ -106,11 +105,36 @@ export async function requestReview(): Promise<boolean> {
       await StoreReview.requestReview();
       await markHasRated();
       return true;
+    } else {
+      // Fallback: Open App Store rating page if native review isn't available
+      const appStoreReviewUrl =
+        Platform.OS === "ios"
+          ? "https://apps.apple.com/app/id6739451768?action=write-review"
+          : "https://play.google.com/store/apps/details?id=com.nealw98.dailypaths";
+      
+      const canOpen = await Linking.canOpenURL(appStoreReviewUrl);
+      if (canOpen) {
+        await Linking.openURL(appStoreReviewUrl);
+        await markHasRated();
+        return true;
+      }
     }
     return false;
   } catch (error) {
     console.error("Error requesting review:", error);
-    return false;
+    // Try fallback on error
+    try {
+      const appStoreReviewUrl =
+        Platform.OS === "ios"
+          ? "https://apps.apple.com/app/id6739451768?action=write-review"
+          : "https://play.google.com/store/apps/details?id=com.nealw98.dailypaths";
+      await Linking.openURL(appStoreReviewUrl);
+      await markHasRated();
+      return true;
+    } catch (fallbackError) {
+      console.error("Error opening App Store fallback:", fallbackError);
+      return false;
+    }
   }
 }
 
@@ -123,21 +147,21 @@ export async function shareApp(): Promise<boolean> {
 
     const message = `Check out Al-Anon Daily Paths - daily readings for recovery! ${appStoreUrl}`;
 
-    if (await Sharing.isAvailableAsync()) {
-      // On iOS, we'll use the native share sheet with just the URL
-      // The URL will automatically be formatted nicely
-      await Sharing.shareAsync(appStoreUrl, {
-        dialogTitle: "Share Al-Anon Daily Paths",
-      });
-      
-      // Track share count
+    // Use React Native's Share API for URLs/text
+    const result = await Share.share({
+      message: message,
+      url: appStoreUrl, // iOS will use this if message is provided
+      title: "Al-Anon Daily Paths",
+    });
+    
+    // Track share count (result.action can be 'sharedAction' or 'dismissedAction')
+    if (result.action === Share.sharedAction) {
       const current = await AsyncStorage.getItem(STORAGE_KEYS.SHARE_COUNT);
       const count = current ? parseInt(current, 10) : 0;
       await AsyncStorage.setItem(STORAGE_KEYS.SHARE_COUNT, (count + 1).toString());
-      
-      return true;
     }
-    return false;
+    
+    return result.action === Share.sharedAction || result.action === Share.dismissedAction;
   } catch (error) {
     console.error("Error sharing app:", error);
     return false;

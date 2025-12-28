@@ -143,7 +143,7 @@ export const SettingsContent: React.FC<{
     if (!success) {
       Alert.alert(
         "Unable to Open Ratings",
-        "We couldn't open the app store ratings. Please visit the app store manually.",
+        "We couldn't open the app store. Please try again later.",
         [{ text: "OK" }]
       );
     }
