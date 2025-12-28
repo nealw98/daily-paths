@@ -9,9 +9,11 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, fonts } from "../constants/theme";
+import * as StoreReview from "expo-store-review";
 import {
   markRatePromptShown,
   markRateDeclined,
+  markHasRated,
   openAppStoreForRating,
 } from "../utils/rateShareTracking";
 
@@ -23,26 +25,15 @@ interface RatePromptProps {
 export const RatePrompt: React.FC<RatePromptProps> = ({ visible, onClose }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
+  const [showCustomModal, setShowCustomModal] = useState(false);
 
   useEffect(() => {
     if (visible) {
-      // Always show the modal - animate in
-      markRatePromptShown();
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          tension: 50,
-          friction: 7,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      // Check if native iOS rating is available first
+      checkAndShowRating();
     } else {
-      // Animate out
+      // Animate out and reset
+      setShowCustomModal(false);
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 0,
@@ -58,9 +49,40 @@ export const RatePrompt: React.FC<RatePromptProps> = ({ visible, onClose }) => {
     }
   }, [visible]);
 
+  const checkAndShowRating = async () => {
+    await markRatePromptShown();
+    
+    // Check if native iOS rating is available
+    const nativeAvailable = await StoreReview.isAvailableAsync();
+    
+    if (nativeAvailable) {
+      // Native is available - show iOS rating modal directly, then close
+      await StoreReview.requestReview();
+      await markHasRated();
+      onClose();
+    } else {
+      // Native not available - show custom Rate/Not Now modal
+      setShowCustomModal(true);
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          tension: 50,
+          friction: 7,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  };
+
   const handleRate = async () => {
+    setShowCustomModal(false);
     onClose();
-    // Small delay so the modal closes first, then open App Store
+    // Small delay so the modal closes first, then open App Store directly
     setTimeout(async () => {
       await openAppStoreForRating();
     }, 300);
@@ -68,13 +90,15 @@ export const RatePrompt: React.FC<RatePromptProps> = ({ visible, onClose }) => {
 
   const handleNotNow = async () => {
     await markRateDeclined();
+    setShowCustomModal(false);
     onClose();
   };
 
-  if (!visible) return null;
+  // Only render the custom modal if native wasn't available
+  if (!showCustomModal) return null;
 
   return (
-    <Modal transparent visible={visible} animationType="none">
+    <Modal transparent visible={showCustomModal} animationType="none">
       <Animated.View
         style={[
           styles.backdrop,
