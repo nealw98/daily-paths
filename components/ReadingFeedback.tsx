@@ -75,16 +75,14 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
         if (rating === 'positive') {
           await incrementReadingsCompleted();
           
-          // Check if we should show the rate prompt after a brief delay
-          setTimeout(async () => {
-            const shouldShow = await shouldShowRatePrompt();
-            if (shouldShow) {
-              // Wait for thank you message to fade, then show rate prompt
-              setTimeout(() => {
-                setShowRatePrompt(true);
-              }, 2500);
-            }
-          }, 100);
+          // Check if we should show the rate prompt
+          const shouldShow = await shouldShowRatePrompt();
+          if (shouldShow) {
+            // Brief delay for thank you to appear, then show rate prompt
+            setTimeout(() => {
+              setShowRatePrompt(true);
+            }, 800);
+          }
         }
       } else {
         // Revert on failure
