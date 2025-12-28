@@ -20,7 +20,7 @@ import { useRouter } from "expo-router";
 import { colors, fonts } from "../constants/theme";
 import { useSettings, TextSize } from "../hooks/useSettings";
 import { useAppFeedback } from "../hooks/useAppFeedback";
-import { requestReview, shareApp, resetRateShareTracking, openAppStoreForRating } from "../utils/rateShareTracking";
+import { shareApp, resetRateShareTracking, openAppStoreForRating } from "../utils/rateShareTracking";
 
 const textSizeStops: TextSize[] = [
   "extraSmall",
@@ -139,18 +139,14 @@ export const SettingsContent: React.FC<{
   };
 
   const handleRateApp = async () => {
-    // Try native review first, fall back to App Store
-    const nativeSuccess = await requestReview();
-    if (!nativeSuccess) {
-      // Native not available, open App Store directly
-      const storeSuccess = await openAppStoreForRating();
-      if (!storeSuccess) {
-        Alert.alert(
-          "Unable to Open Ratings",
-          "We couldn't open the app store. Please try again later.",
-          [{ text: "OK" }]
-        );
-      }
+    // Always open App Store directly - native review is unreliable
+    const success = await openAppStoreForRating();
+    if (!success) {
+      Alert.alert(
+        "Unable to Open Ratings",
+        "We couldn't open the app store. Please try again later.",
+        [{ text: "OK" }]
+      );
     }
   };
 

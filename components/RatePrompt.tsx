@@ -12,7 +12,6 @@ import { colors, fonts } from "../constants/theme";
 import {
   markRatePromptShown,
   markRateDeclined,
-  requestReview,
   openAppStoreForRating,
 } from "../utils/rateShareTracking";
 
@@ -61,13 +60,9 @@ export const RatePrompt: React.FC<RatePromptProps> = ({ visible, onClose }) => {
 
   const handleRate = async () => {
     onClose();
-    // Small delay so the modal closes first
+    // Small delay so the modal closes first, then open App Store
     setTimeout(async () => {
-      // Try native review first, fall back to App Store
-      const nativeSuccess = await requestReview();
-      if (!nativeSuccess) {
-        await openAppStoreForRating();
-      }
+      await openAppStoreForRating();
     }, 300);
   };
 
