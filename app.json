@@ -18,6 +18,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.nealwagner.dailypaths",
       "buildNumber": "14",
+      "appStoreUrl": "https://apps.apple.com/app/id6739451768",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -30,7 +31,8 @@
       "package": "com.nealw98.dailypaths",
       "versionCode": 14,
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "playStoreUrl": "https://play.google.com/store/apps/details?id=com.nealw98.dailypaths"
     },
     "web": {
       "favicon": "./assets/favicon.png",

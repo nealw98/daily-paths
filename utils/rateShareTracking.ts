@@ -115,28 +115,33 @@ export async function requestReview(): Promise<boolean> {
 
 export async function openAppStoreForRating(): Promise<boolean> {
   try {
-    // Open App Store app page using itms-apps:// URL scheme (works globally)
-    const appStoreUrl =
-      Platform.OS === "ios"
-        ? "itms-apps://apps.apple.com/app/id6739451768"
-        : "https://play.google.com/store/apps/details?id=com.nealw98.dailypaths";
+    // Use expo-store-review's storeUrl which reads from app.json config
+    const configuredUrl = StoreReview.storeUrl();
     
-    try {
-      await Linking.openURL(appStoreUrl);
-      await markHasRated();
-      return true;
-    } catch (linkError) {
-      // If itms-apps fails, try https URL as final fallback
-      try {
-        const httpsUrl = "https://apps.apple.com/app/id6739451768";
-        await Linking.openURL(httpsUrl);
+    if (configuredUrl) {
+      const canOpen = await Linking.canOpenURL(configuredUrl);
+      if (canOpen) {
+        await Linking.openURL(configuredUrl);
         await markHasRated();
         return true;
-      } catch (httpsError) {
-        console.error("Error opening App Store:", httpsError);
-        return false;
       }
     }
+    
+    // Fallback URLs if config URL fails
+    const fallbackUrl =
+      Platform.OS === "ios"
+        ? "https://apps.apple.com/app/id6739451768"
+        : "https://play.google.com/store/apps/details?id=com.nealw98.dailypaths";
+    
+    const canOpenFallback = await Linking.canOpenURL(fallbackUrl);
+    if (canOpenFallback) {
+      await Linking.openURL(fallbackUrl);
+      await markHasRated();
+      return true;
+    }
+    
+    console.error("Could not open any store URL");
+    return false;
   } catch (error) {
     console.error("Error opening App Store:", error);
     return false;
