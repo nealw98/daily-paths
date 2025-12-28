@@ -115,10 +115,10 @@ export async function requestReview(): Promise<boolean> {
 
 export async function openAppStoreForRating(): Promise<boolean> {
   try {
-    // Direct App Store URL - using https:// which Safari will redirect to App Store
+    // Use itms-apps:// to open App Store app directly (not Safari)
     const storeUrl =
       Platform.OS === "ios"
-        ? "https://apps.apple.com/app/id6739451768"
+        ? "itms-apps://itunes.apple.com/app/id6755981862"
         : "https://play.google.com/store/apps/details?id=com.nealw98.dailypaths";
     
     await Linking.openURL(storeUrl);
@@ -134,7 +134,7 @@ export async function shareApp(): Promise<boolean> {
   try {
     const appStoreUrl =
       Platform.OS === "ios"
-        ? "https://apps.apple.com/us/app/al-anon-daily-paths/id6739451768"
+        ? "https://apps.apple.com/us/app/al-anon-daily-paths/id6755981862"
         : "https://play.google.com/store/apps/details?id=com.nealw98.dailypaths";
 
     const message = `Check out Al-Anon Daily Paths - daily readings for recovery! ${appStoreUrl}`;
