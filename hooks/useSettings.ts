@@ -2,6 +2,8 @@ import React from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { scheduleDailyReminder, cancelDailyReminder } from "../utils/dailyReminder";
 
+console.log("[STARTUP] useSettings.ts module loading...");
+
 const SETTINGS_STORAGE_KEY = "daily_paths_settings_v1";
 
 export type TextSize = "extraSmall" | "small" | "medium" | "large" | "extraLarge";
@@ -57,16 +59,23 @@ async function saveSettings(next: AppSettings) {
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  console.log("[STARTUP] SettingsProvider rendering...");
   const [settings, setSettings] = React.useState<AppSettings>(defaultSettings);
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
+    console.log("[STARTUP] SettingsProvider useEffect running - loading settings...");
     let mounted = true;
     (async () => {
-      const loaded = await loadSettings();
-      if (mounted) {
-        setSettings(loaded);
-        setLoading(false);
+      try {
+        const loaded = await loadSettings();
+        console.log("[STARTUP] Settings loaded successfully:", loaded);
+        if (mounted) {
+          setSettings(loaded);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("[STARTUP] ERROR loading settings:", err);
       }
     })();
     return () => {

@@ -1,4 +1,5 @@
 import * as Notifications from "expo-notifications";
+import { Platform } from "react-native";
 
 /**
  * Ask the user for notification permissions if we don't already have them.
@@ -79,7 +80,27 @@ export async function scheduleDailyReminder(time: string): Promise<boolean> {
 
   console.log(`[Reminder] Scheduling daily notification for ${scheduledTime.toLocaleString()}`);
 
-  // Use CalendarTrigger with full date components for proper timezone handling
+  // Use platform-specific trigger types
+  // iOS supports CALENDAR triggers, Android needs DAILY trigger
+  let trigger: Notifications.NotificationTriggerInput;
+  
+  if (Platform.OS === "ios") {
+    // iOS: Use calendar trigger for exact time scheduling
+    trigger = {
+      type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+      repeats: true,
+      hour: hour,
+      minute: minute,
+    };
+  } else {
+    // Android: Use DAILY trigger type which is supported
+    trigger = {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour: hour,
+      minute: minute,
+    };
+  }
+
   const notificationId = await Notifications.scheduleNotificationAsync({
     content: {
       title: "Al-Anon Daily Paths",
@@ -87,13 +108,7 @@ export async function scheduleDailyReminder(time: string): Promise<boolean> {
         "It\u2019s time for today\u2019s Daily Path. A few quiet moments can shift the whole day.",
       sound: "default",
     },
-    trigger: {
-      // Use specific date components to ensure local timezone
-      type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-      repeats: true,
-      hour: hour,
-      minute: minute,
-    },
+    trigger,
   });
 
   console.log(`[Reminder] Notification scheduled with ID: ${notificationId}`);

@@ -342,3 +342,4 @@ ALTER TABLE app_devices ADD COLUMN is_anonymous boolean default true;
 
 
 
+

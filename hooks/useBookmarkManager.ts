@@ -9,12 +9,18 @@ import { getDayOfYear, parseDateLocal } from "../utils/dateUtils";
 import { supabase } from "../lib/supabase";
 import { getOrCreateDeviceId } from "../utils/deviceIdentity";
 import { qaLog } from "../utils/qaLog";
+import { incrementReadingsCompleted, shouldShowRatePrompt } from "../utils/rateShareTracking";
+
+interface ToggleBookmarkResult {
+  newState: boolean;
+  shouldShowRatePrompt: boolean;
+}
 
 interface UseBookmarkManagerReturn {
   bookmarks: BookmarkData[];
   isBookmarked: boolean;
   loading: boolean;
-  toggleBookmark: () => Promise<boolean>;
+  toggleBookmark: () => Promise<ToggleBookmarkResult>;
   refreshBookmarks: () => Promise<void>;
   checkBookmarkStatus: (date: Date) => Promise<void>;
 }
@@ -70,10 +76,10 @@ export function useBookmarkManager(
   );
 
   // Toggle bookmark for current date
-  const toggleBookmark = useCallback(async (): Promise<boolean> => {
+  const toggleBookmark = useCallback(async (): Promise<ToggleBookmarkResult> => {
     if (!readingId || !readingTitle) {
       console.warn("Cannot toggle bookmark: missing reading data");
-      return false;
+      return { newState: false, shouldShowRatePrompt: false };
     }
 
     try {
@@ -84,6 +90,19 @@ export function useBookmarkManager(
         readingTitle
       );
       setIsBookmarked(newBookmarkState);
+      
+      // If adding a favorite (positive engagement), increment readings count
+      // and check if we should show the rate prompt
+      let showRatePrompt = false;
+      if (newBookmarkState) {
+        await incrementReadingsCompleted();
+        showRatePrompt = await shouldShowRatePrompt();
+        qaLog("favorites", "Favorite added - checking rate prompt", { 
+          showRatePrompt,
+          readingId 
+        });
+      }
+      
       // Fire-and-forget sync to Supabase for analytics/favorites tracking.
       (async () => {
         try {
@@ -133,10 +152,10 @@ export function useBookmarkManager(
         }
       })();
       await refreshBookmarks();
-      return newBookmarkState;
+      return { newState: newBookmarkState, shouldShowRatePrompt: showRatePrompt };
     } catch (error) {
       console.error("Error toggling bookmark:", error);
-      return isBookmarked;
+      return { newState: isBookmarked, shouldShowRatePrompt: false };
     } finally {
       setLoading(false);
     }

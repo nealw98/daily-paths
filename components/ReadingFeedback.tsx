@@ -194,10 +194,9 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
 
 const styles = StyleSheet.create({
   container: {
+    marginTop: 32,
     paddingVertical: 24,
     paddingHorizontal: 20,
-    borderTopWidth: 1,
-    borderTopColor: colors.mist,
     backgroundColor: colors.pearl,
     alignItems: 'center',
     marginBottom: 82, // Space for action bar

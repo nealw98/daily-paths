@@ -20,8 +20,8 @@ import { useRouter } from "expo-router";
 import { colors, fonts } from "../constants/theme";
 import { useSettings, TextSize } from "../hooks/useSettings";
 import { useAppFeedback } from "../hooks/useAppFeedback";
-import { shareApp, resetRateShareTracking, openAppStoreForRating, markHasRated } from "../utils/rateShareTracking";
-import * as StoreReview from "expo-store-review";
+import { shareApp, resetRateShareTracking } from "../utils/rateShareTracking";
+import { RatePrompt } from "./RatePrompt";
 
 const textSizeStops: TextSize[] = [
   "extraSmall",
@@ -69,6 +69,7 @@ export const SettingsContent: React.FC<{
    // changes until the user confirms.
   const [tempReminderDate, setTempReminderDate] = useState<Date | null>(null);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showRatePrompt, setShowRatePrompt] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
   const [feedbackContact, setFeedbackContact] = useState("");
   const [isSharing, setIsSharing] = useState(false);
@@ -139,25 +140,9 @@ export const SettingsContent: React.FC<{
     await setDailyReminderEnabled(enabled);
   };
 
-  const handleRateApp = async () => {
-    // Check if native iOS rating is available
-    const nativeAvailable = await StoreReview.isAvailableAsync();
-    
-    if (nativeAvailable) {
-      // Native is available - show iOS rating modal directly
-      await StoreReview.requestReview();
-      await markHasRated();
-    } else {
-      // Native not available - open App Store
-      const success = await openAppStoreForRating();
-      if (!success) {
-        Alert.alert(
-          "Unable to Open Ratings",
-          "We couldn't open the app store. Please try again later.",
-          [{ text: "OK" }]
-        );
-      }
-    }
+  const handleRateApp = () => {
+    // Show the custom rate prompt modal (same as after positive feedback)
+    setShowRatePrompt(true);
   };
 
   const handleShareApp = async () => {
@@ -393,10 +378,11 @@ export const SettingsContent: React.FC<{
             >
               <Text style={styles.feedbackTitle}>We'd love your feedback</Text>
               <TextInput
-                style={styles.feedbackInput}
+                style={[styles.feedbackInput, styles.feedbackInputMultiline]}
                 placeholder="Share your thoughts or suggestions..."
                 placeholderTextColor="#9ca3af"
                 multiline
+                numberOfLines={5}
                 value={feedbackText}
                 onChangeText={setFeedbackText}
               />
@@ -436,6 +422,11 @@ export const SettingsContent: React.FC<{
           </TouchableOpacity>
         </KeyboardAvoidingView>
       </Modal>
+      
+      <RatePrompt
+        visible={showRatePrompt}
+        onClose={() => setShowRatePrompt(false)}
+      />
     </View>
   );
 };
@@ -744,29 +735,34 @@ const styles = StyleSheet.create({
   modalBackdrop: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.4)",
-    justifyContent: "flex-end",
+    justifyContent: "center",
+    paddingHorizontal: 20,
   },
   feedbackModal: {
     backgroundColor: "#fff",
-    padding: 20,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    padding: 24,
+    borderRadius: 20,
+    minHeight: "50%",
   },
   feedbackTitle: {
     fontFamily: fonts.headerFamilyItalic,
-    fontSize: 20,
+    fontSize: 22,
     color: colors.deepTeal,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   feedbackInput: {
     borderWidth: 1,
     borderColor: "#e5e7eb",
     borderRadius: 10,
-    padding: 12,
+    padding: 14,
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 15,
+    fontSize: 16,
     color: colors.ink,
-    marginTop: 8,
+    marginTop: 12,
+  },
+  feedbackInputMultiline: {
+    minHeight: 120,
+    textAlignVertical: "top",
   },
   feedbackActions: {
     flexDirection: "row",

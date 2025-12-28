@@ -6,7 +6,6 @@ import {
   StyleSheet,
   Share,
   TouchableOpacity,
-  AppState,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -19,17 +18,40 @@ import { TextSizeModal } from "../components/TextSizeModal";
 import { ReminderModal } from "../components/ReminderModal";
 import { DismissibleToast } from "../components/DismissibleToast";
 import { BookmarkToast } from "../components/BookmarkToast";
+import { RatePrompt } from "../components/RatePrompt";
 import { useReading } from "../hooks/useReading";
 import { useBookmarkManager } from "../hooks/useBookmarkManager";
 import { useAvailableDates } from "../hooks/useAvailableDates";
 import { hasSeenInstruction, markInstructionSeen } from "../utils/bookmarkStorage";
 import { colors } from "../constants/theme";
 import * as Notifications from "expo-notifications";
-import { formatDateLocal } from "../utils/dateUtils";
+
+console.log("[STARTUP] index.tsx module loading...");
 
 export default function Index() {
-  const router = useRouter();
-  const params = useLocalSearchParams<{ jump?: string; ts?: string }>();
+  console.log("[STARTUP] Index function called");
+  
+  let router;
+  try {
+    console.log("[STARTUP-INDEX] Getting router...");
+    router = useRouter();
+    console.log("[STARTUP-INDEX] Router obtained");
+  } catch (err) {
+    console.error("[STARTUP-INDEX] ERROR getting router:", err);
+    throw err;
+  }
+
+  let params;
+  try {
+    console.log("[STARTUP-INDEX] Getting params...");
+    params = useLocalSearchParams<{ jump?: string; ts?: string }>();
+    console.log("[STARTUP-INDEX] Params obtained:", params);
+  } catch (err) {
+    console.error("[STARTUP-INDEX] ERROR getting params:", err);
+    throw err;
+  }
+
+  console.log("[STARTUP-INDEX] Initializing state...");
   // Start with today's date
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -41,9 +63,12 @@ export default function Index() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [reminderToast, setReminderToast] = useState<string | null>(null);
   const [showReminderToast, setShowReminderToast] = useState(false);
-  const [lastDateKey, setLastDateKey] = useState(formatDateLocal(new Date()));
+  const [showRatePrompt, setShowRatePrompt] = useState(false);
+  console.log("[STARTUP-INDEX] State initialized");
   
+  console.log("[STARTUP-INDEX] Calling useReading...");
   const { reading, loading, error } = useReading(currentDate);
+  console.log("[STARTUP-INDEX] useReading returned, loading:", loading, "error:", error);
   const {
     bookmarks,
     isBookmarked,
@@ -75,26 +100,6 @@ export default function Index() {
       router.setParams({ jump: undefined, ts: undefined });
     }
   }, [params?.jump, params?.ts, router]);
-
-  // When app returns to foreground, ensure we jump to the real "today" if a new
-  // calendar day has started since the last time we rendered.
-  useEffect(() => {
-    const sub = AppState.addEventListener("change", (state) => {
-      if (state !== "active") return;
-      const today = new Date();
-      const todayKey = formatDateLocal(today);
-      if (todayKey !== lastDateKey) {
-        setCurrentDate(today);
-        setLastDateKey(todayKey);
-      }
-    });
-    return () => sub.remove();
-  }, [lastDateKey]);
-
-  // Keep lastDateKey in sync with currentDate whenever user navigates manually.
-  useEffect(() => {
-    setLastDateKey(formatDateLocal(currentDate));
-  }, [currentDate]);
 
   // Surface non-blocking errors only when we still have content onscreen.
   useEffect(() => {
@@ -155,6 +160,17 @@ export default function Index() {
 
   const handleOpenBookmarks = () => {
     setShowBookmarkList(true);
+  };
+
+  // Wrapper for bookmark toggle that handles rate prompt
+  const handleBookmarkToggle = async () => {
+    const result = await toggleBookmark();
+    if (result.shouldShowRatePrompt) {
+      // Brief delay for the bookmark toast to appear first
+      setTimeout(() => {
+        setShowRatePrompt(true);
+      }, 400);
+    }
   };
 
   const handleSettingsPress = () => {
@@ -297,7 +313,7 @@ export default function Index() {
         onNextDate={handleNextDate}
         onOpenDatePicker={handleOpenDatePicker}
         isBookmarked={isBookmarked}
-        onBookmarkToggle={toggleBookmark}
+        onBookmarkToggle={handleBookmarkToggle}
         onShare={handleShare}
         showInstruction={showInstruction}
         onDismissInstruction={handleDismissInstruction}
@@ -391,6 +407,11 @@ export default function Index() {
         message={reminderToast ?? ""}
         onHide={() => setShowReminderToast(false)}
         autoDismiss={false}
+      />
+      
+      <RatePrompt
+        visible={showRatePrompt}
+        onClose={() => setShowRatePrompt(false)}
       />
     </>
   );

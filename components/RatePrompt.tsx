@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Modal,
   Animated,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors, fonts } from "../constants/theme";
@@ -52,31 +53,40 @@ export const RatePrompt: React.FC<RatePromptProps> = ({ visible, onClose }) => {
   const checkAndShowRating = async () => {
     await markRatePromptShown();
     
-    // Check if native iOS rating is available
-    const nativeAvailable = await StoreReview.isAvailableAsync();
-    
-    if (nativeAvailable) {
-      // Native is available - show iOS rating modal directly, then close
-      await StoreReview.requestReview();
-      await markHasRated();
-      onClose();
-    } else {
-      // Native not available - show custom Rate/Not Now modal
-      setShowCustomModal(true);
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          tension: 50,
-          friction: 7,
-          useNativeDriver: true,
-        }),
-      ]).start();
+    // On iOS, try native in-app review first
+    // On Android, the In-App Review API only works for Play Store installs,
+    // so we show the custom modal instead
+    if (Platform.OS === "ios") {
+      const nativeAvailable = await StoreReview.isAvailableAsync();
+      
+      if (nativeAvailable) {
+        try {
+          // Native is available - show iOS rating modal directly, then close
+          await StoreReview.requestReview();
+          await markHasRated();
+          onClose();
+          return;
+        } catch (err) {
+          console.log("[RatePrompt] iOS native review failed:", err);
+        }
+      }
     }
+    
+    // Show custom Rate/Not Now modal (Android always, iOS fallback)
+    setShowCustomModal(true);
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
   const handleRate = async () => {

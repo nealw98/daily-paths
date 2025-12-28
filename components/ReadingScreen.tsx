@@ -9,6 +9,7 @@ import {
   Animated,
   Dimensions,
   Pressable,
+  Platform,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -724,13 +725,20 @@ const styles = StyleSheet.create({
     minWidth: 70,
     borderRadius: 6,
     overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 6,
     borderWidth: 1.5,
     borderColor: "rgba(255, 255, 255, 0.3)",
+    backgroundColor: "#fff",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.25,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   calendarMonth: {
     backgroundColor: colors.deepTeal,
@@ -855,21 +863,33 @@ const styles = StyleSheet.create({
   },
   thoughtCardContainer: {
     marginTop: 24,
-    backgroundColor: colors.ocean,
     borderRadius: 12,
+    ...Platform.select({
+      ios: {
+        backgroundColor: colors.ocean,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        backgroundColor: "transparent",
+      },
+    }),
   },
   thoughtCard: {
     borderRadius: 12,
     overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 8,
+    ...Platform.select({
+      android: {
+        elevation: 4,
+        backgroundColor: colors.mist,
+      },
+    }),
   },
   thoughtGradient: {
     padding: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.65)",
+    backgroundColor: Platform.OS === "android" ? colors.mist : "rgba(255, 255, 255, 0.65)",
   },
   thoughtLabel: {
     fontFamily: fonts.bodyFamilyRegular,

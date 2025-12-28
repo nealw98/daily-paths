@@ -22,44 +22,85 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  Platform,
 } from "react-native";
 import * as Notifications from "expo-notifications";
 import * as Updates from "expo-updates";
 import { installGlobalErrorHandler } from "../utils/errorLogger";
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-  }),
-});
+console.log("[STARTUP] _layout.tsx module loading...");
+console.log("[STARTUP] Platform:", Platform.OS, Platform.Version);
+
+let notificationHandlerSet = false;
+try {
+  console.log("[STARTUP] Setting notification handler...");
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+    }),
+  });
+  notificationHandlerSet = true;
+  console.log("[STARTUP] Notification handler set successfully");
+} catch (err) {
+  console.error("[STARTUP] ERROR setting notification handler:", err);
+}
 
 export default function RootLayout() {
-  const router = useRouter();
-  installGlobalErrorHandler();
+  console.log("[STARTUP] RootLayout function called");
+  
+  let router;
+  try {
+    console.log("[STARTUP] Getting router...");
+    router = useRouter();
+    console.log("[STARTUP] Router obtained successfully");
+  } catch (err) {
+    console.error("[STARTUP] ERROR getting router:", err);
+    throw err;
+  }
 
+  try {
+    console.log("[STARTUP] Installing global error handler...");
+    installGlobalErrorHandler();
+    console.log("[STARTUP] Global error handler installed");
+  } catch (err) {
+    console.error("[STARTUP] ERROR installing error handler:", err);
+  }
+
+  console.log("[STARTUP] Initializing state...");
   const [updateReady, setUpdateReady] = useState(false);
   const [restarting, setRestarting] = useState(false);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
+  console.log("[STARTUP] State initialized");
 
-  const [fontsLoaded] = useFonts({
-    CormorantGaramond_600SemiBold,
-    CormorantGaramond_600SemiBold_Italic,
-    CormorantGaramond_700Bold_Italic,
-    Inter_300Light,
-    Inter_400Regular,
-    Lora_400Regular,
-    Lora_400Regular_Italic,
-  });
+  console.log("[STARTUP] Loading fonts...");
+  let fontsLoaded = false;
+  try {
+    [fontsLoaded] = useFonts({
+      CormorantGaramond_600SemiBold,
+      CormorantGaramond_600SemiBold_Italic,
+      CormorantGaramond_700Bold_Italic,
+      Inter_300Light,
+      Inter_400Regular,
+      Lora_400Regular,
+      Lora_400Regular_Italic,
+    });
+    console.log("[STARTUP] useFonts called, fontsLoaded:", fontsLoaded);
+  } catch (err) {
+    console.error("[STARTUP] ERROR loading fonts:", err);
+  }
 
   // Check for OTA updates once on startup; if downloaded, prompt to restart.
   useEffect(() => {
+    console.log("[STARTUP] Updates useEffect running, __DEV__:", __DEV__);
     if (__DEV__) return; // skip in dev client
     let cancelled = false;
     (async () => {
       try {
+        console.log("[STARTUP] Checking for updates...");
         const result = await Updates.checkForUpdateAsync();
+        console.log("[STARTUP] Update check result:", result);
         if (result.isAvailable) {
           await Updates.fetchUpdateAsync();
           if (!cancelled) {
@@ -67,7 +108,6 @@ export default function RootLayout() {
           }
         }
       } catch (err) {
-        // eslint-disable-next-line no-console
         console.log("[Updates] check/fetch failed", err);
       }
     })();
@@ -78,11 +118,17 @@ export default function RootLayout() {
 
   // When a notification is tapped, navigate to the reading screen for today.
   useEffect(() => {
-    const sub = Notifications.addNotificationResponseReceivedListener(() => {
-      // Adding a cache-busting param ensures the navigation runs even if already on the screen.
-      router.push(`/?jump=today&ts=${Date.now()}`);
-    });
-    return () => sub.remove();
+    console.log("[STARTUP] Notification listener useEffect running");
+    try {
+      const sub = Notifications.addNotificationResponseReceivedListener(() => {
+        console.log("[STARTUP] Notification response received");
+        router.push(`/?jump=today&ts=${Date.now()}`);
+      });
+      console.log("[STARTUP] Notification listener added successfully");
+      return () => sub.remove();
+    } catch (err) {
+      console.error("[STARTUP] ERROR adding notification listener:", err);
+    }
   }, [router]);
 
   const handleRestart = async () => {
@@ -119,7 +165,10 @@ export default function RootLayout() {
     }
   };
 
+  console.log("[STARTUP] About to render, fontsLoaded:", fontsLoaded);
+  
   if (!fontsLoaded) {
+    console.log("[STARTUP] Rendering loading screen (fonts not loaded)");
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.ocean} />
@@ -127,6 +176,8 @@ export default function RootLayout() {
     );
   }
 
+  console.log("[STARTUP] Fonts loaded, rendering main app with SettingsProvider");
+  
   return (
     <SettingsProvider>
       {updateReady && (
