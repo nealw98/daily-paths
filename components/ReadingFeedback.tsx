@@ -81,7 +81,7 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
             // Brief delay for thank you to appear, then show rate prompt
             setTimeout(() => {
               setShowRatePrompt(true);
-            }, 800);
+            }, 400);
           }
         }
       } else {
