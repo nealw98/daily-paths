@@ -115,33 +115,15 @@ export async function requestReview(): Promise<boolean> {
 
 export async function openAppStoreForRating(): Promise<boolean> {
   try {
-    // Use expo-store-review's storeUrl which reads from app.json config
-    const configuredUrl = StoreReview.storeUrl();
-    
-    if (configuredUrl) {
-      const canOpen = await Linking.canOpenURL(configuredUrl);
-      if (canOpen) {
-        await Linking.openURL(configuredUrl);
-        await markHasRated();
-        return true;
-      }
-    }
-    
-    // Fallback URLs if config URL fails
-    const fallbackUrl =
+    // Direct App Store URL - using https:// which Safari will redirect to App Store
+    const storeUrl =
       Platform.OS === "ios"
         ? "https://apps.apple.com/app/id6739451768"
         : "https://play.google.com/store/apps/details?id=com.nealw98.dailypaths";
     
-    const canOpenFallback = await Linking.canOpenURL(fallbackUrl);
-    if (canOpenFallback) {
-      await Linking.openURL(fallbackUrl);
-      await markHasRated();
-      return true;
-    }
-    
-    console.error("Could not open any store URL");
-    return false;
+    await Linking.openURL(storeUrl);
+    await markHasRated();
+    return true;
   } catch (error) {
     console.error("Error opening App Store:", error);
     return false;
