@@ -15,6 +15,7 @@ import Clipboard from "@react-native-clipboard/clipboard";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors, fonts } from "../constants/theme";
 import { clearQaLogs, useQaLogs, qaLog } from "../utils/qaLog";
+import { resetRateShareTracking } from "../utils/rateShareTracking";
 
 export default function QaLogsScreen() {
   const params = useLocalSearchParams<{
@@ -112,6 +113,17 @@ export default function QaLogsScreen() {
     }
   };
 
+  const handleResetRateTracking = async () => {
+    try {
+      await resetRateShareTracking();
+      qaLog('rate', 'Rate tracking data reset');
+      alert('Rate & Share tracking has been reset for testing.');
+    } catch (err) {
+      qaLog('rate', 'Error resetting rate tracking', { error: String(err) });
+      alert('Failed to reset rate tracking');
+    }
+  };
+
   return (
     <View
       style={[
@@ -160,6 +172,13 @@ export default function QaLogsScreen() {
             onPress={handleResetDeviceId}
           >
             <Text style={styles.secondaryButtonText}>Reset Device ID</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            activeOpacity={0.8}
+            onPress={handleResetRateTracking}
+          >
+            <Text style={styles.secondaryButtonText}>Reset Rate Tracking</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.secondaryButton}

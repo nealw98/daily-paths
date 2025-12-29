@@ -20,7 +20,7 @@ import { useRouter } from "expo-router";
 import { colors, fonts } from "../constants/theme";
 import { useSettings, TextSize } from "../hooks/useSettings";
 import { useAppFeedback } from "../hooks/useAppFeedback";
-import { shareApp, resetRateShareTracking } from "../utils/rateShareTracking";
+import { shareApp } from "../utils/rateShareTracking";
 import { RatePrompt } from "./RatePrompt";
 
 const textSizeStops: TextSize[] = [
@@ -73,8 +73,6 @@ export const SettingsContent: React.FC<{
   const [feedbackText, setFeedbackText] = useState("");
   const [feedbackContact, setFeedbackContact] = useState("");
   const [isSharing, setIsSharing] = useState(false);
-  const versionPressCountRef = React.useRef(0);
-  const versionPressTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
   const scrollViewRef = React.useRef<ScrollView>(null);
   const textSizeRef = React.useRef<View>(null);
@@ -159,15 +157,6 @@ export const SettingsContent: React.FC<{
       setIsSharing(false);
     }
   };
-
-  // Cleanup version press timeout on unmount
-  React.useEffect(() => {
-    return () => {
-      if (versionPressTimeoutRef.current) {
-        clearTimeout(versionPressTimeoutRef.current);
-      }
-    };
-  }, []);
 
   // Scroll to specific section when requested
   React.useEffect(() => {
@@ -324,26 +313,6 @@ export const SettingsContent: React.FC<{
         <View style={styles.versionContainer}>
           <TouchableOpacity
             activeOpacity={0.7}
-            onPress={() => {
-              versionPressCountRef.current += 1;
-              
-              // Clear existing timeout
-              if (versionPressTimeoutRef.current) {
-                clearTimeout(versionPressTimeoutRef.current);
-              }
-              
-              // Reset after 1 second if no more presses
-              versionPressTimeoutRef.current = setTimeout(() => {
-                versionPressCountRef.current = 0;
-              }, 1000);
-              
-              // Double press to reset rate/share tracking (debug)
-              if (versionPressCountRef.current === 2) {
-                resetRateShareTracking();
-                Alert.alert("Reset Complete", "Rate & Share tracking has been reset for testing.");
-                versionPressCountRef.current = 0;
-              }
-            }}
             onLongPress={() => {
               // Close settings before navigating to QA
               onOpenQaLogs?.();
