@@ -23,6 +23,7 @@ import { useReading } from "../hooks/useReading";
 import { useBookmarkManager } from "../hooks/useBookmarkManager";
 import { useAvailableDates } from "../hooks/useAvailableDates";
 import { hasSeenInstruction, markInstructionSeen } from "../utils/bookmarkStorage";
+import { parseDateLocal } from "../utils/dateUtils";
 import { colors } from "../constants/theme";
 import * as Notifications from "expo-notifications";
 
@@ -141,7 +142,8 @@ export default function Index() {
   };
 
   const handleSelectBookmark = (dateStr: string) => {
-    const date = new Date(dateStr);
+    // Parse as local time to avoid timezone shift
+    const date = parseDateLocal(dateStr);
     setCurrentDate(date);
   };
 

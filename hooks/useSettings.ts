@@ -1,4 +1,5 @@
 import React from "react";
+import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { scheduleDailyReminder, cancelDailyReminder } from "../utils/dailyReminder";
 
@@ -154,47 +155,51 @@ export function getTextSizeMetrics(textSize: TextSize): {
   favoriteLineHeight: number;
   favoriteDateFontSize: number;
 } {
+  // Android renders fonts visually smaller than iOS at the same point size
+  // Add a bump to compensate
+  const androidBump = Platform.OS === "android" ? 2 : 0;
+  
   switch (textSize) {
     case "extraSmall":
       return {
-        bodyFontSize: 15,
-        bodyLineHeight: 26,
-        favoriteFontSize: 14,
-        favoriteLineHeight: 18,
-        favoriteDateFontSize: 12,
+        bodyFontSize: 15 + androidBump,
+        bodyLineHeight: 26 + androidBump,
+        favoriteFontSize: 14 + androidBump,
+        favoriteLineHeight: 18 + androidBump,
+        favoriteDateFontSize: 12 + androidBump,
       };
     case "small":
       return {
-        bodyFontSize: 17,
-        bodyLineHeight: 29,
-        favoriteFontSize: 15,
-        favoriteLineHeight: 20,
-        favoriteDateFontSize: 13,
+        bodyFontSize: 17 + androidBump,
+        bodyLineHeight: 29 + androidBump,
+        favoriteFontSize: 15 + androidBump,
+        favoriteLineHeight: 20 + androidBump,
+        favoriteDateFontSize: 13 + androidBump,
       };
     case "large":
       return {
-        bodyFontSize: 24,
-        bodyLineHeight: 40,
-        favoriteFontSize: 18,
-        favoriteLineHeight: 24,
-        favoriteDateFontSize: 16,
+        bodyFontSize: 24 + androidBump,
+        bodyLineHeight: 40 + androidBump,
+        favoriteFontSize: 18 + androidBump,
+        favoriteLineHeight: 24 + androidBump,
+        favoriteDateFontSize: 16 + androidBump,
       };
     case "extraLarge":
       return {
-        bodyFontSize: 28,
-        bodyLineHeight: 46,
-        favoriteFontSize: 20,
-        favoriteLineHeight: 26,
-        favoriteDateFontSize: 18,
+        bodyFontSize: 28 + androidBump,
+        bodyLineHeight: 46 + androidBump,
+        favoriteFontSize: 20 + androidBump,
+        favoriteLineHeight: 26 + androidBump,
+        favoriteDateFontSize: 18 + androidBump,
       };
     case "medium":
     default:
       return {
-        bodyFontSize: 20,
-        bodyLineHeight: 34,
-        favoriteFontSize: 16,
-        favoriteLineHeight: 21,
-        favoriteDateFontSize: 14,
+        bodyFontSize: 20 + androidBump,
+        bodyLineHeight: 34 + androidBump,
+        favoriteFontSize: 16 + androidBump,
+        favoriteLineHeight: 21 + androidBump,
+        favoriteDateFontSize: 14 + androidBump,
       };
   }
 }

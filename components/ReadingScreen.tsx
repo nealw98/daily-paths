@@ -822,8 +822,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   inlineItalic: {
-    fontFamily: fonts.loraItalic,
-    fontStyle: "italic",
+    fontFamily: fonts.loraRegular,
+    // Use regular font - matches Android appearance
   },
   section: {
     marginTop: 8,
@@ -838,8 +838,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   applicationQuoteText: {
-    fontFamily: fonts.loraItalic,
-    fontStyle: "italic",
+    fontFamily: fonts.loraRegular,
+    // Use regular font - matches Android appearance
     textAlign: "center",
     marginBottom: 4,
   },

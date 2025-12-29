@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { formatDateLocal } from "./dateUtils";
 
 const BOOKMARKS_KEY = "@daily_paths_bookmarks";
 const INSTRUCTION_SEEN_KEY = "@daily_paths_bookmark_instruction_seen";
@@ -29,7 +30,7 @@ export async function getBookmarks(): Promise<BookmarkData[]> {
 export async function isDateBookmarked(date: Date): Promise<boolean> {
   try {
     const bookmarks = await getBookmarks();
-    const dateStr = date.toISOString().split("T")[0]; // YYYY-MM-DD
+    const dateStr = formatDateLocal(date); // YYYY-MM-DD in local timezone
     return bookmarks.some((bookmark) => bookmark.date === dateStr);
   } catch (error) {
     console.error("Error checking bookmark:", error);
@@ -47,7 +48,7 @@ export async function addBookmark(
 ): Promise<void> {
   try {
     const bookmarks = await getBookmarks();
-    const dateStr = date.toISOString().split("T")[0];
+    const dateStr = formatDateLocal(date); // Use local timezone
 
     const newBookmark: BookmarkData = {
       date: dateStr,
@@ -80,7 +81,7 @@ export async function addBookmark(
 export async function removeBookmark(date: Date): Promise<void> {
   try {
     const bookmarks = await getBookmarks();
-    const dateStr = date.toISOString().split("T")[0];
+    const dateStr = formatDateLocal(date); // Use local timezone
     const filtered = bookmarks.filter((bookmark) => bookmark.date !== dateStr);
     await AsyncStorage.setItem(BOOKMARKS_KEY, JSON.stringify(filtered));
   } catch (error) {

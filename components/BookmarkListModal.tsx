@@ -12,6 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { colors, fonts } from "../constants/theme";
 import { BookmarkData } from "../utils/bookmarkStorage";
 import { useSettings, getTextSizeMetrics } from "../hooks/useSettings";
+import { parseDateLocal } from "../utils/dateUtils";
 
 interface BookmarkListModalProps {
   visible: boolean;
@@ -53,7 +54,8 @@ export const BookmarkListModal: React.FC<BookmarkListModalProps> = ({
   });
 
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
+    // Parse as local time to avoid timezone shift
+    const date = parseDateLocal(dateStr);
     return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
