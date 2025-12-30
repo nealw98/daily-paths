@@ -18,7 +18,8 @@ import { TextSizeModal } from "../components/TextSizeModal";
 import { ReminderModal } from "../components/ReminderModal";
 import { DismissibleToast } from "../components/DismissibleToast";
 import { BookmarkToast } from "../components/BookmarkToast";
-import { RatePrompt } from "../components/RatePrompt";
+import { requestReview } from "../utils/rateShareTracking";
+import { qaLog } from "../utils/qaLog";
 import { useReading } from "../hooks/useReading";
 import { useBookmarkManager } from "../hooks/useBookmarkManager";
 import { useAvailableDates } from "../hooks/useAvailableDates";
@@ -64,7 +65,6 @@ export default function Index() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [reminderToast, setReminderToast] = useState<string | null>(null);
   const [showReminderToast, setShowReminderToast] = useState(false);
-  const [showRatePrompt, setShowRatePrompt] = useState(false);
   console.log("[STARTUP-INDEX] State initialized");
   
   console.log("[STARTUP-INDEX] Calling useReading...");
@@ -164,13 +164,15 @@ export default function Index() {
     setShowBookmarkList(true);
   };
 
-  // Wrapper for bookmark toggle that handles rate prompt
+  // Wrapper for bookmark toggle that handles native rate prompt
   const handleBookmarkToggle = async () => {
     const result = await toggleBookmark();
     if (result.shouldShowRatePrompt) {
-      // Brief delay for the bookmark toast to appear first
-      setTimeout(() => {
-        setShowRatePrompt(true);
+      // Brief delay for the bookmark toast to appear first, then try native review
+      // If Apple suppresses it, user sees nothing (they didn't expect anything)
+      qaLog("rate", "Bookmark triggered rate prompt check - will try native review");
+      setTimeout(async () => {
+        await requestReview();
       }, 400);
     }
   };
@@ -409,11 +411,6 @@ export default function Index() {
         message={reminderToast ?? ""}
         onHide={() => setShowReminderToast(false)}
         autoDismiss={false}
-      />
-      
-      <RatePrompt
-        visible={showRatePrompt}
-        onClose={() => setShowRatePrompt(false)}
       />
     </>
   );
