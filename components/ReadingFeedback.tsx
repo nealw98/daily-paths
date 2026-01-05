@@ -145,22 +145,6 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
           <TouchableOpacity
             style={[
               styles.ratingButton,
-              currentRating === 'neutral' && styles.ratingButtonSelected,
-              currentRating && currentRating !== 'neutral' && styles.ratingButtonInactive,
-            ]}
-            onPress={() => handleRating('neutral')}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name="hand-right"
-              size={24}
-              color={currentRating === 'neutral' ? '#fff' : colors.ocean}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.ratingButton,
               currentRating === 'negative' && styles.ratingButtonSelected,
               currentRating && currentRating !== 'negative' && styles.ratingButtonInactive,
             ]}
