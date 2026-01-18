@@ -392,6 +392,7 @@ export const SettingsContent: React.FC<{
           </TouchableOpacity>
         </KeyboardAvoidingView>
       </Modal>
+
     </View>
   );
 };

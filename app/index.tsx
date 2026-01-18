@@ -18,7 +18,8 @@ import { TextSizeModal } from "../components/TextSizeModal";
 import { ReminderModal } from "../components/ReminderModal";
 import { DismissibleToast } from "../components/DismissibleToast";
 import { BookmarkToast } from "../components/BookmarkToast";
-import { requestReview } from "../utils/rateShareTracking";
+import { RateAppModal } from "../components/RateAppModal";
+import { markRatePromptShown, recordFirstUseIfNeeded } from "../utils/rateShareTracking";
 import { qaLog } from "../utils/qaLog";
 import { useReading } from "../hooks/useReading";
 import { useBookmarkManager } from "../hooks/useBookmarkManager";
@@ -65,6 +66,7 @@ export default function Index() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [reminderToast, setReminderToast] = useState<string | null>(null);
   const [showReminderToast, setShowReminderToast] = useState(false);
+  const [showRateModal, setShowRateModal] = useState(false);
   console.log("[STARTUP-INDEX] State initialized");
   
   console.log("[STARTUP-INDEX] Calling useReading...");
@@ -121,6 +123,11 @@ export default function Index() {
     checkInstruction();
   }, []);
 
+  // Record first use date for rate prompt timing
+  useEffect(() => {
+    recordFirstUseIfNeeded();
+  }, []);
+
   const handlePrevDate = () => {
     const prevDate = new Date(currentDate);
     prevDate.setDate(prevDate.getDate() - 1);
@@ -164,16 +171,16 @@ export default function Index() {
     setShowBookmarkList(true);
   };
 
-  // Wrapper for bookmark toggle that handles native rate prompt
+  // Wrapper for bookmark toggle that handles rate modal
   const handleBookmarkToggle = async () => {
     const result = await toggleBookmark();
     if (result.shouldShowRatePrompt) {
-      // Brief delay for the bookmark toast to appear first, then try native review
-      // If Apple suppresses it, user sees nothing (they didn't expect anything)
-      qaLog("rate", "Bookmark triggered rate prompt check - will try native review");
-      setTimeout(async () => {
-        await requestReview();
-      }, 400);
+      // Brief delay for the bookmark toast to appear first, then show rate modal
+      qaLog("rate", "Bookmark triggered rate prompt - will show rate modal");
+      await markRatePromptShown();
+      setTimeout(() => {
+        setShowRateModal(true);
+      }, 800);
     }
   };
 
@@ -411,6 +418,11 @@ export default function Index() {
         message={reminderToast ?? ""}
         onHide={() => setShowReminderToast(false)}
         autoDismiss={false}
+      />
+
+      <RateAppModal
+        visible={showRateModal}
+        onClose={() => setShowRateModal(false)}
       />
     </>
   );

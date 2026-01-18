@@ -5,10 +5,11 @@ import { colors, fonts } from '../constants/theme';
 import { useReadingFeedback } from '../hooks/useReadingFeedback';
 import { useSettings, getTextSizeMetrics } from '../hooks/useSettings';
 import { NegativeFeedbackModal } from './NegativeFeedbackModal';
+import { RateAppModal } from './RateAppModal';
 import { 
   shouldShowRatePrompt, 
   incrementReadingsCompleted,
-  requestReview,
+  markRatePromptShown,
 } from '../utils/rateShareTracking';
 import { qaLog } from '../utils/qaLog';
 
@@ -27,6 +28,7 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
   const { settings } = useSettings();
   const [localRating, setLocalRating] = useState<'positive' | 'neutral' | 'negative' | null>(null);
   const [showNegativeModal, setShowNegativeModal] = useState(false);
+  const [showRateModal, setShowRateModal] = useState(false);
   const [showThankYou, setShowThankYou] = useState(false);
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -71,23 +73,22 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
       if (success) {
         setShowThankYou(true);
         
-        // If positive feedback, increment readings and maybe trigger native rate prompt
+        // If positive feedback, increment readings and maybe show rate modal
         if (rating === 'positive') {
           await incrementReadingsCompleted();
-          qaLog("rate", "Positive rating - checking if should trigger native review");
+          qaLog("rate", "Positive rating - checking if should show rate modal");
           
-          // Check if we should try the native rate prompt
+          // Check if we should show the rate modal
           const shouldShow = await shouldShowRatePrompt();
           qaLog("rate", "shouldShowRatePrompt result", { shouldShow });
           if (shouldShow) {
-            // Brief delay for thank you to appear, then try native review
-            // If Apple suppresses it, user sees nothing (they didn't expect anything)
-            // They can always rate explicitly via Settings
-            qaLog("rate", "Will try native review after delay");
-            setTimeout(async () => {
-              qaLog("rate", "Calling requestReview (native only)");
-              await requestReview();
-            }, 400);
+            // Brief delay for thank you to appear, then show rate modal
+            qaLog("rate", "Will show rate modal after delay");
+            await markRatePromptShown();
+            setTimeout(() => {
+              qaLog("rate", "Showing rate modal");
+              setShowRateModal(true);
+            }, 800);
           }
         }
       } else {
@@ -172,6 +173,11 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
         visible={showNegativeModal}
         onClose={() => setShowNegativeModal(false)}
         onSubmit={handleNegativeFeedback}
+      />
+
+      <RateAppModal
+        visible={showRateModal}
+        onClose={() => setShowRateModal(false)}
       />
     </>
   );
