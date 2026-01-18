@@ -20,8 +20,9 @@ import { useRouter } from "expo-router";
 import { colors, fonts } from "../constants/theme";
 import { useSettings, TextSize } from "../hooks/useSettings";
 import { useAppFeedback } from "../hooks/useAppFeedback";
-import { shareApp, openAppStoreForRating } from "../utils/rateShareTracking";
+import { shareApp } from "../utils/rateShareTracking";
 import { qaLog } from "../utils/qaLog";
+import { RateAppModal } from "./RateAppModal";
 
 const textSizeStops: TextSize[] = [
   "extraSmall",
@@ -69,6 +70,7 @@ export const SettingsContent: React.FC<{
    // changes until the user confirms.
   const [tempReminderDate, setTempReminderDate] = useState<Date | null>(null);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showRateModal, setShowRateModal] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
   const [feedbackContact, setFeedbackContact] = useState("");
   const [isSharing, setIsSharing] = useState(false);
@@ -137,11 +139,9 @@ export const SettingsContent: React.FC<{
     await setDailyReminderEnabled(enabled);
   };
 
-  const handleRateApp = async () => {
-    // User explicitly tapped "Rate App" - go directly to App Store
-    // Don't try native review here since Apple rate-limits it
-    qaLog("rate", "Rate App button pressed - opening App Store");
-    await openAppStoreForRating();
+  const handleRateApp = () => {
+    qaLog("rate", "Rate App button pressed - showing rate modal");
+    setShowRateModal(true);
   };
 
   const handleShareApp = async () => {
@@ -393,6 +393,10 @@ export const SettingsContent: React.FC<{
         </KeyboardAvoidingView>
       </Modal>
 
+      <RateAppModal
+        visible={showRateModal}
+        onClose={() => setShowRateModal(false)}
+      />
     </View>
   );
 };

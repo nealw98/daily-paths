@@ -166,11 +166,11 @@ export async function requestReview(): Promise<boolean> {
 
 export async function openAppStoreForRating(): Promise<boolean> {
   try {
-    // Use itms-apps:// to open App Store app directly (not Safari)
+    // Use action=write-review to open directly to the rating/review section
     const storeUrl =
       Platform.OS === "ios"
-        ? "itms-apps://itunes.apple.com/app/id6755981862"
-        : "https://play.google.com/store/apps/details?id=com.nealw98.dailypaths";
+        ? "itms-apps://apps.apple.com/app/id6755981862?action=write-review"
+        : "market://details?id=com.nealw98.dailypaths";
     
     await Linking.openURL(storeUrl);
     await markHasRated();
