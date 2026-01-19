@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Switch,
 } from "react-native";
 import Constants from "expo-constants";
 import { useLocalSearchParams } from "expo-router";
@@ -16,6 +17,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { colors, fonts } from "../constants/theme";
 import { clearQaLogs, useQaLogs, qaLog } from "../utils/qaLog";
 import { resetRateShareTracking } from "../utils/rateShareTracking";
+import { isDeveloperDevice, setDeveloperDevice, getOrCreateDeviceId } from "../utils/deviceIdentity";
 
 export default function QaLogsScreen() {
   const params = useLocalSearchParams<{
@@ -27,6 +29,19 @@ export default function QaLogsScreen() {
   const [updating, setUpdating] = React.useState(false);
   const [updateStatus, setUpdateStatus] = React.useState<string | null>(null);
   const [copyStatus, setCopyStatus] = React.useState<string | null>(null);
+  const [isDeveloper, setIsDeveloper] = React.useState(false);
+  const [deviceId, setDeviceId] = React.useState<string | null>(null);
+
+  // Load developer mode and device ID on mount
+  React.useEffect(() => {
+    const loadDeviceInfo = async () => {
+      const devMode = await isDeveloperDevice();
+      setIsDeveloper(devMode);
+      const id = await getOrCreateDeviceId();
+      setDeviceId(id);
+    };
+    loadDeviceInfo();
+  }, []);
 
   const expoConfig: any = Constants.expoConfig ?? {};
   const appVersion =
@@ -147,7 +162,26 @@ export default function QaLogsScreen() {
         <Text style={styles.meta}>
           App ID: {expoConfig.slug ?? "unknown"}{" "}
           {"\n"}Channel: {expoConfig.extra?.eas?.projectId ? "EAS" : "local"}
+          {deviceId && `\nDevice ID: ${deviceId.slice(0, 8)}...`}
         </Text>
+        
+        <View style={styles.developerRow}>
+          <Text style={styles.developerLabel}>Developer Mode (exclude from analytics)</Text>
+          <Switch
+            value={isDeveloper}
+            onValueChange={async (value) => {
+              setIsDeveloper(value);
+              await setDeveloperDevice(value);
+              alert(value 
+                ? 'Developer mode enabled. Your usage will not be counted in analytics.' 
+                : 'Developer mode disabled. Your usage will be counted in analytics.'
+              );
+            }}
+            trackColor={{ false: colors.mist, true: colors.seafoam }}
+            thumbColor={isDeveloper ? colors.deepTeal : '#f4f3f4'}
+          />
+        </View>
+
         <View style={styles.actionsRow}>
           <TouchableOpacity
             style={styles.secondaryButton}
@@ -259,6 +293,25 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 12,
     color: "#6b7280",
+  },
+  developerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.mist,
+  },
+  developerLabel: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 13,
+    color: colors.ink,
+    flex: 1,
+    marginRight: 8,
   },
   actionsRow: {
     marginTop: 8,

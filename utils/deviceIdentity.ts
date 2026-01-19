@@ -5,6 +5,11 @@ import { supabase } from '../lib/supabase';
 import { qaLog } from './qaLog';
 
 const DEVICE_ID_KEY = '@daily_paths_device_id';
+const LAST_ACTIVITY_DATE_KEY = '@daily_paths_last_activity_date';
+const IS_DEVELOPER_KEY = '@daily_paths_is_developer';
+
+// TODO: Migrate to expo-secure-store for persistence across reinstalls
+// iOS: Keychain, Android: EncryptedSharedPreferences
 
 /**
  * Gets or creates a unique device identifier for anonymous tracking.
@@ -83,6 +88,90 @@ export async function updateLastActive(): Promise<void> {
   } catch (err) {
     // Silent fail - not critical
     qaLog('device', 'Error updating last active', { error: String(err) });
+  }
+}
+
+/**
+ * Check if this device is marked as a developer device (excluded from analytics)
+ */
+export async function isDeveloperDevice(): Promise<boolean> {
+  try {
+    const value = await AsyncStorage.getItem(IS_DEVELOPER_KEY);
+    return value === 'true';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Set whether this device is a developer device
+ */
+export async function setDeveloperDevice(isDeveloper: boolean): Promise<void> {
+  try {
+    await AsyncStorage.setItem(IS_DEVELOPER_KEY, isDeveloper ? 'true' : 'false');
+    
+    // Also update in Supabase
+    const deviceId = await getOrCreateDeviceId();
+    await supabase
+      .from('app_devices')
+      .update({ is_developer: isDeveloper })
+      .eq('device_id', deviceId);
+    
+    qaLog('device', `Developer mode ${isDeveloper ? 'enabled' : 'disabled'}`, { deviceId });
+  } catch (err) {
+    qaLog('device', 'Error setting developer mode', { error: String(err) });
+  }
+}
+
+/**
+ * Records daily activity for analytics (called once per day max)
+ * Skips if device is marked as developer
+ */
+export async function recordDailyActivity(): Promise<void> {
+  try {
+    // Skip if developer device
+    const isDev = await isDeveloperDevice();
+    if (isDev) {
+      qaLog('device', 'Skipping daily activity - developer device');
+      return;
+    }
+
+    // Check if we already recorded today
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const lastDate = await AsyncStorage.getItem(LAST_ACTIVITY_DATE_KEY);
+    
+    if (lastDate === today) {
+      qaLog('device', 'Daily activity already recorded for today');
+      return;
+    }
+
+    const deviceId = await getOrCreateDeviceId();
+    const appVersion = Constants.expoConfig?.version || 'unknown';
+    const platform = Platform.OS;
+
+    // Record in Supabase
+    const { error } = await supabase.from('daily_active_users').upsert(
+      {
+        device_id: deviceId,
+        date: today,
+        app_version: appVersion,
+        platform: platform,
+      },
+      { onConflict: 'device_id,date' }
+    );
+
+    if (error) {
+      qaLog('device', 'Error recording daily activity', { 
+        error: error.message,
+        code: (error as any).code 
+      });
+    } else {
+      // Mark as recorded locally
+      await AsyncStorage.setItem(LAST_ACTIVITY_DATE_KEY, today);
+      qaLog('device', 'Daily activity recorded', { deviceId, date: today });
+    }
+  } catch (err) {
+    qaLog('device', 'Exception recording daily activity', { error: String(err) });
   }
 }
 

@@ -20,6 +20,7 @@ import { DismissibleToast } from "../components/DismissibleToast";
 import { BookmarkToast } from "../components/BookmarkToast";
 import { RateAppModal } from "../components/RateAppModal";
 import { markRatePromptShown, recordFirstUseIfNeeded } from "../utils/rateShareTracking";
+import { recordDailyActivity } from "../utils/deviceIdentity";
 import { qaLog } from "../utils/qaLog";
 import { useReading } from "../hooks/useReading";
 import { useBookmarkManager } from "../hooks/useBookmarkManager";
@@ -126,6 +127,11 @@ export default function Index() {
   // Record first use date for rate prompt timing
   useEffect(() => {
     recordFirstUseIfNeeded();
+  }, []);
+
+  // Record daily activity for analytics (once per day)
+  useEffect(() => {
+    recordDailyActivity();
   }, []);
 
   const handlePrevDate = () => {
