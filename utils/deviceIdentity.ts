@@ -175,6 +175,57 @@ export async function recordDailyActivity(): Promise<void> {
   }
 }
 
+/**
+ * Records a reading view for analytics
+ * Tracks unique viewers per reading (one record per device per reading, lifetime)
+ * - On first view: creates row, DB sets first_viewed_at to now()
+ * - On subsequent views: updates last_viewed_at only
+ */
+export async function recordReadingView(readingId: string): Promise<void> {
+  try {
+    // Skip if developer device
+    const isDev = await isDeveloperDevice();
+    if (isDev) {
+      return; // Silent skip for reading views
+    }
+
+    if (!readingId) {
+      return;
+    }
+
+    const deviceId = await getOrCreateDeviceId();
+    const timestamp = new Date().toISOString(); // Full ISO 8601 timestamptz
+    const appVersion = Constants.expoConfig?.version || 'unknown';
+    const platform = Platform.OS;
+
+    // Fire and forget - don't block the UI
+    // Upserts on (device_id, reading_id)
+    // - first_viewed_at: NOT sent, so DB uses default now() on insert, unchanged on update
+    // - last_viewed_at: always updated to current timestamp
+    supabase.from('reading_views').upsert(
+      {
+        device_id: deviceId,
+        reading_id: readingId,
+        last_viewed_at: timestamp,
+        app_version: appVersion,
+        platform: platform,
+      },
+      { 
+        onConflict: 'device_id,reading_id',
+      }
+    ).then(({ error }) => {
+      if (error) {
+        qaLog('analytics', 'Error recording reading view', { 
+          error: error.message,
+          readingId 
+        });
+      }
+    });
+  } catch (err) {
+    // Silent fail - not critical
+  }
+}
+
 
 
 

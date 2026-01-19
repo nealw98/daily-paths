@@ -20,7 +20,7 @@ import { DismissibleToast } from "../components/DismissibleToast";
 import { BookmarkToast } from "../components/BookmarkToast";
 import { RateAppModal } from "../components/RateAppModal";
 import { markRatePromptShown, recordFirstUseIfNeeded } from "../utils/rateShareTracking";
-import { recordDailyActivity } from "../utils/deviceIdentity";
+import { recordDailyActivity, recordReadingView } from "../utils/deviceIdentity";
 import { qaLog } from "../utils/qaLog";
 import { useReading } from "../hooks/useReading";
 import { useBookmarkManager } from "../hooks/useBookmarkManager";
@@ -133,6 +133,13 @@ export default function Index() {
   useEffect(() => {
     recordDailyActivity();
   }, []);
+
+  // Record reading view for analytics (unique viewers per reading)
+  useEffect(() => {
+    if (reading?.id) {
+      recordReadingView(reading.id);
+    }
+  }, [reading?.id]);
 
   const handlePrevDate = () => {
     const prevDate = new Date(currentDate);
