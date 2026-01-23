@@ -188,14 +188,19 @@ export async function shareApp(): Promise<boolean> {
         ? "https://apps.apple.com/us/app/al-anon-daily-paths/id6755981862"
         : "https://play.google.com/store/apps/details?id=com.nealw98.dailypaths";
 
-    const message = `Check out Al-Anon Daily Paths - daily readings for recovery! ${appStoreUrl}`;
+    // iOS: use separate url field so the social preview image works
+    // Android: include URL in message since it doesn't support the url field
+    const shareContent = Platform.OS === "ios"
+      ? {
+          message: "Check out Al-Anon Daily Paths - daily readings for recovery!",
+          url: appStoreUrl,
+        }
+      : {
+          message: `Check out Al-Anon Daily Paths - daily readings for recovery! ${appStoreUrl}`,
+        };
 
     // Use React Native's Share API for URLs/text
-    const result = await Share.share({
-      message: message,
-      url: appStoreUrl, // iOS will use this if message is provided
-      title: "Al-Anon Daily Paths",
-    });
+    const result = await Share.share(shareContent);
     
     // Track share count (result.action can be 'sharedAction' or 'dismissedAction')
     if (result.action === Share.sharedAction) {
