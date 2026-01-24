@@ -12,20 +12,24 @@ import {
   markRatePromptShown,
 } from '../utils/rateShareTracking';
 import { qaLog } from '../utils/qaLog';
+import { useAnalytics } from '../utils/analytics';
 
 interface ReadingFeedbackProps {
   readingId: string;
   dayOfYear: number;
   readingTitle: string;
+  readingDate: Date;
 }
 
 export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
   readingId,
   dayOfYear,
   readingTitle,
+  readingDate,
 }) => {
   const { currentRating: hookRating, submitRating, loading } = useReadingFeedback(readingId);
   const { settings } = useSettings();
+  const { trackReadingRated } = useAnalytics();
   const [localRating, setLocalRating] = useState<'positive' | 'neutral' | 'negative' | null>(null);
   const [showNegativeModal, setShowNegativeModal] = useState(false);
   const [showRateModal, setShowRateModal] = useState(false);
@@ -65,6 +69,15 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
   const handleRating = async (rating: 'positive' | 'neutral' | 'negative') => {
     // Optimistically update local state immediately for visual feedback
     setLocalRating(rating);
+    
+    // Track in PostHog
+    if (rating === 'positive' || rating === 'negative') {
+      trackReadingRated(
+        readingId,
+        readingDate,
+        rating === 'positive' ? 'thumbs_up' : 'thumbs_down'
+      );
+    }
     
     if (rating === 'negative') {
       setShowNegativeModal(true);

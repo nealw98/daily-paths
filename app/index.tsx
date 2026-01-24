@@ -22,6 +22,7 @@ import { RateAppModal } from "../components/RateAppModal";
 import { markRatePromptShown, recordFirstUseIfNeeded } from "../utils/rateShareTracking";
 import { recordDailyActivity, recordReadingView } from "../utils/deviceIdentity";
 import { qaLog } from "../utils/qaLog";
+import { useAnalytics, NavigationMethod } from "../utils/analytics";
 import { useReading } from "../hooks/useReading";
 import { useBookmarkManager } from "../hooks/useBookmarkManager";
 import { useAvailableDates } from "../hooks/useAvailableDates";
@@ -68,7 +69,11 @@ export default function Index() {
   const [reminderToast, setReminderToast] = useState<string | null>(null);
   const [showReminderToast, setShowReminderToast] = useState(false);
   const [showRateModal, setShowRateModal] = useState(false);
+  const [navigationMethod, setNavigationMethod] = useState<NavigationMethod>('app_open');
   console.log("[STARTUP-INDEX] State initialized");
+  
+  // Analytics
+  const { trackAppOpened, trackReadingViewed, trackReadingFavorited, trackReadingUnfavorited } = useAnalytics();
   
   console.log("[STARTUP-INDEX] Calling useReading...");
   const { reading, loading, error } = useReading(currentDate);
@@ -92,6 +97,7 @@ export default function Index() {
       lastNotificationResponse.actionIdentifier ===
       Notifications.DEFAULT_ACTION_IDENTIFIER
     ) {
+      setNavigationMethod('notification');
       setCurrentDate(new Date());
     }
   }, [lastNotificationResponse]);
@@ -134,20 +140,29 @@ export default function Index() {
     recordDailyActivity();
   }, []);
 
+  // Track app opened event (PostHog)
+  useEffect(() => {
+    trackAppOpened();
+  }, []);
+
   // Record reading view for analytics (unique viewers per reading)
   useEffect(() => {
     if (reading?.id) {
       recordReadingView(reading.id);
+      // Track in PostHog with navigation method
+      trackReadingViewed(reading.id, currentDate, navigationMethod);
     }
   }, [reading?.id]);
 
   const handlePrevDate = () => {
+    setNavigationMethod('prev_button');
     const prevDate = new Date(currentDate);
     prevDate.setDate(prevDate.getDate() - 1);
     setCurrentDate(prevDate);
   };
 
   const handleNextDate = () => {
+    setNavigationMethod('next_button');
     const nextDate = new Date(currentDate);
     nextDate.setDate(nextDate.getDate() + 1);
     setCurrentDate(nextDate);
@@ -158,10 +173,12 @@ export default function Index() {
   };
 
   const handleSelectDate = (date: Date) => {
+    setNavigationMethod('date_picker');
     setCurrentDate(date);
   };
 
   const handleSelectBookmark = (dateStr: string) => {
+    setNavigationMethod('bookmark_list');
     // Parse as local time to avoid timezone shift
     const date = parseDateLocal(dateStr);
     setCurrentDate(date);
@@ -184,9 +201,19 @@ export default function Index() {
     setShowBookmarkList(true);
   };
 
-  // Wrapper for bookmark toggle that handles rate modal
+  // Wrapper for bookmark toggle that handles rate modal and analytics
   const handleBookmarkToggle = async () => {
     const result = await toggleBookmark();
+    
+    // Track favorite/unfavorite in PostHog
+    if (reading?.id) {
+      if (result.newState) {
+        trackReadingFavorited(reading.id, currentDate);
+      } else {
+        trackReadingUnfavorited(reading.id, currentDate);
+      }
+    }
+    
     if (result.shouldShowRatePrompt) {
       // Brief delay for the bookmark toast to appear first, then show rate modal
       qaLog("rate", "Bookmark triggered rate prompt - will show rate modal");

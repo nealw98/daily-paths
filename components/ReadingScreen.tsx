@@ -613,6 +613,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
               readingId={reading.id}
               dayOfYear={getScheduledDayOfYear(reading.date)}
               readingTitle={reading.title}
+              readingDate={reading.date}
             />
           </ScrollView>
         </Animated.View>
