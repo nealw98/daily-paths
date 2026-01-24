@@ -193,6 +193,7 @@ export default function RootLayout() {
           enableSessionReplay: true,
           flushAt: 1, // Flush after every event (for debugging)
           flushInterval: 10000, // Flush every 10 seconds
+          debug: true, // Enable PostHog debug logging
         }}
         autocapture
       >
