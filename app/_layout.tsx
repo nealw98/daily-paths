@@ -174,19 +174,25 @@ export default function RootLayout() {
   
   const posthogApiKey = process.env.EXPO_PUBLIC_POSTHOG_API_KEY;
   const posthogHost = process.env.EXPO_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
+  
+  console.log("[POSTHOG] API Key present:", !!posthogApiKey, "Key prefix:", posthogApiKey?.substring(0, 10));
+  console.log("[POSTHOG] Host:", posthogHost);
 
   // Wrap content in PostHogProvider only if API key is available
   const wrapWithPostHog = (children: React.ReactNode) => {
     if (!posthogApiKey) {
-      console.log("[STARTUP] PostHog API key not found, skipping analytics");
+      console.log("[POSTHOG] API key not found, skipping analytics");
       return children;
     }
+    console.log("[POSTHOG] Initializing PostHogProvider");
     return (
       <PostHogProvider
         apiKey={posthogApiKey}
         options={{
           host: posthogHost,
           enableSessionReplay: true,
+          flushAt: 1, // Flush after every event (for debugging)
+          flushInterval: 10000, // Flush every 10 seconds
         }}
         autocapture
       >

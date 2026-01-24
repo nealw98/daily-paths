@@ -39,8 +39,17 @@ export function useAnalytics() {
   const posthog = usePostHog();
   const hasIdentified = useRef(false);
   const hasTrackedAppOpen = useRef(false);
+  const hasLoggedStatus = useRef(false);
   const currentReadingView = useRef<ReadingViewState | null>(null);
   const appState = useRef<AppStateStatus>(AppState.currentState);
+
+  // Log PostHog status once
+  useEffect(() => {
+    if (!hasLoggedStatus.current) {
+      console.log('[POSTHOG] usePostHog() returned:', posthog ? 'PostHog instance' : 'null');
+      hasLoggedStatus.current = true;
+    }
+  }, [posthog]);
 
   // Identify user with persistent device ID
   useEffect(() => {
@@ -49,10 +58,11 @@ export function useAnalytics() {
     (async () => {
       try {
         const deviceId = await getOrCreateDeviceId();
+        console.log('[POSTHOG] Identifying user with device ID:', deviceId);
         posthog.identify(deviceId);
         hasIdentified.current = true;
       } catch (err) {
-        console.log('[Analytics] Failed to identify user:', err);
+        console.log('[POSTHOG] Failed to identify user:', err);
       }
     })();
   }, [posthog]);
@@ -60,18 +70,29 @@ export function useAnalytics() {
   // Fire reading_viewed event with time spent
   const fireReadingViewedEvent = useCallback(() => {
     const viewState = currentReadingView.current;
-    if (!viewState || !posthog) return;
+    if (!viewState) {
+      return;
+    }
+    if (!posthog) {
+      console.log('[POSTHOG] fireReadingViewedEvent: PostHog not available');
+      return;
+    }
 
     const timeSpentSeconds = Math.round((Date.now() - viewState.startTime) / 1000);
     
     // Only track if user spent at least 1 second (avoid accidental quick swipes)
     if (timeSpentSeconds >= 1) {
+      console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.READING_VIEWED, {
+        reading_id: viewState.readingId,
+        time_spent_seconds: timeSpentSeconds,
+      });
       posthog.capture(ANALYTICS_EVENTS.READING_VIEWED, {
         reading_id: viewState.readingId,
         reading_date: formatReadingDate(viewState.readingDate),
         navigation_method: viewState.navigationMethod,
         time_spent_seconds: timeSpentSeconds,
       });
+      posthog.flush(); // Force send to server
     }
   }, [posthog]);
 
@@ -107,8 +128,17 @@ export function useAnalytics() {
 
   // Track app opened (called on initial mount)
   const trackAppOpened = useCallback(() => {
-    if (!posthog || hasTrackedAppOpen.current) return;
+    if (!posthog) {
+      console.log('[POSTHOG] trackAppOpened: PostHog not available');
+      return;
+    }
+    if (hasTrackedAppOpen.current) {
+      console.log('[POSTHOG] trackAppOpened: Already tracked this session');
+      return;
+    }
+    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.APP_OPENED);
     posthog.capture(ANALYTICS_EVENTS.APP_OPENED);
+    posthog.flush(); // Force send events to server
     hasTrackedAppOpen.current = true;
   }, [posthog]);
 
