@@ -92,7 +92,12 @@ export function useAnalytics() {
         navigation_method: viewState.navigationMethod,
         time_spent_seconds: timeSpentSeconds,
       });
-      posthog.flush(); // Force send to server
+      console.log('[POSTHOG] Calling flush() for reading_viewed...');
+      posthog.flush().then(() => {
+        console.log('[POSTHOG] reading_viewed flush() completed');
+      }).catch((err: unknown) => {
+        console.log('[POSTHOG] reading_viewed flush() error:', err);
+      });
     }
   }, [posthog]);
 
@@ -138,7 +143,12 @@ export function useAnalytics() {
     }
     console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.APP_OPENED);
     posthog.capture(ANALYTICS_EVENTS.APP_OPENED);
-    posthog.flush(); // Force send events to server
+    console.log('[POSTHOG] Calling flush()...');
+    posthog.flush().then(() => {
+      console.log('[POSTHOG] flush() completed successfully');
+    }).catch((err: unknown) => {
+      console.log('[POSTHOG] flush() error:', err);
+    });
     hasTrackedAppOpen.current = true;
   }, [posthog]);
 
