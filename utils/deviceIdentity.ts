@@ -1,37 +1,58 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { qaLog } from './qaLog';
 
 const DEVICE_ID_KEY = '@daily_paths_device_id';
+const SECURE_DEVICE_ID_KEY = 'daily_paths_device_id'; // SecureStore key (no @ prefix)
 const LAST_ACTIVITY_DATE_KEY = '@daily_paths_last_activity_date';
 const IS_DEVELOPER_KEY = '@daily_paths_is_developer';
 
-// TODO: Migrate to expo-secure-store for persistence across reinstalls
-// iOS: Keychain, Android: EncryptedSharedPreferences
+// Cached device ID to avoid repeated async calls
+let cachedDeviceId: string | null = null;
 
 /**
  * Gets or creates a unique device identifier for anonymous tracking.
- * This ID is stored locally and used to track feedback across sessions
- * without requiring user login.
+ * Uses expo-secure-store for persistence across reinstalls:
+ * - iOS: Keychain (persists across reinstalls)
+ * - Android: EncryptedSharedPreferences (persists across reinstalls with backup)
  */
 export async function getOrCreateDeviceId(): Promise<string> {
+  // Return cached ID if available
+  if (cachedDeviceId) {
+    return cachedDeviceId;
+  }
+
   try {
-    // Check if we already have a device ID
-    let deviceId = await AsyncStorage.getItem(DEVICE_ID_KEY);
+    // Try SecureStore first (persists across reinstalls)
+    let deviceId = await SecureStore.getItemAsync(SECURE_DEVICE_ID_KEY);
     
     if (deviceId) {
-      qaLog('device', 'Device ID retrieved from storage', { deviceId });
+      qaLog('device', 'Device ID retrieved from SecureStore', { deviceId });
+      cachedDeviceId = deviceId;
       return deviceId;
+    }
+    
+    // Check AsyncStorage for migration from old storage
+    const legacyId = await AsyncStorage.getItem(DEVICE_ID_KEY);
+    if (legacyId) {
+      // Migrate to SecureStore
+      await SecureStore.setItemAsync(SECURE_DEVICE_ID_KEY, legacyId);
+      qaLog('device', 'Migrated device ID from AsyncStorage to SecureStore', { deviceId: legacyId });
+      cachedDeviceId = legacyId;
+      return legacyId;
     }
     
     // Generate new UUID
     deviceId = generateUUID();
     
-    // Save locally
-    await AsyncStorage.setItem(DEVICE_ID_KEY, deviceId);
-    qaLog('device', 'New device ID generated and stored', { deviceId });
+    // Save to SecureStore (persists across reinstalls)
+    await SecureStore.setItemAsync(SECURE_DEVICE_ID_KEY, deviceId);
+    qaLog('device', 'New device ID generated and stored in SecureStore', { deviceId });
+    
+    cachedDeviceId = deviceId;
     
     // Register in Supabase
     try {

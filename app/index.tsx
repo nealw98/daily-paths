@@ -73,7 +73,7 @@ export default function Index() {
   console.log("[STARTUP-INDEX] State initialized");
   
   // Analytics
-  const { trackAppOpened, trackReadingViewed, trackReadingFavorited, trackReadingUnfavorited } = useAnalytics();
+  const { trackAppOpened, startReadingView, trackReadingFavorited, trackReadingUnfavorited } = useAnalytics();
   
   console.log("[STARTUP-INDEX] Calling useReading...");
   const { reading, loading, error } = useReading(currentDate);
@@ -149,8 +149,8 @@ export default function Index() {
   useEffect(() => {
     if (reading?.id) {
       recordReadingView(reading.id);
-      // Track in PostHog with navigation method
-      trackReadingViewed(reading.id, currentDate, navigationMethod);
+      // Start tracking in PostHog (event fires when user navigates away)
+      startReadingView(reading.id, currentDate, navigationMethod);
     }
   }, [reading?.id]);
 
