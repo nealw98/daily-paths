@@ -175,16 +175,28 @@ export default function RootLayout() {
   const posthogApiKey = process.env.EXPO_PUBLIC_POSTHOG_API_KEY;
   const posthogHost = process.env.EXPO_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
 
-  return (
-    <PostHogProvider
-      apiKey={posthogApiKey}
-      options={{
-        host: posthogHost,
-        enableSessionReplay: true,
-      }}
-      autocapture
-    >
-      <SettingsProvider>
+  // Wrap content in PostHogProvider only if API key is available
+  const wrapWithPostHog = (children: React.ReactNode) => {
+    if (!posthogApiKey) {
+      console.log("[STARTUP] PostHog API key not found, skipping analytics");
+      return children;
+    }
+    return (
+      <PostHogProvider
+        apiKey={posthogApiKey}
+        options={{
+          host: posthogHost,
+          enableSessionReplay: true,
+        }}
+        autocapture
+      >
+        {children}
+      </PostHogProvider>
+    );
+  };
+
+  return wrapWithPostHog(
+    <SettingsProvider>
         {updateReady && (
           <View style={styles.updateBanner}>
             <Text style={styles.updateText}>
@@ -220,7 +232,6 @@ export default function RootLayout() {
           initialParams={{ checkAndApplyUpdate }}
         />
       </SettingsProvider>
-    </PostHogProvider>
   );
 }
 
