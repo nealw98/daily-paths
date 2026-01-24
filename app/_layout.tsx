@@ -16,17 +16,11 @@ import {
 } from "@expo-google-fonts/lora";
 import { colors } from "../constants/theme";
 import { SettingsProvider } from "../hooks/useSettings";
-import {
-  View,
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  Platform,
-} from "react-native";
+import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import * as Updates from "expo-updates";
 import { installGlobalErrorHandler } from "../utils/errorLogger";
+import { PostHogProvider } from 'posthog-react-native';
 
 console.log("[STARTUP] _layout.tsx module loading...");
 console.log("[STARTUP] Platform:", Platform.OS, Platform.Version);
@@ -178,43 +172,55 @@ export default function RootLayout() {
 
   console.log("[STARTUP] Fonts loaded, rendering main app with SettingsProvider");
   
+  const posthogApiKey = process.env.EXPO_PUBLIC_POSTHOG_API_KEY;
+  const posthogHost = process.env.EXPO_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
+
   return (
-    <SettingsProvider>
-      {updateReady && (
-        <View style={styles.updateBanner}>
-          <Text style={styles.updateText}>
-            Update available. Restart to apply.
-          </Text>
-          <View style={styles.updateActions}>
-            <TouchableOpacity
-              style={styles.updateButtonPrimary}
-              onPress={handleRestart}
-              disabled={restarting}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.updateButtonPrimaryText}>
-                {restarting ? "Restarting..." : "Restart"}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.updateButtonSecondary}
-              onPress={() => setUpdateReady(false)}
-              activeOpacity={0.8}
-              disabled={restarting}
-            >
-              <Text style={styles.updateButtonSecondaryText}>Later</Text>
-            </TouchableOpacity>
+    <PostHogProvider
+      apiKey={posthogApiKey}
+      options={{
+        host: posthogHost,
+        enableSessionReplay: true,
+      }}
+      autocapture
+    >
+      <SettingsProvider>
+        {updateReady && (
+          <View style={styles.updateBanner}>
+            <Text style={styles.updateText}>
+              Update available. Restart to apply.
+            </Text>
+            <View style={styles.updateActions}>
+              <TouchableOpacity
+                style={styles.updateButtonPrimary}
+                onPress={handleRestart}
+                disabled={restarting}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.updateButtonPrimaryText}>
+                  {restarting ? "Restarting..." : "Restart"}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.updateButtonSecondary}
+                onPress={() => setUpdateReady(false)}
+                activeOpacity={0.8}
+                disabled={restarting}
+              >
+                <Text style={styles.updateButtonSecondaryText}>Later</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      )}
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: colors.pearl },
-        }}
-        initialParams={{ checkAndApplyUpdate }}
-      />
-    </SettingsProvider>
+        )}
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: colors.pearl },
+          }}
+          initialParams={{ checkAndApplyUpdate }}
+        />
+      </SettingsProvider>
+    </PostHogProvider>
   );
 }
 
@@ -277,4 +283,3 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
 });
-
