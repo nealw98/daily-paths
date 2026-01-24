@@ -203,15 +203,21 @@ export default function Index() {
 
   // Wrapper for bookmark toggle that handles rate modal and analytics
   const handleBookmarkToggle = async () => {
+    console.log('[POSTHOG] handleBookmarkToggle called, reading?.id:', reading?.id);
     const result = await toggleBookmark();
+    console.log('[POSTHOG] toggleBookmark result:', result);
     
     // Track favorite/unfavorite in PostHog
     if (reading?.id) {
       if (result.newState) {
+        console.log('[POSTHOG] Calling trackReadingFavorited');
         trackReadingFavorited(reading.id, currentDate);
       } else {
+        console.log('[POSTHOG] Calling trackReadingUnfavorited');
         trackReadingUnfavorited(reading.id, currentDate);
       }
+    } else {
+      console.log('[POSTHOG] No reading?.id, skipping analytics');
     }
     
     if (result.shouldShowRatePrompt) {

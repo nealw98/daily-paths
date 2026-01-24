@@ -184,16 +184,36 @@ export function useAnalytics() {
   }, [posthog]);
 
   const trackReadingFavorited = useCallback((readingId: string, readingDate: Date) => {
-    posthog?.capture(ANALYTICS_EVENTS.READING_FAVORITED, {
+    if (!posthog) {
+      console.log('[POSTHOG] trackReadingFavorited: PostHog not available');
+      return;
+    }
+    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.READING_FAVORITED, { reading_id: readingId });
+    posthog.capture(ANALYTICS_EVENTS.READING_FAVORITED, {
       reading_id: readingId,
       reading_date: formatReadingDate(readingDate),
+    });
+    posthog.flush().then(() => {
+      console.log('[POSTHOG] reading_favorited flush() completed');
+    }).catch((err: unknown) => {
+      console.log('[POSTHOG] reading_favorited flush() error:', err);
     });
   }, [posthog]);
 
   const trackReadingUnfavorited = useCallback((readingId: string, readingDate: Date) => {
-    posthog?.capture(ANALYTICS_EVENTS.READING_UNFAVORITED, {
+    if (!posthog) {
+      console.log('[POSTHOG] trackReadingUnfavorited: PostHog not available');
+      return;
+    }
+    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.READING_UNFAVORITED, { reading_id: readingId });
+    posthog.capture(ANALYTICS_EVENTS.READING_UNFAVORITED, {
       reading_id: readingId,
       reading_date: formatReadingDate(readingDate),
+    });
+    posthog.flush().then(() => {
+      console.log('[POSTHOG] reading_unfavorited flush() completed');
+    }).catch((err: unknown) => {
+      console.log('[POSTHOG] reading_unfavorited flush() error:', err);
     });
   }, [posthog]);
 
