@@ -97,14 +97,14 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
         <Animated.View
           style={[
             styles.modalContainer,
-            { transform: [{ translateY }] },
+            { transform: [{ translateY }], backgroundColor: colors.pearl },
           ]}
           onStartShouldSetResponder={() => true}
         >
-          <View style={styles.header}>
-            <Text style={styles.title}>Daily Paths Reminder</Text>
+          <View style={[styles.header, { borderBottomColor: colors.mist }]}>
+            <Text style={[styles.title, { color: colors.deepTeal }]}>Daily Paths Reminder</Text>
             <TouchableOpacity onPress={onClose} style={styles.doneButton}>
-              <Text style={styles.doneButtonText}>Done</Text>
+              <Text style={[styles.doneButtonText, { color: colors.deepTeal }]}>Done</Text>
             </TouchableOpacity>
           </View>
 
@@ -112,19 +112,19 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.subtitle}>
+            <Text style={[styles.subtitle, { color: colors.ocean }]}>
               Get a gentle nudge to read each day.
             </Text>
 
             <View style={styles.row}>
               <View style={styles.rowText}>
-                <Text style={styles.rowLabel}>Enable reminder</Text>
+                <Text style={[styles.rowLabel, { color: colors.ink }]}>Enable reminder</Text>
               </View>
               <Switch
                 value={settings.dailyReminderEnabled}
                 onValueChange={handleReminderToggle}
-                trackColor={{ false: lightColors.mist, true: lightColors.seafoam }}
-                thumbColor={settings.dailyReminderEnabled ? lightColors.deepTeal : "#fff"}
+                trackColor={{ false: colors.mist, true: colors.seafoam }}
+                thumbColor={settings.dailyReminderEnabled ? colors.deepTeal : colors.pearl}
               />
             </View>
 
@@ -135,7 +135,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
               ]}
             >
               <View style={styles.rowText}>
-                <Text style={styles.rowLabel}>Reminder time</Text>
+                <Text style={[styles.rowLabel, { color: colors.ink }]}>Reminder time</Text>
               </View>
 
               <View style={styles.timeStepperContainer}>
@@ -152,6 +152,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                   <Text
                     style={[
                       styles.timeValue,
+                      { color: colors.ink },
                       !settings.dailyReminderEnabled && styles.timeValueDisabled,
                     ]}
                   >
@@ -174,16 +175,16 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                 />
                 <View style={styles.timePickerActions}>
                   <TouchableOpacity
-                    style={styles.timePickerButtonSecondary}
+                    style={[styles.timePickerButtonSecondary, { backgroundColor: colors.mist }]}
                     onPress={() => {
                       setShowTimePicker(false);
                       setTempReminderDate(null);
                     }}
                   >
-                    <Text style={styles.timePickerButtonSecondaryText}>Cancel</Text>
+                    <Text style={[styles.timePickerButtonSecondaryText, { color: colors.ink }]}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={styles.timePickerButtonPrimary}
+                    style={[styles.timePickerButtonPrimary, { backgroundColor: colors.deepTeal }]}
                     onPress={() => {
                       const finalDate = tempReminderDate ?? reminderDate;
                       setShowTimePicker(false);

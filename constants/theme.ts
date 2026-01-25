@@ -7,6 +7,9 @@ export const lightColors = {
   cloud: "#E8F3F3",
   pearl: "#F7FAFA",
   ink: "#2D3E3F",
+  // Light mode gradient colors (same as deepTeal/ocean)
+  headerGradientStart: "#2C5F5D",
+  headerGradientEnd: "#4A8B8D",
 };
 
 // Dark theme colors
@@ -18,6 +21,9 @@ export const darkColors = {
   cloud: "#2A3536",       // Darker card background
   pearl: "#1A2223",       // Dark background
   ink: "#E8F3F3",         // Light text on dark
+  // Dark mode specific gradient colors (darker teal)
+  headerGradientStart: "#1A3A3A",
+  headerGradientEnd: "#2A4A4B",
 };
 
 // Color palette type for type safety

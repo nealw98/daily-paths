@@ -67,7 +67,7 @@ export const BookmarkListModal: React.FC<BookmarkListModalProps> = ({
 
   const renderBookmarkItem = ({ item }: { item: BookmarkData }) => (
     <TouchableOpacity
-      style={styles.bookmarkItem}
+      style={[styles.bookmarkItem, { backgroundColor: colors.cloud, borderColor: colors.mist }]}
       onPress={() => {
         onSelectBookmark(item.date);
         onClose();
@@ -77,7 +77,7 @@ export const BookmarkListModal: React.FC<BookmarkListModalProps> = ({
         <Text
           style={[
             styles.bookmarkDate,
-            { fontSize: typography.favoriteDateFontSize },
+            { fontSize: typography.favoriteDateFontSize, color: colors.ocean },
           ]}
         >
           {formatDate(item.date)}
@@ -88,6 +88,7 @@ export const BookmarkListModal: React.FC<BookmarkListModalProps> = ({
             {
               fontSize: typography.favoriteFontSize,
               lineHeight: typography.favoriteLineHeight,
+              color: colors.ink,
             },
           ]}
           numberOfLines={2}
@@ -103,11 +104,11 @@ export const BookmarkListModal: React.FC<BookmarkListModalProps> = ({
       <Ionicons
         name="heart-outline"
         size={64}
-        color={lightColors.mist}
+        color={colors.mist}
         style={styles.emptyIcon}
       />
-      <Text style={styles.emptyTitle}>No favorites yet</Text>
-      <Text style={styles.emptyMessage}>
+      <Text style={[styles.emptyTitle, { color: colors.ink }]}>No favorites yet</Text>
+      <Text style={[styles.emptyMessage, { color: colors.ocean }]}>
         Long press any reading to add it to your favorites
       </Text>
     </View>
@@ -128,21 +129,21 @@ export const BookmarkListModal: React.FC<BookmarkListModalProps> = ({
         <Animated.View
           style={[
             styles.modalContainer,
-            { transform: [{ translateY }] },
+            { transform: [{ translateY }], backgroundColor: colors.pearl },
           ]}
           onStartShouldSetResponder={() => true}
         >
-          <View style={styles.header}>
+          <View style={[styles.header, { borderBottomColor: colors.mist }]}>
             <Text 
               style={[
                 styles.title,
-                { fontSize: typography.favoriteFontSize + 10 }
+                { fontSize: typography.favoriteFontSize + 10, color: colors.deepTeal }
               ]}
             >
               Favorites
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.doneButton}>
-              <Text style={styles.doneButtonText}>Done</Text>
+              <Text style={[styles.doneButtonText, { color: colors.deepTeal }]}>Done</Text>
             </TouchableOpacity>
           </View>
 

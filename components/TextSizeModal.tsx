@@ -86,14 +86,14 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
         <Animated.View
           style={[
             styles.modalContainer,
-            { transform: [{ translateY }] },
+            { transform: [{ translateY }], backgroundColor: colors.pearl },
           ]}
           onStartShouldSetResponder={() => true}
         >
-          <View style={styles.header}>
-            <Text style={styles.title}>Reading Text Size</Text>
+          <View style={[styles.header, { borderBottomColor: colors.mist }]}>
+            <Text style={[styles.title, { color: colors.deepTeal }]}>Reading Text Size</Text>
             <TouchableOpacity onPress={onClose} style={styles.doneButton}>
-              <Text style={styles.doneButtonText}>Done</Text>
+              <Text style={[styles.doneButtonText, { color: colors.deepTeal }]}>Done</Text>
             </TouchableOpacity>
           </View>
 
@@ -101,7 +101,7 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.subtitle}>
+            <Text style={[styles.subtitle, { color: colors.ocean }]}>
               Adjust how large the daily reading appears.
             </Text>
 
@@ -114,6 +114,7 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
                 <Text
                   style={[
                     styles.sliderEdgeLabel,
+                    { color: colors.deepTeal },
                     settings.textSize === textSizeStops[0] && styles.sliderEdgeLabelDisabled,
                   ]}
                 >
@@ -135,8 +136,9 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
                       <View
                         style={[
                           styles.sliderStop,
-                          isActive && styles.sliderStopActive,
-                          isSelected && styles.sliderStopSelected,
+                          { borderColor: colors.mist, backgroundColor: colors.pearl },
+                          isActive && { borderColor: colors.seafoam, backgroundColor: colors.seafoam },
+                          isSelected && { borderColor: colors.deepTeal, backgroundColor: colors.deepTeal },
                         ]}
                       />
                     </TouchableOpacity>
@@ -151,6 +153,7 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
                 <Text
                   style={[
                     styles.sliderEdgeLabel,
+                    { color: colors.deepTeal },
                     settings.textSize === textSizeStops[textSizeStops.length - 1] &&
                       styles.sliderEdgeLabelDisabled,
                   ]}
@@ -160,13 +163,14 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
               </TouchableOpacity>
             </View>
 
-            <View style={styles.textPreviewContainer}>
+            <View style={[styles.textPreviewContainer, { borderTopColor: colors.mist }]}>
               <Text
                 style={[
                   styles.textPreview,
                   {
                     fontSize: typography.bodyFontSize,
                     lineHeight: typography.bodyLineHeight,
+                    color: colors.ink,
                   },
                 ]}
               >

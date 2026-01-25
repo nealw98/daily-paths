@@ -124,9 +124,9 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
         <TouchableOpacity
           style={[
             styles.dayButton,
-            selected && styles.selectedDay,
+            selected && { backgroundColor: colors.ocean },
             !available && styles.unavailableDay,
-            today && !selected && styles.todayDay,
+            today && !selected && { borderWidth: 2, borderColor: colors.seafoam },
           ]}
           onPress={() => available && handleDateSelect(day)}
           disabled={!available}
@@ -134,9 +134,10 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
           <Text
             style={[
               styles.dayText,
-              selected && styles.selectedDayText,
-              !available && styles.unavailableDayText,
-              today && !selected && styles.todayDayText,
+              { color: colors.ink },
+              selected && { color: "#fff", fontWeight: "700" },
+              !available && { color: colors.mist },
+              today && !selected && { color: colors.ocean, fontWeight: "600" },
             ]}
           >
             {day}
@@ -156,7 +157,7 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
       <Pressable style={styles.overlay} onPress={onClose}>
         <BlurView intensity={20} tint="dark" style={styles.blurOverlay}>
           <Pressable
-            style={styles.modalContent}
+            style={[styles.modalContent, { backgroundColor: colors.pearl }]}
             onPress={(e) => e.stopPropagation()}
           >
             <View style={styles.header}>
@@ -164,10 +165,10 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
                 onPress={handlePrevMonth}
                 style={styles.navButton}
               >
-                <Ionicons name="chevron-back" size={28} color={lightColors.ocean} />
+                <Ionicons name="chevron-back" size={28} color={colors.ocean} />
               </TouchableOpacity>
 
-              <Text style={styles.monthTitle}>{monthName}</Text>
+              <Text style={[styles.monthTitle, { color: colors.deepTeal }]}>{monthName}</Text>
 
               <TouchableOpacity
                 onPress={handleNextMonth}
@@ -176,7 +177,7 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
                 <Ionicons
                   name="chevron-forward"
                   size={28}
-                  color={lightColors.ocean}
+                  color={colors.ocean}
                 />
               </TouchableOpacity>
             </View>
@@ -184,23 +185,23 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
             <View style={styles.weekdays}>
               {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
                 <View key={index} style={styles.weekdayCell}>
-                  <Text style={styles.weekdayText}>{day}</Text>
+                  <Text style={[styles.weekdayText, { color: colors.ocean }]}>{day}</Text>
                 </View>
               ))}
             </View>
 
             <View style={styles.calendar}>{days}</View>
 
-            <View style={styles.buttonContainer}>
+            <View style={[styles.buttonContainer, { borderTopColor: colors.mist }]}>
               <TouchableOpacity
-                style={styles.todayButton}
+                style={[styles.todayButton, { backgroundColor: colors.cloud }]}
                 onPress={handleGoToToday}
               >
-                <Text style={styles.todayButtonText}>Today</Text>
+                <Text style={[styles.todayButtonText, { color: colors.ocean }]}>Today</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+              <TouchableOpacity style={[styles.cancelButton, { backgroundColor: colors.cloud }]} onPress={onClose}>
+                <Text style={[styles.cancelButtonText, { color: colors.ocean }]}>Cancel</Text>
               </TouchableOpacity>
             </View>
           </Pressable>

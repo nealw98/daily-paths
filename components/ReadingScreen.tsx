@@ -390,7 +390,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.pearl }]} edges={["top", "left", "right"]}>
       <View style={[styles.container, { backgroundColor: colors.pearl }]}>
         <LinearGradient
-          colors={[colors.deepTeal, colors.ocean]}
+          colors={[colors.headerGradientStart, colors.headerGradientEnd]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.header}
