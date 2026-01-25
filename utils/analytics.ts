@@ -1,7 +1,7 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { usePostHog } from 'posthog-react-native';
-import { getOrCreateDeviceId } from './deviceIdentity';
+import { getOrCreateDeviceId, isDeveloperDevice } from './deviceIdentity';
 
 // Event names as constants for consistency
 export const ANALYTICS_EVENTS = {
@@ -48,6 +48,7 @@ export function useAnalytics() {
   const hasLoggedStatus = useRef(false);
   const currentReadingView = useRef<ReadingViewState | null>(null);
   const appState = useRef<AppStateStatus>(AppState.currentState);
+  const [isDeveloper, setIsDeveloper] = useState(false);
 
   // Log PostHog status once
   useEffect(() => {
@@ -56,6 +57,15 @@ export function useAnalytics() {
       hasLoggedStatus.current = true;
     }
   }, [posthog]);
+
+  // Check developer mode status
+  useEffect(() => {
+    (async () => {
+      const devMode = await isDeveloperDevice();
+      setIsDeveloper(devMode);
+      console.log('[POSTHOG] Developer mode:', devMode);
+    })();
+  }, []);
 
   // Identify user with persistent device ID
   useEffect(() => {
@@ -101,6 +111,7 @@ export function useAnalytics() {
         reading_title: readingTitle,
         navigation_method: viewState.navigationMethod,
         time_spent_seconds: timeSpentSeconds,
+        is_developer: isDeveloper,
       };
       
       console.log('[POSTHOG] ===== FIRING READING_VIEWED EVENT =====');
@@ -124,7 +135,7 @@ export function useAnalytics() {
     } else {
       console.log('[POSTHOG] fireReadingViewedEvent: Time spent too short:', timeSpentSeconds, 'seconds');
     }
-  }, [posthog]);
+  }, [posthog, isDeveloper]);
 
   // Handle app state changes (foreground/background)
   useEffect(() => {
@@ -133,7 +144,7 @@ export function useAnalytics() {
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
         // Fire app_opened only once per foreground transition
         if (posthog && !hasTrackedAppOpen.current) {
-          posthog.capture(ANALYTICS_EVENTS.APP_OPENED);
+          posthog.capture(ANALYTICS_EVENTS.APP_OPENED, { is_developer: isDeveloper });
           hasTrackedAppOpen.current = true;
         }
         
@@ -154,7 +165,7 @@ export function useAnalytics() {
 
     const subscription = AppState.addEventListener('change', handleAppStateChange);
     return () => subscription?.remove();
-  }, [posthog, fireReadingViewedEvent]);
+  }, [posthog, fireReadingViewedEvent, isDeveloper]);
 
   // Track app opened (called on initial mount)
   const trackAppOpened = useCallback(() => {
@@ -166,8 +177,8 @@ export function useAnalytics() {
       console.log('[POSTHOG] trackAppOpened: Already tracked this session');
       return;
     }
-    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.APP_OPENED);
-    posthog.capture(ANALYTICS_EVENTS.APP_OPENED);
+    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.APP_OPENED, { is_developer: isDeveloper });
+    posthog.capture(ANALYTICS_EVENTS.APP_OPENED, { is_developer: isDeveloper });
     console.log('[POSTHOG] Calling flush()...');
     posthog.flush().then(() => {
       console.log('[POSTHOG] flush() completed successfully');
@@ -175,7 +186,7 @@ export function useAnalytics() {
       console.log('[POSTHOG] flush() error:', err);
     });
     hasTrackedAppOpen.current = true;
-  }, [posthog]);
+  }, [posthog, isDeveloper]);
 
   // Start tracking a reading view (called when reading appears)
   // This doesn't fire the event yet - that happens when user navigates away
@@ -221,42 +232,45 @@ export function useAnalytics() {
       reading_id: readingId,
       reading_date: formatReadingDate(readingDate),
       rating,
+      is_developer: isDeveloper,
     });
-  }, [posthog]);
+  }, [posthog, isDeveloper]);
 
   const trackReadingFavorited = useCallback((readingId: string, readingDate: Date) => {
     if (!posthog) {
       console.log('[POSTHOG] trackReadingFavorited: PostHog not available');
       return;
     }
-    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.READING_FAVORITED, { reading_id: readingId });
+    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.READING_FAVORITED, { reading_id: readingId, is_developer: isDeveloper });
     posthog.capture(ANALYTICS_EVENTS.READING_FAVORITED, {
       reading_id: readingId,
       reading_date: formatReadingDate(readingDate),
+      is_developer: isDeveloper,
     });
     posthog.flush().then(() => {
       console.log('[POSTHOG] reading_favorited flush() completed');
     }).catch((err: unknown) => {
       console.log('[POSTHOG] reading_favorited flush() error:', err);
     });
-  }, [posthog]);
+  }, [posthog, isDeveloper]);
 
   const trackReadingUnfavorited = useCallback((readingId: string, readingDate: Date) => {
     if (!posthog) {
       console.log('[POSTHOG] trackReadingUnfavorited: PostHog not available');
       return;
     }
-    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.READING_UNFAVORITED, { reading_id: readingId });
+    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.READING_UNFAVORITED, { reading_id: readingId, is_developer: isDeveloper });
     posthog.capture(ANALYTICS_EVENTS.READING_UNFAVORITED, {
       reading_id: readingId,
       reading_date: formatReadingDate(readingDate),
+      is_developer: isDeveloper,
     });
     posthog.flush().then(() => {
       console.log('[POSTHOG] reading_unfavorited flush() completed');
     }).catch((err: unknown) => {
       console.log('[POSTHOG] reading_unfavorited flush() error:', err);
     });
-  }, [posthog]);
+  }, [posthog, isDeveloper]);
 
   return {
     trackAppOpened,
