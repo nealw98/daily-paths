@@ -58,12 +58,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         <Animated.View
           style={[
             styles.modalContainer,
-            { transform: [{ translateY }] },
+            { transform: [{ translateY }], backgroundColor: colors.pearl },
           ]}
         >
           <View style={styles.header}>
             <TouchableOpacity onPress={onClose} style={styles.doneButton}>
-              <Text style={styles.doneButtonText}>Done</Text>
+              <Text style={[styles.doneButtonText, { color: colors.deepTeal }]}>Done</Text>
             </TouchableOpacity>
           </View>
 

@@ -91,7 +91,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   // onDismissInstruction,
   // onShowInstruction,
 }) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const [localBookmarked, setLocalBookmarked] = useState(isBookmarked);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -387,8 +387,8 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   }, [reading.id]);
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
-      <View style={styles.container}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.pearl }]} edges={["top", "left", "right"]}>
+      <View style={[styles.container, { backgroundColor: colors.pearl }]}>
         <LinearGradient
           colors={[colors.deepTeal, colors.ocean]}
           start={{ x: 0, y: 0 }}
@@ -450,7 +450,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
         >
           <ScrollView
             ref={scrollViewRef}
-            style={styles.content}
+            style={[styles.content, { backgroundColor: colors.pearl }]}
             contentContainerStyle={styles.contentContainer}
             showsVerticalScrollIndicator={false}
             scrollEnabled={!isSwiping}
@@ -501,6 +501,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                       {
                         fontSize: typography.bodyFontSize,
                         lineHeight: typography.bodyLineHeight,
+                        color: colors.ink,
                       },
                     ]}
                   >
@@ -517,7 +518,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                           fontSize: headingTypography.thoughtLabelFontSize,
                           textAlign: "right",
                           marginTop: 0,
-                          color: "rgba(74, 90, 91, 0.7)", // lighter version of body/quote color
+                          color: colors.ocean,
                         },
                       ]}
                     >
@@ -535,6 +536,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                     {
                       fontSize: typography.bodyFontSize,
                       lineHeight: typography.bodyLineHeight,
+                      color: colors.ink,
                     },
                   ]}
                 >
@@ -550,6 +552,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                     {
                       fontSize: typography.bodyFontSize,
                       lineHeight: typography.bodyLineHeight,
+                      color: colors.ink,
                     },
                   ]}
                 >
@@ -560,7 +563,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
               {applicationParagraphs.length > 0 && (
                 <>
                   <View style={styles.applicationDividerWrapper}>
-                    <View style={styles.applicationDivider} />
+                    <View style={[styles.applicationDivider, { backgroundColor: colors.mist }]} />
                   </View>
                   {applicationParagraphs.map((paragraph, index) => (
                     <Text
@@ -570,6 +573,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                         {
                           fontSize: typography.bodyFontSize,
                           lineHeight: typography.bodyLineHeight,
+                          color: colors.ink,
                         },
                       ]}
                     >
@@ -579,17 +583,17 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                 </>
               )}
 
-              <View style={styles.thoughtCardContainer}>
-                <View style={styles.thoughtCard}>
+              <View style={[styles.thoughtCardContainer, { backgroundColor: colors.cloud }]}>
+                <View style={[styles.thoughtCard, { backgroundColor: colors.cloud }]}>
                   <BlurView
                     intensity={20}
-                    tint="light"
-                    style={styles.thoughtGradient}
+                    tint={isDark ? "dark" : "light"}
+                    style={[styles.thoughtGradient, { backgroundColor: isDark ? colors.cloud : undefined }]}
                   >
                     <Text
                       style={[
                         styles.thoughtLabel,
-                        { fontSize: headingTypography.thoughtLabelFontSize },
+                        { fontSize: headingTypography.thoughtLabelFontSize, color: colors.ocean },
                       ]}
                     >
                       Thought for the Day
@@ -600,6 +604,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                         {
                           fontSize: headingTypography.thoughtTextFontSize,
                           lineHeight: headingTypography.thoughtTextLineHeight,
+                          color: colors.deepTeal,
                         },
                       ]}
                     >

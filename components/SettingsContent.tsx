@@ -196,15 +196,15 @@ export const SettingsContent: React.FC<{
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.mainContent}>
-          <View style={styles.sectionCard}>
-            <View style={styles.sectionHeader}>
+          <View style={[styles.sectionCard, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
+            <View style={[styles.sectionHeader, { borderBottomColor: colors.mist }]}>
               <Ionicons
                 name="information-circle-outline"
                 size={22}
-                color={lightColors.deepTeal}
+                color={colors.deepTeal}
               />
               <View style={styles.sectionHeaderText}>
-                <Text style={styles.sectionTitle}>About</Text>
+                <Text style={[styles.sectionTitle, { color: colors.deepTeal }]}>About</Text>
               </View>
             </View>
             <View style={styles.sectionBody}>
@@ -213,7 +213,7 @@ export const SettingsContent: React.FC<{
                   fontSize: 16,
                   lineHeight: 24,
                   fontFamily: fonts.loraRegular,
-                  color: lightColors.ink,
+                  color: colors.ink,
                 }}
               >
                 Daily Paths supports your recovery with 366 original readings based on Al-Anon's Steps, Traditions, and Concepts. It is not affiliated with Al-Anon, AA or any 12-step fellowship.
@@ -221,12 +221,12 @@ export const SettingsContent: React.FC<{
             </View>
           </View>
 
-          <View style={styles.sectionCard}>
-            <View style={styles.sectionHeader}>
+          <View style={[styles.sectionCard, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
+            <View style={[styles.sectionHeader, { borderBottomColor: colors.mist }]}>
               <Ionicons name="moon-outline" size={22} color={colors.deepTeal} />
               <View style={styles.sectionHeaderText}>
-                <Text style={styles.sectionTitle}>Appearance</Text>
-                <Text style={styles.sectionSubtitle}>
+                <Text style={[styles.sectionTitle, { color: colors.deepTeal }]}>Appearance</Text>
+                <Text style={[styles.sectionSubtitle, { color: colors.ink }]}>
                   Choose your preferred theme.
                 </Text>
               </View>
@@ -297,37 +297,37 @@ export const SettingsContent: React.FC<{
             </View>
           </View>
 
-          <View style={styles.sectionCard}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="star-outline" size={22} color={lightColors.deepTeal} />
+          <View style={[styles.sectionCard, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
+            <View style={[styles.sectionHeader, { borderBottomColor: colors.mist }]}>
+              <Ionicons name="star-outline" size={22} color={colors.deepTeal} />
               <View style={styles.sectionHeaderText}>
-                <Text style={styles.sectionTitle}>Rate & Share</Text>
-                <Text style={styles.sectionSubtitle}>
+                <Text style={[styles.sectionTitle, { color: colors.deepTeal }]}>Rate & Share</Text>
+                <Text style={[styles.sectionSubtitle, { color: colors.ink }]}>
                   Help others discover Daily Paths.
                 </Text>
               </View>
             </View>
             <View style={styles.sectionBody}>
-              <Text style={styles.bodyText}>
+              <Text style={[styles.bodyText, { color: colors.ink }]}>
                 If Daily Paths has been helpful in your recovery journey, please consider rating the app or sharing it with others.
               </Text>
               <View style={styles.buttonRow}>
                 <TouchableOpacity
-                  style={styles.secondaryButton}
+                  style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
                   onPress={handleRateApp}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="star" size={18} color={lightColors.deepTeal} />
-                  <Text style={styles.secondaryButtonText}>Rate App</Text>
+                  <Ionicons name="star" size={18} color={colors.deepTeal} />
+                  <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Rate App</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={styles.secondaryButton}
+                  style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
                   onPress={handleShareApp}
                   disabled={isSharing}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="share-social" size={18} color={lightColors.deepTeal} />
-                  <Text style={styles.secondaryButtonText}>
+                  <Ionicons name="share-social" size={18} color={colors.deepTeal} />
+                  <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
                     {isSharing ? "Sharing..." : "Share App"}
                   </Text>
                 </TouchableOpacity>
@@ -335,37 +335,37 @@ export const SettingsContent: React.FC<{
             </View>
           </View>
 
-          <View style={styles.sectionCard}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="chatbubbles-outline" size={22} color={lightColors.deepTeal} />
+          <View style={[styles.sectionCard, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
+            <View style={[styles.sectionHeader, { borderBottomColor: colors.mist }]}>
+              <Ionicons name="chatbubbles-outline" size={22} color={colors.deepTeal} />
               <View style={styles.sectionHeaderText}>
-                <Text style={styles.sectionTitle}>Share Feedback</Text>
-                <Text style={styles.sectionSubtitle}>
+                <Text style={[styles.sectionTitle, { color: colors.deepTeal }]}>Share Feedback</Text>
+                <Text style={[styles.sectionSubtitle, { color: colors.ink }]}>
                   Tell us what's working and what to improve.
                 </Text>
               </View>
             </View>
             <View style={styles.sectionBody}>
               <TouchableOpacity
-                style={styles.secondaryButton}
+                style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
                 onPress={() => setShowFeedbackModal(true)}
                 activeOpacity={0.8}
               >
-                <Ionicons name="chatbubble-ellipses" size={18} color={lightColors.deepTeal} />
-                <Text style={styles.secondaryButtonText}>Send Feedback</Text>
+                <Ionicons name="chatbubble-ellipses" size={18} color={colors.deepTeal} />
+                <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Send Feedback</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </ScrollView>
 
-      <View style={styles.legalSection}>
+      <View style={[styles.legalSection, { borderTopColor: colors.mist }]}>
         <View style={styles.legalRow}>
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={() => Linking.openURL("https://dailypaths.org/privacy")}
           >
-            <Text style={styles.linkLabel} allowFontScaling={false}>
+            <Text style={[styles.linkLabel, { color: colors.deepTeal }]} allowFontScaling={false}>
               Privacy Policy
             </Text>
           </TouchableOpacity>
@@ -374,7 +374,7 @@ export const SettingsContent: React.FC<{
             activeOpacity={0.7}
             onPress={() => Linking.openURL("https://dailypaths.org/support")}
           >
-            <Text style={styles.linkLabel} allowFontScaling={false}>
+            <Text style={[styles.linkLabel, { color: colors.deepTeal }]} allowFontScaling={false}>
               Support
             </Text>
           </TouchableOpacity>
@@ -383,7 +383,7 @@ export const SettingsContent: React.FC<{
             activeOpacity={0.7}
             onPress={() => Linking.openURL("https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")}
           >
-            <Text style={styles.linkLabel} allowFontScaling={false}>
+            <Text style={[styles.linkLabel, { color: colors.deepTeal }]} allowFontScaling={false}>
               Terms of Service
             </Text>
           </TouchableOpacity>
@@ -398,7 +398,7 @@ export const SettingsContent: React.FC<{
               router.push("/qa-logs");
             }}
           >
-            <Text style={styles.versionText} allowFontScaling={false}>
+            <Text style={[styles.versionText, { color: colors.ocean }]} allowFontScaling={false}>
               Version {appVersion} (build {iosBuildNumber})
             </Text>
           </TouchableOpacity>

@@ -136,8 +136,8 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
 
   return (
     <>
-      <View style={styles.container}>
-        <Text style={[styles.question, { fontSize: typography.bodyFontSize - 2 }]}>
+      <View style={[styles.container, { backgroundColor: colors.pearl }]}>
+        <Text style={[styles.question, { fontSize: typography.bodyFontSize - 2, color: colors.ink }]}>
           Was this reading helpful?
         </Text>
 
@@ -145,7 +145,8 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
           <TouchableOpacity
             style={[
               styles.ratingButton,
-              currentRating === 'positive' && styles.ratingButtonSelected,
+              { borderColor: colors.mist, backgroundColor: colors.pearl },
+              currentRating === 'positive' && [styles.ratingButtonSelected, { backgroundColor: colors.deepTeal, borderColor: colors.deepTeal }],
               currentRating && currentRating !== 'positive' && styles.ratingButtonInactive,
             ]}
             onPress={() => handleRating('positive')}
@@ -161,7 +162,8 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
           <TouchableOpacity
             style={[
               styles.ratingButton,
-              currentRating === 'negative' && styles.ratingButtonSelected,
+              { borderColor: colors.mist, backgroundColor: colors.pearl },
+              currentRating === 'negative' && [styles.ratingButtonSelected, { backgroundColor: colors.deepTeal, borderColor: colors.deepTeal }],
               currentRating && currentRating !== 'negative' && styles.ratingButtonInactive,
             ]}
             onPress={() => handleRating('negative')}
@@ -177,7 +179,7 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
 
         {showThankYou && (
           <Animated.View style={[styles.thankYouContainer, { opacity: fadeAnim }]}>
-            <Text style={[styles.thankYou, { fontSize: typography.bodyFontSize - 2 }]}>
+            <Text style={[styles.thankYou, { fontSize: typography.bodyFontSize - 2, color: colors.deepTeal }]}>
               Thanks for helping improve Daily Paths 💚
             </Text>
           </Animated.View>
