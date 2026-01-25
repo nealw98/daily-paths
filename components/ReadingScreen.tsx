@@ -485,7 +485,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                 <Text
                   style={[
                     styles.title,
-                    { fontSize: headingTypography.titleFontSize },
+                    { fontSize: headingTypography.titleFontSize, color: colors.ocean },
                   ]}
                 >
                   {reading.title}
@@ -518,7 +518,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                           fontSize: headingTypography.thoughtLabelFontSize,
                           textAlign: "right",
                           marginTop: 0,
-                          color: colors.ocean,
+                          color: colors.seafoam,
                         },
                       ]}
                     >
