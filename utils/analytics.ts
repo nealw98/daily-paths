@@ -26,10 +26,16 @@ export function formatReadingDate(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+// Format date as human-readable "Jan 25" format
+export function formatReadingDisplay(date: Date): string {
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 // Reading view tracking state (for time spent calculation)
 interface ReadingViewState {
   readingId: string;
   readingDate: Date;
+  readingTitle: string;
   navigationMethod: NavigationMethod;
   startTime: number;
 }
@@ -84,11 +90,14 @@ export function useAnalytics() {
     if (timeSpentSeconds >= 1) {
       console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.READING_VIEWED, {
         reading_id: viewState.readingId,
+        reading_title: viewState.readingTitle,
         time_spent_seconds: timeSpentSeconds,
       });
       posthog.capture(ANALYTICS_EVENTS.READING_VIEWED, {
         reading_id: viewState.readingId,
         reading_date: formatReadingDate(viewState.readingDate),
+        reading_display: formatReadingDisplay(viewState.readingDate),
+        reading_title: viewState.readingTitle,
         navigation_method: viewState.navigationMethod,
         time_spent_seconds: timeSpentSeconds,
       });
@@ -157,6 +166,7 @@ export function useAnalytics() {
   const startReadingView = useCallback((
     readingId: string,
     readingDate: Date,
+    readingTitle: string,
     navigationMethod: NavigationMethod
   ) => {
     // Fire event for previous reading before starting new one
@@ -166,6 +176,7 @@ export function useAnalytics() {
     currentReadingView.current = {
       readingId,
       readingDate,
+      readingTitle,
       navigationMethod,
       startTime: Date.now(),
     };

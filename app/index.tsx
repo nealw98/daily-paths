@@ -152,7 +152,7 @@ export default function Index() {
     if (reading?.id) {
       recordReadingView(reading.id);
       // Start tracking in PostHog (event fires when user navigates away)
-      startReadingView(reading.id, currentDate, navigationMethod);
+      startReadingView(reading.id, currentDate, reading.title || '', navigationMethod);
     }
   }, [reading?.id]);
 
