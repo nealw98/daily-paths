@@ -123,8 +123,8 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
               <Switch
                 value={settings.dailyReminderEnabled}
                 onValueChange={handleReminderToggle}
-                trackColor={{ false: colors.mist, true: colors.seafoam }}
-                thumbColor={settings.dailyReminderEnabled ? colors.deepTeal : colors.pearl}
+                trackColor={{ false: colors.mist, true: colors.ocean }}
+                thumbColor={settings.dailyReminderEnabled ? colors.deepTeal : colors.seafoam}
               />
             </View>
 
