@@ -396,7 +396,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
           style={styles.header}
         >
           <View style={styles.headerTop}>
-            <Text style={styles.logo}>Al-Anon Daily Paths</Text>
+            <Text style={styles.logo}>Daily Paths</Text>
             {/* Legacy test button to trigger instruction modal kept for possible future use:
             {onShowInstruction && (
               <TouchableOpacity
@@ -424,13 +424,13 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
               style={styles.calendarDate}
             >
               <View style={styles.calendarCardWrapper}>
-                <View style={styles.calendarCard}>
-                  <View style={styles.calendarMonth}>
+                <View style={[styles.calendarCard, { borderColor: isDark ? colors.mist : "rgba(255, 255, 255, 0.25)", backgroundColor: isDark ? colors.mist : undefined }]}>
+                  <View style={[styles.calendarMonth, { backgroundColor: isDark ? colors.ocean : colors.deepTeal }]}>
                     <Text style={styles.calendarMonthText}>{month}</Text>
                   </View>
-                  <BlurView intensity={20} tint="light" style={styles.calendarDay}>
-                    <Text style={styles.calendarDayText}>{day}</Text>
-                  </BlurView>
+                  <View style={[styles.calendarDay, { backgroundColor: isDark ? colors.mist : "rgba(255, 255, 255, 0.65)" }]}>
+                    <Text style={[styles.calendarDayText, { color: colors.deepTeal }]}>{day}</Text>
+                  </View>
                 </View>
               </View>
             </TouchableOpacity>
