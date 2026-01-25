@@ -77,6 +77,7 @@ export function useAnalytics() {
   const fireReadingViewedEvent = useCallback(() => {
     const viewState = currentReadingView.current;
     if (!viewState) {
+      console.log('[POSTHOG] fireReadingViewedEvent: No current view state');
       return;
     }
     if (!posthog) {
@@ -88,25 +89,40 @@ export function useAnalytics() {
     
     // Only track if user spent at least 1 second (avoid accidental quick swipes)
     if (timeSpentSeconds >= 1) {
-      console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.READING_VIEWED, {
+      // Build the event payload explicitly
+      const readingDate = formatReadingDate(viewState.readingDate);
+      const readingDisplay = formatReadingDisplay(viewState.readingDate);
+      const readingTitle = viewState.readingTitle;
+      
+      const eventPayload = {
         reading_id: viewState.readingId,
-        reading_title: viewState.readingTitle,
-        time_spent_seconds: timeSpentSeconds,
-      });
-      posthog.capture(ANALYTICS_EVENTS.READING_VIEWED, {
-        reading_id: viewState.readingId,
-        reading_date: formatReadingDate(viewState.readingDate),
-        reading_display: formatReadingDisplay(viewState.readingDate),
-        reading_title: viewState.readingTitle,
+        reading_date: readingDate,
+        reading_display: readingDisplay,
+        reading_title: readingTitle,
         navigation_method: viewState.navigationMethod,
         time_spent_seconds: timeSpentSeconds,
-      });
+      };
+      
+      console.log('[POSTHOG] ===== FIRING READING_VIEWED EVENT =====');
+      console.log('[POSTHOG] Event name:', ANALYTICS_EVENTS.READING_VIEWED);
+      console.log('[POSTHOG] Full payload:', JSON.stringify(eventPayload, null, 2));
+      console.log('[POSTHOG] reading_id:', eventPayload.reading_id);
+      console.log('[POSTHOG] reading_date:', eventPayload.reading_date);
+      console.log('[POSTHOG] reading_display:', eventPayload.reading_display);
+      console.log('[POSTHOG] reading_title:', eventPayload.reading_title);
+      console.log('[POSTHOG] navigation_method:', eventPayload.navigation_method);
+      console.log('[POSTHOG] time_spent_seconds:', eventPayload.time_spent_seconds);
+      
+      posthog.capture(ANALYTICS_EVENTS.READING_VIEWED, eventPayload);
+      
       console.log('[POSTHOG] Calling flush() for reading_viewed...');
       posthog.flush().then(() => {
         console.log('[POSTHOG] reading_viewed flush() completed');
       }).catch((err: unknown) => {
         console.log('[POSTHOG] reading_viewed flush() error:', err);
       });
+    } else {
+      console.log('[POSTHOG] fireReadingViewedEvent: Time spent too short:', timeSpentSeconds, 'seconds');
     }
   }, [posthog]);
 
@@ -169,6 +185,14 @@ export function useAnalytics() {
     readingTitle: string,
     navigationMethod: NavigationMethod
   ) => {
+    console.log('[POSTHOG] ===== START READING VIEW =====');
+    console.log('[POSTHOG] readingId:', readingId);
+    console.log('[POSTHOG] readingDate:', readingDate);
+    console.log('[POSTHOG] readingDate type:', typeof readingDate);
+    console.log('[POSTHOG] readingDate instanceof Date:', readingDate instanceof Date);
+    console.log('[POSTHOG] readingTitle:', readingTitle);
+    console.log('[POSTHOG] navigationMethod:', navigationMethod);
+    
     // Fire event for previous reading before starting new one
     fireReadingViewedEvent();
     
@@ -180,6 +204,12 @@ export function useAnalytics() {
       navigationMethod,
       startTime: Date.now(),
     };
+    
+    console.log('[POSTHOG] Stored view state:', JSON.stringify({
+      readingId: currentReadingView.current.readingId,
+      readingTitle: currentReadingView.current.readingTitle,
+      navigationMethod: currentReadingView.current.navigationMethod,
+    }));
   }, [fireReadingViewedEvent]);
 
   const trackReadingRated = useCallback((
