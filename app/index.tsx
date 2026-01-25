@@ -149,12 +149,18 @@ export default function Index() {
 
   // Record reading view for analytics (unique viewers per reading)
   useEffect(() => {
-    if (reading?.id) {
+    if (reading?.id && reading?.title && reading?.date) {
+      console.log('[ANALYTICS] Starting reading view tracking:', {
+        id: reading.id,
+        title: reading.title,
+        date: reading.date,
+        navigationMethod,
+      });
       recordReadingView(reading.id);
       // Start tracking in PostHog (event fires when user navigates away)
-      startReadingView(reading.id, currentDate, reading.title || '', navigationMethod);
+      startReadingView(reading.id, reading.date, reading.title, navigationMethod);
     }
-  }, [reading?.id]);
+  }, [reading?.id, reading?.title, reading?.date]);
 
   const handlePrevDate = () => {
     setNavigationMethod('prev_button');
