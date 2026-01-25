@@ -6,7 +6,8 @@ import {
   StyleSheet,
   Modal,
 } from 'react-native';
-import { colors, fonts } from '../constants/theme';
+import { fonts, lightColors } from '../constants/theme';
+import { useTheme } from '../hooks/useTheme';
 import { openAppStoreForRating, markRatePromptDismissed } from '../utils/rateShareTracking';
 import { qaLog } from '../utils/qaLog';
 
@@ -19,6 +20,7 @@ export const RateAppModal: React.FC<RateAppModalProps> = ({
   visible,
   onClose,
 }) => {
+  const { colors } = useTheme();
 
   const handleRateApp = async () => {
     qaLog("rate", "User tapped Rate App in modal - opening App Store");
@@ -88,14 +90,14 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: fonts.headerFamilyItalic,
     fontSize: 26,
-    color: colors.deepTeal,
+    color: lightColors.deepTeal,
     marginBottom: 12,
     textAlign: 'center',
   },
   message: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 17,
-    color: colors.ink,
+    color: lightColors.ink,
     lineHeight: 26,
     marginBottom: 28,
     textAlign: 'center',
@@ -110,15 +112,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: colors.mist,
+    borderColor: lightColors.mist,
   },
   dismissText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 17,
-    color: colors.ocean,
+    color: lightColors.ocean,
   },
   rateButton: {
-    backgroundColor: colors.deepTeal,
+    backgroundColor: lightColors.deepTeal,
     paddingVertical: 14,
     paddingHorizontal: 28,
     borderRadius: 12,

@@ -10,7 +10,8 @@ import {
   Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, fonts } from '../constants/theme';
+import { fonts, lightColors } from '../constants/theme';
+import { useTheme } from '../hooks/useTheme';
 
 interface NegativeFeedbackModalProps {
   visible: boolean;
@@ -29,6 +30,7 @@ export const NegativeFeedbackModal: React.FC<NegativeFeedbackModalProps> = ({
   onClose,
   onSubmit,
 }) => {
+  const { colors } = useTheme();
   const [reasons, setReasons] = useState({
     unclear: false,
     tooLong: false,
@@ -79,7 +81,7 @@ export const NegativeFeedbackModal: React.FC<NegativeFeedbackModalProps> = ({
           <View style={styles.header}>
             <Text style={styles.title}>What could be improved?</Text>
             <TouchableOpacity onPress={handleClose} style={styles.closeIcon}>
-              <Ionicons name="close" size={24} color={colors.ink} />
+              <Ionicons name="close" size={24} color={lightColors.ink} />
             </TouchableOpacity>
           </View>
 
@@ -120,7 +122,7 @@ export const NegativeFeedbackModal: React.FC<NegativeFeedbackModalProps> = ({
                 multiline
                 numberOfLines={3}
                 textAlignVertical="top"
-                placeholderTextColor={colors.ocean}
+                placeholderTextColor={lightColors.ocean}
               />
             </View>
           </ScrollView>
@@ -192,12 +194,12 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: colors.mist,
+    borderBottomColor: lightColors.mist,
   },
   title: {
     fontFamily: fonts.headerFamilyItalic,
     fontSize: 20,
-    color: colors.deepTeal,
+    color: lightColors.deepTeal,
     flex: 1,
   },
   closeIcon: {
@@ -217,20 +219,20 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: colors.mist,
+    borderColor: lightColors.mist,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
   checkboxChecked: {
-    backgroundColor: colors.deepTeal,
-    borderColor: colors.deepTeal,
+    backgroundColor: lightColors.deepTeal,
+    borderColor: lightColors.deepTeal,
   },
   checkboxLabel: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-    color: colors.ink,
+    color: lightColors.ink,
     flex: 1,
   },
   otherContainer: {
@@ -239,19 +241,19 @@ const styles = StyleSheet.create({
   otherLabel: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
-    color: colors.ocean,
+    color: lightColors.ocean,
     marginBottom: 8,
   },
   otherInput: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-    color: colors.ink,
-    backgroundColor: colors.pearl,
+    color: lightColors.ink,
+    backgroundColor: lightColors.pearl,
     borderRadius: 8,
     padding: 12,
     minHeight: 80,
     borderWidth: 1,
-    borderColor: colors.mist,
+    borderColor: lightColors.mist,
   },
   buttonRow: {
     flexDirection: 'row',
@@ -260,24 +262,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderTopWidth: 1,
-    borderTopColor: colors.mist,
+    borderTopColor: lightColors.mist,
   },
   cancelButton: {
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
-    backgroundColor: colors.pearl,
+    backgroundColor: lightColors.pearl,
   },
   cancelText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-    color: colors.ocean,
+    color: lightColors.ocean,
   },
   submitButton: {
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
-    backgroundColor: colors.deepTeal,
+    backgroundColor: lightColors.deepTeal,
   },
   submitText: {
     fontFamily: fonts.bodyFamilyRegular,

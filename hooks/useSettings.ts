@@ -8,9 +8,11 @@ console.log("[STARTUP] useSettings.ts module loading...");
 const SETTINGS_STORAGE_KEY = "daily_paths_settings_v1";
 
 export type TextSize = "extraSmall" | "small" | "medium" | "large" | "extraLarge";
+export type ColorScheme = "light" | "dark" | "system";
 
 export interface AppSettings {
   textSize: TextSize;
+  colorScheme: ColorScheme;
   dailyReminderEnabled: boolean;
   dailyReminderTime: string; // "HH:MM" in 24-hour format
 }
@@ -18,6 +20,8 @@ export interface AppSettings {
 const defaultSettings: AppSettings = {
   // Default to the middle text size (medium).
   textSize: "medium",
+  // Default to system color scheme (follows iOS/Android dark mode setting)
+  colorScheme: "system",
   dailyReminderEnabled: false,
   dailyReminderTime: "08:00",
 };
@@ -26,6 +30,7 @@ interface SettingsContextValue {
   settings: AppSettings;
   loading: boolean;
   setTextSize: (size: TextSize) => Promise<void>;
+  setColorScheme: (scheme: ColorScheme) => Promise<void>;
   setDailyReminderEnabled: (enabled: boolean) => Promise<void>;
   setDailyReminderTime: (time: string) => Promise<void>;
 }
@@ -103,6 +108,13 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
     [updateSettings]
   );
 
+  const setColorScheme = React.useCallback(
+    async (scheme: ColorScheme) => {
+      await updateSettings({ colorScheme: scheme });
+    },
+    [updateSettings]
+  );
+
   const setDailyReminderEnabled = React.useCallback(
     async (enabled: boolean) => {
       if (enabled) {
@@ -131,10 +143,11 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
       settings,
       loading,
       setTextSize,
+      setColorScheme,
       setDailyReminderEnabled,
       setDailyReminderTime,
     }),
-    [settings, loading, setTextSize, setDailyReminderEnabled, setDailyReminderTime]
+    [settings, loading, setTextSize, setColorScheme, setDailyReminderEnabled, setDailyReminderTime]
   );
 
   return React.createElement(SettingsContext.Provider, { value }, children);

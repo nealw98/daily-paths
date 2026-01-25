@@ -28,13 +28,15 @@ import { useBookmarkManager } from "../hooks/useBookmarkManager";
 import { useAvailableDates } from "../hooks/useAvailableDates";
 import { hasSeenInstruction, markInstructionSeen } from "../utils/bookmarkStorage";
 import { parseDateLocal } from "../utils/dateUtils";
-import { colors } from "../constants/theme";
+import { useTheme } from "../hooks/useTheme";
 import * as Notifications from "expo-notifications";
 
 console.log("[STARTUP] index.tsx module loading...");
 
 export default function Index() {
   console.log("[STARTUP] Index function called");
+  
+  const { colors } = useTheme();
   
   let router;
   try {
@@ -338,26 +340,26 @@ export default function Index() {
   // Show loading only on initial load, not when navigating
   if (loading && !reading) {
     content = (
-      <View style={styles.centerContainer}>
+      <View style={[styles.centerContainer, { backgroundColor: colors.pearl }]}>
         <ActivityIndicator size="large" color={colors.ocean} />
-        <Text style={styles.loadingText}>Loading reading...</Text>
+        <Text style={[styles.loadingText, { color: colors.ocean }]}>Loading reading...</Text>
       </View>
     );
   } else if (!reading) {
     content = (
-      <View style={styles.centerContainer}>
-        <Text style={styles.errorDetail}>
+      <View style={[styles.centerContainer, { backgroundColor: colors.pearl }]}>
+        <Text style={[styles.errorDetail, { color: colors.ink }]}>
           {error ?? "No reading available for this date."}
         </Text>
         <View style={styles.buttonRow}>
-          <TouchableOpacity style={styles.primaryButton} onPress={handleGoToToday}>
+          <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.ocean }]} onPress={handleGoToToday}>
             <Text style={styles.primaryButtonText}>Go to Today</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.secondaryButton}
+            style={[styles.secondaryButton, { borderColor: colors.ocean }]}
             onPress={handleOpenDatePicker}
           >
-            <Text style={styles.secondaryButtonText}>Pick a Date</Text>
+            <Text style={[styles.secondaryButtonText, { color: colors.ocean }]}>Pick a Date</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -384,10 +386,10 @@ export default function Index() {
       {content}
       
       {/* Persistent Action Bar - stays above modals */}
-      <View style={styles.actionBar}>
+      <View style={[styles.actionBar, { backgroundColor: colors.pearl, borderTopColor: colors.mist }]}>
         <TouchableOpacity
           onPress={handleOpenBookmarks}
-          style={styles.actionButton}
+          style={[styles.actionButton, { backgroundColor: colors.cloud }]}
         >
           <Ionicons
             name="list-outline"
@@ -398,14 +400,14 @@ export default function Index() {
 
         <TouchableOpacity
           onPress={handleOpenTextSize}
-          style={styles.actionButton}
+          style={[styles.actionButton, { backgroundColor: colors.cloud }]}
         >
           <Ionicons name="text-outline" size={24} color={colors.deepTeal} />
         </TouchableOpacity>
 
         <TouchableOpacity
           onPress={handleOpenReminder}
-          style={styles.actionButton}
+          style={[styles.actionButton, { backgroundColor: colors.cloud }]}
         >
           <Ionicons
             name="notifications-outline"
@@ -414,7 +416,7 @@ export default function Index() {
           />
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={handleSettingsPress} style={styles.actionButton}>
+        <TouchableOpacity onPress={handleSettingsPress} style={[styles.actionButton, { backgroundColor: colors.cloud }]}>
           <Ionicons name="information-circle-outline" size={24} color={colors.deepTeal} />
         </TouchableOpacity>
       </View>
@@ -479,7 +481,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: colors.pearl,
     padding: 20,
   },
   actionBar: {
@@ -492,16 +493,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 16,
     paddingHorizontal: 40,
-    backgroundColor: colors.pearl,
     borderTopWidth: 1,
-    borderTopColor: colors.mist,
     zIndex: 1000,
   },
   actionButton: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
@@ -513,19 +511,16 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: colors.ocean,
   },
   errorDetail: {
     fontSize: 20,
     fontWeight: "600",
-    color: colors.ink,
     marginBottom: 12,
     textAlign: "center",
     lineHeight: 26,
   },
   errorHint: {
     fontSize: 14,
-    color: colors.ocean,
     textAlign: "center",
     fontStyle: "italic",
   },
@@ -535,7 +530,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   primaryButton: {
-    backgroundColor: colors.ocean,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
@@ -545,14 +539,12 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   secondaryButton: {
-    borderColor: colors.ocean,
     borderWidth: 1,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
   },
   secondaryButtonText: {
-    color: colors.ocean,
     fontWeight: "600",
   },
 });

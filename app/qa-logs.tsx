@@ -14,12 +14,14 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Clipboard from "@react-native-clipboard/clipboard";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { colors, fonts } from "../constants/theme";
+import { fonts, lightColors } from "../constants/theme";
+import { useTheme } from "../hooks/useTheme";
 import { clearQaLogs, useQaLogs, qaLog } from "../utils/qaLog";
 import { resetRateShareTracking } from "../utils/rateShareTracking";
 import { isDeveloperDevice, setDeveloperDevice, getOrCreateDeviceId } from "../utils/deviceIdentity";
 
 export default function QaLogsScreen() {
+  const { colors } = useTheme();
   const params = useLocalSearchParams<{
     checkAndApplyUpdate?: any;
   }>();
@@ -177,8 +179,8 @@ export default function QaLogsScreen() {
                 : 'Developer mode disabled. Your usage will be counted in analytics.'
               );
             }}
-            trackColor={{ false: colors.mist, true: colors.seafoam }}
-            thumbColor={isDeveloper ? colors.deepTeal : '#f4f3f4'}
+            trackColor={{ false: lightColors.mist, true: lightColors.seafoam }}
+            thumbColor={isDeveloper ? lightColors.deepTeal : '#f4f3f4'}
           />
         </View>
 
@@ -259,13 +261,13 @@ export default function QaLogsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.pearl,
+    backgroundColor: lightColors.pearl,
   },
   header: {
     paddingHorizontal: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: colors.mist,
+    borderBottomColor: lightColors.mist,
   },
   headerRow: {
     flexDirection: "row",
@@ -275,18 +277,18 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: fonts.headerFamily,
     fontSize: 22,
-    color: colors.deepTeal,
+    color: lightColors.deepTeal,
   },
   closeText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
-    color: colors.deepTeal,
+    color: lightColors.deepTeal,
   },
   subtitle: {
     marginTop: 4,
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
-    color: colors.ink,
+    color: lightColors.ink,
   },
   meta: {
     marginTop: 4,
@@ -304,12 +306,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: colors.mist,
+    borderColor: lightColors.mist,
   },
   developerLabel: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 13,
-    color: colors.ink,
+    color: lightColors.ink,
     flex: 1,
     marginRight: 8,
   },
@@ -323,7 +325,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: colors.deepTeal,
+    backgroundColor: lightColors.deepTeal,
   },
   primaryButtonText: {
     fontFamily: fonts.bodyFamilyRegular,
@@ -335,13 +337,13 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: colors.deepTeal,
+    borderColor: lightColors.deepTeal,
     backgroundColor: "transparent",
   },
   secondaryButtonText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 12,
-    color: colors.deepTeal,
+    color: lightColors.deepTeal,
   },
   logContainer: {
     flex: 1,
@@ -373,7 +375,7 @@ const styles = StyleSheet.create({
   logMessage: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 13,
-    color: colors.ink,
+    color: lightColors.ink,
     marginBottom: 2,
   },
   logDetails: {
@@ -384,7 +386,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     fontFamily: fonts.headerFamily,
     fontSize: 16,
-    color: colors.deepTeal,
+    color: lightColors.deepTeal,
     marginBottom: 8,
   },
 });

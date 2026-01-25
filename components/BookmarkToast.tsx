@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Animated } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../constants/theme";
+import { lightColors } from "../constants/theme";
 
 interface BookmarkToastProps {
   visible: boolean;
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
   toast: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: colors.deepTeal,
+    backgroundColor: lightColors.deepTeal,
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,

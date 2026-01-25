@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Animated } from "react-native";
-import { colors, fonts } from "../constants/theme";
+import { fonts, lightColors } from "../constants/theme";
+import { useTheme } from "../hooks/useTheme";
 import { useSettings, TextSize, getTextSizeMetrics } from "../hooks/useSettings";
 
 const textSizeStops: TextSize[] = [
@@ -20,6 +21,7 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
   visible,
   onClose,
 }) => {
+  const { colors } = useTheme();
   const { settings, setTextSize } = useSettings();
   const slideAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -185,7 +187,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContainer: {
-    backgroundColor: colors.pearl,
+    backgroundColor: lightColors.pearl,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: "80%",
@@ -203,7 +205,7 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: fonts.headerFamilyItalic,
     fontSize: 28,
-    color: colors.deepTeal,
+    color: lightColors.deepTeal,
   },
   doneButton: {
     paddingHorizontal: 8,
@@ -214,7 +216,7 @@ const styles = StyleSheet.create({
   doneButtonText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-    color: colors.deepTeal,
+    color: lightColors.deepTeal,
   },
   content: {
     padding: 20,
@@ -235,7 +237,7 @@ const styles = StyleSheet.create({
   sliderEdgeLabel: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 12,
-    color: colors.deepTeal,
+    color: lightColors.deepTeal,
     fontWeight: "600",
   },
   sliderEdgeLabelDisabled: {
@@ -261,12 +263,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
   },
   sliderStopActive: {
-    borderColor: colors.seafoam,
-    backgroundColor: colors.seafoam,
+    borderColor: lightColors.seafoam,
+    backgroundColor: lightColors.seafoam,
   },
   sliderStopSelected: {
-    borderColor: colors.deepTeal,
-    backgroundColor: colors.deepTeal,
+    borderColor: lightColors.deepTeal,
+    backgroundColor: lightColors.deepTeal,
     transform: [{ scale: 1.1 }],
   },
   textPreviewContainer: {

@@ -14,8 +14,9 @@ import {
   Lora_400Regular,
   Lora_400Regular_Italic,
 } from "@expo-google-fonts/lora";
-import { colors } from "../constants/theme";
+import { lightColors, darkColors } from "../constants/theme";
 import { SettingsProvider } from "../hooks/useSettings";
+import { useColorScheme } from "react-native";
 import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import * as Updates from "expo-updates";
@@ -43,6 +44,10 @@ try {
 
 export default function RootLayout() {
   console.log("[STARTUP] RootLayout function called");
+  
+  // Use system color scheme for loading screen (before SettingsProvider is available)
+  const systemColorScheme = useColorScheme();
+  const colors = systemColorScheme === "dark" ? darkColors : lightColors;
   
   let router;
   try {
@@ -164,7 +169,7 @@ export default function RootLayout() {
   if (!fontsLoaded) {
     console.log("[STARTUP] Rendering loading screen (fonts not loaded)");
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.pearl }]}>
         <ActivityIndicator size="large" color={colors.ocean} />
       </View>
     );
@@ -211,12 +216,12 @@ export default function RootLayout() {
             </Text>
             <View style={styles.updateActions}>
               <TouchableOpacity
-                style={styles.updateButtonPrimary}
+                style={[styles.updateButtonPrimary, { backgroundColor: colors.seafoam }]}
                 onPress={handleRestart}
                 disabled={restarting}
                 activeOpacity={0.8}
               >
-                <Text style={styles.updateButtonPrimaryText}>
+                <Text style={[styles.updateButtonPrimaryText, { color: colors.deepTeal }]}>
                   {restarting ? "Restarting..." : "Restart"}
                 </Text>
               </TouchableOpacity>
@@ -236,18 +241,17 @@ export default function RootLayout() {
             headerShown: false,
             contentStyle: { backgroundColor: colors.pearl },
           }}
-          initialParams={{ checkAndApplyUpdate }}
         />
       </SettingsProvider>
   );
 }
 
+// Static styles without theme colors (colors applied inline based on theme)
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: colors.pearl,
   },
   updateBanner: {
     position: "absolute",
@@ -277,13 +281,11 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   updateButtonPrimary: {
-    backgroundColor: colors.seafoam,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 999,
   },
   updateButtonPrimaryText: {
-    color: colors.deepTeal,
     fontFamily: "Inter_400Regular",
     fontSize: 13,
     fontWeight: "600",

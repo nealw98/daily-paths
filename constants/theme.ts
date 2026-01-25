@@ -1,4 +1,5 @@
-export const colors = {
+// Light theme colors (default)
+export const lightColors = {
   deepTeal: "#2C5F5D",
   ocean: "#4A8B8D",
   seafoam: "#7EBDC3",
@@ -7,6 +8,23 @@ export const colors = {
   pearl: "#F7FAFA",
   ink: "#2D3E3F",
 };
+
+// Dark theme colors
+export const darkColors = {
+  deepTeal: "#7EBDC3",    // Inverted: seafoam becomes primary accent
+  ocean: "#5A9B9D",       // Slightly lighter for dark mode
+  seafoam: "#4A8B8D",     // Adjusted for dark backgrounds
+  mist: "#3A4A4B",        // Dark muted background
+  cloud: "#2A3536",       // Darker card background
+  pearl: "#1A2223",       // Dark background
+  ink: "#E8F3F3",         // Light text on dark
+};
+
+// Color palette type for type safety
+export type ColorPalette = typeof lightColors;
+
+// Legacy export for backward compatibility (will be removed after migration)
+export const colors = lightColors;
 
 export const fonts = {
   headerFamily: "CormorantGaramond_600SemiBold",

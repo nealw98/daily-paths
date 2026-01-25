@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, fonts } from "../constants/theme";
+import { fonts, lightColors } from "../constants/theme";
+import { useTheme } from "../hooks/useTheme";
 
 interface InlineTimePickerProps {
   value: Date;
@@ -18,6 +19,7 @@ export const InlineTimePicker: React.FC<InlineTimePickerProps> = ({
   onChange,
   onDone,
 }) => {
+  const { colors } = useTheme();
   const [hour, setHour] = useState(12);
   const [minute, setMinute] = useState(0);
   const [isPM, setIsPM] = useState(false);
@@ -87,7 +89,7 @@ export const InlineTimePicker: React.FC<InlineTimePickerProps> = ({
             style={styles.chevronButton}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-up" size={16} color={colors.ocean} />
+            <Ionicons name="chevron-up" size={16} color={lightColors.ocean} />
           </TouchableOpacity>
           <Text style={styles.valueText}>{hourLabel}</Text>
           <TouchableOpacity
@@ -95,7 +97,7 @@ export const InlineTimePicker: React.FC<InlineTimePickerProps> = ({
             style={styles.chevronButton}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-down" size={16} color={colors.ocean} />
+            <Ionicons name="chevron-down" size={16} color={lightColors.ocean} />
           </TouchableOpacity>
         </View>
 
@@ -107,7 +109,7 @@ export const InlineTimePicker: React.FC<InlineTimePickerProps> = ({
             style={styles.chevronButton}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-up" size={16} color={colors.ocean} />
+            <Ionicons name="chevron-up" size={16} color={lightColors.ocean} />
           </TouchableOpacity>
           <Text style={styles.valueText}>{minuteLabel}</Text>
           <TouchableOpacity
@@ -115,7 +117,7 @@ export const InlineTimePicker: React.FC<InlineTimePickerProps> = ({
             style={styles.chevronButton}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-down" size={16} color={colors.ocean} />
+            <Ionicons name="chevron-down" size={16} color={lightColors.ocean} />
           </TouchableOpacity>
         </View>
 
@@ -193,13 +195,13 @@ const styles = StyleSheet.create({
   valueText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 18,
-    color: colors.deepTeal,
+    color: lightColors.deepTeal,
     marginVertical: 2,
   },
   separator: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 18,
-    color: colors.deepTeal,
+    color: lightColors.deepTeal,
     marginHorizontal: 2,
   },
   periodToggle: {
@@ -213,17 +215,17 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: colors.mist,
+    borderColor: lightColors.mist,
     backgroundColor: "#fff",
   },
   periodChipSelected: {
-    backgroundColor: colors.deepTeal,
-    borderColor: colors.deepTeal,
+    backgroundColor: lightColors.deepTeal,
+    borderColor: lightColors.deepTeal,
   },
   periodLabel: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
-    color: colors.deepTeal,
+    color: lightColors.deepTeal,
   },
   periodLabelSelected: {
     color: "#fff",
@@ -239,7 +241,7 @@ const styles = StyleSheet.create({
   doneLabel: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
-    color: colors.ocean,
+    color: lightColors.ocean,
   },
 });
 

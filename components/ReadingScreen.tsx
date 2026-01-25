@@ -16,7 +16,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
-import { colors, fonts } from "../constants/theme";
+import { fonts, lightColors } from "../constants/theme";
+import { useTheme } from "../hooks/useTheme";
 import { useSettings, getTextSizeMetrics } from "../hooks/useSettings";
 import { DailyReading } from "../types/readings";
 import { BookmarkToast } from "./BookmarkToast";
@@ -90,6 +91,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   // onDismissInstruction,
   // onShowInstruction,
 }) => {
+  const { colors } = useTheme();
   const [localBookmarked, setLocalBookmarked] = useState(isBookmarked);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -636,10 +638,11 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   );
 };
 
+// Static styles use lightColors; dynamic colors applied inline via useTheme()
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.pearl,
+    backgroundColor: lightColors.pearl,
   },
   container: {
     flex: 1,
@@ -742,7 +745,7 @@ const styles = StyleSheet.create({
     }),
   },
   calendarMonth: {
-    backgroundColor: colors.deepTeal,
+    backgroundColor: lightColors.deepTeal,
     paddingVertical: 3,
     paddingHorizontal: 4,
     alignItems: "center",
@@ -763,13 +766,13 @@ const styles = StyleSheet.create({
   calendarDayText: {
     fontFamily: fonts.headerFamily,
     fontSize: 28,
-    color: colors.deepTeal,
+    color: lightColors.deepTeal,
     fontWeight: "600",
     lineHeight: 28,
   },
   content: {
     flex: 1,
-    backgroundColor: colors.pearl,
+    backgroundColor: lightColors.pearl,
   },
   contentPressing: {
     backgroundColor: "#f9fafb",
@@ -780,7 +783,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: "Inter_500Medium",
-    color: colors.deepTeal,
+    color: lightColors.deepTeal,
     textAlign: "center",
     textTransform: "uppercase",
     fontWeight: "600",
@@ -832,7 +835,7 @@ const styles = StyleSheet.create({
   sectionHeading: {
     fontFamily: fonts.headerFamilyBoldItalic,
     fontSize: 24,
-    color: colors.deepTeal,
+    color: lightColors.deepTeal,
     marginBottom: 12,
   },
   applicationQuoteContainer: {
@@ -867,7 +870,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     ...Platform.select({
       ios: {
-        backgroundColor: colors.ocean,
+        backgroundColor: lightColors.ocean,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
@@ -884,18 +887,18 @@ const styles = StyleSheet.create({
     ...Platform.select({
       android: {
         elevation: 4,
-        backgroundColor: colors.mist,
+        backgroundColor: lightColors.mist,
       },
     }),
   },
   thoughtGradient: {
     padding: 20,
-    backgroundColor: Platform.OS === "android" ? colors.mist : "rgba(255, 255, 255, 0.65)",
+    backgroundColor: Platform.OS === "android" ? lightColors.mist : "rgba(255, 255, 255, 0.65)",
   },
   thoughtLabel: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
-    color: colors.ocean,
+    color: lightColors.ocean,
     textTransform: "uppercase",
     letterSpacing: 1,
     marginBottom: 8,
@@ -903,7 +906,7 @@ const styles = StyleSheet.create({
   thoughtText: {
     fontFamily: fonts.headerFamilyItalic,
     fontSize: 22,
-    color: colors.deepTeal,
+    color: lightColors.deepTeal,
     lineHeight: 26,
     fontWeight: "600",
   },

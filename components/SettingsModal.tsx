@@ -1,6 +1,7 @@
 import React from "react";
 import { Modal, View, StyleSheet, TouchableOpacity, Text, Animated } from "react-native";
-import { colors, fonts } from "../constants/theme";
+import { fonts, lightColors } from "../constants/theme";
+import { useTheme } from "../hooks/useTheme";
 
 interface SettingsModalProps {
   visible: boolean;
@@ -13,6 +14,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   children,
 }) => {
+  const { colors } = useTheme();
   const slideAnim = React.useRef(new Animated.Value(0)).current;
 
   React.useEffect(() => {
@@ -79,7 +81,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContainer: {
-    backgroundColor: colors.pearl,
+    backgroundColor: lightColors.pearl,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingTop: 20,
@@ -103,7 +105,7 @@ const styles = StyleSheet.create({
   doneButtonText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-    color: colors.deepTeal,
+    color: lightColors.deepTeal,
   },
 });
 

@@ -9,7 +9,8 @@ import {
   Animated,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, fonts } from "../constants/theme";
+import { fonts, lightColors } from "../constants/theme";
+import { useTheme } from "../hooks/useTheme";
 import { BookmarkData } from "../utils/bookmarkStorage";
 import { useSettings, getTextSizeMetrics } from "../hooks/useSettings";
 import { parseDateLocal } from "../utils/dateUtils";
@@ -27,6 +28,7 @@ export const BookmarkListModal: React.FC<BookmarkListModalProps> = ({
   onClose,
   onSelectBookmark,
 }) => {
+  const { colors } = useTheme();
   const { settings } = useSettings();
   const typography = getTextSizeMetrics(settings.textSize);
   const slideAnim = React.useRef(new Animated.Value(0)).current;
@@ -101,7 +103,7 @@ export const BookmarkListModal: React.FC<BookmarkListModalProps> = ({
       <Ionicons
         name="heart-outline"
         size={64}
-        color={colors.mist}
+        color={lightColors.mist}
         style={styles.emptyIcon}
       />
       <Text style={styles.emptyTitle}>No favorites yet</Text>
@@ -181,12 +183,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.mist,
+    borderBottomColor: lightColors.mist,
   },
   title: {
     fontFamily: fonts.headerFamilyBoldItalic,
     fontSize: 24,
-    color: colors.deepTeal,
+    color: lightColors.deepTeal,
   },
   closeButton: {
     padding: 4,
@@ -200,7 +202,7 @@ const styles = StyleSheet.create({
   doneButtonText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-    color: colors.deepTeal,
+    color: lightColors.deepTeal,
   },
   listContent: {
     padding: 20,
@@ -227,14 +229,14 @@ const styles = StyleSheet.create({
   bookmarkDate: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 12,
-    color: colors.ocean,
+    color: lightColors.ocean,
     marginBottom: 4,
     letterSpacing: 0.5,
   },
   bookmarkTitle: {
     fontFamily: "Inter_400Regular",
     fontSize: 12,
-    color: colors.deepTeal,
+    color: lightColors.deepTeal,
     lineHeight: 16,
   },
   emptyState: {
@@ -249,13 +251,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontFamily: fonts.headerFamilyBoldItalic,
     fontSize: 20,
-    color: colors.ink,
+    color: lightColors.ink,
     marginBottom: 8,
   },
   emptyMessage: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 15,
-    color: colors.ocean,
+    color: lightColors.ocean,
     textAlign: "center",
     lineHeight: 22,
   },

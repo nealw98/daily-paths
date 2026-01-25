@@ -17,8 +17,9 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import Constants from "expo-constants";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { colors, fonts } from "../constants/theme";
-import { useSettings, TextSize } from "../hooks/useSettings";
+import { fonts, lightColors } from "../constants/theme";
+import { useTheme } from "../hooks/useTheme";
+import { useSettings, TextSize, ColorScheme } from "../hooks/useSettings";
 import { useAppFeedback } from "../hooks/useAppFeedback";
 import { shareApp } from "../utils/rateShareTracking";
 import { qaLog } from "../utils/qaLog";
@@ -61,7 +62,8 @@ export const SettingsContent: React.FC<{
   onOpenQaLogs,
   scrollToSection,
 }) => {
-  const { settings, setTextSize, setDailyReminderEnabled, setDailyReminderTime } =
+  const { colors } = useTheme();
+  const { settings, setTextSize, setColorScheme, setDailyReminderEnabled, setDailyReminderTime } =
     useSettings();
   const { submitting: submittingFeedback, submitFeedback } = useAppFeedback();
 
@@ -199,7 +201,7 @@ export const SettingsContent: React.FC<{
               <Ionicons
                 name="information-circle-outline"
                 size={22}
-                color={colors.deepTeal}
+                color={lightColors.deepTeal}
               />
               <View style={styles.sectionHeaderText}>
                 <Text style={styles.sectionTitle}>About</Text>
@@ -211,7 +213,7 @@ export const SettingsContent: React.FC<{
                   fontSize: 16,
                   lineHeight: 24,
                   fontFamily: fonts.loraRegular,
-                  color: colors.ink,
+                  color: lightColors.ink,
                 }}
               >
                 Daily Paths supports your recovery with 366 original readings based on Al-Anon's Steps, Traditions, and Concepts. It is not affiliated with Al-Anon, AA or any 12-step fellowship.
@@ -221,7 +223,83 @@ export const SettingsContent: React.FC<{
 
           <View style={styles.sectionCard}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="star-outline" size={22} color={colors.deepTeal} />
+              <Ionicons name="moon-outline" size={22} color={colors.deepTeal} />
+              <View style={styles.sectionHeaderText}>
+                <Text style={styles.sectionTitle}>Appearance</Text>
+                <Text style={styles.sectionSubtitle}>
+                  Choose your preferred theme.
+                </Text>
+              </View>
+            </View>
+            <View style={styles.sectionBody}>
+              <View style={styles.themeOptions}>
+                <TouchableOpacity
+                  style={[
+                    styles.themeOption,
+                    settings.colorScheme === "light" && styles.themeOptionSelected,
+                  ]}
+                  onPress={() => setColorScheme("light")}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons 
+                    name="sunny" 
+                    size={20} 
+                    color={settings.colorScheme === "light" ? "#fff" : colors.deepTeal} 
+                  />
+                  <Text style={[
+                    styles.themeOptionText,
+                    settings.colorScheme === "light" && styles.themeOptionTextSelected,
+                  ]}>
+                    Light
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.themeOption,
+                    settings.colorScheme === "dark" && styles.themeOptionSelected,
+                  ]}
+                  onPress={() => setColorScheme("dark")}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons 
+                    name="moon" 
+                    size={20} 
+                    color={settings.colorScheme === "dark" ? "#fff" : colors.deepTeal} 
+                  />
+                  <Text style={[
+                    styles.themeOptionText,
+                    settings.colorScheme === "dark" && styles.themeOptionTextSelected,
+                  ]}>
+                    Dark
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.themeOption,
+                    settings.colorScheme === "system" && styles.themeOptionSelected,
+                  ]}
+                  onPress={() => setColorScheme("system")}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons 
+                    name="phone-portrait" 
+                    size={20} 
+                    color={settings.colorScheme === "system" ? "#fff" : colors.deepTeal} 
+                  />
+                  <Text style={[
+                    styles.themeOptionText,
+                    settings.colorScheme === "system" && styles.themeOptionTextSelected,
+                  ]}>
+                    System
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="star-outline" size={22} color={lightColors.deepTeal} />
               <View style={styles.sectionHeaderText}>
                 <Text style={styles.sectionTitle}>Rate & Share</Text>
                 <Text style={styles.sectionSubtitle}>
@@ -239,7 +317,7 @@ export const SettingsContent: React.FC<{
                   onPress={handleRateApp}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="star" size={18} color={colors.deepTeal} />
+                  <Ionicons name="star" size={18} color={lightColors.deepTeal} />
                   <Text style={styles.secondaryButtonText}>Rate App</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -248,7 +326,7 @@ export const SettingsContent: React.FC<{
                   disabled={isSharing}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="share-social" size={18} color={colors.deepTeal} />
+                  <Ionicons name="share-social" size={18} color={lightColors.deepTeal} />
                   <Text style={styles.secondaryButtonText}>
                     {isSharing ? "Sharing..." : "Share App"}
                   </Text>
@@ -259,7 +337,7 @@ export const SettingsContent: React.FC<{
 
           <View style={styles.sectionCard}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="chatbubbles-outline" size={22} color={colors.deepTeal} />
+              <Ionicons name="chatbubbles-outline" size={22} color={lightColors.deepTeal} />
               <View style={styles.sectionHeaderText}>
                 <Text style={styles.sectionTitle}>Share Feedback</Text>
                 <Text style={styles.sectionSubtitle}>
@@ -273,7 +351,7 @@ export const SettingsContent: React.FC<{
                 onPress={() => setShowFeedbackModal(true)}
                 activeOpacity={0.8}
               >
-                <Ionicons name="chatbubble-ellipses" size={18} color={colors.deepTeal} />
+                <Ionicons name="chatbubble-ellipses" size={18} color={lightColors.deepTeal} />
                 <Text style={styles.secondaryButtonText}>Send Feedback</Text>
               </TouchableOpacity>
             </View>
@@ -450,25 +528,54 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 18,
     fontWeight: "600",
-    color: colors.deepTeal,
+    color: lightColors.deepTeal,
     marginBottom: 2,
   },
   sectionSubtitle: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
-    color: colors.ink,
+    color: lightColors.ink,
     lineHeight: 18,
   },
   bodyText: {
     fontFamily: fonts.loraRegular,
     fontSize: 16,
-    color: colors.ink,
+    color: lightColors.ink,
     lineHeight: 24,
   },
   buttonRow: {
     flexDirection: "row",
     gap: 12,
     marginTop: 16,
+  },
+  themeOptions: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  themeOption: {
+    flex: 1,
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 16,
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    borderWidth: 2,
+    borderColor: lightColors.mist,
+  },
+  themeOptionSelected: {
+    backgroundColor: lightColors.deepTeal,
+    borderColor: lightColors.deepTeal,
+  },
+  themeOptionText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 14,
+    color: lightColors.deepTeal,
+    fontWeight: "600",
+  },
+  themeOptionTextSelected: {
+    color: "#fff",
   },
   secondaryButton: {
     flex: 1,
@@ -480,12 +587,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: "#fff",
     borderWidth: 2,
-    borderColor: colors.deepTeal,
+    borderColor: lightColors.deepTeal,
   },
   secondaryButtonText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-    color: colors.deepTeal,
+    color: lightColors.deepTeal,
     fontWeight: "600",
   },
   chipRow: {
@@ -505,8 +612,8 @@ const styles = StyleSheet.create({
     minWidth: "45%",
   },
   chipSelected: {
-    backgroundColor: colors.deepTeal,
-    borderColor: colors.deepTeal,
+    backgroundColor: lightColors.deepTeal,
+    borderColor: lightColors.deepTeal,
   },
   chipLabel: {
     fontFamily: fonts.bodyFamilyRegular,
@@ -526,7 +633,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingVertical: 12,
     borderRadius: 10,
-    backgroundColor: colors.deepTeal,
+    backgroundColor: lightColors.deepTeal,
     alignItems: "center",
   },
   primaryButtonText: {
@@ -543,7 +650,7 @@ const styles = StyleSheet.create({
   sliderEdgeLabel: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 12,
-    color: colors.deepTeal,
+    color: lightColors.deepTeal,
     fontWeight: "600",
   },
   sliderEdgeLabelDisabled: {
@@ -569,12 +676,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
   },
   sliderStopActive: {
-    borderColor: colors.seafoam,
-    backgroundColor: colors.seafoam,
+    borderColor: lightColors.seafoam,
+    backgroundColor: lightColors.seafoam,
   },
   sliderStopSelected: {
-    borderColor: colors.deepTeal,
-    backgroundColor: colors.deepTeal,
+    borderColor: lightColors.deepTeal,
+    backgroundColor: lightColors.deepTeal,
     transform: [{ scale: 1.1 }],
   },
   textPreviewContainer: {
@@ -600,12 +707,12 @@ const styles = StyleSheet.create({
   rowLabel: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-    color: colors.ink,
+    color: lightColors.ink,
   },
   rowHelper: {
     fontFamily: fonts.bodyFamily,
     fontSize: 13,
-    color: colors.ocean,
+    color: lightColors.ocean,
     marginTop: 2,
   },
   timeRow: {
@@ -625,7 +732,7 @@ const styles = StyleSheet.create({
   timeValue: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-    color: colors.ink,
+    color: lightColors.ink,
   },
   timeValueDisabled: {
     // No extra dimming; row opacity handles the disabled look
@@ -657,7 +764,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: colors.deepTeal,
+    backgroundColor: lightColors.deepTeal,
   },
   timePickerButtonPrimaryText: {
     fontFamily: fonts.bodyFamilyRegular,
@@ -688,7 +795,7 @@ const styles = StyleSheet.create({
   linkLabel: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
-    color: colors.deepTeal,
+    color: lightColors.deepTeal,
   },
   versionContainer: {
     paddingTop: 8,
@@ -717,7 +824,7 @@ const styles = StyleSheet.create({
   feedbackTitle: {
     fontFamily: fonts.headerFamilyItalic,
     fontSize: 22,
-    color: colors.deepTeal,
+    color: lightColors.deepTeal,
     marginBottom: 16,
   },
   feedbackInput: {
@@ -727,7 +834,7 @@ const styles = StyleSheet.create({
     padding: 14,
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-    color: colors.ink,
+    color: lightColors.ink,
     marginTop: 12,
   },
   feedbackInputMultiline: {
@@ -754,7 +861,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: colors.deepTeal,
+    backgroundColor: lightColors.deepTeal,
   },
   feedbackPrimaryText: {
     fontFamily: fonts.bodyFamilyRegular,

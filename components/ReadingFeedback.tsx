@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, fonts } from '../constants/theme';
+import { fonts, lightColors } from '../constants/theme';
+import { useTheme } from '../hooks/useTheme';
 import { useReadingFeedback } from '../hooks/useReadingFeedback';
 import { useSettings, getTextSizeMetrics } from '../hooks/useSettings';
 import { NegativeFeedbackModal } from './NegativeFeedbackModal';
@@ -27,6 +28,7 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
   readingTitle,
   readingDate,
 }) => {
+  const { colors } = useTheme();
   const { currentRating: hookRating, submitRating, loading } = useReadingFeedback(readingId);
   const { settings } = useSettings();
   const { trackReadingRated } = useAnalytics();
@@ -201,14 +203,14 @@ const styles = StyleSheet.create({
     marginTop: 32,
     paddingVertical: 24,
     paddingHorizontal: 20,
-    backgroundColor: colors.pearl,
+    backgroundColor: lightColors.pearl,
     alignItems: 'center',
     marginBottom: 82, // Space for action bar
   },
   question: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-    color: colors.ink,
+    color: lightColors.ink,
     marginBottom: 16,
   },
   buttonRow: {
@@ -223,7 +225,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: colors.mist,
+    borderColor: lightColors.mist,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -231,8 +233,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   ratingButtonSelected: {
-    borderColor: colors.deepTeal,
-    backgroundColor: colors.deepTeal,
+    borderColor: lightColors.deepTeal,
+    backgroundColor: lightColors.deepTeal,
     borderWidth: 3,
     shadowOpacity: 0.15,
     shadowRadius: 6,
@@ -247,7 +249,7 @@ const styles = StyleSheet.create({
   thankYou: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
-    color: colors.deepTeal,
+    color: lightColors.deepTeal,
     textAlign: 'center',
   },
 });

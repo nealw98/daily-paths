@@ -10,7 +10,8 @@ import {
 } from "react-native";
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, fonts } from "../constants/theme";
+import { fonts, lightColors } from "../constants/theme";
+import { useTheme } from "../hooks/useTheme";
 import { getScheduledDayOfYear } from "../utils/dateUtils";
 
 interface DatePickerModalProps {
@@ -28,6 +29,7 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
   onClose,
   availableDaysOfYear,
 }) => {
+  const { colors } = useTheme();
   const [currentMonth, setCurrentMonth] = useState(
     new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
   );
@@ -162,7 +164,7 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
                 onPress={handlePrevMonth}
                 style={styles.navButton}
               >
-                <Ionicons name="chevron-back" size={28} color={colors.ocean} />
+                <Ionicons name="chevron-back" size={28} color={lightColors.ocean} />
               </TouchableOpacity>
 
               <Text style={styles.monthTitle}>{monthName}</Text>
@@ -174,7 +176,7 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
                 <Ionicons
                   name="chevron-forward"
                   size={28}
-                  color={colors.ocean}
+                  color={lightColors.ocean}
                 />
               </TouchableOpacity>
             </View>
@@ -223,7 +225,7 @@ const styles = StyleSheet.create({
   modalContent: {
     width: "90%",
     maxWidth: 380,
-    backgroundColor: colors.pearl,
+    backgroundColor: lightColors.pearl,
     borderRadius: 20,
     padding: 24,
     shadowColor: "#000",
@@ -245,7 +247,7 @@ const styles = StyleSheet.create({
   monthTitle: {
     fontFamily: fonts.headerFamily,
     fontSize: 22,
-    color: colors.deepTeal,
+    color: lightColors.deepTeal,
   },
   weekdays: {
     flexDirection: "row",
@@ -259,7 +261,7 @@ const styles = StyleSheet.create({
   weekdayText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 13,
-    color: colors.ocean,
+    color: lightColors.ocean,
     fontWeight: "600",
   },
   calendar: {
@@ -281,12 +283,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   selectedDay: {
-    backgroundColor: colors.ocean,
+    backgroundColor: lightColors.ocean,
     borderRadius: 100,
   },
   todayDay: {
     borderWidth: 2,
-    borderColor: colors.seafoam,
+    borderColor: lightColors.seafoam,
     borderRadius: 100,
   },
   unavailableDay: {
@@ -295,18 +297,18 @@ const styles = StyleSheet.create({
   dayText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-    color: colors.ink,
+    color: lightColors.ink,
   },
   selectedDayText: {
     color: "#fff",
     fontWeight: "700",
   },
   todayDayText: {
-    color: colors.ocean,
+    color: lightColors.ocean,
     fontWeight: "600",
   },
   unavailableDayText: {
-    color: colors.mist,
+    color: lightColors.mist,
   },
   buttonContainer: {
     flexDirection: "row",
@@ -314,7 +316,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: colors.mist,
+    borderTopColor: lightColors.mist,
   },
   todayButton: {
     paddingVertical: 12,
@@ -325,7 +327,7 @@ const styles = StyleSheet.create({
   todayButtonText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 17,
-    color: colors.ocean,
+    color: lightColors.ocean,
   },
   cancelButton: {
     paddingVertical: 12,
@@ -336,6 +338,6 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 17,
-    color: colors.ocean,
+    color: lightColors.ocean,
   },
 });
