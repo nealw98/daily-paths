@@ -72,10 +72,17 @@ export function useAnalytics() {
   }, []);
 
   // Update theme mode (called from components that have access to settings)
+  // Sets both the ref (for event properties) and person property (for demographics)
   const updateThemeMode = useCallback((mode: ThemeMode) => {
     themeModeRef.current = mode;
     console.log('[POSTHOG] Theme mode updated:', mode);
-  }, []);
+    
+    // Set as person property for demographic analysis
+    if (posthog) {
+      console.log('[POSTHOG] Setting person property theme_mode:', mode);
+      posthog.setPersonProperties({ theme_mode: mode });
+    }
+  }, [posthog]);
 
   // Identify user with persistent device ID
   useEffect(() => {
