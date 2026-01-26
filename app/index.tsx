@@ -36,7 +36,7 @@ console.log("[STARTUP] index.tsx module loading...");
 export default function Index() {
   console.log("[STARTUP] Index function called");
   
-  const { colors } = useTheme();
+  const { colors, colorScheme } = useTheme();
   
   let router;
   try {
@@ -75,7 +75,12 @@ export default function Index() {
   console.log("[STARTUP-INDEX] State initialized");
   
   // Analytics
-  const { trackAppOpened, startReadingView, trackReadingFavorited, trackReadingUnfavorited } = useAnalytics();
+  const { trackAppOpened, startReadingView, trackReadingFavorited, trackReadingUnfavorited, updateThemeMode } = useAnalytics();
+  
+  // Keep analytics in sync with theme preference
+  useEffect(() => {
+    updateThemeMode(colorScheme);
+  }, [colorScheme, updateThemeMode]);
   
   console.log("[STARTUP-INDEX] Calling useReading...");
   const { reading, loading, error } = useReading(currentDate);

@@ -40,6 +40,9 @@ interface ReadingViewState {
   startTime: number;
 }
 
+// Theme mode type
+export type ThemeMode = 'light' | 'dark' | 'system';
+
 // Hook for using analytics in components
 export function useAnalytics() {
   const posthog = usePostHog();
@@ -49,6 +52,7 @@ export function useAnalytics() {
   const currentReadingView = useRef<ReadingViewState | null>(null);
   const appState = useRef<AppStateStatus>(AppState.currentState);
   const [isDeveloper, setIsDeveloper] = useState(false);
+  const themeModeRef = useRef<ThemeMode>('system');
 
   // Log PostHog status once
   useEffect(() => {
@@ -65,6 +69,12 @@ export function useAnalytics() {
       setIsDeveloper(devMode);
       console.log('[POSTHOG] Developer mode:', devMode);
     })();
+  }, []);
+
+  // Update theme mode (called from components that have access to settings)
+  const updateThemeMode = useCallback((mode: ThemeMode) => {
+    themeModeRef.current = mode;
+    console.log('[POSTHOG] Theme mode updated:', mode);
   }, []);
 
   // Identify user with persistent device ID
@@ -112,6 +122,7 @@ export function useAnalytics() {
         navigation_method: viewState.navigationMethod,
         time_spent_seconds: timeSpentSeconds,
         is_developer: isDeveloper,
+        theme_mode: themeModeRef.current,
       };
       
       console.log('[POSTHOG] ===== FIRING READING_VIEWED EVENT =====');
@@ -144,7 +155,10 @@ export function useAnalytics() {
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
         // Fire app_opened only once per foreground transition
         if (posthog && !hasTrackedAppOpen.current) {
-          posthog.capture(ANALYTICS_EVENTS.APP_OPENED, { is_developer: isDeveloper });
+          posthog.capture(ANALYTICS_EVENTS.APP_OPENED, { 
+            is_developer: isDeveloper,
+            theme_mode: themeModeRef.current,
+          });
           hasTrackedAppOpen.current = true;
         }
         
@@ -177,8 +191,11 @@ export function useAnalytics() {
       console.log('[POSTHOG] trackAppOpened: Already tracked this session');
       return;
     }
-    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.APP_OPENED, { is_developer: isDeveloper });
-    posthog.capture(ANALYTICS_EVENTS.APP_OPENED, { is_developer: isDeveloper });
+    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.APP_OPENED, { is_developer: isDeveloper, theme_mode: themeModeRef.current });
+    posthog.capture(ANALYTICS_EVENTS.APP_OPENED, { 
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
     console.log('[POSTHOG] Calling flush()...');
     posthog.flush().then(() => {
       console.log('[POSTHOG] flush() completed successfully');
@@ -233,6 +250,7 @@ export function useAnalytics() {
       reading_date: formatReadingDate(readingDate),
       rating,
       is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
     });
   }, [posthog, isDeveloper]);
 
@@ -241,11 +259,12 @@ export function useAnalytics() {
       console.log('[POSTHOG] trackReadingFavorited: PostHog not available');
       return;
     }
-    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.READING_FAVORITED, { reading_id: readingId, is_developer: isDeveloper });
+    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.READING_FAVORITED, { reading_id: readingId, is_developer: isDeveloper, theme_mode: themeModeRef.current });
     posthog.capture(ANALYTICS_EVENTS.READING_FAVORITED, {
       reading_id: readingId,
       reading_date: formatReadingDate(readingDate),
       is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
     });
     posthog.flush().then(() => {
       console.log('[POSTHOG] reading_favorited flush() completed');
@@ -259,11 +278,12 @@ export function useAnalytics() {
       console.log('[POSTHOG] trackReadingUnfavorited: PostHog not available');
       return;
     }
-    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.READING_UNFAVORITED, { reading_id: readingId, is_developer: isDeveloper });
+    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.READING_UNFAVORITED, { reading_id: readingId, is_developer: isDeveloper, theme_mode: themeModeRef.current });
     posthog.capture(ANALYTICS_EVENTS.READING_UNFAVORITED, {
       reading_id: readingId,
       reading_date: formatReadingDate(readingDate),
       is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
     });
     posthog.flush().then(() => {
       console.log('[POSTHOG] reading_unfavorited flush() completed');
@@ -272,22 +292,12 @@ export function useAnalytics() {
     });
   }, [posthog, isDeveloper]);
 
-  // Set theme_mode person property
-  const setThemeMode = useCallback((themeMode: 'light' | 'dark' | 'system') => {
-    if (!posthog) {
-      console.log('[POSTHOG] setThemeMode: PostHog not available');
-      return;
-    }
-    console.log('[POSTHOG] Setting person property theme_mode:', themeMode);
-    posthog.setPersonProperties({ theme_mode: themeMode });
-  }, [posthog]);
-
   return {
     trackAppOpened,
-    startReadingView, // Renamed from trackReadingViewed - now handles time tracking
+    startReadingView,
     trackReadingRated,
     trackReadingFavorited,
     trackReadingUnfavorited,
-    setThemeMode,
+    updateThemeMode,
   };
 }
