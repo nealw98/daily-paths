@@ -234,7 +234,7 @@ export const SettingsContent: React.FC<{
             <View style={styles.sectionBody}>
               <View style={styles.buttonRow}>
                 <TouchableOpacity
-                  style={[styles.secondaryButton, { borderColor: colors.deepTeal, backgroundColor: colors.pearl }]}
+                  style={[styles.secondaryButton, { borderColor: colors.mist, backgroundColor: colors.pearl }]}
                   onPress={handleRateApp}
                   activeOpacity={0.8}
                 >
@@ -242,7 +242,7 @@ export const SettingsContent: React.FC<{
                   <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Rate App</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.secondaryButton, { borderColor: colors.deepTeal, backgroundColor: colors.pearl }]}
+                  style={[styles.secondaryButton, { borderColor: colors.mist, backgroundColor: colors.pearl }]}
                   onPress={handleShareApp}
                   disabled={isSharing}
                   activeOpacity={0.8}
@@ -268,7 +268,7 @@ export const SettingsContent: React.FC<{
             </View>
             <View style={styles.sectionBody}>
               <TouchableOpacity
-                style={[styles.secondaryButton, { borderColor: colors.deepTeal, backgroundColor: colors.pearl }]}
+                style={[styles.secondaryButton, { borderColor: colors.mist, backgroundColor: colors.pearl }]}
                 onPress={() => setShowFeedbackModal(true)}
                 activeOpacity={0.8}
               >
@@ -506,7 +506,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 12,
     borderRadius: 10,
-    borderWidth: 1,
+    borderWidth: 2,
   },
   secondaryButtonText: {
     fontFamily: fonts.bodyFamilyRegular,
