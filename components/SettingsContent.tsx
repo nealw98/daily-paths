@@ -506,7 +506,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 12,
     borderRadius: 10,
-    borderWidth: 2,
+    borderWidth: 1,
   },
   secondaryButtonText: {
     fontFamily: fonts.bodyFamilyRegular,

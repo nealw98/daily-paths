@@ -39,7 +39,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
   onClose,
   onShowToast,
 }) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { settings, setDailyReminderEnabled, setDailyReminderTime } = useSettings();
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [tempReminderDate, setTempReminderDate] = useState<Date | null>(null);
@@ -174,6 +174,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                   value={tempReminderDate ?? reminderDate}
                   mode="time"
                   display={Platform.OS === "ios" ? "spinner" : "default"}
+                  themeVariant={isDark ? "dark" : "light"}
                   onChange={(_, selectedDate) => {
                     if (!selectedDate) return;
                     setTempReminderDate(selectedDate);
