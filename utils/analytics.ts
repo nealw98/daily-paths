@@ -272,11 +272,22 @@ export function useAnalytics() {
     });
   }, [posthog, isDeveloper]);
 
+  // Set theme_mode person property
+  const setThemeMode = useCallback((themeMode: 'light' | 'dark' | 'system') => {
+    if (!posthog) {
+      console.log('[POSTHOG] setThemeMode: PostHog not available');
+      return;
+    }
+    console.log('[POSTHOG] Setting person property theme_mode:', themeMode);
+    posthog.setPersonProperties({ theme_mode: themeMode });
+  }, [posthog]);
+
   return {
     trackAppOpened,
     startReadingView, // Renamed from trackReadingViewed - now handles time tracking
     trackReadingRated,
     trackReadingFavorited,
     trackReadingUnfavorited,
+    setThemeMode,
   };
 }
