@@ -227,17 +227,14 @@ export const SettingsContent: React.FC<{
               <View style={styles.sectionHeaderText}>
                 <Text style={[styles.sectionTitle, { color: colors.deepTeal }]}>Rate & Share</Text>
                 <Text style={[styles.sectionSubtitle, { color: colors.ink }]}>
-                  Help others discover Daily Paths.
+                  Help others discover Daily Paths
                 </Text>
               </View>
             </View>
             <View style={styles.sectionBody}>
-              <Text style={[styles.bodyText, { color: colors.ink }]}>
-                If Daily Paths has been helpful in your recovery journey, please consider rating the app or sharing it with others.
-              </Text>
               <View style={styles.buttonRow}>
                 <TouchableOpacity
-                  style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+                  style={[styles.secondaryButton, { borderColor: colors.deepTeal, backgroundColor: colors.pearl }]}
                   onPress={handleRateApp}
                   activeOpacity={0.8}
                 >
@@ -245,7 +242,7 @@ export const SettingsContent: React.FC<{
                   <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Rate App</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+                  style={[styles.secondaryButton, { borderColor: colors.deepTeal, backgroundColor: colors.pearl }]}
                   onPress={handleShareApp}
                   disabled={isSharing}
                   activeOpacity={0.8}
@@ -265,13 +262,13 @@ export const SettingsContent: React.FC<{
               <View style={styles.sectionHeaderText}>
                 <Text style={[styles.sectionTitle, { color: colors.deepTeal }]}>Share Feedback</Text>
                 <Text style={[styles.sectionSubtitle, { color: colors.ink }]}>
-                  Tell us what's working and what to improve.
+                  Tell us what's working and what to improve
                 </Text>
               </View>
             </View>
             <View style={styles.sectionBody}>
               <TouchableOpacity
-                style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+                style={[styles.secondaryButton, { borderColor: colors.deepTeal, backgroundColor: colors.pearl }]}
                 onPress={() => setShowFeedbackModal(true)}
                 activeOpacity={0.8}
               >
@@ -409,8 +406,8 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: 0,
-    paddingTop: 24,
-    paddingBottom: 220,
+    paddingTop: 16,
+    paddingBottom: 160,
     flexGrow: 1,
   },
   mainContent: {
@@ -420,7 +417,7 @@ const styles = StyleSheet.create({
   sectionCard: {
     backgroundColor: "#fff",
     borderRadius: 12,
-    marginBottom: 16,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: "#e5e7eb",
     shadowColor: "#000",
@@ -432,8 +429,8 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: "row",
     alignItems: "flex-start",
-    padding: 16,
-    paddingBottom: 12,
+    padding: 14,
+    paddingBottom: 10,
     gap: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#f3f4f6",
@@ -442,8 +439,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sectionBody: {
-    padding: 16,
-    paddingTop: 12,
+    padding: 14,
+    paddingTop: 10,
   },
   section: {
     marginBottom: 40,
@@ -470,7 +467,7 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: "row",
     gap: 12,
-    marginTop: 16,
+    marginTop: 0,
   },
   themeOptions: {
     flexDirection: "row",
@@ -509,9 +506,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 12,
     borderRadius: 10,
-    backgroundColor: "#fff",
     borderWidth: 2,
-    borderColor: lightColors.deepTeal,
   },
   secondaryButtonText: {
     fontFamily: fonts.bodyFamilyRegular,
@@ -702,7 +697,7 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   legalSection: {
-    paddingTop: 32,
+    paddingTop: 20,
     paddingHorizontal: 0,
     paddingBottom: 8,
     borderTopWidth: 1,

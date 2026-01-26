@@ -4,6 +4,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { fonts, lightColors } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
 import { useSettings } from "../hooks/useSettings";
+import { updateNotificationWithThought } from "../utils/notificationSync";
 
 function parseTimeToDate(time: string): Date {
   const [h = "8", m = "0"] = time.split(":");
@@ -73,6 +74,11 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
 
   const handleReminderToggle = async (enabled: boolean) => {
     await setDailyReminderEnabled(enabled);
+    
+    // Update notification with thought if enabling
+    if (enabled) {
+      await updateNotificationWithThought();
+    }
     
     if (enabled && onShowToast) {
       const timeStr = formatTimeDisplay(reminderDate);
@@ -185,11 +191,14 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.timePickerButtonPrimary, { backgroundColor: colors.deepTeal }]}
-                    onPress={() => {
+                    onPress={async () => {
                       const finalDate = tempReminderDate ?? reminderDate;
                       setShowTimePicker(false);
                       setTempReminderDate(null);
-                      setDailyReminderTime(formatTimeStorage(finalDate));
+                      await setDailyReminderTime(formatTimeStorage(finalDate));
+                      
+                      // Update notification with new time and current thought
+                      await updateNotificationWithThought();
                       
                       if (onShowToast) {
                         const timeStr = formatTimeDisplay(finalDate);

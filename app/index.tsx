@@ -23,6 +23,7 @@ import { markRatePromptShown, recordFirstUseIfNeeded } from "../utils/rateShareT
 import { recordDailyActivity, recordReadingView } from "../utils/deviceIdentity";
 import { qaLog } from "../utils/qaLog";
 import { useAnalytics, NavigationMethod } from "../utils/analytics";
+import { updateNotificationWithThought } from "../utils/notificationSync";
 import { useReading } from "../hooks/useReading";
 import { useBookmarkManager } from "../hooks/useBookmarkManager";
 import { useAvailableDates } from "../hooks/useAvailableDates";
@@ -150,6 +151,11 @@ export default function Index() {
   // Track app opened event (PostHog)
   useEffect(() => {
     trackAppOpened();
+  }, []);
+
+  // Update notification with latest thought on app launch
+  useEffect(() => {
+    updateNotificationWithThought();
   }, []);
 
   // Record reading view for analytics (unique viewers per reading)

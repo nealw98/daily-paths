@@ -8,6 +8,7 @@ import {
   type CachedReading,
 } from "../utils/readingCache";
 import { qaLog } from "../utils/qaLog";
+import { updateNotificationWithThought } from "../utils/notificationSync";
 
 const PREFETCH_WINDOW_DAYS = 6; // today + next 6 days
 const prefetchedDateKeys = new Set<string>();
@@ -258,6 +259,15 @@ export function useReading(date: Date) {
             reading: transformedReading,
             updatedAt: remoteUpdatedAt,
           });
+          
+          // Update notification with new thought if this is today's reading
+          const isToday = formatDateLocal(date) === formatDateLocal(new Date());
+          if (isToday && transformedReading.thoughtForDay) {
+            updateNotificationWithThought().catch(err => 
+              console.warn('[useReading] Failed to update notification:', err)
+            );
+          }
+          
           qaLog("reading", "Reading fetched and cached", {
             ...ctx,
             id: transformedReading.id,

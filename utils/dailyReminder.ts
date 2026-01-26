@@ -48,12 +48,13 @@ export async function getScheduledNotifications() {
 }
 
 /**
- * Schedule (or reschedule) the static Al-Anon Daily Paths reminder at the given local time.
+ * Schedule (or reschedule) the Al-Anon Daily Paths reminder at the given local time.
  *
  * `time` is "HH:MM" in 24h format, e.g. "08:00".
+ * `thoughtForDay` is optional - if provided, notification will include the actual thought.
  * Returns true if a reminder was scheduled, false if permissions were denied.
  */
-export async function scheduleDailyReminder(time: string): Promise<boolean> {
+export async function scheduleDailyReminder(time: string, thoughtForDay?: string): Promise<boolean> {
   const hasPermission = await ensureNotificationPermissions();
   if (!hasPermission) {
     console.warn("Notification permission not granted; daily reminder not scheduled.");
@@ -104,8 +105,9 @@ export async function scheduleDailyReminder(time: string): Promise<boolean> {
   const notificationId = await Notifications.scheduleNotificationAsync({
     content: {
       title: "Al-Anon Daily Paths",
-      body:
-        "It\u2019s time for today\u2019s Daily Path. A few quiet moments can shift the whole day.",
+      body: thoughtForDay 
+        ? `Today's Thought: ${thoughtForDay}`
+        : "It\u2019s time for today\u2019s Daily Path. A few quiet moments can shift the whole day.",
       sound: "default",
     },
     trigger,
