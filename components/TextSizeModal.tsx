@@ -1,8 +1,10 @@
 import React, { useMemo } from "react";
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Animated } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { fonts, lightColors } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
-import { useSettings, TextSize, getTextSizeMetrics } from "../hooks/useSettings";
+import { useSettings, TextSize, ColorScheme, getTextSizeMetrics } from "../hooks/useSettings";
+import { useAnalytics } from "../utils/analytics";
 
 const textSizeStops: TextSize[] = [
   "extraSmall",
@@ -22,8 +24,15 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
   onClose,
 }) => {
   const { colors } = useTheme();
-  const { settings, setTextSize } = useSettings();
+  const { settings, setTextSize, setColorScheme } = useSettings();
+  const { updateThemeMode } = useAnalytics();
   const slideAnim = React.useRef(new Animated.Value(0)).current;
+
+  // Handler for theme change - updates setting and tracks in PostHog
+  const handleThemeChange = (mode: ColorScheme) => {
+    setColorScheme(mode);
+    updateThemeMode(mode);
+  };
 
   React.useEffect(() => {
     if (visible) {
@@ -91,7 +100,7 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
           onStartShouldSetResponder={() => true}
         >
           <View style={[styles.header, { borderBottomColor: colors.mist }]}>
-            <Text style={[styles.title, { color: colors.deepTeal }]}>Reading Text Size</Text>
+            <Text style={[styles.title, { color: colors.deepTeal }]}>Settings</Text>
             <TouchableOpacity onPress={onClose} style={styles.doneButton}>
               <Text style={[styles.doneButtonText, { color: colors.deepTeal }]}>Done</Text>
             </TouchableOpacity>
@@ -101,6 +110,79 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
           >
+            {/* Theme Section */}
+            <Text style={[styles.sectionLabel, { color: colors.deepTeal }]}>Theme</Text>
+            <View style={styles.themeOptions}>
+              <TouchableOpacity
+                style={[
+                  styles.themeOption,
+                  { borderColor: colors.mist },
+                  settings.colorScheme === "light" && [styles.themeOptionSelected, { backgroundColor: colors.deepTeal, borderColor: colors.deepTeal }],
+                ]}
+                onPress={() => handleThemeChange("light")}
+                activeOpacity={0.8}
+              >
+                <Ionicons 
+                  name="sunny" 
+                  size={20} 
+                  color={settings.colorScheme === "light" ? "#fff" : colors.deepTeal} 
+                />
+                <Text style={[
+                  styles.themeOptionText,
+                  { color: colors.deepTeal },
+                  settings.colorScheme === "light" && styles.themeOptionTextSelected,
+                ]}>
+                  Light
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.themeOption,
+                  { borderColor: colors.mist },
+                  settings.colorScheme === "dark" && [styles.themeOptionSelected, { backgroundColor: colors.deepTeal, borderColor: colors.deepTeal }],
+                ]}
+                onPress={() => handleThemeChange("dark")}
+                activeOpacity={0.8}
+              >
+                <Ionicons 
+                  name="moon" 
+                  size={20} 
+                  color={settings.colorScheme === "dark" ? "#fff" : colors.deepTeal} 
+                />
+                <Text style={[
+                  styles.themeOptionText,
+                  { color: colors.deepTeal },
+                  settings.colorScheme === "dark" && styles.themeOptionTextSelected,
+                ]}>
+                  Dark
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.themeOption,
+                  { borderColor: colors.mist },
+                  settings.colorScheme === "system" && [styles.themeOptionSelected, { backgroundColor: colors.deepTeal, borderColor: colors.deepTeal }],
+                ]}
+                onPress={() => handleThemeChange("system")}
+                activeOpacity={0.8}
+              >
+                <Ionicons 
+                  name="phone-portrait" 
+                  size={20}
+                  color={settings.colorScheme === "system" ? "#fff" : colors.deepTeal} 
+                />
+                <Text style={[
+                  styles.themeOptionText,
+                  { color: colors.deepTeal },
+                  settings.colorScheme === "system" && styles.themeOptionTextSelected,
+                ]}>
+                  System
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Text Size Section */}
+            <Text style={[styles.sectionLabel, styles.sectionLabelSpacing, { color: colors.deepTeal }]}>Text Size</Text>
             <Text style={[styles.subtitle, { color: colors.ocean }]}>
               Adjust how large the daily reading appears.
             </Text>
@@ -284,6 +366,45 @@ const styles = StyleSheet.create({
   textPreview: {
     fontFamily: fonts.loraRegular,
     color: "#4b5563",
+  },
+  sectionLabel: {
+    fontFamily: fonts.headerFamilyItalic,
+    fontSize: 20,
+    color: lightColors.deepTeal,
+    marginBottom: 12,
+  },
+  sectionLabelSpacing: {
+    marginTop: 28,
+  },
+  themeOptions: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  themeOption: {
+    flex: 1,
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: "transparent",
+    borderWidth: 2,
+    borderColor: lightColors.mist,
+    gap: 6,
+  },
+  themeOptionSelected: {
+    backgroundColor: lightColors.deepTeal,
+    borderColor: lightColors.deepTeal,
+  },
+  themeOptionText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 14,
+    color: lightColors.deepTeal,
+    fontWeight: "600",
+  },
+  themeOptionTextSelected: {
+    color: "#fff",
   },
 });
 

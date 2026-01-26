@@ -19,7 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { fonts, lightColors } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
-import { useSettings, TextSize, ColorScheme } from "../hooks/useSettings";
+import { useSettings, TextSize } from "../hooks/useSettings";
 import { useAppFeedback } from "../hooks/useAppFeedback";
 import { shareApp } from "../utils/rateShareTracking";
 import { qaLog } from "../utils/qaLog";
@@ -63,7 +63,7 @@ export const SettingsContent: React.FC<{
   scrollToSection,
 }) => {
   const { colors } = useTheme();
-  const { settings, setTextSize, setColorScheme, setDailyReminderEnabled, setDailyReminderTime } =
+  const { settings, setTextSize, setDailyReminderEnabled, setDailyReminderTime } =
     useSettings();
   const { submitting: submittingFeedback, submitFeedback } = useAppFeedback();
 
@@ -218,82 +218,6 @@ export const SettingsContent: React.FC<{
               >
                 Daily Paths supports your recovery with 366 original readings based on Al-Anon's Steps, Traditions, and Concepts. It is not affiliated with Al-Anon, AA or any 12-step fellowship.
               </Text>
-            </View>
-          </View>
-
-          <View style={[styles.sectionCard, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
-            <View style={[styles.sectionHeader, { borderBottomColor: colors.mist }]}>
-              <Ionicons name="moon-outline" size={22} color={colors.deepTeal} />
-              <View style={styles.sectionHeaderText}>
-                <Text style={[styles.sectionTitle, { color: colors.deepTeal }]}>Appearance</Text>
-                <Text style={[styles.sectionSubtitle, { color: colors.ink }]}>
-                  Choose your preferred theme.
-                </Text>
-              </View>
-            </View>
-            <View style={styles.sectionBody}>
-              <View style={styles.themeOptions}>
-                <TouchableOpacity
-                  style={[
-                    styles.themeOption,
-                    settings.colorScheme === "light" && styles.themeOptionSelected,
-                  ]}
-                  onPress={() => setColorScheme("light")}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons 
-                    name="sunny" 
-                    size={20} 
-                    color={settings.colorScheme === "light" ? "#fff" : colors.deepTeal} 
-                  />
-                  <Text style={[
-                    styles.themeOptionText,
-                    settings.colorScheme === "light" && styles.themeOptionTextSelected,
-                  ]}>
-                    Light
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.themeOption,
-                    settings.colorScheme === "dark" && styles.themeOptionSelected,
-                  ]}
-                  onPress={() => setColorScheme("dark")}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons 
-                    name="moon" 
-                    size={20} 
-                    color={settings.colorScheme === "dark" ? "#fff" : colors.deepTeal} 
-                  />
-                  <Text style={[
-                    styles.themeOptionText,
-                    settings.colorScheme === "dark" && styles.themeOptionTextSelected,
-                  ]}>
-                    Dark
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.themeOption,
-                    settings.colorScheme === "system" && styles.themeOptionSelected,
-                  ]}
-                  onPress={() => setColorScheme("system")}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons 
-                    name="phone-portrait" 
-                    size={20} 
-                    color={settings.colorScheme === "system" ? "#fff" : colors.deepTeal} 
-                  />
-                  <Text style={[
-                    styles.themeOptionText,
-                    settings.colorScheme === "system" && styles.themeOptionTextSelected,
-                  ]}>
-                    System
-                  </Text>
-                </TouchableOpacity>
-              </View>
             </View>
           </View>
 

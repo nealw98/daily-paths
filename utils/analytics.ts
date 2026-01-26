@@ -77,10 +77,10 @@ export function useAnalytics() {
     themeModeRef.current = mode;
     console.log('[POSTHOG] Theme mode updated:', mode);
     
-    // Set as person property for demographic analysis
+    // Set as person property for demographic analysis using $set
     if (posthog) {
       console.log('[POSTHOG] Setting person property theme_mode:', mode);
-      posthog.setPersonProperties({ theme_mode: mode });
+      posthog.capture('$set', { $set: { theme_mode: mode } });
     }
   }, [posthog]);
 

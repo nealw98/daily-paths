@@ -404,13 +404,6 @@ export default function Index() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={handleOpenTextSize}
-          style={[styles.actionButton, { backgroundColor: colors.cloud }]}
-        >
-          <Ionicons name="text-outline" size={24} color={colors.deepTeal} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
           onPress={handleOpenReminder}
           style={[styles.actionButton, { backgroundColor: colors.cloud }]}
         >
@@ -423,6 +416,13 @@ export default function Index() {
 
         <TouchableOpacity onPress={handleSettingsPress} style={[styles.actionButton, { backgroundColor: colors.cloud }]}>
           <Ionicons name="information-circle-outline" size={24} color={colors.deepTeal} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={handleOpenTextSize}
+          style={[styles.actionButton, { backgroundColor: colors.cloud }]}
+        >
+          <Ionicons name="settings-outline" size={24} color={colors.deepTeal} />
         </TouchableOpacity>
       </View>
       
