@@ -48,7 +48,9 @@ export function dateFromDayOfYear(dayOfYear: number, year: number): Date {
  */
 export function isLeapYear(year: number): boolean {
   return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
-}/**
+}
+
+/**
  * Returns the "scheduled" day_of_year for a given calendar date,
  * assuming the `readings.day_of_year` column is keyed as if EVERY
  * year were a leap year:
