@@ -23,7 +23,6 @@ import { useSettings, TextSize, ColorScheme } from "../hooks/useSettings";
 import { useAppFeedback } from "../hooks/useAppFeedback";
 import { shareApp } from "../utils/rateShareTracking";
 import { qaLog } from "../utils/qaLog";
-import { useAnalytics } from "../utils/analytics";
 import { RateAppModal } from "./RateAppModal";
 
 const textSizeStops: TextSize[] = [
@@ -67,13 +66,6 @@ export const SettingsContent: React.FC<{
   const { settings, setTextSize, setColorScheme, setDailyReminderEnabled, setDailyReminderTime } =
     useSettings();
   const { submitting: submittingFeedback, submitFeedback } = useAppFeedback();
-  const { setThemeMode } = useAnalytics();
-
-  // Handler for theme change - updates setting and tracks in PostHog
-  const handleThemeChange = (mode: ColorScheme) => {
-    setColorScheme(mode);
-    setThemeMode(mode);
-  };
 
   const [showTimePicker, setShowTimePicker] = useState(false);
    // Local working copy while the wheel is open so we don't commit
@@ -246,7 +238,7 @@ export const SettingsContent: React.FC<{
                     styles.themeOption,
                     settings.colorScheme === "light" && styles.themeOptionSelected,
                   ]}
-                  onPress={() => handleThemeChange("light")}
+                  onPress={() => setColorScheme("light")}
                   activeOpacity={0.8}
                 >
                   <Ionicons 
@@ -266,7 +258,7 @@ export const SettingsContent: React.FC<{
                     styles.themeOption,
                     settings.colorScheme === "dark" && styles.themeOptionSelected,
                   ]}
-                  onPress={() => handleThemeChange("dark")}
+                  onPress={() => setColorScheme("dark")}
                   activeOpacity={0.8}
                 >
                   <Ionicons 
@@ -286,7 +278,7 @@ export const SettingsContent: React.FC<{
                     styles.themeOption,
                     settings.colorScheme === "system" && styles.themeOptionSelected,
                   ]}
-                  onPress={() => handleThemeChange("system")}
+                  onPress={() => setColorScheme("system")}
                   activeOpacity={0.8}
                 >
                   <Ionicons 

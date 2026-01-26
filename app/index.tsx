@@ -29,7 +29,6 @@ import { useAvailableDates } from "../hooks/useAvailableDates";
 import { hasSeenInstruction, markInstructionSeen } from "../utils/bookmarkStorage";
 import { parseDateLocal } from "../utils/dateUtils";
 import { useTheme } from "../hooks/useTheme";
-import { useSettings } from "../hooks/useSettings";
 import * as Notifications from "expo-notifications";
 
 console.log("[STARTUP] index.tsx module loading...");
@@ -76,10 +75,7 @@ export default function Index() {
   console.log("[STARTUP-INDEX] State initialized");
   
   // Analytics
-  const { trackAppOpened, startReadingView, trackReadingFavorited, trackReadingUnfavorited, setThemeMode } = useAnalytics();
-  
-  // Settings (for theme tracking)
-  const { settings } = useSettings();
+  const { trackAppOpened, startReadingView, trackReadingFavorited, trackReadingUnfavorited } = useAnalytics();
   
   console.log("[STARTUP-INDEX] Calling useReading...");
   const { reading, loading, error } = useReading(currentDate);
@@ -151,27 +147,14 @@ export default function Index() {
     trackAppOpened();
   }, []);
 
-  // Set theme_mode person property on app initialization
-  useEffect(() => {
-    if (settings?.colorScheme) {
-      setThemeMode(settings.colorScheme);
-    }
-  }, [settings?.colorScheme, setThemeMode]);
-
   // Record reading view for analytics (unique viewers per reading)
   useEffect(() => {
-    if (reading?.id && reading?.title && reading?.date) {
-      console.log('[ANALYTICS] Starting reading view tracking:', {
-        id: reading.id,
-        title: reading.title,
-        date: reading.date,
-        navigationMethod,
-      });
+    if (reading?.id) {
       recordReadingView(reading.id);
       // Start tracking in PostHog (event fires when user navigates away)
-      startReadingView(reading.id, reading.date, reading.title, navigationMethod);
+      startReadingView(reading.id, currentDate, navigationMethod);
     }
-  }, [reading?.id, reading?.title, reading?.date]);
+  }, [reading?.id]);
 
   const handlePrevDate = () => {
     setNavigationMethod('prev_button');
