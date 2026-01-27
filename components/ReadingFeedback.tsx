@@ -195,6 +195,7 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
       <RateAppModal
         visible={showRateModal}
         onClose={() => setShowRateModal(false)}
+        trigger="positive_feedback"
       />
     </>
   );

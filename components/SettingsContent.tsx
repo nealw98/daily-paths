@@ -395,6 +395,7 @@ export const SettingsContent: React.FC<{
       <RateAppModal
         visible={showRateModal}
         onClose={() => setShowRateModal(false)}
+        trigger="settings_button"
       />
     </View>
   );

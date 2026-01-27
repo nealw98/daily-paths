@@ -482,6 +482,7 @@ export default function Index() {
       <RateAppModal
         visible={showRateModal}
         onClose={() => setShowRateModal(false)}
+        trigger="bookmark"
       />
     </>
   );

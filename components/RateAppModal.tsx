@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,28 +8,44 @@ import {
 } from 'react-native';
 import { fonts, lightColors } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
+import { useAnalytics } from '../utils/analytics';
 import { openAppStoreForRating, markRatePromptDismissed } from '../utils/rateShareTracking';
 import { qaLog } from '../utils/qaLog';
+
+type RateTrigger = 'bookmark' | 'positive_feedback' | 'settings_button';
 
 interface RateAppModalProps {
   visible: boolean;
   onClose: () => void;
+  trigger?: RateTrigger;
 }
 
 export const RateAppModal: React.FC<RateAppModalProps> = ({
   visible,
   onClose,
+  trigger = 'settings_button',
 }) => {
   const { colors } = useTheme();
+  const { trackRateModalShown, trackRateModalDismissed, trackRateModalOpenedStore } = useAnalytics();
+
+  // Track when modal is shown
+  useEffect(() => {
+    if (visible) {
+      qaLog("rate", `Rate modal shown - trigger: ${trigger}`);
+      trackRateModalShown(trigger);
+    }
+  }, [visible, trigger, trackRateModalShown]);
 
   const handleRateApp = async () => {
-    qaLog("rate", "User tapped Rate App in modal - opening App Store");
+    qaLog("rate", `User tapped Rate App in modal - trigger: ${trigger}`);
+    trackRateModalOpenedStore(trigger);
     await openAppStoreForRating();
     onClose();
   };
 
   const handleNotNow = async () => {
-    qaLog("rate", "User dismissed rate modal with Not Now");
+    qaLog("rate", `User dismissed rate modal - trigger: ${trigger}`);
+    trackRateModalDismissed(trigger);
     await markRatePromptDismissed();
     onClose();
   };

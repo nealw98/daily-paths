@@ -10,6 +10,9 @@ export const ANALYTICS_EVENTS = {
   READING_RATED: 'reading_rated',
   READING_FAVORITED: 'reading_favorited',
   READING_UNFAVORITED: 'reading_unfavorited',
+  RATE_MODAL_SHOWN: 'rate_modal_shown',
+  RATE_MODAL_DISMISSED: 'rate_modal_dismissed',
+  RATE_MODAL_OPENED_STORE: 'rate_modal_opened_store',
 } as const;
 
 // Navigation method types
@@ -299,12 +302,57 @@ export function useAnalytics() {
     });
   }, [posthog, isDeveloper]);
 
+  const trackRateModalShown = useCallback((trigger: 'bookmark' | 'positive_feedback' | 'settings_button') => {
+    if (!posthog) {
+      console.log('[POSTHOG] trackRateModalShown: PostHog not available');
+      return;
+    }
+    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.RATE_MODAL_SHOWN, { trigger, is_developer: isDeveloper, theme_mode: themeModeRef.current });
+    posthog.capture(ANALYTICS_EVENTS.RATE_MODAL_SHOWN, {
+      trigger,
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+    posthog.flush();
+  }, [posthog, isDeveloper]);
+
+  const trackRateModalDismissed = useCallback((trigger: 'bookmark' | 'positive_feedback' | 'settings_button') => {
+    if (!posthog) {
+      console.log('[POSTHOG] trackRateModalDismissed: PostHog not available');
+      return;
+    }
+    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.RATE_MODAL_DISMISSED, { trigger, is_developer: isDeveloper, theme_mode: themeModeRef.current });
+    posthog.capture(ANALYTICS_EVENTS.RATE_MODAL_DISMISSED, {
+      trigger,
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+    posthog.flush();
+  }, [posthog, isDeveloper]);
+
+  const trackRateModalOpenedStore = useCallback((trigger: 'bookmark' | 'positive_feedback' | 'settings_button') => {
+    if (!posthog) {
+      console.log('[POSTHOG] trackRateModalOpenedStore: PostHog not available');
+      return;
+    }
+    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.RATE_MODAL_OPENED_STORE, { trigger, is_developer: isDeveloper, theme_mode: themeModeRef.current });
+    posthog.capture(ANALYTICS_EVENTS.RATE_MODAL_OPENED_STORE, {
+      trigger,
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+    posthog.flush();
+  }, [posthog, isDeveloper]);
+
   return {
     trackAppOpened,
     startReadingView,
     trackReadingRated,
     trackReadingFavorited,
     trackReadingUnfavorited,
+    trackRateModalShown,
+    trackRateModalDismissed,
+    trackRateModalOpenedStore,
     updateThemeMode,
   };
 }
