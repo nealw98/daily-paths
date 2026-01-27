@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback } from "react";
 import {
   getBookmarks,
   isDateBookmarked,
+  removeBookmark as removeBookmarkStorage,
   toggleBookmark as toggleBookmarkStorage,
   BookmarkData,
 } from "../utils/bookmarkStorage";
-import { getDayOfYear, parseDateLocal } from "../utils/dateUtils";
+import { formatDateLocal, getDayOfYear, parseDateLocal } from "../utils/dateUtils";
 import { supabase } from "../lib/supabase";
 import { getOrCreateDeviceId } from "../utils/deviceIdentity";
 import { qaLog } from "../utils/qaLog";
@@ -21,6 +22,7 @@ interface UseBookmarkManagerReturn {
   isBookmarked: boolean;
   loading: boolean;
   toggleBookmark: () => Promise<ToggleBookmarkResult>;
+  removeBookmark: (bookmark: BookmarkData) => Promise<void>;
   refreshBookmarks: () => Promise<void>;
   checkBookmarkStatus: (date: Date) => Promise<void>;
 }
@@ -161,6 +163,57 @@ export function useBookmarkManager(
     }
   }, [currentDate, readingId, readingTitle, isBookmarked, refreshBookmarks]);
 
+  const removeBookmark = useCallback(
+    async (bookmark: BookmarkData): Promise<void> => {
+      try {
+        setLoading(true);
+        const targetDate = parseDateLocal(bookmark.date);
+        await removeBookmarkStorage(targetDate);
+
+        if (formatDateLocal(currentDate) === bookmark.date) {
+          setIsBookmarked(false);
+        }
+
+        // Fire-and-forget sync removal to Supabase for analytics/favorites tracking.
+        (async () => {
+          try {
+            const deviceId = await getOrCreateDeviceId();
+            const { error } = await supabase
+              .from("app_favorites")
+              .delete()
+              .eq("device_id", deviceId)
+              .eq("reading_id", bookmark.readingId);
+            if (error) {
+              qaLog("favorites", "Failed to remove favorite (list)", {
+                deviceId,
+                readingId: bookmark.readingId,
+                message: error.message,
+                code: (error as any).code,
+              });
+            } else {
+              qaLog("favorites", "Favorite removed (list)", {
+                deviceId,
+                readingId: bookmark.readingId,
+              });
+            }
+          } catch (err) {
+            qaLog("favorites", "Unexpected error removing favorite (list)", {
+              readingId: bookmark.readingId,
+              message: err instanceof Error ? err.message : String(err),
+            });
+          }
+        })();
+
+        await refreshBookmarks();
+      } catch (error) {
+        console.error("Error removing bookmark:", error);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [currentDate, refreshBookmarks]
+  );
+
   // Initial load
   useEffect(() => {
     refreshBookmarks();
@@ -178,6 +231,7 @@ export function useBookmarkManager(
     isBookmarked,
     loading,
     toggleBookmark,
+    removeBookmark,
     refreshBookmarks,
     checkBookmarkStatus,
   };

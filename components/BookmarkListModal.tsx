@@ -20,6 +20,7 @@ interface BookmarkListModalProps {
   bookmarks: BookmarkData[];
   onClose: () => void;
   onSelectBookmark: (date: string) => void;
+  onRemoveBookmark: (bookmark: BookmarkData) => void;
 }
 
 export const BookmarkListModal: React.FC<BookmarkListModalProps> = ({
@@ -27,6 +28,7 @@ export const BookmarkListModal: React.FC<BookmarkListModalProps> = ({
   bookmarks,
   onClose,
   onSelectBookmark,
+  onRemoveBookmark,
 }) => {
   const { colors } = useTheme();
   const { settings } = useSettings();
@@ -67,7 +69,10 @@ export const BookmarkListModal: React.FC<BookmarkListModalProps> = ({
 
   const renderBookmarkItem = ({ item }: { item: BookmarkData }) => (
     <TouchableOpacity
-      style={[styles.bookmarkItem, { backgroundColor: colors.cloud, borderColor: colors.mist }]}
+      style={[
+        styles.bookmarkItem,
+        { backgroundColor: colors.pearl, borderColor: colors.deepTeal },
+      ]}
       onPress={() => {
         onSelectBookmark(item.date);
         onClose();
@@ -96,6 +101,13 @@ export const BookmarkListModal: React.FC<BookmarkListModalProps> = ({
           {item.title}
         </Text>
       </View>
+      <TouchableOpacity
+        onPress={() => onRemoveBookmark(item)}
+        style={styles.deleteButton}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <Ionicons name="trash-outline" size={18} color={colors.deepTeal} />
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 
@@ -216,16 +228,20 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 12,
     marginBottom: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(90, 124, 126, 0.1)",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: "rgba(90, 124, 126, 0.1)",
+    shadowRadius: 6,
+    elevation: 2,
   },
   bookmarkContent: {
     flex: 1,
+  },
+  deleteButton: {
+    padding: 6,
+    marginLeft: 12,
   },
   bookmarkDate: {
     fontFamily: fonts.bodyFamilyRegular,

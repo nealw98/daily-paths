@@ -27,7 +27,7 @@ import { updateNotificationWithThought } from "../utils/notificationSync";
 import { useReading } from "../hooks/useReading";
 import { useBookmarkManager } from "../hooks/useBookmarkManager";
 import { useAvailableDates } from "../hooks/useAvailableDates";
-import { hasSeenInstruction, markInstructionSeen } from "../utils/bookmarkStorage";
+import { hasSeenInstruction, markInstructionSeen, type BookmarkData } from "../utils/bookmarkStorage";
 import { parseDateLocal } from "../utils/dateUtils";
 import { useTheme } from "../hooks/useTheme";
 import * as Notifications from "expo-notifications";
@@ -90,6 +90,7 @@ export default function Index() {
     bookmarks,
     isBookmarked,
     toggleBookmark,
+    removeBookmark,
     refreshBookmarks,
   } = useBookmarkManager(currentDate, reading?.id || "", reading?.title || "");
   const { availableDaysOfYear } = useAvailableDates();
@@ -195,6 +196,11 @@ export default function Index() {
     // Parse as local time to avoid timezone shift
     const date = parseDateLocal(dateStr);
     setCurrentDate(date);
+  };
+
+  const handleRemoveBookmark = async (bookmark: BookmarkData) => {
+    await removeBookmark(bookmark);
+    trackReadingUnfavorited(bookmark.readingId, parseDateLocal(bookmark.date));
   };
 
   const handleGoToToday = () => {
@@ -444,6 +450,7 @@ export default function Index() {
         bookmarks={bookmarks}
         onClose={() => setShowBookmarkList(false)}
         onSelectBookmark={handleSelectBookmark}
+        onRemoveBookmark={handleRemoveBookmark}
       />
       <SettingsModal visible={showSettings} onClose={() => setShowSettings(false)}>
         <SettingsContent onOpenQaLogs={() => setShowSettings(false)} />
