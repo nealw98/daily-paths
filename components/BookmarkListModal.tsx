@@ -71,7 +71,7 @@ export const BookmarkListModal: React.FC<BookmarkListModalProps> = ({
     <TouchableOpacity
       style={[
         styles.bookmarkItem,
-        { backgroundColor: colors.pearl, borderColor: colors.deepTeal },
+        { backgroundColor: colors.pearl, borderColor: colors.mist },
       ]}
       onPress={() => {
         onSelectBookmark(item.date);
@@ -228,13 +228,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 12,
     marginBottom: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(90, 124, 126, 0.1)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 2,
+    borderWidth: 2,
+    borderColor: lightColors.mist,
   },
   bookmarkContent: {
     flex: 1,
