@@ -19,7 +19,7 @@ export const BookmarkToast: React.FC<BookmarkToastProps> = ({
   autoDismiss = true, // Default to auto-dismiss behavior
 }) => {
   const [opacity] = useState(new Animated.Value(0));
-  const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const isAnimatingRef = React.useRef(false);
 
   const FADE_IN_MS = 140;

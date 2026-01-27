@@ -8,9 +8,11 @@ export interface JsErrorEntry {
   isFatal: boolean;
 }
 
-const LOG_PATH =
-  (FileSystem.documentDirectory || FileSystem.cacheDirectory || "") +
-  "js-errors.json";
+const { documentDirectory, cacheDirectory } = FileSystem as typeof FileSystem & {
+  documentDirectory?: string | null;
+  cacheDirectory?: string | null;
+};
+const LOG_PATH = (documentDirectory || cacheDirectory || "") + "js-errors.json";
 const MAX_ENTRIES = 50;
 
 async function readEntries(): Promise<JsErrorEntry[]> {

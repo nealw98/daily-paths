@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   StyleSheet,
@@ -27,9 +27,11 @@ export const DismissibleToast: React.FC<DismissibleToastProps> = ({
   onDismiss,
 }) => {
   const opacity = useRef(new Animated.Value(0)).current;
+  const [shouldRender, setShouldRender] = useState(visible);
 
   useEffect(() => {
     if (visible) {
+      setShouldRender(true);
       Animated.timing(opacity, {
         toValue: 1,
         duration: 180,
@@ -37,24 +39,28 @@ export const DismissibleToast: React.FC<DismissibleToastProps> = ({
       }).start();
 
       const timeout = setTimeout(() => {
-        hide();
+        onDismiss();
       }, 2800);
 
       return () => clearTimeout(timeout);
     } else {
-      hide();
+      hide(() => setShouldRender(false));
     }
-  }, [visible]);
+  }, [visible, onDismiss, opacity]);
 
-  const hide = () => {
+  const hide = (onEnd?: () => void) => {
     Animated.timing(opacity, {
       toValue: 0,
       duration: 160,
       useNativeDriver: true,
-    }).start();
+    }).start(({ finished }) => {
+      if (finished) {
+        onEnd?.();
+      }
+    });
   };
 
-  if (!visible && opacity.__getValue() === 0) {
+  if (!shouldRender) {
     return null;
   }
 

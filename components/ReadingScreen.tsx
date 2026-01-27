@@ -73,9 +73,9 @@ interface ReadingScreenProps {
   onHighlight?: () => void;
   onShare?: () => void;
   // Legacy instruction modal props kept for possible future use:
-  // showInstruction?: boolean;
-  // onDismissInstruction?: () => void;
-  // onShowInstruction?: () => void;
+  showInstruction?: boolean;
+  onDismissInstruction?: () => void;
+  onShowInstruction?: () => void;
 }
 
 export const ReadingScreen: React.FC<ReadingScreenProps> = ({
@@ -87,9 +87,9 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   onBookmarkToggle,
   onHighlight,
   onShare,
-  // showInstruction = false,
-  // onDismissInstruction,
-  // onShowInstruction,
+  showInstruction = false,
+  onDismissInstruction,
+  onShowInstruction,
 }) => {
   const { colors, isDark } = useTheme();
   const [localBookmarked, setLocalBookmarked] = useState(isBookmarked);
@@ -407,9 +407,6 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
               </TouchableOpacity>
             )}
             */}
-          </View>
-
-          <View style={styles.heroActionRow}>
           </View>
 
           <View style={styles.dateNav}>
