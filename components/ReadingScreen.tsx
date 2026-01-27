@@ -387,7 +387,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   }, [reading.id]);
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.pearl }]} edges={["left", "right"]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.pearl }]} edges={["top", "left", "right"]}>
       <View style={[styles.container, { backgroundColor: colors.pearl }]}>
         <LinearGradient
           colors={[colors.headerGradientStart, colors.headerGradientEnd]}
@@ -396,7 +396,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
           style={styles.header}
         >
           <View style={styles.headerTop}>
-            <Text style={styles.logo}>Daily Paths</Text>
+            <Text style={styles.logo}>Al-Anon Daily Paths</Text>
             {/* Legacy test button to trigger instruction modal kept for possible future use:
             {onShowInstruction && (
               <TouchableOpacity
@@ -651,7 +651,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 60 : 16,
+    paddingTop: 16,
     paddingBottom: 24,
   },
   headerTop: {
