@@ -387,7 +387,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   }, [reading.id]);
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.pearl }]} edges={["top", "left", "right"]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.pearl }]} edges={["left", "right"]}>
       <View style={[styles.container, { backgroundColor: colors.pearl }]}>
         <LinearGradient
           colors={[colors.headerGradientStart, colors.headerGradientEnd]}
@@ -654,7 +654,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingTop: Platform.OS === 'ios' ? 60 : 16,
     paddingBottom: 24,
   },
   headerTop: {
