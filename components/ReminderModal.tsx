@@ -82,9 +82,9 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
     
     if (enabled && onShowToast) {
       const timeStr = formatTimeDisplay(reminderDate);
-      onShowToast(`I'll remind you every day at ${timeStr}`);
+      onShowToast(`You'll receive the Thought for the Day at ${timeStr}`);
     } else if (!enabled && onShowToast) {
-      onShowToast("Daily reminder turned off");
+      onShowToast("Thought for the Day notifications turned off");
     }
   };
 
@@ -108,7 +108,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
           onStartShouldSetResponder={() => true}
         >
           <View style={[styles.header, { borderBottomColor: colors.mist }]}>
-            <Text style={[styles.title, { color: colors.deepTeal }]}>Daily Paths Reminder</Text>
+            <Text style={[styles.title, { color: colors.deepTeal }]}>Thought for the Day</Text>
             <TouchableOpacity onPress={onClose} style={styles.doneButton}>
               <Text style={[styles.doneButtonText, { color: colors.deepTeal }]}>Done</Text>
             </TouchableOpacity>
@@ -119,12 +119,12 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
             showsVerticalScrollIndicator={false}
           >
             <Text style={[styles.subtitle, { color: colors.ocean }]}>
-              Get a gentle nudge to read each day.
+              A guiding thought to focus your day.
             </Text>
 
             <View style={styles.row}>
               <View style={styles.rowText}>
-                <Text style={[styles.rowLabel, { color: colors.ink }]}>Enable reminder</Text>
+                <Text style={[styles.rowLabel, { color: colors.ink }]}>Enable daily notification</Text>
               </View>
               <Switch
                 value={settings.dailyReminderEnabled}
@@ -141,7 +141,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
               ]}
             >
               <View style={styles.rowText}>
-                <Text style={[styles.rowLabel, { color: colors.ink }]}>Reminder time</Text>
+                <Text style={[styles.rowLabel, { color: colors.ink }]}>Notification time</Text>
               </View>
 
               <View style={styles.timeStepperContainer}>
@@ -203,7 +203,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                       
                       if (onShowToast) {
                         const timeStr = formatTimeDisplay(finalDate);
-                        onShowToast(`I'll remind you every day at ${timeStr}`);
+                        onShowToast(`You'll receive the Thought for the Day at ${timeStr}`);
                       }
                     }}
                   >
