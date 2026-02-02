@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,8 @@ import {
   StyleSheet,
   Share,
   TouchableOpacity,
+  AppState,
+  AppStateStatus,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -159,14 +161,41 @@ export default function Index() {
     updateNotificationWithThought();
   }, []);
 
+  // Refs for AppState listener so foreground handler sees latest reading/date/navigation
+  const readingRef = useRef(reading);
+  const currentDateRef = useRef(currentDate);
+  const navigationMethodRef = useRef(navigationMethod);
+  readingRef.current = reading;
+  currentDateRef.current = currentDate;
+  navigationMethodRef.current = navigationMethod;
+
   // Record reading view for analytics (unique viewers per reading)
   useEffect(() => {
     if (reading?.id) {
       recordReadingView(reading.id);
-      // Start tracking in PostHog (event fires when user navigates away)
+      // Start tracking in PostHog (event fires when user navigates away or app goes to background)
       startReadingView(reading.id, currentDate, reading.title, navigationMethod);
     }
   }, [reading?.id]);
+
+  // Foreground = new session: when app returns to active, start a new reading view session for current reading
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        const r = readingRef.current;
+        if (r?.id) {
+          startReadingView(
+            r.id,
+            currentDateRef.current,
+            r.title,
+            navigationMethodRef.current
+          );
+        }
+      }
+    };
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription?.remove();
+  }, [startReadingView]);
 
   const handlePrevDate = () => {
     setNavigationMethod('prev_button');
