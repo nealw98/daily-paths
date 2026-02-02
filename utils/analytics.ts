@@ -35,12 +35,16 @@ export function formatReadingDisplay(date: Date): string {
 }
 
 // Reading view tracking state (for time spent calculation)
+// Only foreground time is counted; background ends the session, foreground starts a new one.
 interface ReadingViewState {
   readingId: string;
   readingDate: Date;
   readingTitle: string;
   navigationMethod: NavigationMethod;
-  startTime: number;
+  /** Total ms spent in foreground so far (sum of completed foreground segments). */
+  accumulatedForegroundMs: number;
+  /** Start of current foreground segment, or null if app is in background. */
+  foregroundSegmentStart: number | null;
 }
 
 // Theme mode type
@@ -103,7 +107,7 @@ export function useAnalytics() {
     })();
   }, [posthog]);
 
-  // Fire reading_viewed event with time spent
+  // Fire reading_viewed event with foreground-only time spent, then end session (clear state).
   const fireReadingViewedEvent = useCallback(() => {
     const viewState = currentReadingView.current;
     if (!viewState) {
@@ -115,15 +119,22 @@ export function useAnalytics() {
       return;
     }
 
-    const timeSpentSeconds = Math.round((Date.now() - viewState.startTime) / 1000);
-    
+    const currentSegmentMs = viewState.foregroundSegmentStart
+      ? Date.now() - viewState.foregroundSegmentStart
+      : 0;
+    const totalForegroundMs = viewState.accumulatedForegroundMs + currentSegmentMs;
+    const timeSpentSeconds = Math.round(totalForegroundMs / 1000);
+
+    // End session: clear so we don't count time for this reading anymore
+    currentReadingView.current = null;
+
     // Only track if user spent at least 1 second (avoid accidental quick swipes)
     if (timeSpentSeconds >= 1) {
       // Build the event payload explicitly
       const readingDate = formatReadingDate(viewState.readingDate);
       const readingDisplay = formatReadingDisplay(viewState.readingDate);
       const readingTitle = viewState.readingTitle;
-      
+
       const eventPayload = {
         reading_id: viewState.readingId,
         reading_date: readingDate,
@@ -134,7 +145,7 @@ export function useAnalytics() {
         is_developer: isDeveloper,
         theme_mode: themeModeRef.current,
       };
-      
+
       console.log('[POSTHOG] ===== FIRING READING_VIEWED EVENT =====');
       console.log('[POSTHOG] Event name:', ANALYTICS_EVENTS.READING_VIEWED);
       console.log('[POSTHOG] Full payload:', JSON.stringify(eventPayload, null, 2));
@@ -144,9 +155,9 @@ export function useAnalytics() {
       console.log('[POSTHOG] reading_title:', eventPayload.reading_title);
       console.log('[POSTHOG] navigation_method:', eventPayload.navigation_method);
       console.log('[POSTHOG] time_spent_seconds:', eventPayload.time_spent_seconds);
-      
+
       posthog.capture(ANALYTICS_EVENTS.READING_VIEWED, eventPayload);
-      
+
       console.log('[POSTHOG] Calling flush() for reading_viewed...');
       posthog.flush().then(() => {
         console.log('[POSTHOG] reading_viewed flush() completed');
@@ -161,29 +172,28 @@ export function useAnalytics() {
   // Handle app state changes (foreground/background)
   useEffect(() => {
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
-      // App coming to foreground
+      // App going to background: pause timer, end session (fire reading_viewed with foreground time, clear state)
+      if (appState.current === 'active' && nextAppState.match(/inactive|background/)) {
+        const view = currentReadingView.current;
+        if (view && view.foregroundSegmentStart !== null) {
+          view.accumulatedForegroundMs += Date.now() - view.foregroundSegmentStart;
+          view.foregroundSegmentStart = null;
+        }
+        fireReadingViewedEvent();
+        hasTrackedAppOpen.current = false; // Allow new app_opened on next foreground
+      }
+
+      // App coming to foreground (new session is started by index.tsx calling startReadingView)
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-        // Fire app_opened only once per foreground transition
         if (posthog && !hasTrackedAppOpen.current) {
-          posthog.capture(ANALYTICS_EVENTS.APP_OPENED, { 
+          posthog.capture(ANALYTICS_EVENTS.APP_OPENED, {
             is_developer: isDeveloper,
             theme_mode: themeModeRef.current,
           });
           hasTrackedAppOpen.current = true;
         }
-        
-        // Reset the current reading start time since user returned
-        if (currentReadingView.current) {
-          currentReadingView.current.startTime = Date.now();
-        }
       }
-      
-      // App going to background - fire reading_viewed for current reading
-      if (appState.current === 'active' && nextAppState.match(/inactive|background/)) {
-        fireReadingViewedEvent();
-        hasTrackedAppOpen.current = false; // Allow new app_opened on next foreground
-      }
-      
+
       appState.current = nextAppState;
     };
 
@@ -215,8 +225,8 @@ export function useAnalytics() {
     hasTrackedAppOpen.current = true;
   }, [posthog, isDeveloper]);
 
-  // Start tracking a reading view (called when reading appears)
-  // This doesn't fire the event yet - that happens when user navigates away
+  // Start tracking a reading view (called when reading appears or when app returns to foreground).
+  // Session ends when user navigates away or app goes to background.
   const startReadingView = useCallback((
     readingId: string,
     readingDate: Date,
@@ -230,23 +240,25 @@ export function useAnalytics() {
     console.log('[POSTHOG] readingDate instanceof Date:', readingDate instanceof Date);
     console.log('[POSTHOG] readingTitle:', readingTitle);
     console.log('[POSTHOG] navigationMethod:', navigationMethod);
-    
-    // Fire event for previous reading before starting new one
+
+    // Fire event for previous reading before starting new one (no-op if none)
     fireReadingViewedEvent();
-    
-    // Start tracking new reading
+
+    const isActive = AppState.currentState === 'active';
     currentReadingView.current = {
       readingId,
       readingDate,
       readingTitle,
       navigationMethod,
-      startTime: Date.now(),
+      accumulatedForegroundMs: 0,
+      foregroundSegmentStart: isActive ? Date.now() : null,
     };
-    
+
     console.log('[POSTHOG] Stored view state:', JSON.stringify({
       readingId: currentReadingView.current.readingId,
       readingTitle: currentReadingView.current.readingTitle,
       navigationMethod: currentReadingView.current.navigationMethod,
+      foregroundSegmentStart: currentReadingView.current.foregroundSegmentStart != null,
     }));
   }, [fireReadingViewedEvent]);
 
