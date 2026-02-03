@@ -225,7 +225,7 @@ const twilightFireSemantic: SemanticPalette = {
   background: "#FFF8F0",         // Warm Cream
   backgroundSecondary: "#FFE8D6", // Light peach tint
   text: "#5A2645",               // Deep purple
-  textSecondary: "#E74C8C",      // Hot Pink
+  textSecondary: "#E74C8C",      // Hot Pink (reading title color)
   accent: "#FF6B6B",             // Vibrant Coral
   highlight: "#FF9557",          // Sunset Orange
   modalBackground: "#FFF8F0",   // Warm Cream
@@ -236,7 +236,7 @@ const twilightFireSemantic: SemanticPalette = {
   textOnAccent: "#FFFFFF",
   border: "#FFC4A8",             // Saturated peach
   backdrop: "rgba(0, 0, 0, 0.5)",
-  calendarMonthBackground: "#E74C8C", // Hot Pink (matches reading title)
+  calendarMonthBackground: "#9B6BB4", // Lighter purple (between deep purple and gradient midpoint)
   calendarDayBackground: "rgba(255, 255, 255, 0.75)",
   calendarBorder: "rgba(255, 255, 255, 0.35)",
   calendarDayText: "#7B4B94", // Deep purple on light background

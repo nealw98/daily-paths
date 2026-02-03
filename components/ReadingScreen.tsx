@@ -91,7 +91,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   onDismissInstruction,
   onShowInstruction,
 }) => {
-  const { colors, isDark } = useTheme();
+  const { colors, isDark, themeId } = useTheme();
   const [localBookmarked, setLocalBookmarked] = useState(isBookmarked);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -440,7 +440,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
         <LinearGradient
           colors={[colors.headerGradientStart, colors.headerGradientEnd]}
           start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
+          end={themeId === "twilight-fire" ? { x: 0, y: 1 } : { x: 1, y: 1 }}
           style={styles.header}
         >
           <View style={styles.headerTop}>
