@@ -115,10 +115,10 @@ const oceanDarkSemantic: SemanticPalette = {
   textOnAccent: "#FFFFFF",
   border: "#3A4A4B",
   backdrop: "rgba(0, 0, 0, 0.6)",
-  calendarMonthBackground: "#2A4A4B", // heroGradientEnd (lighter ocean teal)
-  calendarDayBackground: "#2A3536", // backgroundSecondary
-  calendarBorder: "#3A4A4B", // border/modalBorder
-  calendarDayText: "#E8F3F3", // Light text for visibility
+  calendarMonthBackground: "rgba(74, 139, 141, 0.6)", // Semi-transparent ocean (original from main)
+  calendarDayBackground: "#2A3536", // backgroundSecondary/cloud
+  calendarBorder: "#3A4A4B", // border/modalBorder/mist
+  calendarDayText: "#7EBDC3", // accent/deepTeal in dark mode
 };
 
 // ─── Forest (example second theme) ──────────────────────────────────────────
@@ -348,12 +348,6 @@ export const COLOR_SCHEMES: ColorSchemeDef[] = [
     name: "Rose Garden",
     dark: false,
     colors: buildPalette(burgundyRoseSemantic),
-  },
-  {
-    id: "rose-quartz",
-    name: "Rose Quartz",
-    dark: false,
-    colors: buildPalette(roseQuartzSemantic),
   },
   {
     id: "twilight-fire",

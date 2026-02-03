@@ -55,7 +55,7 @@ async function loadSettings(): Promise<AppSettings> {
       if (loaded.themeId === "bold-berry-light" || loaded.themeId === "bold-berry-dark" || loaded.themeId === "bold-berry") loaded.themeId = "ocean-light";
       if (loaded.themeId === "rose-petal" || loaded.themeId === "purple-sunset") loaded.themeId = "ocean-light";
       if (loaded.themeId === "earthy-light" || loaded.themeId === "earthy-dark" || loaded.themeId === "earthy") loaded.themeId = "deep-sea";
-      if (loaded.themeId === "cotton-candy" || loaded.themeId === "twilight-sky" || loaded.themeId === "desert-sunset") loaded.themeId = "ocean-light";
+      if (loaded.themeId === "cotton-candy" || loaded.themeId === "twilight-sky" || loaded.themeId === "desert-sunset" || loaded.themeId === "rose-quartz") loaded.themeId = "ocean-light";
       return loaded;
     }
     const rawV1 = await AsyncStorage.getItem("daily_paths_settings_v1");
