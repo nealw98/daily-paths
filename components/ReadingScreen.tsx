@@ -389,14 +389,62 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.pearl }]} edges={["top", "left", "right"]}>
       <View style={[styles.container, { backgroundColor: colors.pearl }]}>
+        {colors.headerGradientStart === colors.headerGradientEnd ? (
+          <View style={[styles.header, { backgroundColor: colors.headerGradientStart }]}>
+          <View style={styles.headerTop}>
+            <Text style={[styles.logo, { color: colors.textOnAccent }]}>Al-Anon Daily Paths</Text>
+            {/*
+            {onShowInstruction && (
+              <TouchableOpacity
+                onPress={onShowInstruction}
+                style={styles.testButton}
+              >
+                <Text style={styles.testButtonText}>?</Text>
+              </TouchableOpacity>
+            )}
+            */}
+          </View>
+
+          <View style={styles.dateNav}>
+            <TouchableOpacity onPress={onPrevDate} style={styles.navButton}>
+              <BlurView intensity={20} tint="light" style={styles.blurNavButton}>
+                <Ionicons name="chevron-back" size={20} color={colors.textOnAccent} />
+              </BlurView>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={onOpenDatePicker}
+              style={styles.calendarDate}
+            >
+              <View style={styles.calendarCardWrapper}>
+                <View style={[styles.calendarCard, { borderColor: colors.calendarBorder }]}>
+                  <View style={[styles.calendarMonth, { backgroundColor: colors.calendarMonthBackground }]}>
+                    <Text style={[styles.calendarMonthText, { color: colors.textOnAccent }]}>{month}</Text>
+                  </View>
+                  <View style={[styles.calendarDay, { backgroundColor: colors.calendarDayBackground }]}>
+                    <Text style={[styles.calendarDayText, { color: colors.calendarDayText }]}>{day}</Text>
+                  </View>
+                </View>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={onNextDate} style={styles.navButton}>
+              <BlurView intensity={20} tint="light" style={styles.blurNavButton}>
+                <Ionicons name="chevron-forward" size={20} color={colors.textOnAccent} />
+              </BlurView>
+            </TouchableOpacity>
+          </View>
+
+          </View>
+        ) : (
         <LinearGradient
           colors={[colors.headerGradientStart, colors.headerGradientEnd]}
           start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+          end={{ x: 0, y: 1 }}
           style={styles.header}
         >
           <View style={styles.headerTop}>
-            <Text style={styles.logo}>Al-Anon Daily Paths</Text>
+            <Text style={[styles.logo, { color: colors.textOnAccent }]}>Al-Anon Daily Paths</Text>
             {/* Legacy test button to trigger instruction modal kept for possible future use:
             {onShowInstruction && (
               <TouchableOpacity
@@ -412,7 +460,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
           <View style={styles.dateNav}>
             <TouchableOpacity onPress={onPrevDate} style={styles.navButton}>
               <BlurView intensity={20} tint="light" style={styles.blurNavButton}>
-                <Ionicons name="chevron-back" size={20} color="#fff" />
+                <Ionicons name="chevron-back" size={20} color={colors.textOnAccent} />
               </BlurView>
             </TouchableOpacity>
 
@@ -421,12 +469,12 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
               style={styles.calendarDate}
             >
               <View style={styles.calendarCardWrapper}>
-                <View style={[styles.calendarCard, { borderColor: isDark ? colors.mist : "rgba(255, 255, 255, 0.25)", backgroundColor: isDark ? colors.cloud : undefined }]}>
-                  <View style={[styles.calendarMonth, { backgroundColor: isDark ? "rgba(74, 139, 141, 0.6)" : colors.deepTeal }]}>
-                    <Text style={styles.calendarMonthText}>{month}</Text>
+                <View style={[styles.calendarCard, { borderColor: colors.calendarBorder }]}>
+                  <View style={[styles.calendarMonth, { backgroundColor: colors.calendarMonthBackground }]}>
+                    <Text style={[styles.calendarMonthText, { color: colors.textOnAccent }]}>{month}</Text>
                   </View>
-                  <View style={[styles.calendarDay, { backgroundColor: isDark ? colors.cloud : "rgba(255, 255, 255, 0.65)" }]}>
-                    <Text style={[styles.calendarDayText, { color: colors.deepTeal }]}>{day}</Text>
+                  <View style={[styles.calendarDay, { backgroundColor: colors.calendarDayBackground }]}>
+                    <Text style={[styles.calendarDayText, { color: colors.calendarDayText }]}>{day}</Text>
                   </View>
                 </View>
               </View>
@@ -434,12 +482,13 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
 
             <TouchableOpacity onPress={onNextDate} style={styles.navButton}>
               <BlurView intensity={20} tint="light" style={styles.blurNavButton}>
-                <Ionicons name="chevron-forward" size={20} color="#fff" />
+                <Ionicons name="chevron-forward" size={20} color={colors.textOnAccent} />
               </BlurView>
             </TouchableOpacity>
           </View>
 
         </LinearGradient>
+        )}
 
         <Animated.View
           style={{ flex: 1, transform: [{ translateX }] }}
@@ -663,7 +712,6 @@ const styles = StyleSheet.create({
   logo: {
     fontFamily: fonts.headerFamilyItalic,
     fontSize: 40,
-    color: "#fff",
     fontWeight: "600",
   },
   testButton: {
@@ -680,7 +728,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255, 255, 255, 0.4)",
   },
   testButtonText: {
-    color: "#fff",
+    color: lightColors.textOnAccent,
     fontSize: 18,
     fontWeight: "bold",
   },
@@ -733,7 +781,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     borderWidth: 1.5,
     borderColor: "rgba(255, 255, 255, 0.3)",
-    backgroundColor: "#fff",
+    backgroundColor: lightColors.cardBackground,
     ...Platform.select({
       ios: {
         shadowColor: "#000",
@@ -755,7 +803,6 @@ const styles = StyleSheet.create({
   calendarMonthText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 9,
-    color: "#fff",
     fontWeight: "700",
     letterSpacing: 0.5,
   },

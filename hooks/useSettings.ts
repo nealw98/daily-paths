@@ -5,23 +5,25 @@ import { scheduleDailyReminder, cancelDailyReminder } from "../utils/dailyRemind
 
 console.log("[STARTUP] useSettings.ts module loading...");
 
-const SETTINGS_STORAGE_KEY = "daily_paths_settings_v1";
+const SETTINGS_STORAGE_KEY = "daily_paths_settings_v2";
 
 export type TextSize = "extraSmall" | "small" | "medium" | "large" | "extraLarge";
 export type ColorScheme = "light" | "dark" | "system";
 
 export interface AppSettings {
   textSize: TextSize;
+  /** Selected color scheme id (e.g. "ocean-light", "forest-dark"). */
+  themeId: string;
+  /** Kept for backward compat and analytics; derived from theme when using themeId. */
   colorScheme: ColorScheme;
   dailyReminderEnabled: boolean;
   dailyReminderTime: string; // "HH:MM" in 24-hour format
 }
 
 const defaultSettings: AppSettings = {
-  // Default to the middle text size (medium).
   textSize: "medium",
-  // Default to system color scheme (follows iOS/Android dark mode setting)
-  colorScheme: "system",
+  themeId: "ocean-light",
+  colorScheme: "light",
   dailyReminderEnabled: false,
   dailyReminderTime: "08:00",
 };
@@ -30,6 +32,7 @@ interface SettingsContextValue {
   settings: AppSettings;
   loading: boolean;
   setTextSize: (size: TextSize) => Promise<void>;
+  setThemeId: (themeId: string) => Promise<void>;
   setColorScheme: (scheme: ColorScheme) => Promise<void>;
   setDailyReminderEnabled: (enabled: boolean) => Promise<void>;
   setDailyReminderTime: (time: string) => Promise<void>;
@@ -41,13 +44,41 @@ const SettingsContext = React.createContext<SettingsContextValue | undefined>(
 
 async function loadSettings(): Promise<AppSettings> {
   try {
-    const raw = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
-    if (!raw) return defaultSettings;
-    const parsed = JSON.parse(raw) as Partial<AppSettings>;
-    return {
-      ...defaultSettings,
-      ...parsed,
-    };
+    const rawV2 = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
+    if (rawV2) {
+      const parsed = JSON.parse(rawV2) as Partial<AppSettings>;
+      const loaded = { ...defaultSettings, ...parsed };
+      if (loaded.themeId == null || loaded.themeId === "") {
+        loaded.themeId = parsed.colorScheme === "dark" ? "ocean-dark" : "ocean-light";
+      }
+      // Migrate legacy palettes to current ids
+      if (loaded.themeId === "bold-berry-light" || loaded.themeId === "bold-berry-dark" || loaded.themeId === "bold-berry") loaded.themeId = "ocean-light";
+      if (loaded.themeId === "rose-petal" || loaded.themeId === "purple-sunset") loaded.themeId = "ocean-light";
+      if (loaded.themeId === "earthy-light" || loaded.themeId === "earthy-dark" || loaded.themeId === "earthy") loaded.themeId = "deep-sea";
+      if (loaded.themeId === "cotton-candy" || loaded.themeId === "twilight-sky" || loaded.themeId === "desert-sunset") loaded.themeId = "ocean-light";
+      return loaded;
+    }
+    const rawV1 = await AsyncStorage.getItem("daily_paths_settings_v1");
+    if (rawV1) {
+      const parsed = JSON.parse(rawV1) as Partial<AppSettings>;
+      const themeId =
+        parsed.colorScheme === "dark"
+          ? "ocean-dark"
+          : parsed.colorScheme === "light"
+            ? "ocean-light"
+            : "ocean-light";
+      const migrated: AppSettings = {
+        ...defaultSettings,
+        textSize: parsed.textSize ?? defaultSettings.textSize,
+        themeId,
+        colorScheme: themeId === "ocean-dark" ? "dark" : "light",
+        dailyReminderEnabled: parsed.dailyReminderEnabled ?? defaultSettings.dailyReminderEnabled,
+        dailyReminderTime: parsed.dailyReminderTime ?? defaultSettings.dailyReminderTime,
+      };
+      await AsyncStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(migrated));
+      return migrated;
+    }
+    return defaultSettings;
   } catch (e) {
     console.warn("Failed to load app settings, using defaults", e);
     return defaultSettings;
@@ -108,11 +139,24 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
     [updateSettings]
   );
 
-  const setColorScheme = React.useCallback(
-    async (scheme: ColorScheme) => {
-      await updateSettings({ colorScheme: scheme });
+  const setThemeId = React.useCallback(
+    async (themeId: string) => {
+      const colorScheme: ColorScheme = themeId.endsWith("-dark") ? "dark" : "light";
+      await updateSettings({ themeId, colorScheme });
     },
     [updateSettings]
+  );
+
+  const setColorScheme = React.useCallback(
+    async (scheme: ColorScheme) => {
+      if (scheme === "system") {
+        await updateSettings({ ...settings, colorScheme: "system" });
+      } else {
+        const themeId = scheme === "dark" ? "ocean-dark" : "ocean-light";
+        await updateSettings({ colorScheme: scheme, themeId });
+      }
+    },
+    [updateSettings, settings]
   );
 
   const setDailyReminderEnabled = React.useCallback(
@@ -143,11 +187,12 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
       settings,
       loading,
       setTextSize,
+      setThemeId,
       setColorScheme,
       setDailyReminderEnabled,
       setDailyReminderTime,
     }),
-    [settings, loading, setTextSize, setColorScheme, setDailyReminderEnabled, setDailyReminderTime]
+    [settings, loading, setTextSize, setThemeId, setColorScheme, setDailyReminderEnabled, setDailyReminderTime]
   );
 
   return React.createElement(SettingsContext.Provider, { value }, children);
