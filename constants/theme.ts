@@ -217,6 +217,31 @@ const burgundyRoseSemantic: SemanticPalette = {
   calendarDayText: "#660033", // Dark maroon on light background
 };
 
+// ─── Rose Quartz (soft pink pastels, delicate and feminine) ────────────
+// Deep Plum #A8305C, Deep Rose #E85A8F, Medium Pink #FF99CC, Soft Pink #FFB3D9, Light Blush #FFC9E0, Warm Cream #FFF5F0
+const roseQuartzSemantic: SemanticPalette = {
+  heroGradientStart: "#A8305C",  // Deep Plum (richer, more purple-toned)
+  heroGradientEnd: "#E85A8F",   // Deep Rose (gradient from plum to rose)
+  background: "#FFF5F0",         // Warm Cream
+  backgroundSecondary: "#FFE8F0", // Very light pink tint
+  text: "#6B1E3F",               // Very deep burgundy for readability
+  textSecondary: "#A8305C",      // Deep Plum
+  accent: "#E85A8F",             // Deep Rose
+  highlight: "#FF99CC",          // Medium Pink
+  modalBackground: "#FFF5F0",   // Warm Cream
+  modalBorder: "#FFC9E0",       // Light Blush
+  cardBackground: "#FFE8F0",
+  buttonPrimary: "#A8305C",     // Deep Plum
+  buttonSecondary: "#E85A8F",   // Deep Rose
+  textOnAccent: "#FFFFFF",      // White on buttons
+  border: "#FFC9E0",             // Light Blush
+  backdrop: "rgba(0, 0, 0, 0.5)",
+  calendarMonthBackground: "#A8305C", // Deep Plum
+  calendarDayBackground: "rgba(255, 255, 255, 0.7)",
+  calendarBorder: "rgba(255, 255, 255, 0.3)",
+  calendarDayText: "#A8305C", // Deep plum on light background
+};
+
 // ─── Desert Twilight (dramatic sunset: purple to orange gradient) ──────────
 // Deep Purple #7B4B94, Hot Pink #E74C8C, Vibrant Coral #FF6B6B, Sunset Orange #FF9557, Cream #FFF8F0
 const twilightFireSemantic: SemanticPalette = {
@@ -323,6 +348,12 @@ export const COLOR_SCHEMES: ColorSchemeDef[] = [
     name: "Rose Garden",
     dark: false,
     colors: buildPalette(burgundyRoseSemantic),
+  },
+  {
+    id: "rose-quartz",
+    name: "Rose Quartz",
+    dark: false,
+    colors: buildPalette(roseQuartzSemantic),
   },
   {
     id: "twilight-fire",

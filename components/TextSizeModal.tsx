@@ -13,6 +13,7 @@ const THEME_OPTIONS: { id: string; displayName: string; icon?: string }[] = [
   { id: "system", displayName: "System", icon: "phone-portrait-outline" },
   { id: "deep-sea", displayName: "Deep\nSea" },
   { id: "burgundy-rose", displayName: "Rose\nGarden" },
+  { id: "rose-quartz", displayName: "Rose\nQuartz" },
   { id: "twilight-fire", displayName: "Desert\nTwilight" },
 ];
 

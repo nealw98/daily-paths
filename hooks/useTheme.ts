@@ -15,9 +15,9 @@ export function useTheme(): {
   const { settings } = useSettings();
   const deviceColorScheme = useColorScheme();
   const themeId = settings.themeId ?? "ocean-light";
-  // Deep Sea, Burgundy Rose, and Twilight Fire have no light/dark; only Ocean uses system/light/dark.
+  // Deep Sea, Rose Garden, Rose Quartz, and Desert Twilight have no light/dark; only Ocean uses system/light/dark.
   const effectiveThemeId =
-    themeId === "deep-sea" || themeId === "burgundy-rose" || themeId === "twilight-fire"
+    themeId === "deep-sea" || themeId === "burgundy-rose" || themeId === "rose-quartz" || themeId === "twilight-fire"
       ? themeId
       : settings.colorScheme === "system"
         ? deviceColorScheme === "dark"
