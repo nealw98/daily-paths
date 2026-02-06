@@ -9,7 +9,7 @@ import {
   Animated,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { fonts, lightColors } from "../constants/theme";
+import { fonts } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
 import { BookmarkData } from "../utils/bookmarkStorage";
 import { useSettings, getTextSizeMetrics } from "../hooks/useSettings";
@@ -196,12 +196,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: lightColors.mist,
   },
   title: {
     fontFamily: fonts.headerFamilyBoldItalic,
     fontSize: 24,
-    color: lightColors.deepTeal,
   },
   closeButton: {
     padding: 4,
@@ -215,7 +213,6 @@ const styles = StyleSheet.create({
   doneButtonText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-    color: lightColors.deepTeal,
   },
   listContent: {
     padding: 20,
@@ -229,7 +226,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 2,
-    borderColor: lightColors.mist,
   },
   bookmarkContent: {
     flex: 1,
@@ -241,14 +237,12 @@ const styles = StyleSheet.create({
   bookmarkDate: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 12,
-    color: lightColors.ocean,
     marginBottom: 4,
     letterSpacing: 0.5,
   },
   bookmarkTitle: {
     fontFamily: "Inter_400Regular",
     fontSize: 12,
-    color: lightColors.deepTeal,
     lineHeight: 16,
   },
   emptyState: {
@@ -263,13 +257,11 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontFamily: fonts.headerFamilyBoldItalic,
     fontSize: 20,
-    color: lightColors.ink,
     marginBottom: 8,
   },
   emptyMessage: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 15,
-    color: lightColors.ocean,
     textAlign: "center",
     lineHeight: 22,
   },

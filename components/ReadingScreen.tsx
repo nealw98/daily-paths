@@ -16,7 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
-import { fonts, lightColors } from "../constants/theme";
+import { fonts } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
 import { useSettings, getTextSizeMetrics } from "../hooks/useSettings";
 import { DailyReading } from "../types/readings";
@@ -91,7 +91,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   onDismissInstruction,
   onShowInstruction,
 }) => {
-  const { colors, isDark } = useTheme();
+  const { colors, isDark, themeId } = useTheme();
   const [localBookmarked, setLocalBookmarked] = useState(isBookmarked);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -389,14 +389,62 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.pearl }]} edges={["top", "left", "right"]}>
       <View style={[styles.container, { backgroundColor: colors.pearl }]}>
+        {colors.headerGradientStart === colors.headerGradientEnd ? (
+          <View style={[styles.header, { backgroundColor: colors.headerGradientStart }]}>
+          <View style={styles.headerTop}>
+            <Text style={[styles.logo, { color: colors.textOnAccent }]}>Al-Anon Daily Paths</Text>
+            {/*
+            {onShowInstruction && (
+              <TouchableOpacity
+                onPress={onShowInstruction}
+                style={styles.testButton}
+              >
+                <Text style={styles.testButtonText}>?</Text>
+              </TouchableOpacity>
+            )}
+            */}
+          </View>
+
+          <View style={styles.dateNav}>
+            <TouchableOpacity onPress={onPrevDate} style={styles.navButton}>
+              <BlurView intensity={20} tint="light" style={styles.blurNavButton}>
+                <Ionicons name="chevron-back" size={20} color={colors.textOnAccent} />
+              </BlurView>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={onOpenDatePicker}
+              style={styles.calendarDate}
+            >
+              <View style={styles.calendarCardWrapper}>
+                <View style={[styles.calendarCard, { borderColor: colors.calendarBorder, backgroundColor: colors.cardBackground }]}>
+                  <View style={[styles.calendarMonth, { backgroundColor: colors.calendarMonthBackground }]}>
+                    <Text style={[styles.calendarMonthText, { color: colors.textOnAccent }]}>{month}</Text>
+                  </View>
+                  <View style={[styles.calendarDay, { backgroundColor: colors.calendarDayBackground }]}>
+                    <Text style={[styles.calendarDayText, { color: colors.calendarDayText }]}>{day}</Text>
+                  </View>
+                </View>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={onNextDate} style={styles.navButton}>
+              <BlurView intensity={20} tint="light" style={styles.blurNavButton}>
+                <Ionicons name="chevron-forward" size={20} color={colors.textOnAccent} />
+              </BlurView>
+            </TouchableOpacity>
+          </View>
+
+          </View>
+        ) : (
         <LinearGradient
           colors={[colors.headerGradientStart, colors.headerGradientEnd]}
           start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+          end={themeId === "twilight-fire" ? { x: 0, y: 1 } : { x: 1, y: 1 }}
           style={styles.header}
         >
           <View style={styles.headerTop}>
-            <Text style={styles.logo}>Al-Anon Daily Paths</Text>
+            <Text style={[styles.logo, { color: colors.textOnAccent }]}>Al-Anon Daily Paths</Text>
             {/* Legacy test button to trigger instruction modal kept for possible future use:
             {onShowInstruction && (
               <TouchableOpacity
@@ -412,7 +460,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
           <View style={styles.dateNav}>
             <TouchableOpacity onPress={onPrevDate} style={styles.navButton}>
               <BlurView intensity={20} tint="light" style={styles.blurNavButton}>
-                <Ionicons name="chevron-back" size={20} color="#fff" />
+                <Ionicons name="chevron-back" size={20} color={colors.textOnAccent} />
               </BlurView>
             </TouchableOpacity>
 
@@ -421,12 +469,12 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
               style={styles.calendarDate}
             >
               <View style={styles.calendarCardWrapper}>
-                <View style={[styles.calendarCard, { borderColor: isDark ? colors.mist : "rgba(255, 255, 255, 0.25)", backgroundColor: isDark ? colors.cloud : undefined }]}>
-                  <View style={[styles.calendarMonth, { backgroundColor: isDark ? "rgba(74, 139, 141, 0.6)" : colors.deepTeal }]}>
-                    <Text style={styles.calendarMonthText}>{month}</Text>
+                <View style={[styles.calendarCard, { borderColor: colors.calendarBorder, backgroundColor: colors.cardBackground }]}>
+                  <View style={[styles.calendarMonth, { backgroundColor: colors.calendarMonthBackground }]}>
+                    <Text style={[styles.calendarMonthText, { color: colors.textOnAccent }]}>{month}</Text>
                   </View>
-                  <View style={[styles.calendarDay, { backgroundColor: isDark ? colors.cloud : "rgba(255, 255, 255, 0.65)" }]}>
-                    <Text style={[styles.calendarDayText, { color: colors.deepTeal }]}>{day}</Text>
+                  <View style={[styles.calendarDay, { backgroundColor: colors.calendarDayBackground }]}>
+                    <Text style={[styles.calendarDayText, { color: colors.calendarDayText }]}>{day}</Text>
                   </View>
                 </View>
               </View>
@@ -434,12 +482,13 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
 
             <TouchableOpacity onPress={onNextDate} style={styles.navButton}>
               <BlurView intensity={20} tint="light" style={styles.blurNavButton}>
-                <Ionicons name="chevron-forward" size={20} color="#fff" />
+                <Ionicons name="chevron-forward" size={20} color={colors.textOnAccent} />
               </BlurView>
             </TouchableOpacity>
           </View>
 
         </LinearGradient>
+        )}
 
         <Animated.View
           style={{ flex: 1, transform: [{ translateX }] }}
@@ -640,11 +689,10 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   );
 };
 
-// Static styles use lightColors; dynamic colors applied inline via useTheme()
+// Layout-only styles. All colors applied inline via useTheme().
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: lightColors.pearl,
   },
   container: {
     flex: 1,
@@ -663,7 +711,6 @@ const styles = StyleSheet.create({
   logo: {
     fontFamily: fonts.headerFamilyItalic,
     fontSize: 40,
-    color: "#fff",
     fontWeight: "600",
   },
   testButton: {
@@ -680,7 +727,6 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255, 255, 255, 0.4)",
   },
   testButtonText: {
-    color: "#fff",
     fontSize: 18,
     fontWeight: "bold",
   },
@@ -705,7 +751,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 12,
   },
-  // Removed heroActionRow/heroIconButton as they are now inline with title
   navButton: {
     width: 36,
     height: 36,
@@ -733,7 +778,6 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     borderWidth: 1.5,
     borderColor: "rgba(255, 255, 255, 0.3)",
-    backgroundColor: "#fff",
     ...Platform.select({
       ios: {
         shadowColor: "#000",
@@ -747,7 +791,6 @@ const styles = StyleSheet.create({
     }),
   },
   calendarMonth: {
-    backgroundColor: lightColors.deepTeal,
     paddingVertical: 3,
     paddingHorizontal: 4,
     alignItems: "center",
@@ -755,7 +798,6 @@ const styles = StyleSheet.create({
   calendarMonthText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 9,
-    color: "#fff",
     fontWeight: "700",
     letterSpacing: 0.5,
   },
@@ -768,13 +810,11 @@ const styles = StyleSheet.create({
   calendarDayText: {
     fontFamily: fonts.headerFamily,
     fontSize: 28,
-    color: lightColors.deepTeal,
     fontWeight: "600",
     lineHeight: 28,
   },
   content: {
     flex: 1,
-    backgroundColor: lightColors.pearl,
   },
   contentPressing: {
     backgroundColor: "#f9fafb",
@@ -785,7 +825,6 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: "Inter_500Medium",
-    color: lightColors.deepTeal,
     textAlign: "center",
     textTransform: "uppercase",
     fontWeight: "600",
@@ -811,7 +850,7 @@ const styles = StyleSheet.create({
   },
   inlineFavorite: {
     marginLeft: 12,
-    marginTop: 6, // fine-tuned to align with first line of title text
+    marginTop: 6,
   },
   favoriteTopContainer: {
     alignItems: "center",
@@ -824,12 +863,10 @@ const styles = StyleSheet.create({
     fontFamily: fonts.loraRegular,
     fontSize: 19,
     lineHeight: 33,
-    color: "#4A5A5B", // Lighter gray-teal for contrast with deepTeal titles
     marginBottom: 16,
   },
   inlineItalic: {
     fontFamily: fonts.loraRegular,
-    // Use regular font - matches Android appearance
   },
   section: {
     marginTop: 8,
@@ -837,7 +874,6 @@ const styles = StyleSheet.create({
   sectionHeading: {
     fontFamily: fonts.headerFamilyBoldItalic,
     fontSize: 24,
-    color: lightColors.deepTeal,
     marginBottom: 12,
   },
   applicationQuoteContainer: {
@@ -845,7 +881,6 @@ const styles = StyleSheet.create({
   },
   applicationQuoteText: {
     fontFamily: fonts.loraRegular,
-    // Use regular font - matches Android appearance
     textAlign: "center",
     marginBottom: 4,
   },
@@ -858,13 +893,11 @@ const styles = StyleSheet.create({
     width: 64,
     height: StyleSheet.hairlineWidth * 2,
     borderRadius: 999,
-    backgroundColor: "rgba(74, 90, 91, 0.35)", // soft gray-teal line
   },
   applicationText: {
     fontFamily: fonts.loraRegular,
     fontSize: 19,
     lineHeight: 33,
-    color: "#4A5A5B",
     marginBottom: 16,
   },
   thoughtCardContainer: {
@@ -872,7 +905,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     ...Platform.select({
       ios: {
-        backgroundColor: lightColors.ocean,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
@@ -889,18 +921,15 @@ const styles = StyleSheet.create({
     ...Platform.select({
       android: {
         elevation: 4,
-        backgroundColor: lightColors.mist,
       },
     }),
   },
   thoughtGradient: {
     padding: 20,
-    backgroundColor: Platform.OS === "android" ? lightColors.mist : "rgba(255, 255, 255, 0.65)",
   },
   thoughtLabel: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
-    color: lightColors.ocean,
     textTransform: "uppercase",
     letterSpacing: 1,
     marginBottom: 8,
@@ -908,7 +937,6 @@ const styles = StyleSheet.create({
   thoughtText: {
     fontFamily: fonts.headerFamilyItalic,
     fontSize: 22,
-    color: lightColors.deepTeal,
     lineHeight: 26,
     fontWeight: "600",
   },

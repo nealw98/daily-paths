@@ -17,7 +17,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import Constants from "expo-constants";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { fonts, lightColors } from "../constants/theme";
+import { fonts } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
 import { useSettings, TextSize } from "../hooks/useSettings";
 import { useAppFeedback } from "../hooks/useAppFeedback";
@@ -450,19 +450,16 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 18,
     fontWeight: "600",
-    color: lightColors.deepTeal,
     marginBottom: 2,
   },
   sectionSubtitle: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
-    color: lightColors.ink,
     lineHeight: 18,
   },
   bodyText: {
     fontFamily: fonts.loraRegular,
     fontSize: 16,
-    color: lightColors.ink,
     lineHeight: 24,
   },
   buttonRow: {
@@ -484,16 +481,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: "#fff",
     borderWidth: 2,
-    borderColor: lightColors.mist,
   },
   themeOptionSelected: {
-    backgroundColor: lightColors.deepTeal,
-    borderColor: lightColors.deepTeal,
   },
   themeOptionText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
-    color: lightColors.deepTeal,
     fontWeight: "600",
   },
   themeOptionTextSelected: {
@@ -512,7 +505,6 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-    color: lightColors.deepTeal,
     fontWeight: "600",
   },
   chipRow: {
@@ -532,8 +524,6 @@ const styles = StyleSheet.create({
     minWidth: "45%",
   },
   chipSelected: {
-    backgroundColor: lightColors.deepTeal,
-    borderColor: lightColors.deepTeal,
   },
   chipLabel: {
     fontFamily: fonts.bodyFamilyRegular,
@@ -553,7 +543,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingVertical: 12,
     borderRadius: 10,
-    backgroundColor: lightColors.deepTeal,
     alignItems: "center",
   },
   primaryButtonText: {
@@ -570,7 +559,6 @@ const styles = StyleSheet.create({
   sliderEdgeLabel: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 12,
-    color: lightColors.deepTeal,
     fontWeight: "600",
   },
   sliderEdgeLabelDisabled: {
@@ -596,12 +584,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
   },
   sliderStopActive: {
-    borderColor: lightColors.seafoam,
-    backgroundColor: lightColors.seafoam,
   },
   sliderStopSelected: {
-    borderColor: lightColors.deepTeal,
-    backgroundColor: lightColors.deepTeal,
     transform: [{ scale: 1.1 }],
   },
   textPreviewContainer: {
@@ -627,12 +611,10 @@ const styles = StyleSheet.create({
   rowLabel: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-    color: lightColors.ink,
   },
   rowHelper: {
     fontFamily: fonts.bodyFamily,
     fontSize: 13,
-    color: lightColors.ocean,
     marginTop: 2,
   },
   timeRow: {
@@ -652,7 +634,6 @@ const styles = StyleSheet.create({
   timeValue: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-    color: lightColors.ink,
   },
   timeValueDisabled: {
     // No extra dimming; row opacity handles the disabled look
@@ -684,7 +665,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: lightColors.deepTeal,
   },
   timePickerButtonPrimaryText: {
     fontFamily: fonts.bodyFamilyRegular,
@@ -715,7 +695,6 @@ const styles = StyleSheet.create({
   linkLabel: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
-    color: lightColors.deepTeal,
   },
   versionContainer: {
     paddingTop: 8,
@@ -744,7 +723,6 @@ const styles = StyleSheet.create({
   feedbackTitle: {
     fontFamily: fonts.headerFamilyItalic,
     fontSize: 22,
-    color: lightColors.deepTeal,
     marginBottom: 16,
   },
   feedbackInput: {
@@ -754,7 +732,6 @@ const styles = StyleSheet.create({
     padding: 14,
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-    color: lightColors.ink,
     marginTop: 12,
   },
   feedbackInputMultiline: {
@@ -781,7 +758,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: lightColors.deepTeal,
   },
   feedbackPrimaryText: {
     fontFamily: fonts.bodyFamilyRegular,

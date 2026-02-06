@@ -14,9 +14,8 @@ import {
   Lora_400Regular,
   Lora_400Regular_Italic,
 } from "@expo-google-fonts/lora";
-import { lightColors, darkColors } from "../constants/theme";
+import { fallbackColors } from "../constants/theme";
 import { SettingsProvider } from "../hooks/useSettings";
-import { useColorScheme } from "react-native";
 import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import * as Updates from "expo-updates";
@@ -47,9 +46,8 @@ try {
 export default function RootLayout() {
   console.log("[STARTUP] RootLayout function called");
   
-  // Use system color scheme for loading screen (before SettingsProvider is available)
-  const systemColorScheme = useColorScheme();
-  const colors = systemColorScheme === "dark" ? darkColors : lightColors;
+  // Use fallback palette for loading screen (before SettingsProvider is available)
+  const colors = fallbackColors;
   
   let router;
   try {

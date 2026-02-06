@@ -7,7 +7,6 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../constants/theme";
 
 interface DismissibleToastProps {
   visible: boolean;

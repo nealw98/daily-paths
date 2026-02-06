@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Switch, Platform, Animated } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { fonts, lightColors } from "../constants/theme";
+import { fonts } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
 import { useSettings } from "../hooks/useSettings";
 import { updateNotificationWithThought } from "../utils/notificationSync";
@@ -129,8 +129,8 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
               <Switch
                 value={settings.dailyReminderEnabled}
                 onValueChange={handleReminderToggle}
-                trackColor={{ false: colors.mist, true: colors.ocean }}
-                thumbColor={settings.dailyReminderEnabled ? colors.deepTeal : colors.seafoam}
+                trackColor={{ false: colors.mist, true: colors.deepTeal }}
+                thumbColor={settings.dailyReminderEnabled ? colors.pearl : '#f4f3f4'}
               />
             </View>
 
@@ -226,7 +226,6 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContainer: {
-    backgroundColor: lightColors.pearl,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: "80%",
@@ -245,7 +244,6 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: fonts.headerFamilyItalic,
     fontSize: 24,
-    color: lightColors.deepTeal,
     flex: 1,
   },
   doneButton: {
@@ -257,7 +255,6 @@ const styles = StyleSheet.create({
   doneButtonText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-    color: lightColors.deepTeal,
   },
   content: {
     padding: 20,
@@ -283,7 +280,6 @@ const styles = StyleSheet.create({
   rowLabel: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-    color: lightColors.ink,
   },
   timeRow: {
     flexDirection: "row",
@@ -303,7 +299,6 @@ const styles = StyleSheet.create({
   timeValue: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-    color: lightColors.ink,
   },
   timeValueDisabled: {
     // No extra dimming; row opacity handles the disabled look
@@ -332,7 +327,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: lightColors.deepTeal,
   },
   timePickerButtonPrimaryText: {
     fontFamily: fonts.bodyFamilyRegular,

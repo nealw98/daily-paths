@@ -48,9 +48,7 @@ export function dateFromDayOfYear(dayOfYear: number, year: number): Date {
  */
 export function isLeapYear(year: number): boolean {
   return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
-}
-
-/**
+}/**
  * Returns the "scheduled" day_of_year for a given calendar date,
  * assuming the `readings.day_of_year` column is keyed as if EVERY
  * year were a leap year:
@@ -71,12 +69,8 @@ export function isLeapYear(year: number): boolean {
  */
 export function getScheduledDayOfYear(date: Date): number {
   const real = getDayOfYear(date);
-  const year = date.getFullYear();
-
-  if (isLeapYear(year) || real <= 59) {
+  const year = date.getFullYear();  if (isLeapYear(year) || real <= 59) {
     return real;
-  }
-
-  // Non‑leap year and after Feb 28 → shift by +1 (skip 60).
+  }  // Non‑leap year and after Feb 28 → shift by +1 (skip 60).
   return real + 1;
 }

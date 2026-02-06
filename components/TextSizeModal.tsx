@@ -1,10 +1,20 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Animated } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { fonts, lightColors } from "../constants/theme";
+import { fonts } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
-import { useSettings, TextSize, ColorScheme, getTextSizeMetrics } from "../hooks/useSettings";
+import { useSettings, TextSize } from "../hooks/useSettings";
 import { useAnalytics } from "../utils/analytics";
+
+/** All theme options shown in a single list */
+const THEME_OPTIONS: { id: string; displayName: string; icon?: string }[] = [
+  { id: "ocean-light", displayName: "Light", icon: "sunny" },
+  { id: "ocean-dark", displayName: "Dark", icon: "moon" },
+  { id: "system", displayName: "System", icon: "phone-portrait-outline" },
+  { id: "deep-sea", displayName: "Deep\nSea" },
+  { id: "burgundy-rose", displayName: "Rose\nGarden" },
+  { id: "twilight-fire", displayName: "Desert\nTwilight" },
+];
 
 const textSizeStops: TextSize[] = [
   "extraSmall",
@@ -24,14 +34,19 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
   onClose,
 }) => {
   const { colors } = useTheme();
-  const { settings, setTextSize, setColorScheme } = useSettings();
+  const { settings, setTextSize, setThemeId, setColorScheme } = useSettings();
   const { updateThemeMode } = useAnalytics();
   const slideAnim = React.useRef(new Animated.Value(0)).current;
 
-  // Handler for theme change - updates setting and tracks in PostHog
-  const handleThemeChange = (mode: ColorScheme) => {
-    setColorScheme(mode);
-    updateThemeMode(mode);
+  const handleThemeChange = (optionId: string) => {
+    if (optionId === "system") {
+      setColorScheme("system");
+      updateThemeMode("system");
+    } else {
+      setThemeId(optionId);
+      const isDark = optionId.includes("-dark") || optionId === "deep-sea";
+      updateThemeMode(isDark ? "dark" : "light");
+    }
   };
 
   React.useEffect(() => {
@@ -55,11 +70,6 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
     inputRange: [0, 1],
     outputRange: [600, 0],
   });
-
-  const typography = useMemo(
-    () => getTextSizeMetrics(settings.textSize),
-    [settings.textSize]
-  );
 
   const handleTextSizePress = async (size: TextSize) => {
     if (settings.textSize === size) return;
@@ -88,7 +98,7 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
       onRequestClose={onClose}
     >
       <TouchableOpacity
-        style={styles.backdrop}
+        style={[styles.backdrop, { backgroundColor: colors.backdrop }]}
         activeOpacity={1}
         onPress={onClose}
       >
@@ -99,8 +109,8 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
           ]}
           onStartShouldSetResponder={() => true}
         >
-          <View style={[styles.header, { borderBottomColor: colors.mist }]}>
-            <Text style={[styles.title, { color: colors.deepTeal }]}>Settings</Text>
+          <View style={[styles.header, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.title, { color: colors.deepTeal }]}>Appearance</Text>
             <TouchableOpacity onPress={onClose} style={styles.doneButton}>
               <Text style={[styles.doneButtonText, { color: colors.deepTeal }]}>Done</Text>
             </TouchableOpacity>
@@ -110,75 +120,45 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
           >
-            {/* Theme Section */}
+            {/* Theme section */}
             <Text style={[styles.sectionLabel, { color: colors.deepTeal }]}>Theme</Text>
             <View style={styles.themeOptions}>
-              <TouchableOpacity
-                style={[
-                  styles.themeOption,
-                  { borderColor: colors.mist },
-                  settings.colorScheme === "light" && [styles.themeOptionSelected, { backgroundColor: colors.deepTeal, borderColor: colors.deepTeal }],
-                ]}
-                onPress={() => handleThemeChange("light")}
-                activeOpacity={0.8}
-              >
-                <Ionicons 
-                  name="sunny" 
-                  size={20} 
-                  color={settings.colorScheme === "light" ? "#fff" : colors.deepTeal} 
-                />
-                <Text style={[
-                  styles.themeOptionText,
-                  { color: colors.deepTeal },
-                  settings.colorScheme === "light" && styles.themeOptionTextSelected,
-                ]}>
-                  Light
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.themeOption,
-                  { borderColor: colors.mist },
-                  settings.colorScheme === "dark" && [styles.themeOptionSelected, { backgroundColor: colors.deepTeal, borderColor: colors.deepTeal }],
-                ]}
-                onPress={() => handleThemeChange("dark")}
-                activeOpacity={0.8}
-              >
-                <Ionicons 
-                  name="moon" 
-                  size={20} 
-                  color={settings.colorScheme === "dark" ? "#fff" : colors.deepTeal} 
-                />
-                <Text style={[
-                  styles.themeOptionText,
-                  { color: colors.deepTeal },
-                  settings.colorScheme === "dark" && styles.themeOptionTextSelected,
-                ]}>
-                  Dark
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.themeOption,
-                  { borderColor: colors.mist },
-                  settings.colorScheme === "system" && [styles.themeOptionSelected, { backgroundColor: colors.deepTeal, borderColor: colors.deepTeal }],
-                ]}
-                onPress={() => handleThemeChange("system")}
-                activeOpacity={0.8}
-              >
-                <Ionicons 
-                  name="phone-portrait" 
-                  size={20}
-                  color={settings.colorScheme === "system" ? "#fff" : colors.deepTeal} 
-                />
-                <Text style={[
-                  styles.themeOptionText,
-                  { color: colors.deepTeal },
-                  settings.colorScheme === "system" && styles.themeOptionTextSelected,
-                ]}>
-                  System
-                </Text>
-              </TouchableOpacity>
+              {THEME_OPTIONS.map((option) => {
+                const isSelected =
+                  option.id === "system"
+                    ? settings.colorScheme === "system"
+                    : settings.themeId === option.id && settings.colorScheme !== "system";
+                return (
+                  <TouchableOpacity
+                    key={option.id}
+                    style={[
+                      styles.themeOption,
+                      { borderColor: colors.border },
+                      isSelected && [styles.themeOptionSelected, { backgroundColor: colors.deepTeal, borderColor: colors.deepTeal }],
+                    ]}
+                    onPress={() => handleThemeChange(option.id)}
+                    activeOpacity={0.8}
+                  >
+                    {option.icon && (
+                      <Ionicons
+                        name={option.icon as any}
+                        size={20}
+                        color={isSelected ? colors.textOnAccent : colors.deepTeal}
+                      />
+                    )}
+                    <Text
+                      style={[
+                        styles.themeOptionText,
+                        { color: colors.deepTeal },
+                        isSelected && [styles.themeOptionTextSelected, { color: colors.textOnAccent }],
+                      ]}
+                      numberOfLines={2}
+                    >
+                      {option.displayName}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
             {/* Text Size Section */}
@@ -218,7 +198,7 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
                       <View
                         style={[
                           styles.sliderStop,
-                          { borderColor: colors.mist, backgroundColor: colors.pearl },
+                          { borderColor: colors.border, backgroundColor: colors.pearl },
                           isActive && { borderColor: colors.seafoam, backgroundColor: colors.seafoam },
                           isSelected && { borderColor: colors.deepTeal, backgroundColor: colors.deepTeal },
                         ]}
@@ -244,21 +224,6 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
                 </Text>
               </TouchableOpacity>
             </View>
-
-            <View style={[styles.textPreviewContainer, { borderTopColor: colors.mist }]}>
-              <Text
-                style={[
-                  styles.textPreview,
-                  {
-                    fontSize: typography.bodyFontSize,
-                    lineHeight: typography.bodyLineHeight,
-                    color: colors.ink,
-                  },
-                ]}
-              >
-                Sample text size preview
-              </Text>
-            </View>
           </ScrollView>
         </Animated.View>
       </TouchableOpacity>
@@ -269,14 +234,12 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "flex-end",
   },
   modalContainer: {
-    backgroundColor: lightColors.pearl,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: "80%",
+    maxHeight: "70%",
     paddingBottom: 40,
   },
   header: {
@@ -286,12 +249,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
   },
   title: {
     fontFamily: fonts.headerFamilyItalic,
     fontSize: 28,
-    color: lightColors.deepTeal,
   },
   doneButton: {
     paddingHorizontal: 8,
@@ -302,7 +263,6 @@ const styles = StyleSheet.create({
   doneButtonText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-    color: lightColors.deepTeal,
   },
   content: {
     padding: 20,
@@ -311,7 +271,6 @@ const styles = StyleSheet.create({
   subtitle: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-    color: "#6b7280",
     marginBottom: 24,
     lineHeight: 22,
   },
@@ -322,8 +281,7 @@ const styles = StyleSheet.create({
   },
   sliderEdgeLabel: {
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 12,
-    color: lightColors.deepTeal,
+    fontSize: 15,
     fontWeight: "600",
   },
   sliderEdgeLabelDisabled: {
@@ -345,66 +303,50 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 5,
     borderWidth: 2,
-    borderColor: "#e5e7eb",
-    backgroundColor: "#ffffff",
   },
   sliderStopActive: {
-    borderColor: lightColors.seafoam,
-    backgroundColor: lightColors.seafoam,
   },
   sliderStopSelected: {
-    borderColor: lightColors.deepTeal,
-    backgroundColor: lightColors.deepTeal,
     transform: [{ scale: 1.1 }],
-  },
-  textPreviewContainer: {
-    marginTop: 32,
-    paddingTop: 24,
-    borderTopWidth: 1,
-    borderTopColor: "#f3f4f6",
-  },
-  textPreview: {
-    fontFamily: fonts.loraRegular,
-    color: "#4b5563",
   },
   sectionLabel: {
     fontFamily: fonts.headerFamilyItalic,
-    fontSize: 20,
-    color: lightColors.deepTeal,
+    fontSize: 24,
     marginBottom: 12,
   },
   sectionLabelSpacing: {
-    marginTop: 28,
+    marginTop: 40,
   },
   themeOptions: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 12,
+    marginBottom: 48,
   },
   themeOption: {
+    minWidth: 90,
     flex: 1,
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 16,
+    paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 12,
     backgroundColor: "transparent",
     borderWidth: 2,
-    borderColor: lightColors.mist,
-    gap: 6,
+    gap: 4,
+    minHeight: 70,
   },
   themeOptionSelected: {
-    backgroundColor: lightColors.deepTeal,
-    borderColor: lightColors.deepTeal,
   },
   themeOptionText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
-    color: lightColors.deepTeal,
     fontWeight: "600",
+    textAlign: "center",
   },
   themeOptionTextSelected: {
-    color: "#fff",
+    // color from colors.textOnAccent applied inline
   },
 });
 
