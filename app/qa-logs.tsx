@@ -14,7 +14,7 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Clipboard from "@react-native-clipboard/clipboard";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { fonts, lightColors } from "../constants/theme";
+import { fonts } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
 import { clearQaLogs, useQaLogs, qaLog } from "../utils/qaLog";
 import { resetRateShareTracking } from "../utils/rateShareTracking";
@@ -145,20 +145,20 @@ export default function QaLogsScreen() {
     <View
       style={[
         styles.container,
-        { paddingTop: insets.top || 16, paddingBottom: insets.bottom || 16 },
+        { backgroundColor: colors.pearl, paddingTop: insets.top || 16, paddingBottom: insets.bottom || 16 },
       ]}
     >
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: colors.mist }]}>
         <View style={styles.headerRow}>
-          <Text style={styles.title}>QA Diagnostics</Text>
+          <Text style={[styles.title, { color: colors.deepTeal }]}>QA Diagnostics</Text>
           <TouchableOpacity
             onPress={() => router.back()}
             activeOpacity={0.7}
           >
-            <Text style={styles.closeText}>Close</Text>
+            <Text style={[styles.closeText, { color: colors.deepTeal }]}>Close</Text>
           </TouchableOpacity>
         </View>
-        <Text style={styles.subtitle}>
+        <Text style={[styles.subtitle, { color: colors.ink }]}>
           Version {appVersion} (build {iosBuildNumber})
         </Text>
         <Text style={styles.meta}>
@@ -167,8 +167,8 @@ export default function QaLogsScreen() {
           {deviceId && `\nDevice ID: ${deviceId.slice(0, 8)}...`}
         </Text>
         
-        <View style={styles.developerRow}>
-          <Text style={styles.developerLabel}>Developer Mode (exclude from analytics)</Text>
+        <View style={[styles.developerRow, { borderColor: colors.mist }]}>
+          <Text style={[styles.developerLabel, { color: colors.ink }]}>Developer Mode (exclude from analytics)</Text>
           <Switch
             value={isDeveloper}
             onValueChange={async (value) => {
@@ -179,50 +179,50 @@ export default function QaLogsScreen() {
                 : 'Developer mode disabled. Your usage will be counted in analytics.'
               );
             }}
-            trackColor={{ false: lightColors.mist, true: lightColors.seafoam }}
-            thumbColor={isDeveloper ? lightColors.deepTeal : '#f4f3f4'}
+            trackColor={{ false: colors.mist, true: colors.deepTeal }}
+            thumbColor={isDeveloper ? colors.pearl : '#f4f3f4'}
           />
         </View>
 
         <View style={styles.actionsRow}>
           <TouchableOpacity
-            style={styles.secondaryButton}
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
             activeOpacity={0.8}
             onPress={handleCopyAll}
           >
-            <Text style={styles.secondaryButtonText}>Copy all</Text>
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Copy all</Text>
           </TouchableOpacity>
           {copyStatus && (
             <Text style={[styles.meta, { width: "100%" }]}>{copyStatus}</Text>
           )}
           <TouchableOpacity
-            style={styles.secondaryButton}
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
             activeOpacity={0.8}
             onPress={clearQaLogs}
           >
-            <Text style={styles.secondaryButtonText}>Clear logs</Text>
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Clear logs</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.secondaryButton}
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
             activeOpacity={0.8}
             onPress={handleResetDeviceId}
           >
-            <Text style={styles.secondaryButtonText}>Reset Device ID</Text>
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Reset Device ID</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.secondaryButton}
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
             activeOpacity={0.8}
             onPress={handleResetRateTracking}
           >
-            <Text style={styles.secondaryButtonText}>Reset Rate Tracking</Text>
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Reset Rate Tracking</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.secondaryButton}
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
             activeOpacity={0.8}
             onPress={handleManualUpdate}
             disabled={updating}
           >
-            <Text style={styles.secondaryButtonText}>
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
               {updating ? "Updating..." : "Check for update"}
             </Text>
           </TouchableOpacity>
@@ -236,7 +236,7 @@ export default function QaLogsScreen() {
         style={styles.logContainer}
         contentContainerStyle={styles.logContent}
       >
-        <Text style={[styles.sectionHeader, { marginTop: 12 }]}>QA Logs</Text>
+        <Text style={[styles.sectionHeader, { marginTop: 12, color: colors.deepTeal }]}>QA Logs</Text>
         {logs.length === 0 ? (
           <Text style={styles.emptyText}>No QA log entries yet.</Text>
         ) : (
@@ -246,7 +246,7 @@ export default function QaLogsScreen() {
                 [{new Date(entry.timestamp).toLocaleTimeString()}]{" "}
                 {entry.scope}
               </Text>
-              <Text style={styles.logMessage}>{entry.message}</Text>
+              <Text style={[styles.logMessage, { color: colors.ink }]}>{entry.message}</Text>
               {entry.details && (
                 <Text style={styles.logDetails}>{entry.details}</Text>
               )}
@@ -261,13 +261,11 @@ export default function QaLogsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: lightColors.pearl,
   },
   header: {
     paddingHorizontal: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: lightColors.mist,
   },
   headerRow: {
     flexDirection: "row",
@@ -277,18 +275,15 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: fonts.headerFamily,
     fontSize: 22,
-    color: lightColors.deepTeal,
   },
   closeText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
-    color: lightColors.deepTeal,
   },
   subtitle: {
     marginTop: 4,
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
-    color: lightColors.ink,
   },
   meta: {
     marginTop: 4,
@@ -306,12 +301,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: lightColors.mist,
   },
   developerLabel: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 13,
-    color: lightColors.ink,
     flex: 1,
     marginRight: 8,
   },
@@ -325,7 +318,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: lightColors.deepTeal,
   },
   primaryButtonText: {
     fontFamily: fonts.bodyFamilyRegular,
@@ -337,13 +329,11 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: lightColors.deepTeal,
     backgroundColor: "transparent",
   },
   secondaryButtonText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 12,
-    color: lightColors.deepTeal,
   },
   logContainer: {
     flex: 1,
@@ -375,7 +365,6 @@ const styles = StyleSheet.create({
   logMessage: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 13,
-    color: lightColors.ink,
     marginBottom: 2,
   },
   logDetails: {
@@ -386,7 +375,6 @@ const styles = StyleSheet.create({
   sectionHeader: {
     fontFamily: fonts.headerFamily,
     fontSize: 16,
-    color: lightColors.deepTeal,
     marginBottom: 8,
   },
 });

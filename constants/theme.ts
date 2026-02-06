@@ -142,6 +142,7 @@ const forestLightSemantic: SemanticPalette = {
   calendarMonthBackground: "#2D5A2D",
   calendarDayBackground: "rgba(255, 255, 255, 0.65)",
   calendarBorder: "rgba(255, 255, 255, 0.25)",
+  calendarDayText: "#2D5A2D", // Dark forest green on light background
 };
 
 const forestDarkSemantic: SemanticPalette = {
@@ -286,6 +287,10 @@ const cottonCandySemantic: SemanticPalette = {
   textOnAccent: "#FFFFFF",
   border: "#D6D2D2",             // Dust Grey
   backdrop: "rgba(0, 0, 0, 0.5)",
+  calendarMonthBackground: "#FE5D9F", // Rose Kiss
+  calendarDayBackground: "rgba(255, 255, 255, 0.65)",
+  calendarBorder: "rgba(255, 255, 255, 0.25)",
+  calendarDayText: "#FE5D9F", // Rose Kiss on light background
 };
 
 // ─── Twilight Sky (single palette: light dreamy blue-purple) ───────────────
@@ -307,6 +312,10 @@ const twilightSkySemantic: SemanticPalette = {
   textOnAccent: "#FFFFFF",
   border: "#C8E5F8",             // Soft blue border
   backdrop: "rgba(0, 0, 0, 0.5)",
+  calendarMonthBackground: "#7364D2", // Slate Blue
+  calendarDayBackground: "rgba(255, 255, 255, 0.65)",
+  calendarBorder: "rgba(255, 255, 255, 0.25)",
+  calendarDayText: "#5829A7", // Rebecca Purple on light background
 };
 
 // ─── All selectable color schemes ──────────────────────────────────────────
@@ -369,10 +378,9 @@ export function getScheme(schemeId: string): ColorSchemeDef | undefined {
   return schemeById.get(schemeId);
 }
 
-// Legacy exports (first scheme's palette) for backward compatibility
-export const lightColors = COLOR_SCHEMES[0].colors;
-export const darkColors = COLOR_SCHEMES[1].colors;
-export const colors = lightColors;
+// Fallback palette for use before SettingsProvider mounts (e.g. loading screen in _layout.tsx).
+// Components should use useTheme().colors instead of importing this directly.
+export const fallbackColors = COLOR_SCHEMES[0].colors;
 
 // ─── Fonts (for future per-theme overrides) ─────────────────────────────────
 export const fonts = {

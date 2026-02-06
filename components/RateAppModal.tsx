@@ -6,7 +6,7 @@ import {
   StyleSheet,
   Modal,
 } from 'react-native';
-import { fonts, lightColors } from '../constants/theme';
+import { fonts } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 import { useAnalytics } from '../utils/analytics';
 import { openAppStoreForRating, markRatePromptDismissed } from '../utils/rateShareTracking';
@@ -106,14 +106,12 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: fonts.headerFamilyItalic,
     fontSize: 26,
-    color: lightColors.deepTeal,
     marginBottom: 12,
     textAlign: 'center',
   },
   message: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 17,
-    color: lightColors.ink,
     lineHeight: 26,
     marginBottom: 28,
     textAlign: 'center',
@@ -128,15 +126,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: lightColors.mist,
   },
   dismissText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 17,
-    color: lightColors.ocean,
   },
   rateButton: {
-    backgroundColor: lightColors.deepTeal,
     paddingVertical: 14,
     paddingHorizontal: 28,
     borderRadius: 12,

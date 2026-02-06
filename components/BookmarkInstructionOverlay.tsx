@@ -1,7 +1,8 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { BlurView } from "expo-blur";
-import { fonts, lightColors } from "../constants/theme";
+import { fonts } from "../constants/theme";
+import { useTheme } from "../hooks/useTheme";
 
 interface BookmarkInstructionOverlayProps {
   visible: boolean;
@@ -77,7 +78,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   gotItButton: {
-    backgroundColor: lightColors.deepTeal,
     paddingVertical: 10,
     paddingHorizontal: 24,
     borderRadius: 12,

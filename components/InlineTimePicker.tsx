@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { fonts, lightColors } from "../constants/theme";
+import { fonts } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
 
 interface InlineTimePickerProps {
@@ -89,7 +89,7 @@ export const InlineTimePicker: React.FC<InlineTimePickerProps> = ({
             style={styles.chevronButton}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-up" size={16} color={lightColors.ocean} />
+            <Ionicons name="chevron-up" size={16} color={colors.ocean} />
           </TouchableOpacity>
           <Text style={styles.valueText}>{hourLabel}</Text>
           <TouchableOpacity
@@ -97,7 +97,7 @@ export const InlineTimePicker: React.FC<InlineTimePickerProps> = ({
             style={styles.chevronButton}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-down" size={16} color={lightColors.ocean} />
+            <Ionicons name="chevron-down" size={16} color={colors.ocean} />
           </TouchableOpacity>
         </View>
 
@@ -109,7 +109,7 @@ export const InlineTimePicker: React.FC<InlineTimePickerProps> = ({
             style={styles.chevronButton}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-up" size={16} color={lightColors.ocean} />
+            <Ionicons name="chevron-up" size={16} color={colors.ocean} />
           </TouchableOpacity>
           <Text style={styles.valueText}>{minuteLabel}</Text>
           <TouchableOpacity
@@ -117,7 +117,7 @@ export const InlineTimePicker: React.FC<InlineTimePickerProps> = ({
             style={styles.chevronButton}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-down" size={16} color={lightColors.ocean} />
+            <Ionicons name="chevron-down" size={16} color={colors.ocean} />
           </TouchableOpacity>
         </View>
 
@@ -195,13 +195,11 @@ const styles = StyleSheet.create({
   valueText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 18,
-    color: lightColors.deepTeal,
     marginVertical: 2,
   },
   separator: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 18,
-    color: lightColors.deepTeal,
     marginHorizontal: 2,
   },
   periodToggle: {
@@ -215,17 +213,13 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: lightColors.mist,
     backgroundColor: "#fff",
   },
   periodChipSelected: {
-    backgroundColor: lightColors.deepTeal,
-    borderColor: lightColors.deepTeal,
   },
   periodLabel: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
-    color: lightColors.deepTeal,
   },
   periodLabelSelected: {
     color: "#fff",
@@ -241,7 +235,6 @@ const styles = StyleSheet.create({
   doneLabel: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
-    color: lightColors.ocean,
   },
 });
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { fonts, lightColors } from '../constants/theme';
+import { fonts } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 import { useReadingFeedback } from '../hooks/useReadingFeedback';
 import { useSettings, getTextSizeMetrics } from '../hooks/useSettings';
@@ -206,14 +206,12 @@ const styles = StyleSheet.create({
     marginTop: 32,
     paddingVertical: 24,
     paddingHorizontal: 20,
-    backgroundColor: lightColors.pearl,
     alignItems: 'center',
     marginBottom: 82, // Space for action bar
   },
   question: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-    color: lightColors.ink,
     marginBottom: 16,
   },
   buttonRow: {
@@ -228,7 +226,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: lightColors.mist,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -236,8 +233,6 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   ratingButtonSelected: {
-    borderColor: lightColors.deepTeal,
-    backgroundColor: lightColors.deepTeal,
     borderWidth: 3,
     shadowOpacity: 0.15,
     shadowRadius: 6,
@@ -252,7 +247,6 @@ const styles = StyleSheet.create({
   thankYou: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
-    color: lightColors.deepTeal,
     textAlign: 'center',
   },
 });

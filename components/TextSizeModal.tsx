@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Animated } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { fonts, lightColors } from "../constants/theme";
+import { fonts } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
 import { useSettings, TextSize } from "../hooks/useSettings";
 import { useAnalytics } from "../utils/analytics";
@@ -234,11 +234,9 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: lightColors.backdrop,
     justifyContent: "flex-end",
   },
   modalContainer: {
-    backgroundColor: lightColors.pearl,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: "70%",
@@ -251,12 +249,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: lightColors.border,
   },
   title: {
     fontFamily: fonts.headerFamilyItalic,
     fontSize: 28,
-    color: lightColors.deepTeal,
   },
   doneButton: {
     paddingHorizontal: 8,
@@ -267,7 +263,6 @@ const styles = StyleSheet.create({
   doneButtonText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-    color: lightColors.deepTeal,
   },
   content: {
     padding: 20,
@@ -276,7 +271,6 @@ const styles = StyleSheet.create({
   subtitle: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-    color: lightColors.textSecondary,
     marginBottom: 24,
     lineHeight: 22,
   },
@@ -288,7 +282,6 @@ const styles = StyleSheet.create({
   sliderEdgeLabel: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 15,
-    color: lightColors.deepTeal,
     fontWeight: "600",
   },
   sliderEdgeLabelDisabled: {
@@ -310,22 +303,15 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 5,
     borderWidth: 2,
-    borderColor: lightColors.border,
-    backgroundColor: lightColors.modalBackground,
   },
   sliderStopActive: {
-    borderColor: lightColors.seafoam,
-    backgroundColor: lightColors.seafoam,
   },
   sliderStopSelected: {
-    borderColor: lightColors.deepTeal,
-    backgroundColor: lightColors.deepTeal,
     transform: [{ scale: 1.1 }],
   },
   sectionLabel: {
     fontFamily: fonts.headerFamilyItalic,
     fontSize: 24,
-    color: lightColors.deepTeal,
     marginBottom: 12,
   },
   sectionLabelSpacing: {
@@ -348,18 +334,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: "transparent",
     borderWidth: 2,
-    borderColor: lightColors.mist,
     gap: 4,
     minHeight: 70,
   },
   themeOptionSelected: {
-    backgroundColor: lightColors.deepTeal,
-    borderColor: lightColors.deepTeal,
   },
   themeOptionText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
-    color: lightColors.deepTeal,
     fontWeight: "600",
     textAlign: "center",
   },
