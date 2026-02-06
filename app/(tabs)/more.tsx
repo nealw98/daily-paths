@@ -1,19 +1,91 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
+import { useAuth } from "../../contexts/AuthContext";
+import { fonts } from "../../constants/theme";
+import { GratitudeScreen } from "../../components/gratitude/GratitudeScreen";
+import { PrayersScreen } from "../../components/prayers/PrayersScreen";
+import { SettingsModal } from "../../components/SettingsModal";
+import { SettingsContent } from "../../components/SettingsContent";
+import { PaywallModal } from "../../components/PaywallModal";
+import { ExportOptionsModal } from "../../components/ExportOptionsModal";
+
+type MoreView = "menu" | "gratitude" | "prayers" | "account";
 
 export default function MoreTab() {
   const { colors } = useTheme();
+  const { user, isAuthenticated, signOut } = useAuth();
+  const [view, setView] = useState<MoreView>("menu");
+  const [showSettings, setShowSettings] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [showExport, setShowExport] = useState(false);
+
+  // Sub-screens
+  if (view === "gratitude") {
+    return <GratitudeScreen onBack={() => setView("menu")} />;
+  }
+
+  if (view === "prayers") {
+    return (
+      <PrayersScreen
+        userId={user?.id || null}
+        onBack={() => setView("menu")}
+      />
+    );
+  }
 
   const menuItems = [
-    { id: "gratitude", title: "Gratitude List", icon: "heart", available: false },
-    { id: "prayers", title: "Prayers", icon: "book-outline", available: false },
-    { id: "export", title: "Export Journal", icon: "download-outline", available: false },
-    { id: "settings", title: "Settings", icon: "settings-outline", available: true },
-    { id: "subscription", title: "Manage Subscription", icon: "card-outline", available: false },
-    { id: "account", title: "Account", icon: "person-outline", available: false },
+    {
+      id: "gratitude",
+      title: "Gratitude List",
+      icon: "heart" as const,
+      available: true,
+      onPress: () => setView("gratitude"),
+    },
+    {
+      id: "prayers",
+      title: "Prayers",
+      icon: "book-outline" as const,
+      available: true,
+      onPress: () => setView("prayers"),
+    },
+    {
+      id: "export",
+      title: "Export Journal",
+      icon: "download-outline" as const,
+      available: isAuthenticated,
+      onPress: () => setShowExport(true),
+    },
+    {
+      id: "settings",
+      title: "Settings",
+      icon: "settings-outline" as const,
+      available: true,
+      onPress: () => setShowSettings(true),
+    },
+    {
+      id: "subscription",
+      title: "Manage Subscription",
+      icon: "card-outline" as const,
+      available: true,
+      onPress: () => setShowPaywall(true),
+    },
+    {
+      id: "account",
+      title: isAuthenticated ? "Account" : "Sign In",
+      icon: "person-outline" as const,
+      available: true,
+      onPress: () => {
+        if (isAuthenticated) {
+          setView("account");
+        } else {
+          // For now, show paywall which has sign-in context
+          setShowPaywall(true);
+        }
+      },
+    },
   ];
 
   return (
@@ -22,28 +94,86 @@ export default function MoreTab() {
         <Text style={[styles.headerTitle, { color: colors.text }]}>More</Text>
       </View>
       <ScrollView style={styles.content}>
+        {/* User info banner if authenticated */}
+        {isAuthenticated && user?.email && (
+          <View style={[styles.userBanner, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+            <View style={[styles.userAvatar, { backgroundColor: colors.accent }]}>
+              <Ionicons name="person" size={20} color={colors.textOnAccent} />
+            </View>
+            <View style={styles.userInfo}>
+              <Text style={[styles.userName, { color: colors.text }]}>
+                {user.email}
+              </Text>
+              <Text style={[styles.userStatus, { color: colors.textSecondary }]}>
+                Signed in
+              </Text>
+            </View>
+          </View>
+        )}
+
         {menuItems.map((item) => (
           <TouchableOpacity
             key={item.id}
             style={[styles.menuItem, { borderBottomColor: colors.border }]}
-            onPress={() => {}}
+            onPress={item.onPress}
             disabled={!item.available}
           >
             <View style={styles.menuItemLeft}>
-              <Ionicons name={item.icon as any} size={24} color={item.available ? colors.accent : colors.textSecondary} />
-              <Text style={[styles.menuItemText, { color: item.available ? colors.text : colors.textSecondary }]}>
+              <Ionicons
+                name={item.icon}
+                size={24}
+                color={item.available ? colors.accent : colors.textSecondary}
+              />
+              <Text
+                style={[
+                  styles.menuItemText,
+                  { color: item.available ? colors.text : colors.textSecondary },
+                ]}
+              >
                 {item.title}
               </Text>
             </View>
-            {!item.available && (
-              <Text style={[styles.comingSoon, { color: colors.textSecondary }]}>Coming soon</Text>
-            )}
-            {item.available && (
+            {item.available ? (
               <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+            ) : (
+              <Text style={[styles.comingSoon, { color: colors.textSecondary }]}>
+                Sign in required
+              </Text>
             )}
           </TouchableOpacity>
         ))}
+
+        {/* Sign Out button */}
+        {isAuthenticated && (
+          <TouchableOpacity
+            style={[styles.signOutButton, { borderColor: colors.border }]}
+            onPress={async () => {
+              try {
+                await signOut();
+              } catch {
+                // handled by context
+              }
+            }}
+          >
+            <Ionicons name="log-out-outline" size={20} color="#E53E3E" />
+            <Text style={styles.signOutText}>Sign Out</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
+
+      <SettingsModal visible={showSettings} onClose={() => setShowSettings(false)}>
+        <SettingsContent onOpenQaLogs={() => setShowSettings(false)} />
+      </SettingsModal>
+
+      <PaywallModal
+        visible={showPaywall}
+        onClose={() => setShowPaywall(false)}
+      />
+
+      <ExportOptionsModal
+        visible={showExport}
+        onClose={() => setShowExport(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -58,11 +188,42 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   headerTitle: {
+    fontFamily: fonts.headerFamily,
     fontSize: 28,
     fontWeight: "700",
   },
   content: {
     flex: 1,
+  },
+  userBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  userAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  userInfo: {
+    flex: 1,
+  },
+  userName: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  userStatus: {
+    fontFamily: fonts.bodyFamily,
+    fontSize: 13,
+    marginTop: 2,
   },
   menuItem: {
     flexDirection: "row",
@@ -78,11 +239,31 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   menuItemText: {
+    fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
     fontWeight: "500",
   },
   comingSoon: {
+    fontFamily: fonts.bodyFamily,
     fontSize: 12,
     fontStyle: "italic",
+  },
+  signOutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginHorizontal: 20,
+    marginTop: 24,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E53E3E40",
+  },
+  signOutText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 15,
+    color: "#E53E3E",
+    fontWeight: "500",
   },
 });

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,10 +6,15 @@ import {
   StyleSheet,
   Modal,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fonts } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 import { useAnalytics } from '../utils/analytics';
-import { openAppStoreForRating, markRatePromptDismissed } from '../utils/rateShareTracking';
+import {
+  openAppStoreForRating,
+  markRatePromptDismissed,
+  markHasRated,
+} from '../utils/rateShareTracking';
 import { qaLog } from '../utils/qaLog';
 
 type RateTrigger = 'bookmark' | 'positive_feedback' | 'settings_button';
@@ -27,12 +32,25 @@ export const RateAppModal: React.FC<RateAppModalProps> = ({
 }) => {
   const { colors } = useTheme();
   const { trackRateModalShown, trackRateModalDismissed, trackRateModalOpenedStore } = useAnalytics();
+  const [daysUsed, setDaysUsed] = useState(0);
 
-  // Track when modal is shown
+  // Load dynamic stats for personalized messaging
   useEffect(() => {
     if (visible) {
       qaLog("rate", `Rate modal shown - trigger: ${trigger}`);
       trackRateModalShown(trigger);
+
+      // Calculate days since first use
+      (async () => {
+        const firstUseStr = await AsyncStorage.getItem('first_use_date');
+        if (firstUseStr) {
+          const firstUse = new Date(firstUseStr);
+          const daysSince = Math.floor(
+            (Date.now() - firstUse.getTime()) / (1000 * 60 * 60 * 24)
+          );
+          setDaysUsed(Math.max(1, daysSince));
+        }
+      })();
     }
   }, [visible, trigger, trackRateModalShown]);
 
@@ -50,6 +68,23 @@ export const RateAppModal: React.FC<RateAppModalProps> = ({
     onClose();
   };
 
+  const handleAlreadyRated = async () => {
+    qaLog("rate", `User said already rated - trigger: ${trigger}`);
+    await markHasRated();
+    onClose();
+  };
+
+  // Dynamic message based on usage
+  const getMessage = () => {
+    if (daysUsed >= 30) {
+      return `You've been reading Daily Paths for ${daysUsed} days!\n\nIf it's been helpful in your Al-Anon journey, would you rate it?\n\nYour rating helps others discover Daily Paths.`;
+    }
+    if (daysUsed >= 7) {
+      return `You've read Daily Paths for ${daysUsed} days!\n\nIf it's been helpful in your recovery journey, would you rate it?\n\nYour rating helps others discover Daily Paths.`;
+    }
+    return "If Daily Paths has been helpful in your journey, would you rate it?\n\nYour rating helps others discover this app.";
+  };
+
   return (
     <Modal
       visible={visible}
@@ -62,22 +97,37 @@ export const RateAppModal: React.FC<RateAppModalProps> = ({
         activeOpacity={1}
         onPress={handleNotNow}
       >
-        <View 
-          style={styles.toast}
+        <View
+          style={[styles.toast, { backgroundColor: colors.modalBackground }]}
           onStartShouldSetResponder={() => true}
         >
-          <Text style={styles.title}>Enjoying Daily Paths?</Text>
-          <Text style={styles.message}>
-            Your rating helps others discover this app.
+          <Text style={[styles.title, { color: colors.text }]}>
+            Enjoying Daily Paths?
+          </Text>
+          <Text style={[styles.message, { color: colors.textSecondary }]}>
+            {getMessage()}
           </Text>
 
-          <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.dismissButton} onPress={handleNotNow}>
-              <Text style={styles.dismissText}>Not Now</Text>
+          <View style={styles.buttonColumn}>
+            <TouchableOpacity
+              style={[styles.rateButton, { backgroundColor: colors.buttonPrimary }]}
+              onPress={handleRateApp}
+            >
+              <Text style={[styles.rateButtonText, { color: colors.textOnAccent }]}>
+                Yes, I'll rate it
+              </Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.rateButton} onPress={handleRateApp}>
-              <Text style={styles.rateButtonText}>Rate App</Text>
+
+            <TouchableOpacity style={styles.secondaryButton} onPress={handleNotNow}>
+              <Text style={[styles.secondaryText, { color: colors.textSecondary }]}>
+                Maybe later
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.secondaryButton} onPress={handleAlreadyRated}>
+              <Text style={[styles.secondaryText, { color: colors.textSecondary }]}>
+                Already rated
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -94,7 +144,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   toast: {
-    backgroundColor: '#fff',
     borderRadius: 20,
     padding: 28,
     shadowColor: '#000',
@@ -106,40 +155,36 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: fonts.headerFamilyItalic,
     fontSize: 26,
-    marginBottom: 12,
+    marginBottom: 16,
     textAlign: 'center',
   },
   message: {
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 17,
-    lineHeight: 26,
-    marginBottom: 28,
+    fontSize: 16,
+    lineHeight: 24,
+    marginBottom: 24,
     textAlign: 'center',
   },
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 16,
-  },
-  dismissButton: {
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-  },
-  dismissText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 17,
+  buttonColumn: {
+    gap: 10,
   },
   rateButton: {
     paddingVertical: 14,
     paddingHorizontal: 28,
     borderRadius: 12,
+    alignItems: 'center',
   },
   rateButtonText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 17,
-    color: '#fff',
     fontWeight: '600',
+  },
+  secondaryButton: {
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  secondaryText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 15,
   },
 });

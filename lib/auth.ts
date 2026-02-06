@@ -1,0 +1,235 @@
+import { supabase } from "./supabase";
+import { qaLog } from "../utils/qaLog";
+import { getOrCreateDeviceId } from "../utils/deviceIdentity";
+import * as AppleAuthentication from "expo-apple-authentication";
+import { Platform } from "react-native";
+
+/**
+ * Authentication library for Daily Paths Plus.
+ * Supports email/password, Google, and Apple sign-in via Supabase Auth.
+ */
+
+// ─── Email/Password Auth ────────────────────────────────────────────────────
+
+export async function signInWithEmail(email: string, password: string) {
+  qaLog("auth", "Signing in with email", { email });
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+  if (error) {
+    qaLog("auth", "Email sign-in failed", { error: error.message });
+    throw error;
+  }
+  qaLog("auth", "Email sign-in successful", { userId: data.user?.id });
+  // Link device to user after successful sign-in
+  if (data.user) {
+    await linkDeviceToUser(data.user.id);
+  }
+  return data;
+}
+
+export async function signUpWithEmail(email: string, password: string) {
+  qaLog("auth", "Signing up with email", { email });
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+  });
+  if (error) {
+    qaLog("auth", "Email sign-up failed", { error: error.message });
+    throw error;
+  }
+  qaLog("auth", "Email sign-up successful", { userId: data.user?.id });
+  // Link device and create profile after successful sign-up
+  if (data.user) {
+    await linkDeviceToUser(data.user.id);
+    await createUserProfile(data.user.id);
+  }
+  return data;
+}
+
+// ─── Apple Sign In ──────────────────────────────────────────────────────────
+
+export async function signInWithApple() {
+  qaLog("auth", "Starting Apple sign-in");
+
+  if (Platform.OS !== "ios") {
+    throw new Error("Apple Sign In is only available on iOS");
+  }
+
+  try {
+    const credential = await AppleAuthentication.signInAsync({
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
+    });
+
+    if (!credential.identityToken) {
+      throw new Error("No identity token received from Apple");
+    }
+
+    const { data, error } = await supabase.auth.signInWithIdToken({
+      provider: "apple",
+      token: credential.identityToken,
+    });
+
+    if (error) {
+      qaLog("auth", "Apple sign-in Supabase error", { error: error.message });
+      throw error;
+    }
+
+    qaLog("auth", "Apple sign-in successful", { userId: data.user?.id });
+
+    if (data.user) {
+      await linkDeviceToUser(data.user.id);
+      await createUserProfile(data.user.id);
+    }
+
+    return data;
+  } catch (err: any) {
+    if (err.code === "ERR_REQUEST_CANCELED") {
+      qaLog("auth", "Apple sign-in cancelled by user");
+      return null; // User cancelled, not an error
+    }
+    qaLog("auth", "Apple sign-in failed", { error: String(err) });
+    throw err;
+  }
+}
+
+// ─── Google Sign In ─────────────────────────────────────────────────────────
+
+export async function signInWithGoogle() {
+  qaLog("auth", "Starting Google sign-in");
+
+  try {
+    // Google Sign-In uses OAuth flow via Supabase
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+    });
+
+    if (error) {
+      qaLog("auth", "Google sign-in failed", { error: error.message });
+      throw error;
+    }
+
+    qaLog("auth", "Google sign-in initiated", { url: data.url });
+    return data;
+  } catch (err) {
+    qaLog("auth", "Google sign-in exception", { error: String(err) });
+    throw err;
+  }
+}
+
+// ─── Sign Out ───────────────────────────────────────────────────────────────
+
+export async function signOut() {
+  qaLog("auth", "Signing out");
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    qaLog("auth", "Sign out failed", { error: error.message });
+    throw error;
+  }
+  qaLog("auth", "Sign out successful");
+}
+
+// ─── Session Management ─────────────────────────────────────────────────────
+
+export async function getSession() {
+  const { data, error } = await supabase.auth.getSession();
+  if (error) {
+    qaLog("auth", "Get session error", { error: error.message });
+    return null;
+  }
+  return data.session;
+}
+
+export async function getUser() {
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+  if (error) {
+    qaLog("auth", "Get user error", { error: error.message });
+    return null;
+  }
+  return user;
+}
+
+// ─── Device & Profile Linking ───────────────────────────────────────────────
+
+export async function linkDeviceToUser(userId: string) {
+  try {
+    const deviceId = await getOrCreateDeviceId();
+    qaLog("auth", "Linking device to user", { userId, deviceId });
+
+    const { error } = await supabase.from("user_profiles").upsert(
+      {
+        id: userId,
+        device_id: deviceId,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" }
+    );
+
+    if (error) {
+      qaLog("auth", "Error linking device to user", { error: error.message });
+    } else {
+      qaLog("auth", "Device linked to user successfully");
+    }
+  } catch (err) {
+    qaLog("auth", "Exception linking device to user", { error: String(err) });
+  }
+}
+
+async function createUserProfile(userId: string) {
+  try {
+    const deviceId = await getOrCreateDeviceId();
+
+    const { error } = await supabase.from("user_profiles").upsert(
+      {
+        id: userId,
+        device_id: deviceId,
+        legacy_user: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" }
+    );
+
+    if (error) {
+      qaLog("auth", "Error creating user profile", { error: error.message });
+    }
+  } catch (err) {
+    qaLog("auth", "Exception creating user profile", { error: String(err) });
+  }
+}
+
+// ─── Legacy User Check ─────────────────────────────────────────────────────
+
+export async function isLegacyUser(userId: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from("user_profiles")
+      .select("legacy_user")
+      .eq("id", userId)
+      .single();
+
+    if (error || !data) return false;
+    return data.legacy_user === true;
+  } catch {
+    return false;
+  }
+}
+
+// ─── Password Reset ─────────────────────────────────────────────────────────
+
+export async function resetPassword(email: string) {
+  qaLog("auth", "Requesting password reset", { email });
+  const { error } = await supabase.auth.resetPasswordForEmail(email);
+  if (error) {
+    qaLog("auth", "Password reset failed", { error: error.message });
+    throw error;
+  }
+  qaLog("auth", "Password reset email sent");
+}

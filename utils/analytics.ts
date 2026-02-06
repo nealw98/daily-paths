@@ -13,6 +13,18 @@ export const ANALYTICS_EVENTS = {
   RATE_MODAL_SHOWN: 'rate_modal_shown',
   RATE_MODAL_DISMISSED: 'rate_modal_dismissed',
   RATE_MODAL_OPENED_STORE: 'rate_modal_opened_store',
+  // Plus feature events
+  JOURNAL_ENTRY_CREATED: 'journal_entry_created',
+  JOURNAL_ENTRY_EDITED: 'journal_entry_edited',
+  JOURNAL_ENTRY_DELETED: 'journal_entry_deleted',
+  GRATITUDE_ENTRY_CREATED: 'gratitude_entry_created',
+  SUBSCRIPTION_STARTED: 'subscription_started',
+  SUBSCRIPTION_CANCELLED: 'subscription_cancelled',
+  TRIAL_STARTED: 'trial_started',
+  TRIAL_ENDED: 'trial_ended',
+  PAYWALL_SHOWN: 'paywall_shown',
+  PAYWALL_DISMISSED: 'paywall_dismissed',
+  LEGACY_USER_IDENTIFIED: 'legacy_user_identified',
 } as const;
 
 // Navigation method types

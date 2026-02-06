@@ -16,6 +16,7 @@ import {
 } from "@expo-google-fonts/lora";
 import { fallbackColors } from "../constants/theme";
 import { SettingsProvider } from "../hooks/useSettings";
+import { AuthProvider } from "../contexts/AuthContext";
 import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import * as Updates from "expo-updates";
@@ -208,6 +209,7 @@ export default function RootLayout() {
 
   return wrapWithPostHog(
     <SettingsProvider>
+      <AuthProvider>
         {updateReady && (
           <View style={styles.updateBanner}>
             <Text style={styles.updateText}>
@@ -241,7 +243,8 @@ export default function RootLayout() {
             contentStyle: { backgroundColor: colors.pearl },
           }}
         />
-      </SettingsProvider>
+      </AuthProvider>
+    </SettingsProvider>
   );
 }
 
