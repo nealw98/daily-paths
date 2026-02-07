@@ -16,6 +16,62 @@ import { useTheme } from "../../hooks/useTheme";
 import { fonts } from "../../constants/theme";
 import type { JournalEntry } from "../../hooks/useJournalEntries";
 
+/**
+ * Renders inline markdown: **bold**, *italic*, and _italic_ spans.
+ * Bold is used for inserted journal questions; italic for user emphasis.
+ */
+const renderJournalMarkdown = (
+  text: string,
+  boldStyle: any,
+  italicStyle: any
+) => {
+  const lines = text.split("\n");
+  const elements: React.ReactNode[] = [];
+
+  lines.forEach((line, lineIdx) => {
+    if (lineIdx > 0) {
+      elements.push("\n");
+    }
+
+    // Match **bold** first (greedy before single *), then *italic* or _italic_
+    const regex = /(\*\*([^*]+)\*\*|\*([^*]+)\*|_([^_]+)_)/g;
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    let key = 0;
+
+    while ((match = regex.exec(line)) !== null) {
+      if (match.index > lastIndex) {
+        elements.push(line.slice(lastIndex, match.index));
+      }
+
+      if (match[2] != null) {
+        // **bold**
+        elements.push(
+          <Text key={`b-${lineIdx}-${key++}`} style={boldStyle}>
+            {match[2]}
+          </Text>
+        );
+      } else {
+        // *italic* or _italic_
+        const italicText = match[3] ?? match[4];
+        elements.push(
+          <Text key={`i-${lineIdx}-${key++}`} style={italicStyle}>
+            {italicText}
+          </Text>
+        );
+      }
+
+      lastIndex = match.index + match[0]!.length;
+    }
+
+    if (lastIndex < line.length) {
+      elements.push(line.slice(lastIndex));
+    }
+  });
+
+  return elements;
+};
+
 interface JournalEntryDetailProps {
   entry: JournalEntry;
   onBack: () => void;
@@ -146,24 +202,46 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
           keyboardShouldPersistTaps="handled"
         >
           {isEditing ? (
-            <TextInput
-              style={[styles.editInput, { color: colors.text }]}
-              value={editContent}
-              onChangeText={setEditContent}
-              multiline
-              textAlignVertical="top"
-              autoFocus
-              autoCorrect
-              autoCapitalize="sentences"
-              scrollEnabled={false}
-            />
+            <View style={styles.editContainer}>
+              {/* Visible styled layer */}
+              <Text
+                style={[styles.contentText, { color: colors.text }]}
+                pointerEvents="none"
+              >
+                {editContent
+                  ? renderJournalMarkdown(
+                      editContent,
+                      { fontFamily: fonts.loraBold },
+                      { fontFamily: fonts.loraItalic }
+                    )
+                  : null}
+                {"\u200B"}
+              </Text>
+              {/* Invisible TextInput overlay */}
+              <TextInput
+                style={[styles.editInput, styles.editInputOverlay]}
+                value={editContent}
+                onChangeText={setEditContent}
+                multiline
+                textAlignVertical="top"
+                autoFocus
+                autoCorrect
+                autoCapitalize="sentences"
+                scrollEnabled={false}
+                selectionColor={colors.accent}
+              />
+            </View>
           ) : (
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => setIsEditing(true)}
             >
               <Text style={[styles.contentText, { color: colors.text }]}>
-                {entry.content}
+                {renderJournalMarkdown(
+                  entry.content,
+                  { fontFamily: fonts.loraBold },
+                  { fontFamily: fonts.loraItalic }
+                )}
               </Text>
               <Text style={[styles.tapHint, { color: colors.textSecondary }]}>
                 Tap to edit
@@ -312,11 +390,23 @@ const styles = StyleSheet.create({
     marginTop: 20,
     textAlign: "center",
   },
+  editContainer: {
+    position: "relative",
+    minHeight: 200,
+  },
   editInput: {
     fontFamily: fonts.loraRegular,
     fontSize: 18,
     lineHeight: 28,
     minHeight: 200,
+  },
+  editInputOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    color: "transparent",
   },
   bottomBar: {
     flexDirection: "row",

@@ -47,11 +47,15 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
       minute: "2-digit",
     });
 
-    // Truncate content to 3 lines (~120 chars)
+    // Strip markdown markers for clean preview, then truncate to ~120 chars
+    const cleaned = item.content
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .replace(/\*([^*]+)\*/g, "$1")
+      .replace(/_([^_]+)_/g, "$1");
     const preview =
-      item.content.length > 120
-        ? item.content.substring(0, 120).trim() + "..."
-        : item.content;
+      cleaned.length > 120
+        ? cleaned.substring(0, 120).trim() + "..."
+        : cleaned;
 
     return (
       <TouchableOpacity

@@ -13,6 +13,7 @@ import {
 import {
   Lora_400Regular,
   Lora_400Regular_Italic,
+  Lora_700Bold,
 } from "@expo-google-fonts/lora";
 import { fallbackColors } from "../constants/theme";
 import { SettingsProvider } from "../hooks/useSettings";
@@ -85,6 +86,7 @@ export default function RootLayout() {
       Inter_400Regular,
       Lora_400Regular,
       Lora_400Regular_Italic,
+      Lora_700Bold,
     });
     console.log("[STARTUP] useFonts called, fontsLoaded:", fontsLoaded);
   } catch (err) {

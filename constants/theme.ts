@@ -515,6 +515,7 @@ export const fonts = {
   bodyFamilyRegular: "Inter_400Regular",
   loraRegular: "Lora_400Regular",
   loraItalic: "Lora_400Regular_Italic",
+  loraBold: "Lora_700Bold",
 };
 
 export const layout = {

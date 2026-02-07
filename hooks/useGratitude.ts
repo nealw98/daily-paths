@@ -36,17 +36,30 @@ export function useGratitude(userId: string | null | undefined) {
     const fetchQuote = async () => {
       try {
         const dayOfYear = getDayOfYear(new Date());
-        const { data: quoteData } = await supabase
+        qaLog("gratitude", "Fetching quote", { dayOfYear });
+
+        const { data: quoteData, error } = await supabase
           .from("gratitude_quotes")
           .select("*")
           .eq("day_of_year", dayOfYear)
           .single();
 
+        if (error) {
+          qaLog("gratitude", "Quote fetch error", {
+            code: error.code,
+            message: error.message,
+            dayOfYear,
+          });
+        }
+
         if (mounted.current && quoteData) {
+          qaLog("gratitude", "Quote loaded", { dayOfYear, author: quoteData.author });
           setTodayQuote(quoteData);
+        } else if (mounted.current) {
+          qaLog("gratitude", "No quote data returned", { dayOfYear });
         }
       } catch (err) {
-        qaLog("gratitude", "Error fetching quote", { error: String(err) });
+        qaLog("gratitude", "Exception fetching quote", { error: String(err) });
       }
     };
 

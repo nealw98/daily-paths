@@ -123,6 +123,27 @@ export const GratitudeEntry: React.FC<GratitudeEntryProps> = ({
         </View>
       )}
 
+      {/* Save button */}
+      {hasItems && (
+        <TouchableOpacity
+          style={[
+            styles.saveButton,
+            { backgroundColor: colors.buttonPrimary },
+          ]}
+          onPress={() => onSave(items)}
+          disabled={saving}
+        >
+          <Ionicons
+            name="checkmark"
+            size={18}
+            color={colors.textOnAccent}
+          />
+          <Text style={[styles.saveButtonText, { color: colors.textOnAccent }]}>
+            {saving ? "Saving..." : "Save"}
+          </Text>
+        </TouchableOpacity>
+      )}
+
       {/* Footer note */}
       <Text style={[styles.footerNote, { color: colors.textSecondary }]}>
         Your gratitude lists are saved to your account and synced across devices.
@@ -181,6 +202,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     flex: 1,
     marginRight: 12,
+  },
+  saveButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginTop: 16,
+  },
+  saveButtonText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 16,
+    fontWeight: "600",
   },
   footerNote: {
     fontFamily: fonts.bodyFamily,

@@ -17,6 +17,70 @@ import { useTheme } from "../../hooks/useTheme";
 import { fonts } from "../../constants/theme";
 import { JournalQuestions } from "./JournalQuestions";
 
+/**
+ * Renders inline markdown for the editor overlay:
+ * **bold** and *italic* / _italic_
+ */
+const renderEditorMarkdown = (
+  text: string,
+  baseColor: string,
+  boldStyle: any,
+  italicStyle: any
+) => {
+  if (!text) return null;
+
+  const lines = text.split("\n");
+  const elements: React.ReactNode[] = [];
+
+  lines.forEach((line, lineIdx) => {
+    if (lineIdx > 0) {
+      elements.push("\n");
+    }
+
+    const regex = /(\*\*([^*]+)\*\*|\*([^*]+)\*|_([^_]+)_)/g;
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    let key = 0;
+
+    while ((match = regex.exec(line)) !== null) {
+      if (match.index > lastIndex) {
+        elements.push(
+          <Text key={`t-${lineIdx}-${key++}`} style={{ color: baseColor }}>
+            {line.slice(lastIndex, match.index)}
+          </Text>
+        );
+      }
+
+      if (match[2] != null) {
+        elements.push(
+          <Text key={`b-${lineIdx}-${key++}`} style={boldStyle}>
+            {match[2]}
+          </Text>
+        );
+      } else {
+        const italicText = match[3] ?? match[4];
+        elements.push(
+          <Text key={`i-${lineIdx}-${key++}`} style={italicStyle}>
+            {italicText}
+          </Text>
+        );
+      }
+
+      lastIndex = match.index + match[0]!.length;
+    }
+
+    if (lastIndex < line.length) {
+      elements.push(
+        <Text key={`t-${lineIdx}-${key++}`} style={{ color: baseColor }}>
+          {line.slice(lastIndex)}
+        </Text>
+      );
+    }
+  });
+
+  return elements;
+};
+
 interface JournalEntryEditorProps {
   onSave: (content: string) => Promise<void>;
   onCancel: () => void;
@@ -79,7 +143,8 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
 
   const handleSelectQuestion = (question: string) => {
     const prefix = content.length > 0 && !content.endsWith("\n") ? "\n\n" : "";
-    setContent(content + prefix + question + "\n");
+    // Wrap in bold markers so questions display differently from user writing
+    setContent(content + prefix + `**${question}**` + "\n");
     // Dismiss keyboard briefly then refocus for better UX
     Keyboard.dismiss();
     setTimeout(() => inputRef.current?.focus(), 200);
@@ -120,24 +185,40 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
         >
-          <TextInput
-            ref={inputRef}
-            style={[
-              styles.textInput,
-              {
-                color: colors.text,
-              },
-            ]}
-            placeholder="Write freely..."
-            placeholderTextColor={colors.textSecondary + "80"}
-            value={content}
-            onChangeText={setContent}
-            multiline
-            textAlignVertical="top"
-            autoCorrect
-            autoCapitalize="sentences"
-            scrollEnabled={false}
-          />
+          <View style={styles.editorContainer}>
+            {/* Visible styled layer (renders markdown) */}
+            <Text
+              style={[styles.renderedText, { color: colors.text }]}
+              pointerEvents="none"
+            >
+              {content
+                ? renderEditorMarkdown(
+                    content,
+                    colors.text,
+                    { fontFamily: fonts.loraBold, color: colors.text },
+                    { fontFamily: fonts.loraItalic, color: colors.text }
+                  )
+                : null}
+              {/* Invisible trailing character to match TextInput height */}
+              {"\u200B"}
+            </Text>
+
+            {/* Invisible TextInput on top for actual editing */}
+            <TextInput
+              ref={inputRef}
+              style={[styles.textInput, styles.textInputOverlay]}
+              placeholder="Write freely..."
+              placeholderTextColor={colors.textSecondary + "80"}
+              value={content}
+              onChangeText={setContent}
+              multiline
+              textAlignVertical="top"
+              autoCorrect
+              autoCapitalize="sentences"
+              scrollEnabled={false}
+              selectionColor={colors.accent}
+            />
+          </View>
 
           {/* Questions accordion - only in new entry mode */}
           {!isEditing && (
@@ -216,6 +297,17 @@ const styles = StyleSheet.create({
   editorScroll: {
     flex: 1,
   },
+  editorContainer: {
+    position: "relative",
+    minHeight: 200,
+  },
+  renderedText: {
+    fontFamily: fonts.loraRegular,
+    fontSize: 18,
+    lineHeight: 28,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
   textInput: {
     fontFamily: fonts.loraRegular,
     fontSize: 18,
@@ -223,6 +315,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     minHeight: 200,
+  },
+  textInputOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    color: "transparent",
   },
   questionsWrapper: {
     paddingHorizontal: 20,
