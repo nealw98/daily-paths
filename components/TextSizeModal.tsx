@@ -50,11 +50,6 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
   const slideAnim = React.useRef(new Animated.Value(0)).current;
   const [showExtended, setShowExtended] = React.useState(false);
 
-  // If current theme is an extended one, auto-show extended menu
-  const isExtendedThemeActive = EXTENDED_THEME_OPTIONS.some(
-    (opt) => opt.id === settings.themeId && settings.colorScheme !== "system"
-  );
-
   const handleThemeChange = (optionId: string) => {
     if (optionId === "system") {
       setColorScheme("system");
@@ -82,9 +77,9 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
     }
   }, [visible]);
 
-  // Reset extended menu when modal closes (unless user has an extended theme active)
+  // Reset extended menu when modal closes
   React.useEffect(() => {
-    if (!visible && !isExtendedThemeActive) {
+    if (!visible) {
       setShowExtended(false);
     }
   }, [visible]);
@@ -113,7 +108,7 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
     }
   };
 
-  const shouldShowExtended = showExtended || isExtendedThemeActive;
+  const shouldShowExtended = showExtended;
 
   return (
     <Modal
