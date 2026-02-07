@@ -371,8 +371,8 @@ const champagneSemantic: SemanticPalette = {
 // ─── Peach Blossom (soft peach-pink pastels — #FFE8DB / #FAF7F3 base) ────
 // Rose Clay #9E5A5A, Dusty Rose #B87878, Soft Peach #EDBAAC, Blush Pink #FFE8DB, Petal #FAF7F3, Near White #FEFCFA
 const peachBlossomSemantic: SemanticPalette = {
-  heroGradientStart: "#FFE8DB",  // Blush Pink (soft peach pastel)
-  heroGradientEnd: "#FAF7F3",   // Petal (barely pink, airy)
+  heroGradientStart: "#F5C4B0",  // Warm peach-pink (richer, more presence)
+  heroGradientEnd: "#FFE0D2",   // Soft peach-pink (still pastel, subtle shift)
   background: "#FEFCFA",         // Near White (whisper of warmth)
   backgroundSecondary: "#FAF7F3", // Petal
   text: "#5C3030",               // Deep rose (warm, readable on light)
