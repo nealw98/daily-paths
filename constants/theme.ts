@@ -318,6 +318,31 @@ const twilightSkySemantic: SemanticPalette = {
   calendarDayText: "#5829A7", // Rebecca Purple on light background
 };
 
+// ─── Soft Mauve (warm dusty mauve/muted plum — nurturing and safe) ────────
+// Dark Plum #5C3D4F, Dusty Mauve #8B6F7E, Muted Rose #B8A0AB, Lavender Mist #D8C8D0, Warm Cream #FAF6F3
+const softMauveSemantic: SemanticPalette = {
+  heroGradientStart: "#5C3D4F",  // Dark Plum (rich, grounding)
+  heroGradientEnd: "#8B6F7E",   // Dusty Mauve (warm, soft landing)
+  background: "#FAF6F3",         // Warm Cream (gentle, not stark)
+  backgroundSecondary: "#F0E8EC", // Very light mauve tint
+  text: "#4A3845",               // Soft dark plum (readable but gentle)
+  textSecondary: "#7A6370",      // Muted plum (softer than accent)
+  accent: "#8B6F7E",             // Dusty Mauve (warm, understated)
+  highlight: "#B8A0AB",          // Muted Rose (gentle highlight)
+  modalBackground: "#FAF6F3",   // Warm Cream
+  modalBorder: "#D8C8D0",       // Lavender Mist
+  cardBackground: "#F0E8EC",    // Very light mauve
+  buttonPrimary: "#6B4F60",     // Between dark plum and dusty mauve (strong but warm)
+  buttonSecondary: "#B8A0AB",   // Muted Rose
+  textOnAccent: "#FAF6F3",      // Warm Cream on buttons
+  border: "#D8C8D0",             // Lavender Mist
+  backdrop: "rgba(0, 0, 0, 0.5)",
+  calendarMonthBackground: "#5C3D4F", // Dark Plum
+  calendarDayBackground: "rgba(255, 255, 255, 0.65)",
+  calendarBorder: "rgba(255, 255, 255, 0.25)",
+  calendarDayText: "#5C3D4F", // Dark plum on light background
+};
+
 // ─── All selectable color schemes ──────────────────────────────────────────
 // Ocean is the default palette: "Light" and "Dark" (no named palette in the UI).
 // Other entries (Deep Sea, Cotton Candy, etc.) are named color palettes (single theme each).
@@ -363,6 +388,12 @@ export const COLOR_SCHEMES: ColorSchemeDef[] = [
     name: "Desert Twilight",
     dark: false,
     colors: buildPalette(twilightFireSemantic),
+  },
+  {
+    id: "soft-mauve",
+    name: "Soft Mauve",
+    dark: false,
+    colors: buildPalette(softMauveSemantic),
   },
 ];
 
