@@ -343,29 +343,29 @@ const softMauveSemantic: SemanticPalette = {
   calendarDayText: "#4A2040", // Deep berry on light background
 };
 
-// ─── Coffee Break (dark: warm gold accents on rich espresso base) ────────
-// Espresso #2A2118, Dark Roast #3D3128, Warm Cocoa #524538, Toasted Almond #8A7355, Pale Gold #C8B48A, Champagne #E8D9B8
+// ─── Coffee Break (dark: cream accents on deep coffee base) ─────────────
+// Black Coffee #1A1210, Dark Brew #2C2220, Mocha #4A3830, Latte #A88E78, Cream #E8DDD0, Milk Foam #F5F0E8
 const champagneSemantic: SemanticPalette = {
-  heroGradientStart: "#3D3128",  // Dark Roast (lighter than bg, visible separation)
-  heroGradientEnd: "#6B5A42",   // Warm Toffee (visible gradient, like Deep Sea's spread)
-  background: "#2A2118",         // Espresso
-  backgroundSecondary: "#3D3128", // Dark Roast
-  text: "#E8D9B8",               // Champagne (warm light on dark — high contrast)
-  textSecondary: "#C8B48A",      // Pale Gold (readable on dark)
-  accent: "#C8B48A",             // Pale Gold
-  highlight: "#8A7355",          // Toasted Almond (muted glow)
-  modalBackground: "#3D3128",   // Dark Roast
-  modalBorder: "#524538",       // Warm Cocoa
-  cardBackground: "#3D3128",    // Dark Roast
-  buttonPrimary: "#C8B48A",     // Pale Gold (pops on dark)
-  buttonSecondary: "#8A7355",   // Toasted Almond
-  textOnAccent: "#E8D9B8",      // Champagne — matches main text, warm on dark header and gold buttons
-  border: "#524538",             // Warm Cocoa
+  heroGradientStart: "#2C2220",  // Dark Brew (rich coffee)
+  heroGradientEnd: "#4A3830",   // Mocha (warm, visible shift)
+  background: "#1A1210",         // Black Coffee (deep, clean dark)
+  backgroundSecondary: "#2C2220", // Dark Brew
+  text: "#F5F0E8",               // Milk Foam (crisp, warm white)
+  textSecondary: "#A88E78",      // Latte (warm, readable on dark)
+  accent: "#A88E78",             // Latte
+  highlight: "#4A3830",          // Mocha (muted glow)
+  modalBackground: "#2C2220",   // Dark Brew
+  modalBorder: "#4A3830",       // Mocha
+  cardBackground: "#2C2220",    // Dark Brew
+  buttonPrimary: "#A88E78",     // Latte (pops on dark)
+  buttonSecondary: "#4A3830",   // Mocha
+  textOnAccent: "#F5F0E8",      // Milk Foam on header and buttons
+  border: "#4A3830",             // Mocha
   backdrop: "rgba(0, 0, 0, 0.6)",
-  calendarMonthBackground: "#524538", // Warm Cocoa
-  calendarDayBackground: "#3D3128", // Dark Roast
-  calendarBorder: "#524538",     // Warm Cocoa
-  calendarDayText: "#E8D9B8", // Champagne on dark
+  calendarMonthBackground: "#4A3830", // Mocha
+  calendarDayBackground: "#2C2220", // Dark Brew
+  calendarBorder: "#4A3830",     // Mocha
+  calendarDayText: "#F5F0E8", // Milk Foam on dark
 };
 
 // ─── Peach Blossom (soft peach-pink pastels — #FFE8DB / #FAF7F3 base) ────

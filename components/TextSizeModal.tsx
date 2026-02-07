@@ -6,11 +6,15 @@ import { useTheme } from "../hooks/useTheme";
 import { useSettings, TextSize } from "../hooks/useSettings";
 import { useAnalytics } from "../utils/analytics";
 
-/** All theme options shown in a single list */
-const THEME_OPTIONS: { id: string; displayName: string; icon?: string }[] = [
+/** Default theme options (visible to all users) */
+const DEFAULT_THEME_OPTIONS: { id: string; displayName: string; icon?: string }[] = [
   { id: "ocean-light", displayName: "Light", icon: "sunny" },
   { id: "ocean-dark", displayName: "Dark", icon: "moon" },
   { id: "system", displayName: "System", icon: "phone-portrait-outline" },
+];
+
+/** Extended color themes (hidden behind long-press) */
+const EXTENDED_THEME_OPTIONS: { id: string; displayName: string }[] = [
   { id: "deep-sea", displayName: "Deep\nSea" },
   { id: "burgundy-rose", displayName: "Rose\nGarden" },
   { id: "twilight-fire", displayName: "Desert\nTwilight" },
@@ -19,6 +23,9 @@ const THEME_OPTIONS: { id: string; displayName: string; icon?: string }[] = [
   { id: "peach-blossom", displayName: "Peach\nBlossom" },
   { id: "morning-light", displayName: "Morning\nLight" },
 ];
+
+/** IDs of dark themes for analytics */
+const DARK_THEME_IDS = new Set(["ocean-dark", "deep-sea", "champagne"]);
 
 const textSizeStops: TextSize[] = [
   "extraSmall",
@@ -41,6 +48,12 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
   const { settings, setTextSize, setThemeId, setColorScheme } = useSettings();
   const { updateThemeMode } = useAnalytics();
   const slideAnim = React.useRef(new Animated.Value(0)).current;
+  const [showExtended, setShowExtended] = React.useState(false);
+
+  // If current theme is an extended one, auto-show extended menu
+  const isExtendedThemeActive = EXTENDED_THEME_OPTIONS.some(
+    (opt) => opt.id === settings.themeId && settings.colorScheme !== "system"
+  );
 
   const handleThemeChange = (optionId: string) => {
     if (optionId === "system") {
@@ -48,8 +61,7 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
       updateThemeMode("system");
     } else {
       setThemeId(optionId);
-      const isDark = optionId.includes("-dark") || optionId === "deep-sea";
-      updateThemeMode(isDark ? "dark" : "light");
+      updateThemeMode(DARK_THEME_IDS.has(optionId) ? "dark" : "light");
     }
   };
 
@@ -67,6 +79,13 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
         duration: 200,
         useNativeDriver: true,
       }).start();
+    }
+  }, [visible]);
+
+  // Reset extended menu when modal closes (unless user has an extended theme active)
+  React.useEffect(() => {
+    if (!visible && !isExtendedThemeActive) {
+      setShowExtended(false);
     }
   }, [visible]);
 
@@ -93,6 +112,8 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
       await setTextSize(textSizeStops[currentIndex + 1]);
     }
   };
+
+  const shouldShowExtended = showExtended || isExtendedThemeActive;
 
   return (
     <Modal
@@ -124,10 +145,18 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
           >
-            {/* Theme section */}
-            <Text style={[styles.sectionLabel, { color: colors.deepTeal }]}>Theme</Text>
+            {/* Theme section — long-press label to reveal extended themes */}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onLongPress={() => setShowExtended(true)}
+              delayLongPress={600}
+            >
+              <Text style={[styles.sectionLabel, { color: colors.deepTeal }]}>Theme</Text>
+            </TouchableOpacity>
+
+            {/* Default theme options (always visible) */}
             <View style={styles.themeOptions}>
-              {THEME_OPTIONS.map((option) => {
+              {DEFAULT_THEME_OPTIONS.map((option) => {
                 const isSelected =
                   option.id === "system"
                     ? settings.colorScheme === "system"
@@ -164,6 +193,42 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
                 );
               })}
             </View>
+
+            {/* Extended color themes (hidden until long-press on "Theme") */}
+            {shouldShowExtended && (
+              <>
+                <Text style={[styles.sectionLabel, { color: colors.deepTeal, marginTop: -36 }]}>Colors</Text>
+                <View style={styles.themeOptions}>
+                  {EXTENDED_THEME_OPTIONS.map((option) => {
+                    const isSelected =
+                      settings.themeId === option.id && settings.colorScheme !== "system";
+                    return (
+                      <TouchableOpacity
+                        key={option.id}
+                        style={[
+                          styles.themeOption,
+                          { borderColor: colors.border },
+                          isSelected && [styles.themeOptionSelected, { backgroundColor: colors.deepTeal, borderColor: colors.deepTeal }],
+                        ]}
+                        onPress={() => handleThemeChange(option.id)}
+                        activeOpacity={0.8}
+                      >
+                        <Text
+                          style={[
+                            styles.themeOptionText,
+                            { color: colors.deepTeal },
+                            isSelected && [styles.themeOptionTextSelected, { color: colors.textOnAccent }],
+                          ]}
+                          numberOfLines={2}
+                        >
+                          {option.displayName}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </>
+            )}
 
             {/* Text Size Section */}
             <Text style={[styles.sectionLabel, styles.sectionLabelSpacing, { color: colors.deepTeal }]}>Text Size</Text>
@@ -353,4 +418,3 @@ const styles = StyleSheet.create({
     // color from colors.textOnAccent applied inline
   },
 });
-
