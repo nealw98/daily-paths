@@ -146,7 +146,7 @@ export default function MoreTab() {
         {/* Sign Out button */}
         {isAuthenticated && (
           <TouchableOpacity
-            style={[styles.signOutButton, { borderColor: colors.border }]}
+            style={[styles.signOutButton, { borderColor: colors.danger + "40" }]}
             onPress={async () => {
               try {
                 await signOut();
@@ -155,8 +155,8 @@ export default function MoreTab() {
               }
             }}
           >
-            <Ionicons name="log-out-outline" size={20} color="#E53E3E" />
-            <Text style={styles.signOutText}>Sign Out</Text>
+            <Ionicons name="log-out-outline" size={20} color={colors.danger} />
+            <Text style={[styles.signOutText, { color: colors.danger }]}>Sign Out</Text>
           </TouchableOpacity>
         )}
       </ScrollView>
@@ -258,12 +258,10 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E53E3E40",
   },
   signOutText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 15,
-    color: "#E53E3E",
     fontWeight: "500",
   },
 });

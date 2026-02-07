@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { fonts } from "../../constants/theme";
 import { useTheme } from "../../hooks/useTheme";
 
 export default function StepsTab() {
@@ -33,6 +34,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   headerTitle: {
+    fontFamily: fonts.headerFamily,
     fontSize: 28,
     fontWeight: "700",
   },
@@ -43,12 +45,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   placeholderText: {
+    fontFamily: fonts.bodyFamilyRegular,
     fontSize: 18,
     fontWeight: "600",
     marginBottom: 12,
     textAlign: "center",
   },
   placeholderSubtext: {
+    fontFamily: fonts.bodyFamily,
     fontSize: 14,
     textAlign: "center",
     opacity: 0.7,

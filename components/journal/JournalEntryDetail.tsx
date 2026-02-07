@@ -184,7 +184,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
           </TouchableOpacity>
 
           <TouchableOpacity onPress={handleDelete} style={styles.deleteButton}>
-            <Ionicons name="trash-outline" size={22} color="#E53E3E" />
+            <Ionicons name="trash-outline" size={22} color={colors.danger} />
           </TouchableOpacity>
         </View>
 

@@ -492,7 +492,7 @@ export const SettingsContent: React.FC<{
                   value={settings.dailyReminderEnabled}
                   onValueChange={handleReminderToggle}
                   trackColor={{ false: colors.mist, true: colors.deepTeal }}
-                  thumbColor={settings.dailyReminderEnabled ? colors.pearl : "#f4f3f4"}
+                  thumbColor={settings.dailyReminderEnabled ? colors.pearl : colors.mist}
                 />
               </View>
 
@@ -560,7 +560,7 @@ export const SettingsContent: React.FC<{
                         await updateNotificationWithThought();
                       }}
                     >
-                      <Text style={styles.timePickerButtonPrimaryText}>Set time</Text>
+                      <Text style={[styles.timePickerButtonPrimaryText, { color: colors.textOnAccent }]}>Set time</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -627,28 +627,28 @@ export const SettingsContent: React.FC<{
           style={{ flex: 1 }}
         >
           <TouchableOpacity
-            style={styles.modalBackdrop}
+            style={[styles.modalBackdrop, { backgroundColor: colors.backdrop }]}
             activeOpacity={1}
             onPress={() => setShowFeedbackModal(false)}
           >
             <View
-              style={styles.feedbackModal}
+              style={[styles.feedbackModal, { backgroundColor: colors.pearl }]}
               onStartShouldSetResponder={() => true}
             >
-              <Text style={styles.feedbackTitle}>We'd love your feedback</Text>
+              <Text style={[styles.feedbackTitle, { color: colors.deepTeal }]}>We'd love your feedback</Text>
               <TextInput
-                style={[styles.feedbackInput, styles.feedbackInputMultiline]}
+                style={[styles.feedbackInput, styles.feedbackInputMultiline, { borderColor: colors.mist, color: colors.ink }]}
                 placeholder="Share your thoughts or suggestions..."
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor={colors.ocean}
                 multiline
                 numberOfLines={5}
                 value={feedbackText}
                 onChangeText={setFeedbackText}
               />
               <TextInput
-                style={styles.feedbackInput}
+                style={[styles.feedbackInput, { borderColor: colors.mist, color: colors.ink }]}
                 placeholder="Optional: your email if you'd like a reply"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor={colors.ocean}
                 value={feedbackContact}
                 onChangeText={setFeedbackContact}
                 keyboardType="email-address"
@@ -657,22 +657,23 @@ export const SettingsContent: React.FC<{
               />
               <View style={styles.feedbackActions}>
                 <TouchableOpacity
-                  style={styles.feedbackSecondary}
+                  style={[styles.feedbackSecondary, { backgroundColor: colors.mist }]}
                   onPress={() => setShowFeedbackModal(false)}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.feedbackSecondaryText}>Cancel</Text>
+                  <Text style={[styles.feedbackSecondaryText, { color: colors.ink }]}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
                     styles.feedbackPrimary,
+                    { backgroundColor: colors.deepTeal },
                     !feedbackText.trim() && { opacity: 0.5 },
                   ]}
                   disabled={!feedbackText.trim() || submittingFeedback}
                   onPress={handleSubmitFeedback}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.feedbackPrimaryText}>
+                  <Text style={[styles.feedbackPrimaryText, { color: colors.textOnAccent }]}>
                     {submittingFeedback ? "Sending..." : "Submit"}
                   </Text>
                 </TouchableOpacity>
@@ -706,11 +707,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   sectionCard: {
-    backgroundColor: "#fff",
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -724,7 +723,6 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     gap: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
   },
   sectionHeaderText: {
     flex: 1,
@@ -813,8 +811,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: "#e5e7eb",
-    backgroundColor: "#fff",
     marginHorizontal: 4,
     marginVertical: 4,
     minWidth: "45%",
@@ -824,16 +820,13 @@ const styles = StyleSheet.create({
   chipLabel: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 15,
-    color: "#374151",
   },
   chipLabelSelected: {
-    color: "#fff",
   },
   chipDescription: {
     display: "none",
   },
   chipDescriptionSelected: {
-    color: "#E8F3F3",
   },
   primaryButton: {
     marginTop: 16,
@@ -844,7 +837,6 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-    color: "#fff",
     fontWeight: "600",
   },
   sliderRow: {
@@ -876,8 +868,6 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 5,
     borderWidth: 2,
-    borderColor: "#e5e7eb",
-    backgroundColor: "#ffffff",
   },
   sliderStopActive: {
   },
@@ -888,11 +878,9 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: "#f3f4f6",
   },
   textPreview: {
     fontFamily: fonts.loraRegular,
-    color: "#4b5563",
   },
   row: {
     flexDirection: "row",
@@ -950,12 +938,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: "#e5e7eb",
   },
   timePickerButtonSecondaryText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
-    color: "#4b5563",
   },
   timePickerButtonPrimary: {
     paddingHorizontal: 12,
@@ -965,11 +951,9 @@ const styles = StyleSheet.create({
   timePickerButtonPrimaryText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
-    color: "#ffffff",
   },
   divider: {
     height: 1,
-    backgroundColor: "#f3f4f6",
     marginTop: 24,
     marginBottom: 0,
   },
@@ -978,7 +962,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     paddingBottom: 8,
     borderTopWidth: 1,
-    borderTopColor: "#f3f4f6",
   },
   legalRow: {
     flexDirection: "row",
@@ -1001,17 +984,14 @@ const styles = StyleSheet.create({
   versionText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 12,
-    color: "#9ca3af",
     textAlign: "center",
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
     justifyContent: "center",
     paddingHorizontal: 20,
   },
   feedbackModal: {
-    backgroundColor: "#fff",
     padding: 24,
     borderRadius: 20,
     minHeight: "50%",
@@ -1023,7 +1003,6 @@ const styles = StyleSheet.create({
   },
   feedbackInput: {
     borderWidth: 1,
-    borderColor: "#e5e7eb",
     borderRadius: 10,
     padding: 14,
     fontFamily: fonts.bodyFamilyRegular,
@@ -1044,11 +1023,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: "#e5e7eb",
   },
   feedbackSecondaryText: {
     fontFamily: fonts.bodyFamilyRegular,
-    color: "#4b5563",
   },
   feedbackPrimary: {
     paddingHorizontal: 16,
@@ -1057,7 +1034,6 @@ const styles = StyleSheet.create({
   },
   feedbackPrimaryText: {
     fontFamily: fonts.bodyFamilyRegular,
-    color: "#fff",
     fontWeight: "600",
   },
 });

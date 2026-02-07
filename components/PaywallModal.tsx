@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
+  Pressable,
   StyleSheet,
   Modal,
   ActivityIndicator,
@@ -35,10 +37,48 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
   onClose,
 }) => {
   const { colors } = useTheme();
-  const { user, devBypass } = useAuth();
+  const { user, signIn, signUp } = useAuth();
   const { packages, purchase, restore, purchasing } = useSubscription(user?.id);
   const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage | null>(null);
   const [restoring, setRestoring] = useState(false);
+
+  // PREVIEW BYPASS — remove before production release
+  // Long-press the title to show sign-in form for testing without subscriptions
+  const [showAuthForm, setShowAuthForm] = useState(false);
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+
+  const handleTitleLongPress = () => {
+    setShowAuthForm(true);
+  };
+
+  const handleAuthSubmit = async () => {
+    if (!authEmail.trim() || !authPassword.trim()) {
+      Alert.alert("Missing Fields", "Enter both email and password.");
+      return;
+    }
+    setAuthLoading(true);
+    try {
+      if (authMode === "signup") {
+        await signUp(authEmail.trim(), authPassword.trim());
+        Alert.alert(
+          "Account Created",
+          "Check your email to confirm your account, then sign in. (If email confirmation is disabled in Supabase, you're already signed in.)",
+          [{ text: "OK", onPress: onClose }]
+        );
+      } else {
+        await signIn(authEmail.trim(), authPassword.trim());
+        onClose();
+      }
+    } catch (err: any) {
+      Alert.alert("Auth Error", err.message || "Something went wrong.");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+  // END PREVIEW BYPASS
 
   const handlePurchase = async () => {
     const pkg = selectedPackage || packages[0];
@@ -98,10 +138,12 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
             style={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            {/* Title */}
-            <Text style={[styles.title, { color: colors.text }]}>
-              Daily Paths Plus
-            </Text>
+            {/* Title — PREVIEW BYPASS: long-press to skip paywall, remove before production */}
+            <Pressable onLongPress={handleTitleLongPress} delayLongPress={1500}>
+              <Text style={[styles.title, { color: colors.text }]}>
+                Daily Paths Plus
+              </Text>
+            </Pressable>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               Deepen your recovery journey
             </Text>
@@ -231,18 +273,55 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
               turned off at least 24-hours before the end of the current period.
             </Text>
 
-            {/* DEV ONLY: Skip paywall for testing — remove before production */}
-            {__DEV__ && devBypass && (
-              <TouchableOpacity
-                style={styles.devSkipButton}
-                onPress={() => {
-                  devBypass();
-                  onClose();
-                }}
-              >
-                <Text style={styles.devSkipText}>Skip (Dev)</Text>
-              </TouchableOpacity>
+            {/* PREVIEW BYPASS — remove before production release */}
+            {showAuthForm && (
+              <View style={[styles.authForm, { borderColor: colors.border }]}>
+                <Text style={[styles.authFormTitle, { color: colors.text }]}>
+                  {authMode === "signin" ? "Sign In" : "Create Account"}
+                </Text>
+                <TextInput
+                  style={[styles.authInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.cardBackground }]}
+                  placeholder="Email"
+                  placeholderTextColor={colors.textSecondary}
+                  value={authEmail}
+                  onChangeText={setAuthEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  autoCorrect={false}
+                />
+                <TextInput
+                  style={[styles.authInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.cardBackground }]}
+                  placeholder="Password"
+                  placeholderTextColor={colors.textSecondary}
+                  value={authPassword}
+                  onChangeText={setAuthPassword}
+                  secureTextEntry
+                />
+                <TouchableOpacity
+                  style={[styles.authSubmitButton, { backgroundColor: colors.buttonPrimary }]}
+                  onPress={handleAuthSubmit}
+                  disabled={authLoading}
+                >
+                  {authLoading ? (
+                    <ActivityIndicator color={colors.textOnAccent} />
+                  ) : (
+                    <Text style={[styles.authSubmitText, { color: colors.textOnAccent }]}>
+                      {authMode === "signin" ? "Sign In" : "Create Account"}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setAuthMode(authMode === "signin" ? "signup" : "signin")}
+                >
+                  <Text style={[styles.authToggleText, { color: colors.accent }]}>
+                    {authMode === "signin"
+                      ? "Need an account? Create one"
+                      : "Already have an account? Sign in"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             )}
+            {/* END PREVIEW BYPASS */}
           </ScrollView>
         </View>
       </View>
@@ -256,8 +335,8 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   content: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     maxHeight: "92%",
     paddingBottom: 34,
   },
@@ -387,18 +466,44 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingBottom: 16,
   },
-  devSkipButton: {
-    alignItems: "center",
-    paddingVertical: 10,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#E53E3E",
-    borderRadius: 10,
-    borderStyle: "dashed",
+  // PREVIEW BYPASS styles — remove before production release
+  authForm: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    gap: 10,
+    paddingBottom: 16,
   },
-  devSkipText: {
+  authFormTitle: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 16,
+    fontWeight: "600",
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  authInput: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 15,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  authSubmitButton: {
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: 4,
+  },
+  authSubmitText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  authToggleText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 13,
-    color: "#E53E3E",
+    textAlign: "center",
+    paddingVertical: 8,
   },
 });

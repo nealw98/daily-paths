@@ -26,6 +26,8 @@ export interface SemanticPalette {
   border: string;
   /** Full-screen overlay behind modals (e.g. rgba). */
   backdrop: string;
+  /** Destructive actions: delete, sign-out, errors. */
+  danger: string;
   /** Calendar month label background. */
   calendarMonthBackground: string;
   /** Calendar day number background. */
@@ -92,6 +94,7 @@ const oceanLightSemantic: SemanticPalette = {
   textOnAccent: "#FFFFFF",
   border: "#B8D8D8",
   backdrop: "rgba(0, 0, 0, 0.5)",
+  danger: "#DC3545",
   calendarMonthBackground: "#2C5F5D",
   calendarDayBackground: "rgba(255, 255, 255, 0.65)",
   calendarBorder: "rgba(255, 255, 255, 0.25)",
@@ -115,6 +118,7 @@ const oceanDarkSemantic: SemanticPalette = {
   textOnAccent: "#FFFFFF",
   border: "#3A4A4B",
   backdrop: "rgba(0, 0, 0, 0.6)",
+  danger: "#E5585A",
   calendarMonthBackground: "rgba(74, 139, 141, 0.6)", // Semi-transparent ocean (original from main)
   calendarDayBackground: "#2A3536", // backgroundSecondary/cloud
   calendarBorder: "#3A4A4B", // border/modalBorder/mist
@@ -139,6 +143,7 @@ const forestLightSemantic: SemanticPalette = {
   textOnAccent: "#FFFFFF",
   border: "#B8D8B8",
   backdrop: "rgba(0, 0, 0, 0.5)",
+  danger: "#DC3545",
   calendarMonthBackground: "#2D5A2D",
   calendarDayBackground: "rgba(255, 255, 255, 0.65)",
   calendarBorder: "rgba(255, 255, 255, 0.25)",
@@ -162,6 +167,7 @@ const forestDarkSemantic: SemanticPalette = {
   textOnAccent: "#FFFFFF",
   border: "#3A4A3A",
   backdrop: "rgba(0, 0, 0, 0.6)",
+  danger: "#E5585A",
   calendarMonthBackground: "#1A3020", // Dark
   calendarDayBackground: "#E5F0E5", // Light text color
   calendarBorder: "#E5F0E5", // Light text color outline
@@ -187,6 +193,7 @@ const deepSeaSemantic: SemanticPalette = {
   textOnAccent: "#F0EBD8",      // Eggshell
   border: "#3E5C76",            // Blue Slate
   backdrop: "rgba(0, 0, 0, 0.6)",
+  danger: "#E5585A",
   calendarMonthBackground: "#3E5C76", // heroGradientEnd (Blue Slate)
   calendarDayBackground: "#2A3D54", // backgroundSecondary
   calendarBorder: "#3E5C76",     // Blue Slate border
@@ -212,6 +219,7 @@ const burgundyRoseSemantic: SemanticPalette = {
   textOnAccent: "#FAF6F3",      // Warm Cream on buttons
   border: "#E5C7CD",             // Blush
   backdrop: "rgba(0, 0, 0, 0.5)",
+  danger: "#DC3545",
   calendarMonthBackground: "#660033", // Dark Maroon/Burgundy
   calendarDayBackground: "rgba(255, 255, 255, 0.65)",
   calendarBorder: "rgba(255, 255, 255, 0.25)",
@@ -237,6 +245,7 @@ const roseQuartzSemantic: SemanticPalette = {
   textOnAccent: "#FFFFFF",      // White on buttons
   border: "#FFC9E0",             // Light Blush
   backdrop: "rgba(0, 0, 0, 0.5)",
+  danger: "#DC3545",
   calendarMonthBackground: "#A8305C", // Deep Plum
   calendarDayBackground: "rgba(255, 255, 255, 0.7)",
   calendarBorder: "rgba(255, 255, 255, 0.3)",
@@ -262,6 +271,7 @@ const twilightFireSemantic: SemanticPalette = {
   textOnAccent: "#FFFFFF",
   border: "#FFC4A8",             // Saturated peach
   backdrop: "rgba(0, 0, 0, 0.5)",
+  danger: "#DC3545",
   calendarMonthBackground: "#9B6BB4", // Lighter purple (between deep purple and gradient midpoint)
   calendarDayBackground: "rgba(255, 255, 255, 0.75)",
   calendarBorder: "rgba(255, 255, 255, 0.35)",
@@ -287,6 +297,7 @@ const cottonCandySemantic: SemanticPalette = {
   textOnAccent: "#FFFFFF",
   border: "#D6D2D2",             // Dust Grey
   backdrop: "rgba(0, 0, 0, 0.5)",
+  danger: "#DC3545",
   calendarMonthBackground: "#FE5D9F", // Rose Kiss
   calendarDayBackground: "rgba(255, 255, 255, 0.65)",
   calendarBorder: "rgba(255, 255, 255, 0.25)",
@@ -312,6 +323,7 @@ const twilightSkySemantic: SemanticPalette = {
   textOnAccent: "#FFFFFF",
   border: "#C8E5F8",             // Soft blue border
   backdrop: "rgba(0, 0, 0, 0.5)",
+  danger: "#DC3545",
   calendarMonthBackground: "#7364D2", // Slate Blue
   calendarDayBackground: "rgba(255, 255, 255, 0.65)",
   calendarBorder: "rgba(255, 255, 255, 0.25)",
@@ -337,6 +349,7 @@ const softMauveSemantic: SemanticPalette = {
   textOnAccent: "#FAF5F2",      // Warm Cream on buttons
   border: "#E3CED6",             // Blush Mist
   backdrop: "rgba(0, 0, 0, 0.5)",
+  danger: "#DC3545",
   calendarMonthBackground: "#4A2040", // Deep Berry
   calendarDayBackground: "rgba(255, 255, 255, 0.65)",
   calendarBorder: "rgba(255, 255, 255, 0.25)",
@@ -362,6 +375,7 @@ const champagneSemantic: SemanticPalette = {
   textOnAccent: "#F5F0E8",      // Milk Foam on header and buttons
   border: "#4A3830",             // Mocha
   backdrop: "rgba(0, 0, 0, 0.6)",
+  danger: "#E5585A",
   calendarMonthBackground: "#4A3830", // Mocha
   calendarDayBackground: "#2C2220", // Dark Brew
   calendarBorder: "#4A3830",     // Mocha
@@ -387,6 +401,7 @@ const peachBlossomSemantic: SemanticPalette = {
   textOnAccent: "#5C3030",      // Deep rose — dark text on pastel header
   border: "#FFE8DB",             // Blush Pink
   backdrop: "rgba(0, 0, 0, 0.5)",
+  danger: "#DC3545",
   calendarMonthBackground: "#F5D0C4", // Slightly deeper peach (readable with dark text)
   calendarDayBackground: "rgba(255, 255, 255, 0.65)",
   calendarBorder: "rgba(255, 255, 255, 0.25)",
@@ -412,6 +427,7 @@ const morningLightSemantic: SemanticPalette = {
   textOnAccent: "#5C4020",      // Amber Brown — dark text on pastel yellow header
   border: "#FFF2C6",             // Pastel Yellow
   backdrop: "rgba(0, 0, 0, 0.5)",
+  danger: "#DC3545",
   calendarMonthBackground: "#F5E8A0", // Warm pastel yellow (darker than header, readable with dark text)
   calendarDayBackground: "rgba(255, 255, 255, 0.65)",
   calendarBorder: "rgba(255, 255, 255, 0.25)",

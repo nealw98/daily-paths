@@ -24,8 +24,6 @@ interface AuthContextValue {
   signInGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
-  /** DEV ONLY: bypass auth for simulator testing */
-  devBypass?: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -114,21 +112,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await resetPassword(email);
   }, []);
 
-  // DEV ONLY: set a fake user so isAuthenticated becomes true without Supabase
-  const [devUser, setDevUser] = useState(false);
-
-  const devBypass = __DEV__
-    ? () => {
-        setDevUser(true);
-        setUser({ id: "dev-bypass-user", email: "dev@test.local" } as unknown as User);
-      }
-    : undefined;
-
   const value: AuthContextValue = {
     user,
     session,
     loading,
-    isAuthenticated: !!user || devUser,
+    isAuthenticated: !!user,
     isLegacy,
     signIn,
     signUp,
@@ -136,7 +124,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signInGoogle,
     signOut,
     forgotPassword,
-    devBypass,
   };
 
   return React.createElement(AuthContext.Provider, { value }, children);

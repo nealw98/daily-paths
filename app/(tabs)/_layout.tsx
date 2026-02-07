@@ -1,5 +1,6 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { fonts } from "../../constants/theme";
 import { useTheme } from "../../hooks/useTheme";
 
 export default function TabLayout() {
@@ -17,6 +18,7 @@ export default function TabLayout() {
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarLabelStyle: {
+          fontFamily: fonts.bodyFamilyRegular,
           fontSize: 12,
           fontWeight: "600",
         },
