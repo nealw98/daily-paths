@@ -359,7 +359,7 @@ const champagneSemantic: SemanticPalette = {
   cardBackground: "#3D3128",    // Dark Roast
   buttonPrimary: "#C8B48A",     // Pale Gold (pops on dark)
   buttonSecondary: "#8A7355",   // Toasted Almond
-  textOnAccent: "#2A2118",      // Espresso text on gold buttons
+  textOnAccent: "#FFFFFF",      // White — works on dark header and gold buttons
   border: "#524538",             // Warm Cocoa
   backdrop: "rgba(0, 0, 0, 0.6)",
   calendarMonthBackground: "#524538", // Warm Cocoa
