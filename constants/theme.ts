@@ -347,7 +347,7 @@ const softMauveSemantic: SemanticPalette = {
 // Espresso #2A2118, Dark Roast #3D3128, Warm Cocoa #524538, Toasted Almond #8A7355, Pale Gold #C8B48A, Champagne #E8D9B8
 const champagneSemantic: SemanticPalette = {
   heroGradientStart: "#2A2118",  // Espresso (deep, warm dark)
-  heroGradientEnd: "#3D3128",   // Dark Roast (subtle warmth)
+  heroGradientEnd: "#6B5A42",   // Warm Toffee (visible gradient, like Deep Sea's spread)
   background: "#2A2118",         // Espresso
   backgroundSecondary: "#3D3128", // Dark Roast
   text: "#E8D9B8",               // Champagne (warm light on dark — high contrast)
