@@ -466,7 +466,7 @@ export const COLOR_SCHEMES: ColorSchemeDef[] = [
   },
   {
     id: "soft-mauve",
-    name: "Soft Mauve",
+    name: "Plum",
     dark: false,
     colors: buildPalette(softMauveSemantic),
   },

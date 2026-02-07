@@ -18,7 +18,7 @@ const EXTENDED_THEME_OPTIONS: { id: string; displayName: string }[] = [
   { id: "deep-sea", displayName: "Deep\nSea" },
   { id: "burgundy-rose", displayName: "Rose\nGarden" },
   { id: "twilight-fire", displayName: "Desert\nTwilight" },
-  { id: "soft-mauve", displayName: "Soft\nMauve" },
+  { id: "soft-mauve", displayName: "Plum" },
   { id: "champagne", displayName: "Coffee\nBreak" },
   { id: "peach-blossom", displayName: "Peach\nBlossom" },
   { id: "morning-light", displayName: "Morning\nLight" },
