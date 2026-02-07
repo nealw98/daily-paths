@@ -68,6 +68,7 @@ interface ReadingScreenProps {
   onPrevDate: () => void;
   onNextDate: () => void;
   onOpenDatePicker: () => void;
+  onOpenBookmarks?: () => void;
   isBookmarked?: boolean;
   onBookmarkToggle?: () => Promise<void>;
   onHighlight?: () => void;
@@ -83,6 +84,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   onPrevDate,
   onNextDate,
   onOpenDatePicker,
+  onOpenBookmarks,
   isBookmarked = false,
   onBookmarkToggle,
   onHighlight,
@@ -504,27 +506,40 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
             <Pressable onPress={handleContentPress}>
               <View style={styles.actionsHeader}>
                 <TouchableOpacity
-                  onPress={handleBookmarkToggle}
+                  onPress={onOpenBookmarks}
                   activeOpacity={0.7}
                   hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 >
                   <Ionicons
-                    name={localBookmarked ? "heart" : "heart-outline"}
+                    name="list-outline"
                     size={20}
                     color={colors.deepTeal}
                   />
                 </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={onShare}
-                  activeOpacity={0.7}
-                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                >
-                  <Ionicons
-                    name="arrow-redo-outline"
-                    size={20}
-                    color={colors.deepTeal}
-                  />
-                </TouchableOpacity>
+                <View style={styles.actionsRight}>
+                  <TouchableOpacity
+                    onPress={handleBookmarkToggle}
+                    activeOpacity={0.7}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  >
+                    <Ionicons
+                      name={localBookmarked ? "heart" : "heart-outline"}
+                      size={20}
+                      color={colors.deepTeal}
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={onShare}
+                    activeOpacity={0.7}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  >
+                    <Ionicons
+                      name="arrow-redo-outline"
+                      size={20}
+                      color={colors.deepTeal}
+                    />
+                  </TouchableOpacity>
+                </View>
               </View>
 
               <View style={styles.titleRow}>
@@ -821,7 +836,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 20,
-    paddingBottom: 100,
+    paddingBottom: 40,
   },
   title: {
     fontFamily: "Inter_500Medium",
@@ -843,10 +858,14 @@ const styles = StyleSheet.create({
   actionsHeader: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "flex-end",
-    gap: 24,
+    justifyContent: "space-between",
     marginBottom: 12,
     marginTop: -4,
+  },
+  actionsRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 24,
   },
   inlineFavorite: {
     marginLeft: 12,

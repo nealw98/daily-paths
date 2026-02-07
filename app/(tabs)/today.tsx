@@ -9,15 +9,10 @@ import {
   AppState,
   AppStateStatus,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ReadingScreen } from "../../components/ReadingScreen";
 import { DatePickerModal } from "../../components/DatePickerModal";
 import { BookmarkListModal } from "../../components/BookmarkListModal";
-import { SettingsModal } from "../../components/SettingsModal";
-import { SettingsContent } from "../../components/SettingsContent";
-import { TextSizeModal } from "../../components/TextSizeModal";
-import { ReminderModal } from "../../components/ReminderModal";
 import { DismissibleToast } from "../../components/DismissibleToast";
 import { BookmarkToast } from "../../components/BookmarkToast";
 import { RateAppModal } from "../../components/RateAppModal";
@@ -67,12 +62,7 @@ export default function Index() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showBookmarkList, setShowBookmarkList] = useState(false);
   const [showInstruction, setShowInstruction] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [showTextSize, setShowTextSize] = useState(false);
-  const [showReminder, setShowReminder] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [reminderToast, setReminderToast] = useState<string | null>(null);
-  const [showReminderToast, setShowReminderToast] = useState(false);
   const [showRateModal, setShowRateModal] = useState(false);
   const [navigationMethod, setNavigationMethod] = useState<NavigationMethod>('app_open');
   console.log("[STARTUP-INDEX] State initialized");
@@ -278,18 +268,6 @@ export default function Index() {
     }
   };
 
-  const handleSettingsPress = () => {
-    setShowSettings(true);
-  };
-
-  const handleOpenTextSize = () => {
-    setShowTextSize(true);
-  };
-
-  const handleOpenReminder = () => {
-    setShowReminder(true);
-  };
-
   const handleShare = async () => {
     if (!reading) return;
 
@@ -417,6 +395,7 @@ export default function Index() {
         onPrevDate={handlePrevDate}
         onNextDate={handleNextDate}
         onOpenDatePicker={handleOpenDatePicker}
+        onOpenBookmarks={handleOpenBookmarks}
         isBookmarked={isBookmarked}
         onBookmarkToggle={handleBookmarkToggle}
         onShare={handleShare}
@@ -430,42 +409,6 @@ export default function Index() {
   return (
     <>
       {content}
-      
-      {/* Persistent Action Bar - stays above modals */}
-      <View style={[styles.actionBar, { backgroundColor: colors.pearl, borderTopColor: colors.mist }]}>
-        <TouchableOpacity
-          onPress={handleOpenBookmarks}
-          style={[styles.actionButton, { backgroundColor: colors.cloud }]}
-        >
-          <Ionicons
-            name="list-outline"
-            size={24}
-            color={colors.deepTeal}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={handleOpenReminder}
-          style={[styles.actionButton, { backgroundColor: colors.cloud }]}
-        >
-          <Ionicons
-            name="notifications-outline"
-            size={24}
-            color={colors.deepTeal}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={handleOpenTextSize}
-          style={[styles.actionButton, { backgroundColor: colors.cloud }]}
-        >
-          <Ionicons name="settings-outline" size={24} color={colors.deepTeal} />
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={handleSettingsPress} style={[styles.actionButton, { backgroundColor: colors.cloud }]}>
-          <Ionicons name="information-circle-outline" size={24} color={colors.deepTeal} />
-        </TouchableOpacity>
-      </View>
       
       <DatePickerModal
         visible={showDatePicker}
@@ -481,38 +424,10 @@ export default function Index() {
         onSelectBookmark={handleSelectBookmark}
         onRemoveBookmark={handleRemoveBookmark}
       />
-      <SettingsModal visible={showSettings} onClose={() => setShowSettings(false)}>
-        <SettingsContent onOpenQaLogs={() => setShowSettings(false)} />
-      </SettingsModal>
-      
-      <TextSizeModal 
-        visible={showTextSize} 
-        onClose={() => setShowTextSize(false)} 
-      />
-      
-      <ReminderModal 
-        visible={showReminder} 
-        onClose={() => {
-          setShowReminder(false);
-          setShowReminderToast(false); // Hide toast when modal closes
-        }}
-        onShowToast={(message) => {
-          setReminderToast(message);
-          setShowReminderToast(true);
-        }}
-      />
-      
       <DismissibleToast
         visible={!!toastMessage && !!reading}
         message={toastMessage ?? ""}
         onDismiss={() => setToastMessage(null)}
-      />
-      
-      <BookmarkToast
-        visible={showReminderToast}
-        message={reminderToast ?? ""}
-        onHide={() => setShowReminderToast(false)}
-        autoDismiss={false}
       />
 
       <RateAppModal
@@ -530,31 +445,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
-  },
-  actionBar: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    paddingVertical: 16,
-    paddingHorizontal: 40,
-    borderTopWidth: 1,
-    zIndex: 1000,
-  },
-  actionButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   loadingText: {
     marginTop: 12,

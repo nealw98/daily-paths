@@ -21,9 +21,32 @@ import { fonts } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
 import { useSettings, TextSize } from "../hooks/useSettings";
 import { useAppFeedback } from "../hooks/useAppFeedback";
+import { useAnalytics } from "../utils/analytics";
 import { shareApp } from "../utils/rateShareTracking";
+import { updateNotificationWithThought } from "../utils/notificationSync";
 import { qaLog } from "../utils/qaLog";
 import { RateAppModal } from "./RateAppModal";
+
+/** Default theme options (visible to all users) */
+const DEFAULT_THEME_OPTIONS: { id: string; displayName: string; icon?: string }[] = [
+  { id: "ocean-light", displayName: "Light", icon: "sunny" },
+  { id: "ocean-dark", displayName: "Dark", icon: "moon" },
+  { id: "system", displayName: "System", icon: "phone-portrait-outline" },
+];
+
+/** Extended color themes (hidden behind long-press) */
+const EXTENDED_THEME_OPTIONS: { id: string; displayName: string }[] = [
+  { id: "deep-sea", displayName: "Deep\nSea" },
+  { id: "burgundy-rose", displayName: "Rose\nGarden" },
+  { id: "twilight-fire", displayName: "Desert\nTwilight" },
+  { id: "soft-mauve", displayName: "Plum" },
+  { id: "champagne", displayName: "Coffee\nBreak" },
+  { id: "peach-blossom", displayName: "Peach\nBlossom" },
+  { id: "morning-light", displayName: "Morning\nLight" },
+];
+
+/** IDs of dark themes for analytics */
+const DARK_THEME_IDS = new Set(["ocean-dark", "deep-sea", "champagne"]);
 
 const textSizeStops: TextSize[] = [
   "extraSmall",
@@ -63,9 +86,10 @@ export const SettingsContent: React.FC<{
   scrollToSection,
 }) => {
   const { colors } = useTheme();
-  const { settings, setTextSize, setDailyReminderEnabled, setDailyReminderTime } =
+  const { settings, setTextSize, setThemeId, setColorScheme, setDailyReminderEnabled, setDailyReminderTime } =
     useSettings();
   const { submitting: submittingFeedback, submitFeedback } = useAppFeedback();
+  const { updateThemeMode } = useAnalytics();
 
   const [showTimePicker, setShowTimePicker] = useState(false);
    // Local working copy while the wheel is open so we don't commit
@@ -76,6 +100,7 @@ export const SettingsContent: React.FC<{
   const [feedbackText, setFeedbackText] = useState("");
   const [feedbackContact, setFeedbackContact] = useState("");
   const [isSharing, setIsSharing] = useState(false);
+  const [showExtendedThemes, setShowExtendedThemes] = useState(false);
   const router = useRouter();
   const scrollViewRef = React.useRef<ScrollView>(null);
   const textSizeRef = React.useRef<View>(null);
@@ -111,6 +136,16 @@ export const SettingsContent: React.FC<{
     }
   };
 
+  const handleThemeChange = (optionId: string) => {
+    if (optionId === "system") {
+      setColorScheme("system");
+      updateThemeMode("system");
+    } else {
+      setThemeId(optionId);
+      updateThemeMode(DARK_THEME_IDS.has(optionId) ? "dark" : "light");
+    }
+  };
+
   const handleSubmitFeedback = async () => {
     if (!feedbackText.trim()) return;
 
@@ -139,6 +174,9 @@ export const SettingsContent: React.FC<{
 
   const handleReminderToggle = async (enabled: boolean) => {
     await setDailyReminderEnabled(enabled);
+    if (enabled) {
+      await updateNotificationWithThought();
+    }
   };
 
   const handleRateApp = () => {
@@ -196,6 +234,163 @@ export const SettingsContent: React.FC<{
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.mainContent}>
+          {/* Appearance: Theme + Text Size */}
+          <View style={[styles.sectionCard, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
+            <View style={[styles.sectionHeader, { borderBottomColor: colors.mist }]}>
+              <Ionicons name="color-palette-outline" size={22} color={colors.deepTeal} />
+              <View style={styles.sectionHeaderText}>
+                <Text style={[styles.sectionTitle, { color: colors.deepTeal }]}>Appearance</Text>
+                <Text style={[styles.sectionSubtitle, { color: colors.ink }]}>
+                  Theme and text size
+                </Text>
+              </View>
+            </View>
+            <View style={styles.sectionBody}>
+              {/* Theme */}
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onLongPress={() => setShowExtendedThemes(true)}
+                delayLongPress={600}
+              >
+                <Text style={[styles.appearanceLabel, { color: colors.deepTeal }]}>Theme</Text>
+              </TouchableOpacity>
+
+              <View style={styles.themeOptions}>
+                {DEFAULT_THEME_OPTIONS.map((option) => {
+                  const isSelected =
+                    option.id === "system"
+                      ? settings.colorScheme === "system"
+                      : settings.themeId === option.id && settings.colorScheme !== "system";
+                  return (
+                    <TouchableOpacity
+                      key={option.id}
+                      style={[
+                        styles.themeOption,
+                        { borderColor: colors.border },
+                        isSelected && { backgroundColor: colors.deepTeal, borderColor: colors.deepTeal },
+                      ]}
+                      onPress={() => handleThemeChange(option.id)}
+                      activeOpacity={0.8}
+                    >
+                      {option.icon && (
+                        <Ionicons
+                          name={option.icon as any}
+                          size={20}
+                          color={isSelected ? colors.textOnAccent : colors.deepTeal}
+                        />
+                      )}
+                      <Text
+                        style={[
+                          styles.themeOptionText,
+                          { color: colors.deepTeal },
+                          isSelected && { color: colors.textOnAccent },
+                        ]}
+                        numberOfLines={2}
+                      >
+                        {option.displayName}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {showExtendedThemes && (
+                <>
+                  <Text style={[styles.appearanceLabel, { color: colors.deepTeal }]}>Colors</Text>
+                  <View style={styles.themeOptions}>
+                    {EXTENDED_THEME_OPTIONS.map((option) => {
+                      const isSelected =
+                        settings.themeId === option.id && settings.colorScheme !== "system";
+                      return (
+                        <TouchableOpacity
+                          key={option.id}
+                          style={[
+                            styles.themeOption,
+                            { borderColor: colors.border },
+                            isSelected && { backgroundColor: colors.deepTeal, borderColor: colors.deepTeal },
+                          ]}
+                          onPress={() => handleThemeChange(option.id)}
+                          activeOpacity={0.8}
+                        >
+                          <Text
+                            style={[
+                              styles.themeOptionText,
+                              { color: colors.deepTeal },
+                              isSelected && { color: colors.textOnAccent },
+                            ]}
+                            numberOfLines={2}
+                          >
+                            {option.displayName}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </>
+              )}
+
+              {/* Text Size */}
+              <Text style={[styles.appearanceLabel, { color: colors.deepTeal, marginTop: 16 }]}>Text Size</Text>
+              <View style={styles.sliderRow}>
+                <TouchableOpacity
+                  onPress={handleDecrementTextSize}
+                  disabled={settings.textSize === textSizeStops[0]}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.sliderEdgeLabel,
+                      { color: colors.deepTeal },
+                      settings.textSize === textSizeStops[0] && styles.sliderEdgeLabelDisabled,
+                    ]}
+                  >
+                    Smaller
+                  </Text>
+                </TouchableOpacity>
+                <View style={styles.sliderTrack}>
+                  {textSizeStops.map((size, index) => {
+                    const selectedIndex = textSizeStops.indexOf(settings.textSize);
+                    const isActive = index <= selectedIndex;
+                    const isSelected = size === settings.textSize;
+                    return (
+                      <TouchableOpacity
+                        key={size}
+                        style={styles.sliderStopTouch}
+                        activeOpacity={0.8}
+                        onPress={() => handleTextSizePress(size)}
+                      >
+                        <View
+                          style={[
+                            styles.sliderStop,
+                            { borderColor: colors.border, backgroundColor: colors.pearl },
+                            isActive && { borderColor: colors.seafoam, backgroundColor: colors.seafoam },
+                            isSelected && { borderColor: colors.deepTeal, backgroundColor: colors.deepTeal },
+                          ]}
+                        />
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                <TouchableOpacity
+                  onPress={handleIncrementTextSize}
+                  disabled={settings.textSize === textSizeStops[textSizeStops.length - 1]}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.sliderEdgeLabel,
+                      { color: colors.deepTeal },
+                      settings.textSize === textSizeStops[textSizeStops.length - 1] &&
+                        styles.sliderEdgeLabelDisabled,
+                    ]}
+                  >
+                    Larger
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
           <View style={[styles.sectionCard, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
             <View style={[styles.sectionHeader, { borderBottomColor: colors.mist }]}>
               <Ionicons
@@ -275,6 +470,101 @@ export const SettingsContent: React.FC<{
                 <Ionicons name="chatbubble-ellipses" size={18} color={colors.deepTeal} />
                 <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Send Feedback</Text>
               </TouchableOpacity>
+            </View>
+          </View>
+
+          <View ref={reminderRef} style={[styles.sectionCard, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
+            <View style={[styles.sectionHeader, { borderBottomColor: colors.mist }]}>
+              <Ionicons name="notifications-outline" size={22} color={colors.deepTeal} />
+              <View style={styles.sectionHeaderText}>
+                <Text style={[styles.sectionTitle, { color: colors.deepTeal }]}>Daily Notification</Text>
+                <Text style={[styles.sectionSubtitle, { color: colors.ink }]}>
+                  Receive the Thought for the Day
+                </Text>
+              </View>
+            </View>
+            <View style={styles.sectionBody}>
+              <View style={styles.row}>
+                <View style={styles.rowText}>
+                  <Text style={[styles.rowLabel, { color: colors.ink }]}>Enable daily notification</Text>
+                </View>
+                <Switch
+                  value={settings.dailyReminderEnabled}
+                  onValueChange={handleReminderToggle}
+                  trackColor={{ false: colors.mist, true: colors.deepTeal }}
+                  thumbColor={settings.dailyReminderEnabled ? colors.pearl : "#f4f3f4"}
+                />
+              </View>
+
+              <View
+                style={[
+                  styles.timeRow,
+                  !settings.dailyReminderEnabled && styles.timeRowDisabled,
+                ]}
+              >
+                <View style={styles.rowText}>
+                  <Text style={[styles.rowLabel, { color: colors.ink }]}>Notification time</Text>
+                </View>
+                <View style={styles.timeStepperContainer}>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    disabled={!settings.dailyReminderEnabled}
+                    onPress={() => {
+                      if (settings.dailyReminderEnabled) {
+                        setTempReminderDate(reminderDate);
+                        setShowTimePicker(true);
+                      }
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.timeValue,
+                        { color: colors.ink },
+                        !settings.dailyReminderEnabled && styles.timeValueDisabled,
+                      ]}
+                    >
+                      {formatTimeDisplay(reminderDate)}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {showTimePicker && settings.dailyReminderEnabled && (
+                <View style={styles.timePickerContainer}>
+                  <DateTimePicker
+                    value={tempReminderDate ?? reminderDate}
+                    mode="time"
+                    display={Platform.OS === "ios" ? "spinner" : "default"}
+                    onChange={(_, selectedDate) => {
+                      if (!selectedDate) return;
+                      setTempReminderDate(selectedDate);
+                    }}
+                  />
+                  <View style={styles.timePickerActions}>
+                    <TouchableOpacity
+                      style={[styles.timePickerButtonSecondary, { backgroundColor: colors.mist }]}
+                      onPress={() => {
+                        setShowTimePicker(false);
+                        setTempReminderDate(null);
+                      }}
+                    >
+                      <Text style={[styles.timePickerButtonSecondaryText, { color: colors.ink }]}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.timePickerButtonPrimary, { backgroundColor: colors.deepTeal }]}
+                      onPress={async () => {
+                        const finalDate = tempReminderDate ?? reminderDate;
+                        setShowTimePicker(false);
+                        setTempReminderDate(null);
+                        await setDailyReminderTime(formatTimeStorage(finalDate));
+                        await updateNotificationWithThought();
+                      }}
+                    >
+                      <Text style={styles.timePickerButtonPrimaryText}>Set time</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
             </View>
           </View>
         </View>
@@ -467,30 +757,36 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 0,
   },
+  appearanceLabel: {
+    fontFamily: fonts.headerFamilyItalic,
+    fontSize: 18,
+    marginBottom: 10,
+  },
   themeOptions: {
     flexDirection: "row",
-    gap: 12,
+    flexWrap: "wrap",
+    gap: 10,
+    marginBottom: 12,
   },
   themeOption: {
+    minWidth: 85,
     flex: 1,
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    paddingVertical: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     borderRadius: 12,
-    backgroundColor: "#fff",
+    backgroundColor: "transparent",
     borderWidth: 2,
-  },
-  themeOptionSelected: {
+    gap: 4,
+    minHeight: 60,
   },
   themeOptionText: {
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
-  },
-  themeOptionTextSelected: {
-    color: "#fff",
+    textAlign: "center",
   },
   secondaryButton: {
     flex: 1,
