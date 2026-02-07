@@ -393,29 +393,29 @@ const peachBlossomSemantic: SemanticPalette = {
   calendarDayText: "#5C3030", // Deep rose-brown on light
 };
 
-// ─── Morning Light (pastel yellow #FFFDCE base — soft, sunny, gentle) ────
-// Warm Sage #6B6B3A, Muted Olive #8A8A50, Soft Yellow #FFFDCE, Pale Butter #FFF9B8, Near White #FFFEF2
+// ─── Morning Light (pastel yellow #FFF2C6/#FFF8DE — sunny, warm, gentle) ─
+// Amber Brown #6B5030, Warm Caramel #9A7650, Honey #C4A060, Soft Yellow #FFFDCE, Pastel Yellow #FFF2C6, Light Yellow #FFF8DE, Yellow White #FFFEF5
 const morningLightSemantic: SemanticPalette = {
   heroGradientStart: "#FFF2C6",  // Warm pastel yellow
   heroGradientEnd: "#FFF8DE",   // Lighter pastel yellow (soft gradient)
-  background: "#FFFEF2",         // Near White (barely yellow)
-  backgroundSecondary: "#FFFDCE", // THE yellow — soft, sunny
-  text: "#4A4A28",               // Warm olive-ink (readable)
-  textSecondary: "#7A7A42",      // Muted sage
-  accent: "#8A8A50",             // Muted Olive
-  highlight: "#FFFDCE",          // THE yellow as highlight
-  modalBackground: "#FFFEF2",   // Near White
-  modalBorder: "#F0EDB5",       // Pale butter
-  cardBackground: "#FFFDCE",    // THE yellow for cards
-  buttonPrimary: "#7A7A42",     // Muted sage (visible on pale bg)
-  buttonSecondary: "#E8E4A0",   // Muted pastel yellow
-  textOnAccent: "#FFFEF2",      // Near White on buttons
-  border: "#F0EDB5",             // Pale butter
+  background: "#FFFEF5",         // Yellow White (barely there warmth)
+  backgroundSecondary: "#FFF8DE", // Light Yellow
+  text: "#5C4020",               // Amber Brown (warm, high contrast on yellow)
+  textSecondary: "#9A7650",      // Warm Caramel (harmonizes with yellow)
+  accent: "#9A7650",             // Warm Caramel
+  highlight: "#FFFDCE",          // Soft Yellow (gentle glow)
+  modalBackground: "#FFFEF5",   // Yellow White
+  modalBorder: "#FFF2C6",       // Pastel Yellow
+  cardBackground: "#FFF8DE",    // Light Yellow
+  buttonPrimary: "#7A5C38",     // Rich amber (visible, warm)
+  buttonSecondary: "#C4A060",   // Honey
+  textOnAccent: "#5C4020",      // Amber Brown — dark text on pastel yellow header
+  border: "#FFF2C6",             // Pastel Yellow
   backdrop: "rgba(0, 0, 0, 0.5)",
-  calendarMonthBackground: "#7A7A42", // Muted sage
+  calendarMonthBackground: "#7A5C38", // Rich amber
   calendarDayBackground: "rgba(255, 255, 255, 0.65)",
   calendarBorder: "rgba(255, 255, 255, 0.25)",
-  calendarDayText: "#4A4A28", // Olive ink on light
+  calendarDayText: "#5C4020", // Amber brown on light
 };
 
 // ─── All selectable color schemes ──────────────────────────────────────────
