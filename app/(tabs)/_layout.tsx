@@ -6,20 +6,23 @@ import { useTheme } from "../../hooks/useTheme";
 import { useAuth } from "../../contexts/AuthContext";
 import { useSubscription } from "../../hooks/useSubscription";
 import { isRevenueCatInitialized } from "../../lib/subscription";
-import { canAccessPlusFeatures } from "../../utils/accessControl";
+import { canAccessUnlimitedFeatures } from "../../utils/accessControl";
 import { PaywallModal } from "../../components/PaywallModal";
+import { SignInModal } from "../../components/SignInModal";
 
 export default function TabLayout() {
   const { colors, isDark } = useTheme();
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const { status: subStatus, loading: subLoading, refresh: refreshSub } = useSubscription(user?.id);
   const wasAuthenticated = useRef(isAuthenticated);
-  const [dismissed, setDismissed] = useState(false);
+  const [paywallDismissed, setPaywallDismissed] = useState(false);
+  const [signInDismissed, setSignInDismissed] = useState(false);
 
   // Reset dismissed state when user signs out
   useEffect(() => {
     if (wasAuthenticated.current && !isAuthenticated) {
-      setDismissed(false);
+      setPaywallDismissed(false);
+      setSignInDismissed(false);
     }
     wasAuthenticated.current = isAuthenticated;
   }, [isAuthenticated]);
@@ -32,89 +35,89 @@ export default function TabLayout() {
   const revenueCatActive = isRevenueCatInitialized();
   const hasEntitlement = !revenueCatActive
     ? true // RC not set up, treat entitlement as satisfied (dev/testing)
-    : canAccessPlusFeatures(subStatus);
+    : canAccessUnlimitedFeatures(subStatus);
 
-  // Determine which gate to show:
-  //   no entitlement → paywall (subscription pitch)
-  //   entitlement but not signed in → signin only
-  //   entitlement + signed in → full access, no gate
-  let gateMode: "paywall" | "signin" | null = null;
-  if (!stillLoading && !dismissed) {
-    if (!hasEntitlement) {
-      gateMode = "paywall";
-    } else if (!isAuthenticated) {
-      gateMode = "signin";
-    }
-  }
+  // Two independent gates:
+  //   1. PaywallModal — shown when no entitlement (no trial, no sub, no lifetime)
+  //   2. SignInModal — shown when entitlement exists but user isn't signed in
+  const showPaywall = !stillLoading && !hasEntitlement && !paywallDismissed;
+  const showSignIn = !stillLoading && hasEntitlement && !isAuthenticated && !signInDismissed;
 
-  const handleGateClose = () => {
-    refreshSub(); // re-check entitlement after any purchase
-    setDismissed(true);
-  };
-
-  const showGate = gateMode !== null;
+  // In dev mode (no RC keys), paywall is never shown, so the close button
+  // on SignInModal serves as the dev bypass to test the app without auth.
+  const signInDismissable = !revenueCatActive; // dismissable only in dev mode
 
   return (
     <>
-    <PaywallModal
-      visible={showGate}
-      mode={gateMode || "paywall"}
-      onClose={handleGateClose}
-    />
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: {
-          backgroundColor: colors.background,
-          borderTopColor: colors.border,
-          borderTopWidth: 1,
-        },
-        tabBarActiveTintColor: colors.accent,
-        tabBarInactiveTintColor: colors.textSecondary,
-        tabBarLabelStyle: {
-          fontFamily: fonts.bodyFamilyRegular,
-          fontSize: 12,
-          fontWeight: "600",
-        },
-      }}
-    >
-      <Tabs.Screen
-        name="today"
-        options={{
-          title: "Today",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="book" size={size} color={color} />
-          ),
+      <PaywallModal
+        visible={showPaywall}
+        dismissable={false}
+        onClose={() => {
+          refreshSub();
+          setPaywallDismissed(true);
         }}
       />
-      <Tabs.Screen
-        name="journal"
-        options={{
-          title: "Journal",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="create" size={size} color={color} />
-          ),
+      <SignInModal
+        visible={showSignIn}
+        dismissable={signInDismissable}
+        onClose={() => {
+          setSignInDismissed(true);
         }}
       />
-      <Tabs.Screen
-        name="steps"
-        options={{
-          title: "Steps",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="list" size={size} color={color} />
-          ),
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarStyle: {
+            backgroundColor: colors.background,
+            borderTopColor: colors.border,
+            borderTopWidth: 1,
+          },
+          tabBarActiveTintColor: colors.accent,
+          tabBarInactiveTintColor: colors.textSecondary,
+          tabBarLabelStyle: {
+            fontFamily: fonts.bodyFamilyRegular,
+            fontSize: 12,
+            fontWeight: "600",
+          },
         }}
-      />
-      <Tabs.Screen
-        name="more"
-        options={{
-          title: "More",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="ellipsis-horizontal" size={size} color={color} />
-          ),
-        }}
-      />
-    </Tabs>
+      >
+        <Tabs.Screen
+          name="today"
+          options={{
+            title: "Today",
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="book" size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="journal"
+          options={{
+            title: "Journal",
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="create" size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="steps"
+          options={{
+            title: "Steps",
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="list" size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="more"
+          options={{
+            title: "More",
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="ellipsis-horizontal" size={size} color={color} />
+            ),
+          }}
+        />
+      </Tabs>
     </>
   );
 }

@@ -30,6 +30,7 @@ export function useSubscription(userId?: string | null) {
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
   const initialized = useRef(false);
+  const prevUserId = useRef<string | null | undefined>(userId);
 
   // Initialize RevenueCat and fetch status when user changes
   useEffect(() => {
@@ -37,6 +38,25 @@ export function useSubscription(userId?: string | null) {
 
     const init = async () => {
       try {
+        // If userId went from a value to null/undefined, logout from RevenueCat
+        if (prevUserId.current && !userId && isRevenueCatInitialized()) {
+          await logoutRevenueCat();
+          if (!cancelled) {
+            setStatus({
+              isSubscribed: false,
+              isTrialing: false,
+              isLegacy: false,
+              expirationDate: null,
+              productIdentifier: null,
+              willRenew: false,
+            });
+            setLoading(false);
+          }
+          prevUserId.current = userId;
+          return;
+        }
+        prevUserId.current = userId;
+
         if (!initialized.current) {
           await initializeRevenueCat(userId || undefined);
           initialized.current = true;

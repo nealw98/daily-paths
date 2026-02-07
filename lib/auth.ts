@@ -5,7 +5,7 @@ import * as AppleAuthentication from "expo-apple-authentication";
 import { Platform } from "react-native";
 
 /**
- * Authentication library for Daily Paths Plus.
+ * Authentication library for Daily Paths Unlimited.
  * Supports email/password, Google, and Apple sign-in via Supabase Auth.
  */
 

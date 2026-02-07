@@ -13,7 +13,7 @@ export const ANALYTICS_EVENTS = {
   RATE_MODAL_SHOWN: 'rate_modal_shown',
   RATE_MODAL_DISMISSED: 'rate_modal_dismissed',
   RATE_MODAL_OPENED_STORE: 'rate_modal_opened_store',
-  // Plus feature events
+  // Unlimited feature events
   JOURNAL_ENTRY_CREATED: 'journal_entry_created',
   JOURNAL_ENTRY_EDITED: 'journal_entry_edited',
   JOURNAL_ENTRY_DELETED: 'journal_entry_deleted',

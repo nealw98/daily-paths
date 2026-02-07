@@ -23,6 +23,7 @@ import * as Notifications from "expo-notifications";
 import * as Updates from "expo-updates";
 import { installGlobalErrorHandler } from "../utils/errorLogger";
 import { PostHogProvider } from 'posthog-react-native';
+import { initializeRevenueCat } from "../lib/subscription";
 
 console.log("[STARTUP] _layout.tsx module loading...");
 console.log("[STARTUP] Platform:", Platform.OS, Platform.Version);
@@ -92,6 +93,15 @@ export default function RootLayout() {
   } catch (err) {
     console.error("[STARTUP] ERROR loading fonts:", err);
   }
+
+  // Initialize RevenueCat SDK early so entitlement status is ready before tabs render.
+  // User ID is not available here (inside AuthProvider); useSubscription will call
+  // loginRevenueCat(userId) later when the user signs in.
+  useEffect(() => {
+    if (fontsLoaded) {
+      initializeRevenueCat();
+    }
+  }, [fontsLoaded]);
 
   // Check for OTA updates once on startup; if downloaded, prompt to restart.
   useEffect(() => {

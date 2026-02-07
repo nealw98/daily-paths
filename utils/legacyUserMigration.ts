@@ -4,9 +4,9 @@ import { qaLog } from "./qaLog";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 /**
- * Legacy user migration for Daily Paths Plus.
+ * Legacy user migration for Daily Paths Unlimited.
  * Detects users who purchased the original paid app and grants them
- * lifetime Plus access via user_profiles.legacy_user flag.
+ * lifetime Unlimited access via user_profiles.legacy_user flag.
  */
 
 const LEGACY_MIGRATION_KEY = "@daily_paths_legacy_migration_done";

@@ -7,12 +7,12 @@ import { Platform } from "react-native";
 import { qaLog } from "../utils/qaLog";
 
 /**
- * RevenueCat subscription management for Daily Paths Plus.
+ * RevenueCat subscription management for Daily Paths Unlimited.
  * Products: Monthly ($3.99), Annual ($29.99) with 14-day free trial.
  */
 
 // Entitlement ID configured in RevenueCat dashboard
-const ENTITLEMENT_ID = "plus";
+const ENTITLEMENT_ID = "unlimited";
 
 // API keys from environment (set in .env)
 const REVENUECAT_IOS_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY || "";

@@ -1,4 +1,4 @@
--- Daily Paths Plus Database Schema Migration
+-- Daily Paths Unlimited Database Schema Migration
 -- Version 2.0.0
 -- Run this in Supabase SQL Editor
 

@@ -1,7 +1,7 @@
 import type { SubscriptionStatus } from "../lib/subscription";
 
 /**
- * Access control helpers for Daily Paths Plus features.
+ * Access control helpers for Daily Paths Unlimited features.
  * Determines whether a user can access premium features based on
  * subscription status, trial period, or legacy user status.
  */
@@ -9,9 +9,9 @@ import type { SubscriptionStatus } from "../lib/subscription";
 const TRIAL_DURATION_DAYS = 14;
 
 /**
- * Check if user can access Plus features (journal, gratitude, export, etc.).
+ * Check if user can access Unlimited features (journal, gratitude, export, etc.).
  */
-export function canAccessPlusFeatures(subscription: SubscriptionStatus): boolean {
+export function canAccessUnlimitedFeatures(subscription: SubscriptionStatus): boolean {
   // Legacy users always have access
   if (subscription.isLegacy) return true;
 
@@ -56,7 +56,7 @@ export function getAccessStatusMessage(subscription: SubscriptionStatus): string
     return `${days} days left in trial`;
   }
   if (subscription.isSubscribed) {
-    return "Plus Subscriber";
+    return "Unlimited Subscriber";
   }
   return "Free";
 }
@@ -66,5 +66,5 @@ export function getAccessStatusMessage(subscription: SubscriptionStatus): string
  * Returns true if they don't have access and should see the paywall.
  */
 export function shouldShowPaywall(subscription: SubscriptionStatus): boolean {
-  return !canAccessPlusFeatures(subscription);
+  return !canAccessUnlimitedFeatures(subscription);
 }

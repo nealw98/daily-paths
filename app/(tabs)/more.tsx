@@ -10,6 +10,7 @@ import { PrayersScreen } from "../../components/prayers/PrayersScreen";
 import { SettingsModal } from "../../components/SettingsModal";
 import { SettingsContent } from "../../components/SettingsContent";
 import { PaywallModal } from "../../components/PaywallModal";
+import { SignInModal } from "../../components/SignInModal";
 import { ExportOptionsModal } from "../../components/ExportOptionsModal";
 
 type MoreView = "menu" | "gratitude" | "prayers" | "account";
@@ -20,6 +21,7 @@ export default function MoreTab() {
   const [view, setView] = useState<MoreView>("menu");
   const [showSettings, setShowSettings] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showSignIn, setShowSignIn] = useState(false);
   const [showExport, setShowExport] = useState(false);
 
   // Sub-screens
@@ -81,8 +83,7 @@ export default function MoreTab() {
         if (isAuthenticated) {
           setView("account");
         } else {
-          // For now, show paywall which has sign-in context
-          setShowPaywall(true);
+          setShowSignIn(true);
         }
       },
     },
@@ -167,8 +168,12 @@ export default function MoreTab() {
 
       <PaywallModal
         visible={showPaywall}
-        mode="paywall"
         onClose={() => setShowPaywall(false)}
+      />
+
+      <SignInModal
+        visible={showSignIn}
+        onClose={() => setShowSignIn(false)}
       />
 
       <ExportOptionsModal
