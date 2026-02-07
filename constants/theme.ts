@@ -412,7 +412,7 @@ const morningLightSemantic: SemanticPalette = {
   textOnAccent: "#5C4020",      // Amber Brown — dark text on pastel yellow header
   border: "#FFF2C6",             // Pastel Yellow
   backdrop: "rgba(0, 0, 0, 0.5)",
-  calendarMonthBackground: "#7A5C38", // Rich amber
+  calendarMonthBackground: "#F5E8A0", // Warm pastel yellow (darker than header, readable with dark text)
   calendarDayBackground: "rgba(255, 255, 255, 0.65)",
   calendarBorder: "rgba(255, 255, 255, 0.25)",
   calendarDayText: "#5C4020", // Amber brown on light
