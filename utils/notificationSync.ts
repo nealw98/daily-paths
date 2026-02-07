@@ -2,9 +2,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCachedReading } from './readingCache';
 import { scheduleDailyReminder } from './dailyReminder';
 
-const REMINDER_TIME_KEY = 'dailyReminderTime';
-const REMINDER_ENABLED_KEY = 'dailyReminderEnabled';
-
 /**
  * Updates the scheduled notification with today's thought.
  * Reads from cache and reschedules if reminder is enabled.
@@ -17,9 +14,9 @@ const REMINDER_ENABLED_KEY = 'dailyReminderEnabled';
 export async function updateNotificationWithThought(): Promise<void> {
   try {
     // Check if user has reminder enabled
-    // The settings are stored in the settings object, but we check both locations
-    // to be robust during the migration
-    const settingsRaw = await AsyncStorage.getItem('daily_paths_settings_v1');
+    // Read v2 first (current), fall back to v1 for pre-migration users
+    const settingsRaw = await AsyncStorage.getItem('daily_paths_settings_v2')
+      ?? await AsyncStorage.getItem('daily_paths_settings_v1');
     let reminderEnabled = false;
     let reminderTime = '08:00';
     
