@@ -346,7 +346,7 @@ const softMauveSemantic: SemanticPalette = {
 // ─── Coffee Break (dark: warm gold accents on rich espresso base) ────────
 // Espresso #2A2118, Dark Roast #3D3128, Warm Cocoa #524538, Toasted Almond #8A7355, Pale Gold #C8B48A, Champagne #E8D9B8
 const champagneSemantic: SemanticPalette = {
-  heroGradientStart: "#2A2118",  // Espresso (deep, warm dark)
+  heroGradientStart: "#3D3128",  // Dark Roast (lighter than bg, visible separation)
   heroGradientEnd: "#6B5A42",   // Warm Toffee (visible gradient, like Deep Sea's spread)
   background: "#2A2118",         // Espresso
   backgroundSecondary: "#3D3128", // Dark Roast
@@ -359,7 +359,7 @@ const champagneSemantic: SemanticPalette = {
   cardBackground: "#3D3128",    // Dark Roast
   buttonPrimary: "#C8B48A",     // Pale Gold (pops on dark)
   buttonSecondary: "#8A7355",   // Toasted Almond
-  textOnAccent: "#FFFFFF",      // White — works on dark header and gold buttons
+  textOnAccent: "#E8D9B8",      // Champagne — matches main text, warm on dark header and gold buttons
   border: "#524538",             // Warm Cocoa
   backdrop: "rgba(0, 0, 0, 0.6)",
   calendarMonthBackground: "#524538", // Warm Cocoa
