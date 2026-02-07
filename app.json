@@ -43,8 +43,7 @@
       "expo-font",
       "expo-localization",
       "expo-secure-store",
-      "expo-apple-authentication",
-      "react-native-purchases"
+      "expo-apple-authentication"
     ],
     "experiments": {
       "typedRoutes": true
