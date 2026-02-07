@@ -343,29 +343,29 @@ const softMauveSemantic: SemanticPalette = {
   calendarDayText: "#4A2040", // Deep berry on light background
 };
 
-// ─── Champagne (warm gold — elegant, luminous, safe) ─────────────────────
-// Deep Amber #5C4023, Warm Bronze #8B6914, Golden Honey #B8922E, Soft Gold #D4B96A, Champagne Mist #E8D8B4, Cream Linen #FBF8F1
+// ─── Champagne (real champagne color — pale gold, airy, luminous) ────────
+// Toasted Almond #8A7355, Warm Taupe #A6926B, Pale Gold #C8B48A, Champagne #E8D9B8, Fizz #F3ECE0, Ivory #FDFAF5
 const champagneSemantic: SemanticPalette = {
-  heroGradientStart: "#5C4023",  // Deep Amber (rich, grounding)
-  heroGradientEnd: "#7A5A2E",   // Warm Bronze (subtle shift, stays confident)
-  background: "#FBF8F1",         // Cream Linen (warm, not stark)
-  backgroundSecondary: "#F3EDE0", // Soft parchment tint
-  text: "#3D2E1A",               // Deep espresso (warm, readable)
-  textSecondary: "#8B6914",      // Warm Bronze (alive, not muddy)
-  accent: "#8B6914",             // Warm Bronze
-  highlight: "#D4B96A",          // Soft Gold (luminous highlight)
-  modalBackground: "#FBF8F1",   // Cream Linen
-  modalBorder: "#E8D8B4",       // Champagne Mist
-  cardBackground: "#F3EDE0",    // Soft parchment
-  buttonPrimary: "#7A5A2E",     // Warm Bronze (strong, warm)
-  buttonSecondary: "#D4B96A",   // Soft Gold
-  textOnAccent: "#FBF8F1",      // Cream Linen on buttons
-  border: "#E8D8B4",             // Champagne Mist
+  heroGradientStart: "#B5A07A",  // Warm champagne gold
+  heroGradientEnd: "#C8B48A",   // Pale gold (subtle, airy shift)
+  background: "#FDFAF5",         // Ivory (barely there warmth)
+  backgroundSecondary: "#F3ECE0", // Fizz (soft champagne wash)
+  text: "#4A3D2E",               // Warm espresso (high contrast on ivory)
+  textSecondary: "#7A6A50",      // Toasty taupe (readable on light bg)
+  accent: "#8A7355",             // Toasted Almond (grounded, warm)
+  highlight: "#E8D9B8",          // Champagne (gentle glow)
+  modalBackground: "#FDFAF5",   // Ivory
+  modalBorder: "#E8D9B8",       // Champagne
+  cardBackground: "#F3ECE0",    // Fizz
+  buttonPrimary: "#8A7355",     // Toasted Almond (visible, warm)
+  buttonSecondary: "#C8B48A",   // Pale Gold
+  textOnAccent: "#FDFAF5",      // Ivory on buttons
+  border: "#E8D9B8",             // Champagne
   backdrop: "rgba(0, 0, 0, 0.5)",
-  calendarMonthBackground: "#5C4023", // Deep Amber
+  calendarMonthBackground: "#8A7355", // Toasted Almond
   calendarDayBackground: "rgba(255, 255, 255, 0.65)",
   calendarBorder: "rgba(255, 255, 255, 0.25)",
-  calendarDayText: "#5C4023", // Deep amber on light background
+  calendarDayText: "#4A3D2E", // Espresso on light background
 };
 
 // ─── All selectable color schemes ──────────────────────────────────────────
