@@ -211,7 +211,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
                 {editContent
                   ? renderJournalMarkdown(
                       editContent,
-                      { fontFamily: fonts.loraBold },
+                      { fontFamily: fonts.bodyFamilyRegular, color: colors.accent },
                       { fontFamily: fonts.loraItalic }
                     )
                   : null}
@@ -239,7 +239,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
               <Text style={[styles.contentText, { color: colors.text }]}>
                 {renderJournalMarkdown(
                   entry.content,
-                  { fontFamily: fonts.loraBold },
+                  { fontFamily: fonts.bodyFamilyRegular, color: colors.accent },
                   { fontFamily: fonts.loraItalic }
                 )}
               </Text>

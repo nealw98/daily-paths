@@ -195,7 +195,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                 ? renderEditorMarkdown(
                     content,
                     colors.text,
-                    { fontFamily: fonts.loraBold, color: colors.text },
+                    { fontFamily: fonts.bodyFamilyRegular, color: colors.accent },
                     { fontFamily: fonts.loraItalic, color: colors.text }
                   )
                 : null}
