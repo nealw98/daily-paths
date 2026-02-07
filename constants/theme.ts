@@ -318,29 +318,29 @@ const twilightSkySemantic: SemanticPalette = {
   calendarDayText: "#5829A7", // Rebecca Purple on light background
 };
 
-// ─── Soft Mauve (warm dusty mauve/muted plum — nurturing and safe) ────────
-// Dark Plum #5C3D4F, Dusty Mauve #8B6F7E, Muted Rose #B8A0AB, Lavender Mist #D8C8D0, Warm Cream #FAF6F3
+// ─── Soft Mauve (warm plum-to-rose gradient — nurturing and alive) ────────
+// Deep Berry #4A2040, Warm Plum #7D4E6A, Rosé Mauve #9E7B8E, Soft Petal #C9AAB8, Blush Mist #E3CED6, Warm Cream #FAF5F2
 const softMauveSemantic: SemanticPalette = {
-  heroGradientStart: "#5C3D4F",  // Dark Plum (rich, grounding)
-  heroGradientEnd: "#8B6F7E",   // Dusty Mauve (warm, soft landing)
-  background: "#FAF6F3",         // Warm Cream (gentle, not stark)
-  backgroundSecondary: "#F0E8EC", // Very light mauve tint
-  text: "#4A3845",               // Soft dark plum (readable but gentle)
-  textSecondary: "#7A6370",      // Muted plum (softer than accent)
-  accent: "#8B6F7E",             // Dusty Mauve (warm, understated)
-  highlight: "#B8A0AB",          // Muted Rose (gentle highlight)
-  modalBackground: "#FAF6F3",   // Warm Cream
-  modalBorder: "#D8C8D0",       // Lavender Mist
-  cardBackground: "#F0E8EC",    // Very light mauve
-  buttonPrimary: "#6B4F60",     // Between dark plum and dusty mauve (strong but warm)
-  buttonSecondary: "#B8A0AB",   // Muted Rose
-  textOnAccent: "#FAF6F3",      // Warm Cream on buttons
-  border: "#D8C8D0",             // Lavender Mist
+  heroGradientStart: "#4A2040",  // Deep Berry (rich, dramatic depth)
+  heroGradientEnd: "#9E7B8E",   // Rosé Mauve (warm, glowing landing)
+  background: "#FAF5F2",         // Warm Cream (gentle, alive)
+  backgroundSecondary: "#F2E6EB", // Pale rose tint
+  text: "#3D2235",               // Deep berry-ink (rich but not harsh)
+  textSecondary: "#7D4E6A",      // Warm Plum (vibrant secondary)
+  accent: "#7D4E6A",             // Warm Plum (confident, not dusty)
+  highlight: "#C9AAB8",          // Soft Petal (luminous highlight)
+  modalBackground: "#FAF5F2",   // Warm Cream
+  modalBorder: "#E3CED6",       // Blush Mist
+  cardBackground: "#F2E6EB",    // Pale rose
+  buttonPrimary: "#6B3A58",     // Rich plum (strong, warm)
+  buttonSecondary: "#C9AAB8",   // Soft Petal
+  textOnAccent: "#FAF5F2",      // Warm Cream on buttons
+  border: "#E3CED6",             // Blush Mist
   backdrop: "rgba(0, 0, 0, 0.5)",
-  calendarMonthBackground: "#5C3D4F", // Dark Plum
+  calendarMonthBackground: "#4A2040", // Deep Berry
   calendarDayBackground: "rgba(255, 255, 255, 0.65)",
   calendarBorder: "rgba(255, 255, 255, 0.25)",
-  calendarDayText: "#5C3D4F", // Dark plum on light background
+  calendarDayText: "#4A2040", // Deep berry on light background
 };
 
 // ─── All selectable color schemes ──────────────────────────────────────────
