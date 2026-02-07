@@ -343,29 +343,29 @@ const softMauveSemantic: SemanticPalette = {
   calendarDayText: "#4A2040", // Deep berry on light background
 };
 
-// ─── Champagne (real champagne color — pale gold, airy, luminous) ────────
-// Toasted Almond #8A7355, Warm Taupe #A6926B, Pale Gold #C8B48A, Champagne #E8D9B8, Fizz #F3ECE0, Ivory #FDFAF5
+// ─── Champagne (dark: warm gold accents on rich espresso base) ───────────
+// Espresso #2A2118, Dark Roast #3D3128, Warm Cocoa #524538, Toasted Almond #8A7355, Pale Gold #C8B48A, Champagne #E8D9B8
 const champagneSemantic: SemanticPalette = {
-  heroGradientStart: "#B5A07A",  // Warm champagne gold
-  heroGradientEnd: "#C8B48A",   // Pale gold (subtle, airy shift)
-  background: "#FDFAF5",         // Ivory (barely there warmth)
-  backgroundSecondary: "#F3ECE0", // Fizz (soft champagne wash)
-  text: "#4A3D2E",               // Warm espresso (high contrast on ivory)
-  textSecondary: "#7A6A50",      // Toasty taupe (readable on light bg)
-  accent: "#8A7355",             // Toasted Almond (grounded, warm)
-  highlight: "#E8D9B8",          // Champagne (gentle glow)
-  modalBackground: "#FDFAF5",   // Ivory
-  modalBorder: "#E8D9B8",       // Champagne
-  cardBackground: "#F3ECE0",    // Fizz
-  buttonPrimary: "#8A7355",     // Toasted Almond (visible, warm)
-  buttonSecondary: "#C8B48A",   // Pale Gold
-  textOnAccent: "#FDFAF5",      // Ivory on buttons
-  border: "#E8D9B8",             // Champagne
-  backdrop: "rgba(0, 0, 0, 0.5)",
-  calendarMonthBackground: "#8A7355", // Toasted Almond
-  calendarDayBackground: "rgba(255, 255, 255, 0.65)",
-  calendarBorder: "rgba(255, 255, 255, 0.25)",
-  calendarDayText: "#4A3D2E", // Espresso on light background
+  heroGradientStart: "#2A2118",  // Espresso (deep, warm dark)
+  heroGradientEnd: "#3D3128",   // Dark Roast (subtle warmth)
+  background: "#2A2118",         // Espresso
+  backgroundSecondary: "#3D3128", // Dark Roast
+  text: "#E8D9B8",               // Champagne (warm light on dark — high contrast)
+  textSecondary: "#C8B48A",      // Pale Gold (readable on dark)
+  accent: "#C8B48A",             // Pale Gold
+  highlight: "#8A7355",          // Toasted Almond (muted glow)
+  modalBackground: "#3D3128",   // Dark Roast
+  modalBorder: "#524538",       // Warm Cocoa
+  cardBackground: "#3D3128",    // Dark Roast
+  buttonPrimary: "#C8B48A",     // Pale Gold (pops on dark)
+  buttonSecondary: "#8A7355",   // Toasted Almond
+  textOnAccent: "#2A2118",      // Espresso text on gold buttons
+  border: "#524538",             // Warm Cocoa
+  backdrop: "rgba(0, 0, 0, 0.6)",
+  calendarMonthBackground: "#524538", // Warm Cocoa
+  calendarDayBackground: "#3D3128", // Dark Roast
+  calendarBorder: "#524538",     // Warm Cocoa
+  calendarDayText: "#E8D9B8", // Champagne on dark
 };
 
 // ─── All selectable color schemes ──────────────────────────────────────────
@@ -423,7 +423,7 @@ export const COLOR_SCHEMES: ColorSchemeDef[] = [
   {
     id: "champagne",
     name: "Champagne",
-    dark: false,
+    dark: true,
     colors: buildPalette(champagneSemantic),
   },
 ];
