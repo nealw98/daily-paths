@@ -368,54 +368,54 @@ const champagneSemantic: SemanticPalette = {
   calendarDayText: "#E8D9B8", // Champagne on dark
 };
 
-// ─── Peach Blossom (warm peach pastels — nurturing, hopeful) ─────────────
-// Terracotta #8B5E3C, Warm Peach #C4835A, Soft Apricot #E8AE82, Peach Cream #F5D0B5, Blush Peach #FAE5D8, Warm White #FDF8F4
+// ─── Peach Blossom (soft peach pastels — light, airy, nurturing) ─────────
+// Coral Rose #C47A6E, Soft Coral #D99A8A, Peach Pink #EDBAAC, Peach Mist #F5D4CC, Blush #FAE8E3, Petal White #FEF6F4
 const peachBlossomSemantic: SemanticPalette = {
-  heroGradientStart: "#8B5E3C",  // Terracotta (warm, earthy depth)
-  heroGradientEnd: "#B07550",   // Warm clay (subtle shift, stays grounded)
-  background: "#FDF8F4",         // Warm White
-  backgroundSecondary: "#FAE5D8", // Blush Peach
-  text: "#4A2E1E",               // Dark walnut (warm, high contrast)
-  textSecondary: "#8B5E3C",      // Terracotta
-  accent: "#C4835A",             // Warm Peach
-  highlight: "#F5D0B5",          // Peach Cream (soft glow)
-  modalBackground: "#FDF8F4",   // Warm White
-  modalBorder: "#F5D0B5",       // Peach Cream
-  cardBackground: "#FAE5D8",    // Blush Peach
-  buttonPrimary: "#8B5E3C",     // Terracotta (strong, warm)
-  buttonSecondary: "#E8AE82",   // Soft Apricot
-  textOnAccent: "#FDF8F4",      // Warm White on buttons
-  border: "#F5D0B5",             // Peach Cream
+  heroGradientStart: "#C47A6E",  // Coral Rose (warm, not brown)
+  heroGradientEnd: "#D99A8A",   // Soft Coral (subtle, peachy shift)
+  background: "#FEF6F4",         // Petal White (barely peach)
+  backgroundSecondary: "#FAE8E3", // Blush
+  text: "#5C3030",               // Deep rose-brown (warm, readable)
+  textSecondary: "#C47A6E",      // Coral Rose
+  accent: "#C47A6E",             // Coral Rose
+  highlight: "#F5D4CC",          // Peach Mist (soft glow)
+  modalBackground: "#FEF6F4",   // Petal White
+  modalBorder: "#F5D4CC",       // Peach Mist
+  cardBackground: "#FAE8E3",    // Blush
+  buttonPrimary: "#C47A6E",     // Coral Rose
+  buttonSecondary: "#EDBAAC",   // Peach Pink
+  textOnAccent: "#FEF6F4",      // Petal White on buttons
+  border: "#F5D4CC",             // Peach Mist
   backdrop: "rgba(0, 0, 0, 0.5)",
-  calendarMonthBackground: "#8B5E3C", // Terracotta
+  calendarMonthBackground: "#C47A6E", // Coral Rose
   calendarDayBackground: "rgba(255, 255, 255, 0.65)",
   calendarBorder: "rgba(255, 255, 255, 0.25)",
-  calendarDayText: "#4A2E1E", // Dark walnut on light
+  calendarDayText: "#5C3030", // Deep rose-brown on light
 };
 
-// ─── Morning Light (soft buttercream yellow — sunny, gentle, hopeful) ────
-// Golden Oak #7A6530, Honey #A68B45, Soft Marigold #C8AD60, Buttercream #E8D8A0, Pale Sunshine #F3EDC8, Linen White #FDFBF4
+// ─── Morning Light (light pastel yellow — sunny, airy, gentle) ──────────
+// Soft Dijon #B8A040, Warm Straw #CDB860, Pale Primrose #E0D48A, Lemon Chiffon #F0E8B8, Cream Puff #F8F3D8, Morning White #FDFCF5
 const morningLightSemantic: SemanticPalette = {
-  heroGradientStart: "#7A6530",  // Golden Oak (warm, grounded)
-  heroGradientEnd: "#98803E",   // Rich honey (subtle shift)
-  background: "#FDFBF4",         // Linen White (barely yellow warmth)
-  backgroundSecondary: "#F3EDC8", // Pale Sunshine
-  text: "#3D3218",               // Dark olive-brown (warm, readable)
-  textSecondary: "#7A6530",      // Golden Oak
-  accent: "#A68B45",             // Honey
-  highlight: "#E8D8A0",          // Buttercream (soft golden glow)
-  modalBackground: "#FDFBF4",   // Linen White
-  modalBorder: "#E8D8A0",       // Buttercream
-  cardBackground: "#F3EDC8",    // Pale Sunshine
-  buttonPrimary: "#7A6530",     // Golden Oak (visible, warm)
-  buttonSecondary: "#C8AD60",   // Soft Marigold
-  textOnAccent: "#FDFBF4",      // Linen White on buttons
-  border: "#E8D8A0",             // Buttercream
+  heroGradientStart: "#B8A040",  // Soft Dijon (warm pastel, not dark)
+  heroGradientEnd: "#CDB860",   // Warm Straw (light, sunny shift)
+  background: "#FDFCF5",         // Morning White (whisper of yellow)
+  backgroundSecondary: "#F8F3D8", // Cream Puff
+  text: "#4A4420",               // Olive ink (warm, readable on pale yellow)
+  textSecondary: "#8A7E38",      // Muted olive-gold
+  accent: "#B8A040",             // Soft Dijon
+  highlight: "#F0E8B8",          // Lemon Chiffon (gentle glow)
+  modalBackground: "#FDFCF5",   // Morning White
+  modalBorder: "#F0E8B8",       // Lemon Chiffon
+  cardBackground: "#F8F3D8",    // Cream Puff
+  buttonPrimary: "#9A8A35",     // Warm ochre (visible on pale bg)
+  buttonSecondary: "#E0D48A",   // Pale Primrose
+  textOnAccent: "#FDFCF5",      // Morning White on buttons
+  border: "#F0E8B8",             // Lemon Chiffon
   backdrop: "rgba(0, 0, 0, 0.5)",
-  calendarMonthBackground: "#7A6530", // Golden Oak
+  calendarMonthBackground: "#9A8A35", // Warm ochre
   calendarDayBackground: "rgba(255, 255, 255, 0.65)",
   calendarBorder: "rgba(255, 255, 255, 0.25)",
-  calendarDayText: "#3D3218", // Dark olive on light
+  calendarDayText: "#4A4420", // Olive ink on light
 };
 
 // ─── All selectable color schemes ──────────────────────────────────────────
