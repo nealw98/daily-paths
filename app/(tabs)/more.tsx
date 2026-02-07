@@ -167,6 +167,7 @@ export default function MoreTab() {
 
       <PaywallModal
         visible={showPaywall}
+        mode="paywall"
         onClose={() => setShowPaywall(false)}
       />
 

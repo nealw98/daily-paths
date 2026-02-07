@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Pressable,
   StyleSheet,
   Modal,
   ActivityIndicator,
@@ -20,6 +19,7 @@ import type { PurchasesPackage } from "react-native-purchases";
 
 interface PaywallModalProps {
   visible: boolean;
+  mode: "paywall" | "signin";
   onClose: () => void;
 }
 
@@ -34,6 +34,7 @@ const FEATURES = [
 
 export const PaywallModal: React.FC<PaywallModalProps> = ({
   visible,
+  mode,
   onClose,
 }) => {
   const { colors } = useTheme();
@@ -42,16 +43,41 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
   const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage | null>(null);
   const [restoring, setRestoring] = useState(false);
 
-  // PREVIEW BYPASS — remove before production release
-  // Long-press the title to show sign-in form for testing without subscriptions
-  const [showAuthForm, setShowAuthForm] = useState(false);
+  // In "signin" mode, always show auth form.
+  // In "paywall" mode, show auth form in __DEV__ or after tapping "Sign In" link.
+  const [showAuthForm, setShowAuthForm] = useState(
+    mode === "signin" || __DEV__
+  );
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
 
-  const handleTitleLongPress = () => {
-    setShowAuthForm(true);
+  // Keep showAuthForm in sync with mode changes
+  React.useEffect(() => {
+    if (mode === "signin") {
+      setShowAuthForm(true);
+    } else if (!__DEV__) {
+      setShowAuthForm(false);
+    }
+  }, [mode]);
+
+  // Hidden 5-tap bypass for paywall mode in preview builds (not __DEV__)
+  const tapCountRef = useRef(0);
+  const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleTitleTap = () => {
+    if (showAuthForm || mode === "signin") return;
+    tapCountRef.current += 1;
+    if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+    if (tapCountRef.current >= 5) {
+      tapCountRef.current = 0;
+      setShowAuthForm(true);
+    } else {
+      tapTimerRef.current = setTimeout(() => {
+        tapCountRef.current = 0;
+      }, 2000);
+    }
   };
 
   const handleAuthSubmit = async () => {
@@ -137,143 +163,164 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
           <ScrollView
             style={styles.scrollContent}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: 40 }}
           >
-            {/* Title — PREVIEW BYPASS: long-press to skip paywall, remove before production */}
-            <Pressable onLongPress={handleTitleLongPress} delayLongPress={1500}>
+            {/* Title */}
+            <TouchableOpacity activeOpacity={1} onPress={handleTitleTap}>
               <Text style={[styles.title, { color: colors.text }]}>
-                Daily Paths Plus
+                {mode === "signin" ? "Welcome Back" : "Daily Paths Plus"}
               </Text>
-            </Pressable>
+            </TouchableOpacity>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              Deepen your recovery journey
+              {mode === "signin"
+                ? "Sign in to continue"
+                : "Deepen your recovery journey"}
             </Text>
 
-            {/* Features */}
-            <View style={styles.featuresList}>
-              {FEATURES.map((feature) => (
-                <View key={feature.title} style={styles.featureRow}>
-                  <View
-                    style={[
-                      styles.featureIcon,
-                      { backgroundColor: colors.cardBackground },
-                    ]}
-                  >
-                    <Ionicons name={feature.icon} size={20} color={colors.accent} />
-                  </View>
-                  <View style={styles.featureText}>
-                    <Text style={[styles.featureTitle, { color: colors.text }]}>
-                      {feature.title}
-                    </Text>
-                    <Text
-                      style={[styles.featureDesc, { color: colors.textSecondary }]}
+            {/* Features — only in paywall mode */}
+            {mode === "paywall" && (
+              <View style={styles.featuresList}>
+                {FEATURES.map((feature) => (
+                  <View key={feature.title} style={styles.featureRow}>
+                    <View
+                      style={[
+                        styles.featureIcon,
+                        { backgroundColor: colors.cardBackground },
+                      ]}
                     >
-                      {feature.desc}
-                    </Text>
+                      <Ionicons name={feature.icon} size={20} color={colors.accent} />
+                    </View>
+                    <View style={styles.featureText}>
+                      <Text style={[styles.featureTitle, { color: colors.text }]}>
+                        {feature.title}
+                      </Text>
+                      <Text
+                        style={[styles.featureDesc, { color: colors.textSecondary }]}
+                      >
+                        {feature.desc}
+                      </Text>
+                    </View>
                   </View>
+                ))}
+              </View>
+            )}
+
+            {/* Subscription UI — only in paywall mode when auth form is not active */}
+            {mode === "paywall" && !showAuthForm && (
+              <>
+                {/* Package Selection */}
+                <View style={styles.packages}>
+                  {annualPkg && (
+                    <TouchableOpacity
+                      style={[
+                        styles.packageCard,
+                        {
+                          borderColor:
+                            (selectedPackage || annualPkg) === annualPkg
+                              ? colors.accent
+                              : colors.border,
+                          backgroundColor:
+                            (selectedPackage || annualPkg) === annualPkg
+                              ? colors.cardBackground
+                              : colors.background,
+                        },
+                      ]}
+                      onPress={() => setSelectedPackage(annualPkg)}
+                    >
+                      <View style={[styles.bestValueBadge, { backgroundColor: colors.accent }]}>
+                        <Text style={[styles.bestValueText, { color: colors.textOnAccent }]}>
+                          Best Value
+                        </Text>
+                      </View>
+                      <Text style={[styles.packageTitle, { color: colors.text }]}>
+                        Annual
+                      </Text>
+                      <Text style={[styles.packagePrice, { color: colors.accent }]}>
+                        {annualPkg.product.priceString}/year
+                      </Text>
+                      <Text style={[styles.packageSavings, { color: colors.textSecondary }]}>
+                        14-day free trial
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {monthlyPkg && (
+                    <TouchableOpacity
+                      style={[
+                        styles.packageCard,
+                        {
+                          borderColor:
+                            selectedPackage === monthlyPkg
+                              ? colors.accent
+                              : colors.border,
+                          backgroundColor:
+                            selectedPackage === monthlyPkg
+                              ? colors.cardBackground
+                              : colors.background,
+                        },
+                      ]}
+                      onPress={() => setSelectedPackage(monthlyPkg)}
+                    >
+                      <Text style={[styles.packageTitle, { color: colors.text }]}>
+                        Monthly
+                      </Text>
+                      <Text style={[styles.packagePrice, { color: colors.accent }]}>
+                        {monthlyPkg.product.priceString}/month
+                      </Text>
+                      <Text style={[styles.packageSavings, { color: colors.textSecondary }]}>
+                        14-day free trial
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
-              ))}
-            </View>
 
-            {/* Package Selection */}
-            <View style={styles.packages}>
-              {annualPkg && (
+                {/* CTA Button */}
                 <TouchableOpacity
-                  style={[
-                    styles.packageCard,
-                    {
-                      borderColor:
-                        (selectedPackage || annualPkg) === annualPkg
-                          ? colors.accent
-                          : colors.border,
-                      backgroundColor:
-                        (selectedPackage || annualPkg) === annualPkg
-                          ? colors.cardBackground
-                          : colors.background,
-                    },
-                  ]}
-                  onPress={() => setSelectedPackage(annualPkg)}
+                  style={[styles.ctaButton, { backgroundColor: colors.buttonPrimary }]}
+                  onPress={handlePurchase}
+                  disabled={purchasing || packages.length === 0}
                 >
-                  <View style={[styles.bestValueBadge, { backgroundColor: colors.accent }]}>
-                    <Text style={[styles.bestValueText, { color: colors.textOnAccent }]}>
-                      Best Value
+                  {purchasing ? (
+                    <ActivityIndicator color={colors.textOnAccent} />
+                  ) : (
+                    <Text style={[styles.ctaText, { color: colors.textOnAccent }]}>
+                      Start Free Trial
                     </Text>
-                  </View>
-                  <Text style={[styles.packageTitle, { color: colors.text }]}>
-                    Annual
-                  </Text>
-                  <Text style={[styles.packagePrice, { color: colors.accent }]}>
-                    {annualPkg.product.priceString}/year
-                  </Text>
-                  <Text style={[styles.packageSavings, { color: colors.textSecondary }]}>
-                    14-day free trial
-                  </Text>
+                  )}
                 </TouchableOpacity>
-              )}
 
-              {monthlyPkg && (
+                {/* Restore */}
                 <TouchableOpacity
-                  style={[
-                    styles.packageCard,
-                    {
-                      borderColor:
-                        selectedPackage === monthlyPkg
-                          ? colors.accent
-                          : colors.border,
-                      backgroundColor:
-                        selectedPackage === monthlyPkg
-                          ? colors.cardBackground
-                          : colors.background,
-                    },
-                  ]}
-                  onPress={() => setSelectedPackage(monthlyPkg)}
+                  style={styles.restoreButton}
+                  onPress={handleRestore}
+                  disabled={restoring}
                 >
-                  <Text style={[styles.packageTitle, { color: colors.text }]}>
-                    Monthly
-                  </Text>
-                  <Text style={[styles.packagePrice, { color: colors.accent }]}>
-                    {monthlyPkg.product.priceString}/month
-                  </Text>
-                  <Text style={[styles.packageSavings, { color: colors.textSecondary }]}>
-                    14-day free trial
+                  <Text style={[styles.restoreText, { color: colors.textSecondary }]}>
+                    {restoring ? "Restoring..." : "Restore Purchases"}
                   </Text>
                 </TouchableOpacity>
-              )}
-            </View>
 
-            {/* CTA Button */}
-            <TouchableOpacity
-              style={[styles.ctaButton, { backgroundColor: colors.buttonPrimary }]}
-              onPress={handlePurchase}
-              disabled={purchasing || packages.length === 0}
-            >
-              {purchasing ? (
-                <ActivityIndicator color={colors.textOnAccent} />
-              ) : (
-                <Text style={[styles.ctaText, { color: colors.textOnAccent }]}>
-                  Start Free Trial
+                {/* Legal */}
+                <Text style={[styles.legalText, { color: colors.textSecondary }]}>
+                  Payment will be charged to your App Store account at confirmation
+                  of purchase. Subscription automatically renews unless auto-renew is
+                  turned off at least 24-hours before the end of the current period.
                 </Text>
-              )}
-            </TouchableOpacity>
 
-            {/* Restore */}
-            <TouchableOpacity
-              style={styles.restoreButton}
-              onPress={handleRestore}
-              disabled={restoring}
-            >
-              <Text style={[styles.restoreText, { color: colors.textSecondary }]}>
-                {restoring ? "Restoring..." : "Restore Purchases"}
-              </Text>
-            </TouchableOpacity>
+                {/* Sign In link for returning subscribers */}
+                <TouchableOpacity
+                  style={styles.signInLink}
+                  onPress={() => setShowAuthForm(true)}
+                >
+                  <Text style={[styles.signInLinkText, { color: colors.accent }]}>
+                    Already have an account? Sign In
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
 
-            {/* Legal */}
-            <Text style={[styles.legalText, { color: colors.textSecondary }]}>
-              Payment will be charged to your App Store account at confirmation
-              of purchase. Subscription automatically renews unless auto-renew is
-              turned off at least 24-hours before the end of the current period.
-            </Text>
-
-            {/* PREVIEW BYPASS — remove before production release */}
+            {/* Sign In / Create Account form */}
             {showAuthForm && (
               <View style={[styles.authForm, { borderColor: colors.border }]}>
                 <Text style={[styles.authFormTitle, { color: colors.text }]}>
@@ -319,9 +366,17 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
                       : "Already have an account? Sign in"}
                   </Text>
                 </TouchableOpacity>
+                {mode === "paywall" && !__DEV__ && (
+                  <TouchableOpacity
+                    onPress={() => setShowAuthForm(false)}
+                  >
+                    <Text style={[styles.authToggleText, { color: colors.textSecondary }]}>
+                      Back to plans
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
             )}
-            {/* END PREVIEW BYPASS */}
           </ScrollView>
         </View>
       </View>
@@ -466,7 +521,15 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingBottom: 16,
   },
-  // PREVIEW BYPASS styles — remove before production release
+  signInLink: {
+    alignItems: "center",
+    paddingVertical: 16,
+  },
+  signInLinkText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 15,
+    fontWeight: "500",
+  },
   authForm: {
     marginTop: 16,
     paddingTop: 16,
