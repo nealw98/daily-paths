@@ -321,8 +321,8 @@ const twilightSkySemantic: SemanticPalette = {
 // ─── Soft Mauve (warm plum-to-rose gradient — nurturing and alive) ────────
 // Deep Berry #4A2040, Warm Plum #7D4E6A, Rosé Mauve #9E7B8E, Soft Petal #C9AAB8, Blush Mist #E3CED6, Warm Cream #FAF5F2
 const softMauveSemantic: SemanticPalette = {
-  heroGradientStart: "#4A2040",  // Deep Berry (rich, dramatic depth)
-  heroGradientEnd: "#9E7B8E",   // Rosé Mauve (warm, glowing landing)
+  heroGradientStart: "#4A2040",  // Deep Berry (rich depth)
+  heroGradientEnd: "#6B3A58",   // Warm Plum (subtle shift, stays rich)
   background: "#FAF5F2",         // Warm Cream (gentle, alive)
   backgroundSecondary: "#F2E6EB", // Pale rose tint
   text: "#3D2235",               // Deep berry-ink (rich but not harsh)
