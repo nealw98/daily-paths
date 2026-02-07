@@ -343,7 +343,7 @@ const softMauveSemantic: SemanticPalette = {
   calendarDayText: "#4A2040", // Deep berry on light background
 };
 
-// ─── Champagne (dark: warm gold accents on rich espresso base) ───────────
+// ─── Coffee Break (dark: warm gold accents on rich espresso base) ────────
 // Espresso #2A2118, Dark Roast #3D3128, Warm Cocoa #524538, Toasted Almond #8A7355, Pale Gold #C8B48A, Champagne #E8D9B8
 const champagneSemantic: SemanticPalette = {
   heroGradientStart: "#2A2118",  // Espresso (deep, warm dark)
@@ -422,7 +422,7 @@ export const COLOR_SCHEMES: ColorSchemeDef[] = [
   },
   {
     id: "champagne",
-    name: "Champagne",
+    name: "Coffee Break",
     dark: true,
     colors: buildPalette(champagneSemantic),
   },
