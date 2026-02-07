@@ -396,8 +396,8 @@ const peachBlossomSemantic: SemanticPalette = {
 // ─── Morning Light (pastel yellow #FFFDCE base — soft, sunny, gentle) ────
 // Warm Sage #6B6B3A, Muted Olive #8A8A50, Soft Yellow #FFFDCE, Pale Butter #FFF9B8, Near White #FFFEF2
 const morningLightSemantic: SemanticPalette = {
-  heroGradientStart: "#E8E4A0",  // Muted pastel yellow (visible header)
-  heroGradientEnd: "#F0EDB5",   // Lighter pastel yellow (subtle shift)
+  heroGradientStart: "#FFF2C6",  // Warm pastel yellow
+  heroGradientEnd: "#FFF8DE",   // Lighter pastel yellow (soft gradient)
   background: "#FFFEF2",         // Near White (barely yellow)
   backgroundSecondary: "#FFFDCE", // THE yellow — soft, sunny
   text: "#4A4A28",               // Warm olive-ink (readable)
