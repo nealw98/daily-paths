@@ -368,29 +368,29 @@ const champagneSemantic: SemanticPalette = {
   calendarDayText: "#E8D9B8", // Champagne on dark
 };
 
-// ─── Peach Blossom (soft peach pastels — light, airy, nurturing) ─────────
-// Coral Rose #C47A6E, Soft Coral #D99A8A, Peach Pink #EDBAAC, Peach Mist #F5D4CC, Blush #FAE8E3, Petal White #FEF6F4
+// ─── Peach Blossom (soft peach-pink pastels — #FFE8DB / #FAF7F3 base) ────
+// Rose Clay #9E5A5A, Dusty Rose #B87878, Soft Peach #EDBAAC, Blush Pink #FFE8DB, Petal #FAF7F3, Near White #FEFCFA
 const peachBlossomSemantic: SemanticPalette = {
-  heroGradientStart: "#C47A6E",  // Coral Rose (warm, not brown)
-  heroGradientEnd: "#D99A8A",   // Soft Coral (subtle, peachy shift)
-  background: "#FEF6F4",         // Petal White (barely peach)
-  backgroundSecondary: "#FAE8E3", // Blush
-  text: "#5C3030",               // Deep rose-brown (warm, readable)
-  textSecondary: "#C47A6E",      // Coral Rose
-  accent: "#C47A6E",             // Coral Rose
-  highlight: "#F5D4CC",          // Peach Mist (soft glow)
-  modalBackground: "#FEF6F4",   // Petal White
-  modalBorder: "#F5D4CC",       // Peach Mist
-  cardBackground: "#FAE8E3",    // Blush
-  buttonPrimary: "#C47A6E",     // Coral Rose
-  buttonSecondary: "#EDBAAC",   // Peach Pink
-  textOnAccent: "#FEF6F4",      // Petal White on buttons
-  border: "#F5D4CC",             // Peach Mist
+  heroGradientStart: "#FFE8DB",  // Blush Pink (soft peach pastel)
+  heroGradientEnd: "#FAF7F3",   // Petal (barely pink, airy)
+  background: "#FEFCFA",         // Near White (whisper of warmth)
+  backgroundSecondary: "#FAF7F3", // Petal
+  text: "#5C3030",               // Deep rose (warm, readable on light)
+  textSecondary: "#9E5A5A",      // Rose Clay (pink-leaning, not brown)
+  accent: "#B87878",             // Dusty Rose (warm pink, not coral)
+  highlight: "#FFE8DB",          // Blush Pink (soft glow)
+  modalBackground: "#FEFCFA",   // Near White
+  modalBorder: "#FFE8DB",       // Blush Pink
+  cardBackground: "#FAF7F3",    // Petal
+  buttonPrimary: "#9E5A5A",     // Rose Clay (visible, warm)
+  buttonSecondary: "#EDBAAC",   // Soft Peach
+  textOnAccent: "#5C3030",      // Deep rose — dark text on pastel header
+  border: "#FFE8DB",             // Blush Pink
   backdrop: "rgba(0, 0, 0, 0.5)",
-  calendarMonthBackground: "#C47A6E", // Coral Rose
+  calendarMonthBackground: "#F5D0C4", // Slightly deeper peach (readable with dark text)
   calendarDayBackground: "rgba(255, 255, 255, 0.65)",
   calendarBorder: "rgba(255, 255, 255, 0.25)",
-  calendarDayText: "#5C3030", // Deep rose-brown on light
+  calendarDayText: "#5C3030", // Deep rose on light
 };
 
 // ─── Morning Light (pastel yellow #FFF2C6/#FFF8DE — sunny, warm, gentle) ─
