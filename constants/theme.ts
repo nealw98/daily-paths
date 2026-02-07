@@ -318,29 +318,104 @@ const twilightSkySemantic: SemanticPalette = {
   calendarDayText: "#5829A7", // Rebecca Purple on light background
 };
 
-// ─── Soft Mauve (warm dusty mauve/muted plum — nurturing and safe) ────────
-// Dark Plum #5C3D4F, Dusty Mauve #8B6F7E, Muted Rose #B8A0AB, Lavender Mist #D8C8D0, Warm Cream #FAF6F3
+// ─── Soft Mauve (warm plum-to-rose gradient — nurturing and alive) ────────
+// Deep Berry #4A2040, Warm Plum #7D4E6A, Rosé Mauve #9E7B8E, Soft Petal #C9AAB8, Blush Mist #E3CED6, Warm Cream #FAF5F2
 const softMauveSemantic: SemanticPalette = {
-  heroGradientStart: "#5C3D4F",  // Dark Plum (rich, grounding)
-  heroGradientEnd: "#8B6F7E",   // Dusty Mauve (warm, soft landing)
-  background: "#FAF6F3",         // Warm Cream (gentle, not stark)
-  backgroundSecondary: "#F0E8EC", // Very light mauve tint
-  text: "#4A3845",               // Soft dark plum (readable but gentle)
-  textSecondary: "#7A6370",      // Muted plum (softer than accent)
-  accent: "#8B6F7E",             // Dusty Mauve (warm, understated)
-  highlight: "#B8A0AB",          // Muted Rose (gentle highlight)
-  modalBackground: "#FAF6F3",   // Warm Cream
-  modalBorder: "#D8C8D0",       // Lavender Mist
-  cardBackground: "#F0E8EC",    // Very light mauve
-  buttonPrimary: "#6B4F60",     // Between dark plum and dusty mauve (strong but warm)
-  buttonSecondary: "#B8A0AB",   // Muted Rose
-  textOnAccent: "#FAF6F3",      // Warm Cream on buttons
-  border: "#D8C8D0",             // Lavender Mist
+  heroGradientStart: "#4A2040",  // Deep Berry (rich depth)
+  heroGradientEnd: "#6B3A58",   // Warm Plum (subtle shift, stays rich)
+  background: "#FAF5F2",         // Warm Cream (gentle, alive)
+  backgroundSecondary: "#F2E6EB", // Pale rose tint
+  text: "#3D2235",               // Deep berry-ink (rich but not harsh)
+  textSecondary: "#7D4E6A",      // Warm Plum (vibrant secondary)
+  accent: "#7D4E6A",             // Warm Plum (confident, not dusty)
+  highlight: "#C9AAB8",          // Soft Petal (luminous highlight)
+  modalBackground: "#FAF5F2",   // Warm Cream
+  modalBorder: "#E3CED6",       // Blush Mist
+  cardBackground: "#F2E6EB",    // Pale rose
+  buttonPrimary: "#6B3A58",     // Rich plum (strong, warm)
+  buttonSecondary: "#C9AAB8",   // Soft Petal
+  textOnAccent: "#FAF5F2",      // Warm Cream on buttons
+  border: "#E3CED6",             // Blush Mist
   backdrop: "rgba(0, 0, 0, 0.5)",
-  calendarMonthBackground: "#5C3D4F", // Dark Plum
+  calendarMonthBackground: "#4A2040", // Deep Berry
   calendarDayBackground: "rgba(255, 255, 255, 0.65)",
   calendarBorder: "rgba(255, 255, 255, 0.25)",
-  calendarDayText: "#5C3D4F", // Dark plum on light background
+  calendarDayText: "#4A2040", // Deep berry on light background
+};
+
+// ─── Coffee Break (dark: cream accents on deep coffee base) ─────────────
+// Black Coffee #1A1210, Dark Brew #2C2220, Mocha #4A3830, Latte #A88E78, Cream #E8DDD0, Milk Foam #F5F0E8
+const champagneSemantic: SemanticPalette = {
+  heroGradientStart: "#2C2220",  // Dark Brew (rich coffee)
+  heroGradientEnd: "#4A3830",   // Mocha (warm, visible shift)
+  background: "#1A1210",         // Black Coffee (deep, clean dark)
+  backgroundSecondary: "#2C2220", // Dark Brew
+  text: "#F5F0E8",               // Milk Foam (crisp, warm white)
+  textSecondary: "#A88E78",      // Latte (warm, readable on dark)
+  accent: "#A88E78",             // Latte
+  highlight: "#4A3830",          // Mocha (muted glow)
+  modalBackground: "#2C2220",   // Dark Brew
+  modalBorder: "#4A3830",       // Mocha
+  cardBackground: "#2C2220",    // Dark Brew
+  buttonPrimary: "#A88E78",     // Latte (pops on dark)
+  buttonSecondary: "#4A3830",   // Mocha
+  textOnAccent: "#F5F0E8",      // Milk Foam on header and buttons
+  border: "#4A3830",             // Mocha
+  backdrop: "rgba(0, 0, 0, 0.6)",
+  calendarMonthBackground: "#4A3830", // Mocha
+  calendarDayBackground: "#2C2220", // Dark Brew
+  calendarBorder: "#4A3830",     // Mocha
+  calendarDayText: "#F5F0E8", // Milk Foam on dark
+};
+
+// ─── Peach Blossom (soft peach-pink pastels — #FFE8DB / #FAF7F3 base) ────
+// Rose Clay #9E5A5A, Dusty Rose #B87878, Soft Peach #EDBAAC, Blush Pink #FFE8DB, Petal #FAF7F3, Near White #FEFCFA
+const peachBlossomSemantic: SemanticPalette = {
+  heroGradientStart: "#F5C4B0",  // Warm peach-pink (richer, more presence)
+  heroGradientEnd: "#FFE0D2",   // Soft peach-pink (still pastel, subtle shift)
+  background: "#FEFCFA",         // Near White (whisper of warmth)
+  backgroundSecondary: "#FAF7F3", // Petal
+  text: "#5C3030",               // Deep rose (warm, readable on light)
+  textSecondary: "#9E5A5A",      // Rose Clay (pink-leaning, not brown)
+  accent: "#B87878",             // Dusty Rose (warm pink, not coral)
+  highlight: "#FFE8DB",          // Blush Pink (soft glow)
+  modalBackground: "#FEFCFA",   // Near White
+  modalBorder: "#FFE8DB",       // Blush Pink
+  cardBackground: "#FAF7F3",    // Petal
+  buttonPrimary: "#9E5A5A",     // Rose Clay (visible, warm)
+  buttonSecondary: "#EDBAAC",   // Soft Peach
+  textOnAccent: "#5C3030",      // Deep rose — dark text on pastel header
+  border: "#FFE8DB",             // Blush Pink
+  backdrop: "rgba(0, 0, 0, 0.5)",
+  calendarMonthBackground: "#F5D0C4", // Slightly deeper peach (readable with dark text)
+  calendarDayBackground: "rgba(255, 255, 255, 0.65)",
+  calendarBorder: "rgba(255, 255, 255, 0.25)",
+  calendarDayText: "#5C3030", // Deep rose on light
+};
+
+// ─── Morning Light (pastel yellow #FFF2C6/#FFF8DE — sunny, warm, gentle) ─
+// Amber Brown #6B5030, Warm Caramel #9A7650, Honey #C4A060, Soft Yellow #FFFDCE, Pastel Yellow #FFF2C6, Light Yellow #FFF8DE, Yellow White #FFFEF5
+const morningLightSemantic: SemanticPalette = {
+  heroGradientStart: "#FFF2C6",  // Warm pastel yellow
+  heroGradientEnd: "#FFF8DE",   // Lighter pastel yellow (soft gradient)
+  background: "#FFFEF5",         // Yellow White (barely there warmth)
+  backgroundSecondary: "#FFF8DE", // Light Yellow
+  text: "#5C4020",               // Amber Brown (warm, high contrast on yellow)
+  textSecondary: "#9A7650",      // Warm Caramel (harmonizes with yellow)
+  accent: "#9A7650",             // Warm Caramel
+  highlight: "#FFFDCE",          // Soft Yellow (gentle glow)
+  modalBackground: "#FFFEF5",   // Yellow White
+  modalBorder: "#FFF2C6",       // Pastel Yellow
+  cardBackground: "#FFF8DE",    // Light Yellow
+  buttonPrimary: "#7A5C38",     // Rich amber (visible, warm)
+  buttonSecondary: "#C4A060",   // Honey
+  textOnAccent: "#5C4020",      // Amber Brown — dark text on pastel yellow header
+  border: "#FFF2C6",             // Pastel Yellow
+  backdrop: "rgba(0, 0, 0, 0.5)",
+  calendarMonthBackground: "#F5E8A0", // Warm pastel yellow (darker than header, readable with dark text)
+  calendarDayBackground: "rgba(255, 255, 255, 0.65)",
+  calendarBorder: "rgba(255, 255, 255, 0.25)",
+  calendarDayText: "#5C4020", // Amber brown on light
 };
 
 // ─── All selectable color schemes ──────────────────────────────────────────
@@ -391,9 +466,27 @@ export const COLOR_SCHEMES: ColorSchemeDef[] = [
   },
   {
     id: "soft-mauve",
-    name: "Soft Mauve",
+    name: "Plum",
     dark: false,
     colors: buildPalette(softMauveSemantic),
+  },
+  {
+    id: "champagne",
+    name: "Coffee Break",
+    dark: true,
+    colors: buildPalette(champagneSemantic),
+  },
+  {
+    id: "peach-blossom",
+    name: "Peach Blossom",
+    dark: false,
+    colors: buildPalette(peachBlossomSemantic),
+  },
+  {
+    id: "morning-light",
+    name: "Morning Light",
+    dark: false,
+    colors: buildPalette(morningLightSemantic),
   },
 ];
 
