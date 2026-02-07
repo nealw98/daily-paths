@@ -393,29 +393,29 @@ const peachBlossomSemantic: SemanticPalette = {
   calendarDayText: "#5C3030", // Deep rose-brown on light
 };
 
-// ─── Morning Light (light pastel yellow — sunny, airy, gentle) ──────────
-// Soft Dijon #B8A040, Warm Straw #CDB860, Pale Primrose #E0D48A, Lemon Chiffon #F0E8B8, Cream Puff #F8F3D8, Morning White #FDFCF5
+// ─── Morning Light (barely-there pastel yellow — almost white with a sunny tint) ─
+// Warm Sage #6B6B3A, Muted Olive #8A8A50, Pale Straw #D8D8A0, Lemon Cream #EEECCC, Soft Glow #F7F5E5, Morning White #FDFDF6
 const morningLightSemantic: SemanticPalette = {
-  heroGradientStart: "#B8A040",  // Soft Dijon (warm pastel, not dark)
-  heroGradientEnd: "#CDB860",   // Warm Straw (light, sunny shift)
-  background: "#FDFCF5",         // Morning White (whisper of yellow)
-  backgroundSecondary: "#F8F3D8", // Cream Puff
-  text: "#4A4420",               // Olive ink (warm, readable on pale yellow)
-  textSecondary: "#8A7E38",      // Muted olive-gold
-  accent: "#B8A040",             // Soft Dijon
-  highlight: "#F0E8B8",          // Lemon Chiffon (gentle glow)
-  modalBackground: "#FDFCF5",   // Morning White
-  modalBorder: "#F0E8B8",       // Lemon Chiffon
-  cardBackground: "#F8F3D8",    // Cream Puff
-  buttonPrimary: "#9A8A35",     // Warm ochre (visible on pale bg)
-  buttonSecondary: "#E0D48A",   // Pale Primrose
-  textOnAccent: "#FDFCF5",      // Morning White on buttons
-  border: "#F0E8B8",             // Lemon Chiffon
+  heroGradientStart: "#D8D490",  // Pale straw (light, sunny pastel)
+  heroGradientEnd: "#E5E2A8",   // Soft lemon (barely darker than cream)
+  background: "#FDFDF6",         // Morning White (almost white, yellow whisper)
+  backgroundSecondary: "#F7F5E5", // Soft Glow (faint yellow tint)
+  text: "#4A4A28",               // Warm olive-ink (readable on near-white)
+  textSecondary: "#7A7A42",      // Muted sage
+  accent: "#8A8A50",             // Muted Olive
+  highlight: "#EEECCC",          // Lemon Cream
+  modalBackground: "#FDFDF6",   // Morning White
+  modalBorder: "#EEECCC",       // Lemon Cream
+  cardBackground: "#F7F5E5",    // Soft Glow
+  buttonPrimary: "#7A7A42",     // Muted sage (visible on pale bg)
+  buttonSecondary: "#D8D8A0",   // Pale Straw
+  textOnAccent: "#FDFDF6",      // Morning White on buttons
+  border: "#EEECCC",             // Lemon Cream
   backdrop: "rgba(0, 0, 0, 0.5)",
-  calendarMonthBackground: "#9A8A35", // Warm ochre
+  calendarMonthBackground: "#7A7A42", // Muted sage
   calendarDayBackground: "rgba(255, 255, 255, 0.65)",
   calendarBorder: "rgba(255, 255, 255, 0.25)",
-  calendarDayText: "#4A4420", // Olive ink on light
+  calendarDayText: "#4A4A28", // Olive ink on light
 };
 
 // ─── All selectable color schemes ──────────────────────────────────────────
