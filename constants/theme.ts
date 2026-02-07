@@ -393,24 +393,24 @@ const peachBlossomSemantic: SemanticPalette = {
   calendarDayText: "#5C3030", // Deep rose-brown on light
 };
 
-// ─── Morning Light (barely-there pastel yellow — almost white with a sunny tint) ─
-// Warm Sage #6B6B3A, Muted Olive #8A8A50, Pale Straw #D8D8A0, Lemon Cream #EEECCC, Soft Glow #F7F5E5, Morning White #FDFDF6
+// ─── Morning Light (pastel yellow #FFFDCE base — soft, sunny, gentle) ────
+// Warm Sage #6B6B3A, Muted Olive #8A8A50, Soft Yellow #FFFDCE, Pale Butter #FFF9B8, Near White #FFFEF2
 const morningLightSemantic: SemanticPalette = {
-  heroGradientStart: "#D8D490",  // Pale straw (light, sunny pastel)
-  heroGradientEnd: "#E5E2A8",   // Soft lemon (barely darker than cream)
-  background: "#FDFDF6",         // Morning White (almost white, yellow whisper)
-  backgroundSecondary: "#F7F5E5", // Soft Glow (faint yellow tint)
-  text: "#4A4A28",               // Warm olive-ink (readable on near-white)
+  heroGradientStart: "#E8E4A0",  // Muted pastel yellow (visible header)
+  heroGradientEnd: "#F0EDB5",   // Lighter pastel yellow (subtle shift)
+  background: "#FFFEF2",         // Near White (barely yellow)
+  backgroundSecondary: "#FFFDCE", // THE yellow — soft, sunny
+  text: "#4A4A28",               // Warm olive-ink (readable)
   textSecondary: "#7A7A42",      // Muted sage
   accent: "#8A8A50",             // Muted Olive
-  highlight: "#EEECCC",          // Lemon Cream
-  modalBackground: "#FDFDF6",   // Morning White
-  modalBorder: "#EEECCC",       // Lemon Cream
-  cardBackground: "#F7F5E5",    // Soft Glow
+  highlight: "#FFFDCE",          // THE yellow as highlight
+  modalBackground: "#FFFEF2",   // Near White
+  modalBorder: "#F0EDB5",       // Pale butter
+  cardBackground: "#FFFDCE",    // THE yellow for cards
   buttonPrimary: "#7A7A42",     // Muted sage (visible on pale bg)
-  buttonSecondary: "#D8D8A0",   // Pale Straw
-  textOnAccent: "#FDFDF6",      // Morning White on buttons
-  border: "#EEECCC",             // Lemon Cream
+  buttonSecondary: "#E8E4A0",   // Muted pastel yellow
+  textOnAccent: "#FFFEF2",      // Near White on buttons
+  border: "#F0EDB5",             // Pale butter
   backdrop: "rgba(0, 0, 0, 0.5)",
   calendarMonthBackground: "#7A7A42", // Muted sage
   calendarDayBackground: "rgba(255, 255, 255, 0.65)",
