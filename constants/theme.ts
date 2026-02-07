@@ -368,6 +368,56 @@ const champagneSemantic: SemanticPalette = {
   calendarDayText: "#E8D9B8", // Champagne on dark
 };
 
+// ─── Peach Blossom (warm peach pastels — nurturing, hopeful) ─────────────
+// Terracotta #8B5E3C, Warm Peach #C4835A, Soft Apricot #E8AE82, Peach Cream #F5D0B5, Blush Peach #FAE5D8, Warm White #FDF8F4
+const peachBlossomSemantic: SemanticPalette = {
+  heroGradientStart: "#8B5E3C",  // Terracotta (warm, earthy depth)
+  heroGradientEnd: "#B07550",   // Warm clay (subtle shift, stays grounded)
+  background: "#FDF8F4",         // Warm White
+  backgroundSecondary: "#FAE5D8", // Blush Peach
+  text: "#4A2E1E",               // Dark walnut (warm, high contrast)
+  textSecondary: "#8B5E3C",      // Terracotta
+  accent: "#C4835A",             // Warm Peach
+  highlight: "#F5D0B5",          // Peach Cream (soft glow)
+  modalBackground: "#FDF8F4",   // Warm White
+  modalBorder: "#F5D0B5",       // Peach Cream
+  cardBackground: "#FAE5D8",    // Blush Peach
+  buttonPrimary: "#8B5E3C",     // Terracotta (strong, warm)
+  buttonSecondary: "#E8AE82",   // Soft Apricot
+  textOnAccent: "#FDF8F4",      // Warm White on buttons
+  border: "#F5D0B5",             // Peach Cream
+  backdrop: "rgba(0, 0, 0, 0.5)",
+  calendarMonthBackground: "#8B5E3C", // Terracotta
+  calendarDayBackground: "rgba(255, 255, 255, 0.65)",
+  calendarBorder: "rgba(255, 255, 255, 0.25)",
+  calendarDayText: "#4A2E1E", // Dark walnut on light
+};
+
+// ─── Morning Light (soft buttercream yellow — sunny, gentle, hopeful) ────
+// Golden Oak #7A6530, Honey #A68B45, Soft Marigold #C8AD60, Buttercream #E8D8A0, Pale Sunshine #F3EDC8, Linen White #FDFBF4
+const morningLightSemantic: SemanticPalette = {
+  heroGradientStart: "#7A6530",  // Golden Oak (warm, grounded)
+  heroGradientEnd: "#98803E",   // Rich honey (subtle shift)
+  background: "#FDFBF4",         // Linen White (barely yellow warmth)
+  backgroundSecondary: "#F3EDC8", // Pale Sunshine
+  text: "#3D3218",               // Dark olive-brown (warm, readable)
+  textSecondary: "#7A6530",      // Golden Oak
+  accent: "#A68B45",             // Honey
+  highlight: "#E8D8A0",          // Buttercream (soft golden glow)
+  modalBackground: "#FDFBF4",   // Linen White
+  modalBorder: "#E8D8A0",       // Buttercream
+  cardBackground: "#F3EDC8",    // Pale Sunshine
+  buttonPrimary: "#7A6530",     // Golden Oak (visible, warm)
+  buttonSecondary: "#C8AD60",   // Soft Marigold
+  textOnAccent: "#FDFBF4",      // Linen White on buttons
+  border: "#E8D8A0",             // Buttercream
+  backdrop: "rgba(0, 0, 0, 0.5)",
+  calendarMonthBackground: "#7A6530", // Golden Oak
+  calendarDayBackground: "rgba(255, 255, 255, 0.65)",
+  calendarBorder: "rgba(255, 255, 255, 0.25)",
+  calendarDayText: "#3D3218", // Dark olive on light
+};
+
 // ─── All selectable color schemes ──────────────────────────────────────────
 // Ocean is the default palette: "Light" and "Dark" (no named palette in the UI).
 // Other entries (Deep Sea, Cotton Candy, etc.) are named color palettes (single theme each).
@@ -425,6 +475,18 @@ export const COLOR_SCHEMES: ColorSchemeDef[] = [
     name: "Coffee Break",
     dark: true,
     colors: buildPalette(champagneSemantic),
+  },
+  {
+    id: "peach-blossom",
+    name: "Peach Blossom",
+    dark: false,
+    colors: buildPalette(peachBlossomSemantic),
+  },
+  {
+    id: "morning-light",
+    name: "Morning Light",
+    dark: false,
+    colors: buildPalette(morningLightSemantic),
   },
 ];
 

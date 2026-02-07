@@ -16,6 +16,8 @@ const THEME_OPTIONS: { id: string; displayName: string; icon?: string }[] = [
   { id: "twilight-fire", displayName: "Desert\nTwilight" },
   { id: "soft-mauve", displayName: "Soft\nMauve" },
   { id: "champagne", displayName: "Coffee\nBreak" },
+  { id: "peach-blossom", displayName: "Peach\nBlossom" },
+  { id: "morning-light", displayName: "Morning\nLight" },
 ];
 
 const textSizeStops: TextSize[] = [
