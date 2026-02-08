@@ -9,8 +9,15 @@ import {
   AppState,
   AppStateStatus,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ReadingScreen } from "../../components/ReadingScreen";
+import { JournalCategoryPicker } from "../../components/journal/JournalCategoryPicker";
+import { JournalEntryEditor } from "../../components/journal/JournalEntryEditor";
+import type { EntryType } from "../../constants/journalCategories";
+import { useAuth } from "../../contexts/AuthContext";
+import { useJournalEntries } from "../../hooks/useJournalEntries";
 import { DatePickerModal } from "../../components/DatePickerModal";
 import { BookmarkListModal } from "../../components/BookmarkListModal";
 import { DismissibleToast } from "../../components/DismissibleToast";
@@ -65,7 +72,13 @@ export default function Index() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [showRateModal, setShowRateModal] = useState(false);
   const [navigationMethod, setNavigationMethod] = useState<NavigationMethod>('app_open');
+  const [showJournalPicker, setShowJournalPicker] = useState(false);
+  const [journalEntryType, setJournalEntryType] = useState<EntryType | null>(null);
   console.log("[STARTUP-INDEX] State initialized");
+
+  // Journal entry creation from Today page
+  const { user, isAuthenticated: isAuthed } = useAuth();
+  const { createEntry } = useJournalEntries(user?.id);
   
   // Analytics
   const { trackAppOpened, startReadingView, trackReadingFavorited, trackReadingUnfavorited, updateThemeMode } = useAnalytics();
@@ -406,10 +419,51 @@ export default function Index() {
     );
   }
 
+  // If user picked a journal type, show the editor full-screen
+  if (journalEntryType) {
+    return (
+      <JournalEntryEditor
+        entryType={journalEntryType}
+        onSave={async (entryType, content, structuredContent) => {
+          await createEntry(entryType, content, structuredContent);
+          setJournalEntryType(null);
+        }}
+        onCancel={() => setJournalEntryType(null)}
+      />
+    );
+  }
+
   return (
     <>
       {content}
-      
+
+      {/* Journal FAB — only show when reading is visible */}
+      {reading && isAuthed && (
+        <TouchableOpacity
+          style={styles.fabTouchable}
+          onPress={() => setShowJournalPicker(true)}
+          activeOpacity={0.85}
+        >
+          <LinearGradient
+            colors={["#2C5F5D", "#3A7573"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.fab}
+          >
+            <Ionicons name="add" size={28} color="#FFFFFF" />
+          </LinearGradient>
+        </TouchableOpacity>
+      )}
+
+      <JournalCategoryPicker
+        visible={showJournalPicker}
+        onSelect={(entryType) => {
+          setShowJournalPicker(false);
+          setJournalEntryType(entryType);
+        }}
+        onClose={() => setShowJournalPicker(false)}
+      />
+
       <DatePickerModal
         visible={showDatePicker}
         selectedDate={currentDate}
@@ -484,5 +538,23 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     fontWeight: "600",
+  },
+  fabTouchable: {
+    position: "absolute",
+    bottom: 24,
+    right: 24,
+    zIndex: 10,
+    shadowColor: "rgba(44, 95, 93, 1)",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 18,
+    elevation: 8,
+  },
+  fab: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

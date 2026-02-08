@@ -55,7 +55,7 @@ function generateHTML(
           })
         : "";
 
-      const contentParagraphs = entry.content
+      const contentParagraphs = (entry.content ?? "")
         .split("\n")
         .map((p) => p.trim())
         .filter((p) => p.length > 0)

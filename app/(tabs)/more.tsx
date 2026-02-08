@@ -5,15 +5,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { useAuth } from "../../contexts/AuthContext";
 import { fonts } from "../../constants/theme";
-import { GratitudeScreen } from "../../components/gratitude/GratitudeScreen";
-import { PrayersScreen } from "../../components/prayers/PrayersScreen";
 import { SettingsModal } from "../../components/SettingsModal";
 import { SettingsContent } from "../../components/SettingsContent";
 import { PaywallModal } from "../../components/PaywallModal";
 import { SignInModal } from "../../components/SignInModal";
 import { ExportOptionsModal } from "../../components/ExportOptionsModal";
 
-type MoreView = "menu" | "gratitude" | "prayers" | "account";
+type MoreView = "menu" | "account";
 
 export default function MoreTab() {
   const { colors } = useTheme();
@@ -24,35 +22,7 @@ export default function MoreTab() {
   const [showSignIn, setShowSignIn] = useState(false);
   const [showExport, setShowExport] = useState(false);
 
-  // Sub-screens
-  if (view === "gratitude") {
-    return <GratitudeScreen onBack={() => setView("menu")} />;
-  }
-
-  if (view === "prayers") {
-    return (
-      <PrayersScreen
-        userId={user?.id || null}
-        onBack={() => setView("menu")}
-      />
-    );
-  }
-
   const menuItems = [
-    {
-      id: "gratitude",
-      title: "Gratitude List",
-      icon: "heart" as const,
-      available: true,
-      onPress: () => setView("gratitude"),
-    },
-    {
-      id: "prayers",
-      title: "Prayers",
-      icon: "book-outline" as const,
-      available: true,
-      onPress: () => setView("prayers"),
-    },
     {
       id: "export",
       title: "Export Journal",

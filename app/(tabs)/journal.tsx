@@ -1,15 +1,18 @@
-import React, { useState, useCallback } from "react";
-import { View, Text, StyleSheet, Alert } from "react-native";
+import React, { useState, useCallback, useMemo } from "react";
+import { View, Text, StyleSheet, Alert, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { useAuth } from "../../contexts/AuthContext";
 import { useJournalEntries, type JournalEntry } from "../../hooks/useJournalEntries";
 import { useJournalStats } from "../../hooks/useJournalStats";
-import { JournalTimeline } from "../../components/journal/JournalTimeline";
+import { JournalTimeline, type CategoryFilter } from "../../components/journal/JournalTimeline";
 import { JournalEntryEditor } from "../../components/journal/JournalEntryEditor";
 import { JournalEntryDetail } from "../../components/journal/JournalEntryDetail";
 import { JournalSearch } from "../../components/journal/JournalSearch";
+import { JournalCategoryPicker } from "../../components/journal/JournalCategoryPicker";
 import { fonts } from "../../constants/theme";
+import type { EntryType } from "../../constants/journalCategories";
 
 type JournalView = "timeline" | "editor" | "detail" | "search";
 
@@ -30,10 +33,25 @@ export default function JournalTab() {
   const [view, setView] = useState<JournalView>("timeline");
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [selectedEntryType, setSelectedEntryType] = useState<EntryType>("journal");
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
 
   // ─── Navigation ──────────────────────────────────────────
 
   const handleNewEntry = useCallback(() => {
+    // Smart FAB: when filtered to a specific type, skip the picker
+    if (categoryFilter !== "all") {
+      setSelectedEntryType(categoryFilter);
+      setView("editor");
+    } else {
+      setShowCategoryPicker(true);
+    }
+  }, [categoryFilter]);
+
+  const handleCategorySelected = useCallback((entryType: EntryType) => {
+    setShowCategoryPicker(false);
+    setSelectedEntryType(entryType);
     setView("editor");
   }, []);
 
@@ -56,19 +74,31 @@ export default function JournalTab() {
     setView("timeline");
   }, []);
 
+  const handleFilterChange = useCallback((filter: CategoryFilter) => {
+    setCategoryFilter(filter);
+  }, []);
+
   // ─── CRUD Operations ────────────────────────────────────
 
   const handleSaveNew = useCallback(
-    async (content: string) => {
-      await createEntry(content);
+    async (
+      entryType: EntryType,
+      content: string | null,
+      structuredContent?: Record<string, any> | null
+    ) => {
+      await createEntry(entryType, content, structuredContent);
       setView("timeline");
     },
     [createEntry]
   );
 
   const handleSaveEdit = useCallback(
-    async (entryId: string, content: string) => {
-      const updated = await updateEntry(entryId, content);
+    async (
+      entryId: string,
+      content: string | null,
+      structuredContent?: Record<string, any> | null
+    ) => {
+      const updated = await updateEntry(entryId, content, structuredContent);
       if (updated) {
         setSelectedEntry(updated);
       }
@@ -147,6 +177,7 @@ export default function JournalTab() {
   if (view === "editor") {
     return (
       <JournalEntryEditor
+        entryType={selectedEntryType}
         onSave={handleSaveNew}
         onCancel={handleBackToTimeline}
       />
@@ -184,20 +215,28 @@ export default function JournalTab() {
       style={[styles.container, { backgroundColor: colors.background }]}
       edges={["top"]}
     >
-      <View
-        style={[styles.header, { borderBottomColor: colors.border }]}
-      >
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Journal</Text>
+        <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
+          <Ionicons name="search" size={22} color={colors.accent} />
+        </TouchableOpacity>
       </View>
       <JournalTimeline
         entries={entries}
         stats={stats}
         loading={loading}
+        categoryFilter={categoryFilter}
+        onFilterChange={handleFilterChange}
         onNewEntry={handleNewEntry}
         onSearch={handleSearch}
         onSelectEntry={handleSelectEntry}
         onDeleteEntry={handleDeleteFromTimeline}
         onRefresh={refreshEntries}
+      />
+      <JournalCategoryPicker
+        visible={showCategoryPicker}
+        onSelect={handleCategorySelected}
+        onClose={() => setShowCategoryPicker(false)}
       />
     </SafeAreaView>
   );
@@ -208,6 +247,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
@@ -216,6 +258,9 @@ const styles = StyleSheet.create({
     fontFamily: fonts.headerFamily,
     fontSize: 28,
     fontWeight: "700",
+  },
+  searchButton: {
+    padding: 4,
   },
   authPrompt: {
     flex: 1,

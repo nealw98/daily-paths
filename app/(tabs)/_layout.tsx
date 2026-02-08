@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Tabs } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, FontAwesome6 } from "@expo/vector-icons";
 import { fonts } from "../../constants/theme";
 import { useTheme } from "../../hooks/useTheme";
 import { useAuth } from "../../contexts/AuthContext";
@@ -100,12 +100,18 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
+          name="prayers"
+          options={{
+            title: "Prayers",
+            tabBarIcon: ({ color, size }) => (
+              <FontAwesome6 name="hands-praying" size={size - 2} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
           name="steps"
           options={{
-            title: "Steps",
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="list" size={size} color={color} />
-            ),
+            href: null,
           }}
         />
         <Tabs.Screen

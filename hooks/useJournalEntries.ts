@@ -1,13 +1,20 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { qaLog } from "../utils/qaLog";
+import type { EntryType } from "../constants/journalCategories";
+
+export type { EntryType };
 
 export interface JournalEntry {
   id: string;
   user_id: string;
-  content: string;
+  entry_type: EntryType;
+  content: string | null;
+  structured_content: Record<string, any> | null;
   created_at: string;
   updated_at: string;
+  // Legacy field — kept for backward compat during migration
+  category?: string | null;
 }
 
 /**
@@ -38,13 +45,20 @@ export function useJournalEntries(userId: string | null | undefined) {
         .order("created_at", { ascending: false });
 
       if (fetchError) {
-        qaLog("journal", "Error fetching entries", { error: fetchError.message });
+        qaLog("journal", "Error fetching entries", {
+          error: fetchError.message,
+        });
         setError(fetchError.message);
         return;
       }
 
       if (mounted.current) {
-        setEntries(data || []);
+        // Normalize legacy entries: if entry_type is missing, derive from category or default to 'journal'
+        const normalized = (data || []).map((entry: any) => ({
+          ...entry,
+          entry_type: entry.entry_type || entry.category || "journal",
+        }));
+        setEntries(normalized);
       }
     } catch (err) {
       qaLog("journal", "Exception fetching entries", { error: String(err) });
@@ -64,28 +78,44 @@ export function useJournalEntries(userId: string | null | undefined) {
 
   // Create a new journal entry
   const createEntry = useCallback(
-    async (content: string): Promise<JournalEntry | null> => {
-      if (!userId || !content.trim()) return null;
+    async (
+      entryType: EntryType,
+      content: string | null,
+      structuredContent?: Record<string, any> | null
+    ): Promise<JournalEntry | null> => {
+      if (!userId) return null;
+      // Must have either content or structured_content
+      if (!content?.trim() && !structuredContent) return null;
 
       try {
+        const insertData: Record<string, unknown> = {
+          user_id: userId,
+          entry_type: entryType,
+          content: content?.trim() || null,
+        };
+        if (structuredContent) {
+          insertData.structured_content = structuredContent;
+        }
+
         const { data, error: insertError } = await supabase
           .from("journal_entries")
-          .insert({
-            user_id: userId,
-            content: content.trim(),
-          })
+          .insert(insertData)
           .select()
           .single();
 
         if (insertError) {
-          qaLog("journal", "Error creating entry", { error: insertError.message });
+          qaLog("journal", "Error creating entry", {
+            error: insertError.message,
+          });
           throw new Error(insertError.message);
         }
 
         if (data) {
-          // Prepend new entry to the list
           setEntries((prev) => [data, ...prev]);
-          qaLog("journal", "Entry created", { id: data.id });
+          qaLog("journal", "Entry created", {
+            id: data.id,
+            type: entryType,
+          });
         }
 
         return data;
@@ -99,20 +129,33 @@ export function useJournalEntries(userId: string | null | undefined) {
 
   // Update an existing journal entry
   const updateEntry = useCallback(
-    async (entryId: string, content: string): Promise<JournalEntry | null> => {
-      if (!userId || !content.trim()) return null;
+    async (
+      entryId: string,
+      content: string | null,
+      structuredContent?: Record<string, any> | null
+    ): Promise<JournalEntry | null> => {
+      if (!userId) return null;
 
       try {
+        const updateData: Record<string, unknown> = {
+          content: content?.trim() || null,
+        };
+        if (structuredContent !== undefined) {
+          updateData.structured_content = structuredContent;
+        }
+
         const { data, error: updateError } = await supabase
           .from("journal_entries")
-          .update({ content: content.trim() })
+          .update(updateData)
           .eq("id", entryId)
           .eq("user_id", userId)
           .select()
           .single();
 
         if (updateError) {
-          qaLog("journal", "Error updating entry", { error: updateError.message });
+          qaLog("journal", "Error updating entry", {
+            error: updateError.message,
+          });
           throw new Error(updateError.message);
         }
 
@@ -145,7 +188,9 @@ export function useJournalEntries(userId: string | null | undefined) {
           .eq("user_id", userId);
 
         if (deleteError) {
-          qaLog("journal", "Error deleting entry", { error: deleteError.message });
+          qaLog("journal", "Error deleting entry", {
+            error: deleteError.message,
+          });
           throw new Error(deleteError.message);
         }
 
@@ -160,7 +205,7 @@ export function useJournalEntries(userId: string | null | undefined) {
     [userId]
   );
 
-  // Search entries by content
+  // Search entries by content (searches the text content field, which all types populate)
   const searchEntries = useCallback(
     async (query: string): Promise<JournalEntry[]> => {
       if (!userId || !query.trim()) return entries;
@@ -174,13 +219,17 @@ export function useJournalEntries(userId: string | null | undefined) {
           .order("created_at", { ascending: false });
 
         if (searchError) {
-          qaLog("journal", "Error searching entries", { error: searchError.message });
+          qaLog("journal", "Error searching entries", {
+            error: searchError.message,
+          });
           return [];
         }
 
         return data || [];
       } catch (err) {
-        qaLog("journal", "Exception searching entries", { error: String(err) });
+        qaLog("journal", "Exception searching entries", {
+          error: String(err),
+        });
         return [];
       }
     },

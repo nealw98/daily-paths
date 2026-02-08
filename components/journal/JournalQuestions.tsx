@@ -6,22 +6,26 @@ import {
   StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { JOURNAL_QUESTION_CATEGORIES } from "../../constants/journalQuestions";
+import { JOURNAL_QUESTION_CATEGORIES, type QuestionCategory } from "../../constants/journalQuestions";
 import { useTheme } from "../../hooks/useTheme";
 import { fonts } from "../../constants/theme";
 
 interface JournalQuestionsProps {
   onSelectQuestion?: (question: string) => void;
+  /** Optional override categories. If provided, these are shown instead of the defaults. */
+  categories?: QuestionCategory[];
 }
 
 export const JournalQuestions: React.FC<JournalQuestionsProps> = ({
   onSelectQuestion,
+  categories,
 }) => {
   const { colors } = useTheme();
   const [expanded, setExpanded] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
-  const categoriesWithQuestions = JOURNAL_QUESTION_CATEGORIES.filter(
+  const sourceCategories = categories || JOURNAL_QUESTION_CATEGORIES;
+  const categoriesWithQuestions = sourceCategories.filter(
     (cat) => cat.questions.length > 0
   );
 

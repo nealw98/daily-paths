@@ -15,7 +15,7 @@ import { PersonalNotes } from "./PersonalNotes";
 
 interface PrayersScreenProps {
   userId: string | null;
-  onBack: () => void;
+  onBack?: () => void;
 }
 
 export const PrayersScreen: React.FC<PrayersScreenProps> = ({
@@ -74,10 +74,14 @@ export const PrayersScreen: React.FC<PrayersScreenProps> = ({
     >
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={colors.accent} />
-          <Text style={[styles.backText, { color: colors.accent }]}>Back</Text>
-        </TouchableOpacity>
+        {onBack ? (
+          <TouchableOpacity onPress={onBack} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={colors.accent} />
+            <Text style={[styles.backText, { color: colors.accent }]}>Back</Text>
+          </TouchableOpacity>
+        ) : (
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Prayers</Text>
+        )}
       </View>
 
       <ScrollView
@@ -85,9 +89,11 @@ export const PrayersScreen: React.FC<PrayersScreenProps> = ({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <Text style={[styles.screenTitle, { color: colors.text }]}>
-          Prayers
-        </Text>
+        {onBack && (
+          <Text style={[styles.screenTitle, { color: colors.text }]}>
+            Prayers
+          </Text>
+        )}
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
           A collection of prayers for your recovery journey
         </Text>
@@ -123,6 +129,11 @@ const styles = StyleSheet.create({
   backText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
+  },
+  headerTitle: {
+    fontFamily: fonts.headerFamily,
+    fontSize: 28,
+    fontWeight: "700",
   },
   scrollView: {
     flex: 1,

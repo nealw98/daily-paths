@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
   Alert,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { fonts } from "../constants/theme";
@@ -88,7 +90,10 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
       animationType="slide"
       onRequestClose={dismissable ? onClose : undefined}
     >
-      <View style={[styles.container, { backgroundColor: colors.backdrop }]}>
+      <KeyboardAvoidingView
+        style={[styles.container, { backgroundColor: colors.backdrop }]}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
         <View style={[styles.content, { backgroundColor: colors.background }]}>
           {/* Header */}
           <View style={styles.header}>
@@ -240,7 +245,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
             </Text>
           </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
