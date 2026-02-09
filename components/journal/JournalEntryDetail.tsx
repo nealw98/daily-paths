@@ -259,7 +259,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
             key={index}
             style={[styles.gratitudeReadItem, { borderBottomColor: colors.border }]}
           >
-            <Text style={styles.gratitudeLeaf}>🌿</Text>
+            <Text style={styles.gratitudeLeaf}>✨</Text>
             <Text style={[styles.gratitudeReadText, { color: colors.text }]}>
               {item}
             </Text>
@@ -358,7 +358,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
             },
           ]}
         >
-          <Text style={styles.gratitudeLeaf}>🌿</Text>
+          <Text style={styles.gratitudeLeaf}>✨</Text>
           <TextInput
             style={[styles.gratitudeEditInput, { color: colors.text }]}
             placeholder="I'm grateful for..."

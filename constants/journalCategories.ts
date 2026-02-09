@@ -71,7 +71,7 @@ export const JOURNAL_CATEGORIES: JournalCategory[] = [
   {
     id: "gratitude",
     label: "Gratitude",
-    emoji: "🙏",
+    emoji: "✨",
     icon: "heart-outline",
     color: ENTRY_TYPE_COLORS.gratitude,
     bgColor: ENTRY_TYPE_BG_COLORS.gratitude,

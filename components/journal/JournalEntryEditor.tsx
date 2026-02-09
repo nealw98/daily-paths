@@ -306,7 +306,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                     },
                   ]}
                 >
-                  <Text style={styles.gratitudeLeaf}>🌿</Text>
+                  <Text style={styles.gratitudeLeaf}>✨</Text>
                   <TextInput
                     style={[
                       styles.gratitudeInput,

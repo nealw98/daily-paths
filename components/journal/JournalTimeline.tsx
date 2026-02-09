@@ -6,7 +6,6 @@ import {
   StyleSheet,
   FlatList,
   RefreshControl,
-  ScrollView,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -334,96 +333,54 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
     </View>
   );
 
-  // ─── Render: Filter Chips ──────────────────────────────────────────────
+  // ─── Render: Segmented Filter ───────────────────────────────────────────
 
-  const FilterChips = () => {
-    const allActive = categoryFilter === "all";
+  const segments: { key: CategoryFilter; label: string }[] = [
+    { key: "all", label: "All" },
+    ...JOURNAL_CATEGORIES.map((cat) => ({
+      key: cat.id as CategoryFilter,
+      label: cat.emoji,
+    })),
+  ];
 
-    return (
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.chipsContainer}
-      >
-        {/* "All" chip */}
-        <TouchableOpacity
-          style={[
-            styles.chip,
-            allActive
-              ? [
-                  styles.chipActive,
-                  { backgroundColor: colors.accent },
-                ]
-              : [
-                  styles.chipInactive,
-                  {
-                    backgroundColor: colors.cardBackground,
-                    borderColor: colors.border,
-                  },
-                ],
-          ]}
-          onPress={() => onFilterChange("all")}
-          activeOpacity={0.7}
-        >
-          <Text
-            style={[
-              styles.chipText,
-              allActive
-                ? { color: colors.textOnAccent }
-                : { color: colors.textSecondary },
-            ]}
-          >
-            All
-          </Text>
-        </TouchableOpacity>
-
-        {/* Category chips */}
-        {JOURNAL_CATEGORIES.map((cat) => {
-          const isActive = categoryFilter === cat.id;
+  const SegmentedFilter = () => (
+    <View style={[styles.segmentedWrapper, { borderBottomColor: colors.border }]}>
+      <View style={styles.segmentedContainer}>
+        {segments.map((seg) => {
+          const isActive = categoryFilter === seg.key;
           return (
             <TouchableOpacity
-              key={cat.id}
-              style={[
-                styles.chip,
-                isActive
-                  ? [
-                      styles.chipActive,
-                      { backgroundColor: colors.accent },
-                    ]
-                  : [
-                      styles.chipInactive,
-                      {
-                        backgroundColor: colors.cardBackground,
-                        borderColor: colors.border,
-                      },
-                    ],
-              ]}
-              onPress={() => onFilterChange(cat.id)}
+              key={seg.key}
+              style={[styles.segment, isActive && styles.segmentActive]}
+              onPress={() => onFilterChange(seg.key)}
               activeOpacity={0.7}
             >
               <Text
                 style={[
-                  styles.chipText,
+                  styles.segmentText,
+                  seg.key === "all"
+                    ? styles.segmentTextAll
+                    : styles.segmentTextIcon,
                   isActive
-                    ? { color: colors.textOnAccent }
-                    : { color: colors.textSecondary },
+                    ? styles.segmentTextActive
+                    : styles.segmentTextInactive,
                 ]}
               >
-                {cat.emoji} {cat.label}
+                {seg.label}
               </Text>
             </TouchableOpacity>
           );
         })}
-      </ScrollView>
-    );
-  };
+      </View>
+    </View>
+  );
 
   // ─── List Header ───────────────────────────────────────────────────────
 
   const ListHeader = () => (
     <View style={styles.listHeader}>
       <StatsBar />
-      <FilterChips />
+      <SegmentedFilter />
     </View>
   );
 
@@ -532,31 +489,50 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
 
-  // ─── Filter Chips ────────────────────────────────────────────────────────
-  chipsContainer: {
-    paddingBottom: 14,
-    paddingRight: 8,
-    gap: 8,
-  },
-  chip: {
-    paddingVertical: 7,
+  // ─── Segmented Filter ──────────────────────────────────────────────────
+  segmentedWrapper: {
+    paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 24,
+    borderBottomWidth: 1,
   },
-  chipActive: {
+  segmentedContainer: {
+    flexDirection: "row",
+    backgroundColor: "#F5F0EB",
+    borderRadius: 12,
+    padding: 3,
+    gap: 2,
+  },
+  segment: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 9,
+    paddingHorizontal: 4,
+    borderRadius: 10,
+  },
+  segmentActive: {
+    backgroundColor: "#FFFFFF",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 2,
   },
-  chipInactive: {
-    borderWidth: 1,
-  },
-  chipText: {
+  segmentText: {
     fontFamily: fonts.bodyFamilyRegular,
+  },
+  segmentTextAll: {
+    fontSize: 12,
+  },
+  segmentTextIcon: {
     fontSize: 13,
-    fontWeight: "500",
+  },
+  segmentTextActive: {
+    color: "#2C5F5D",
+    fontWeight: "600",
+  },
+  segmentTextInactive: {
+    color: "#8A8A8A",
   },
 
   // ─── Date Divider ────────────────────────────────────────────────────────
