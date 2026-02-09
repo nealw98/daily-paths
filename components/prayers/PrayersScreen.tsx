@@ -32,20 +32,14 @@ export const PrayersScreen: React.FC<PrayersScreenProps> = ({
     const isExpanded = expandedPrayer === prayer.id;
 
     return (
-      <View
-        key={prayer.id}
-        style={[
-          styles.prayerCard,
-          { backgroundColor: colors.cardBackground, borderColor: colors.border },
-        ]}
-      >
+      <View key={prayer.id} style={styles.prayerSection}>
         <TouchableOpacity
           style={styles.prayerHeader}
           onPress={() => setExpandedPrayer(isExpanded ? null : prayer.id)}
           activeOpacity={0.7}
         >
-          <Text style={[styles.prayerTitle, { color: colors.text, fontSize: typography.bodyFontSize }]}>
-            {prayer.title}
+          <Text style={[styles.prayerTitle, { color: colors.ocean, fontSize: typography.bodyFontSize + 2 }]}>
+            {prayer.title.toUpperCase()}
           </Text>
           <Ionicons
             name={isExpanded ? "chevron-up" : "chevron-down"}
@@ -56,12 +50,12 @@ export const PrayersScreen: React.FC<PrayersScreenProps> = ({
 
         {isExpanded && (
           <View style={styles.prayerBody}>
-            <Text style={[styles.prayerText, { color: colors.text, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.625 }]}>
+            <Text style={[styles.prayerText, { color: colors.ink, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.625 }]}>
               {prayer.text}
             </Text>
             {prayer.source && (
-              <Text style={[styles.prayerSource, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 2 }]}>
-                — {prayer.source}
+              <Text style={[styles.prayerSource, { color: colors.seafoam, fontSize: typography.bodyFontSize - 2 }]}>
+                — {prayer.source.toUpperCase()}
               </Text>
             )}
           </View>
@@ -72,7 +66,7 @@ export const PrayersScreen: React.FC<PrayersScreenProps> = ({
 
   return (
     <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={[styles.container, { backgroundColor: colors.pearl }]}
       edges={["top"]}
     >
       {/* Teal Gradient Header */}
@@ -86,10 +80,6 @@ export const PrayersScreen: React.FC<PrayersScreenProps> = ({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <Text style={[styles.subtitle, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 4, lineHeight: (typography.bodyFontSize - 4) * 1.47 }]}>
-          A collection of prayers for your recovery journey
-        </Text>
-
         {/* Prayers List */}
         {PRAYERS.map(renderPrayer)}
 
@@ -114,34 +104,23 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 100,
   },
-  subtitle: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 28,
-  },
-  prayerCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    marginBottom: 12,
-    overflow: "hidden",
+  prayerSection: {
+    marginBottom: 8,
   },
   prayerHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 18,
-    paddingVertical: 16,
+    paddingVertical: 14,
   },
   prayerTitle: {
-    fontFamily: fonts.headerFamily,
+    fontFamily: "Inter_500Medium",
     fontSize: 18,
     fontWeight: "600",
     flex: 1,
   },
   prayerBody: {
-    paddingHorizontal: 18,
-    paddingBottom: 20,
+    paddingBottom: 16,
   },
   prayerText: {
     fontFamily: fonts.loraRegular,
@@ -149,12 +128,14 @@ const styles = StyleSheet.create({
     lineHeight: 26,
   },
   prayerSource: {
-    fontFamily: fonts.loraItalic,
+    fontFamily: "Inter_500Medium",
     fontSize: 14,
+    fontWeight: "600",
+    letterSpacing: 1,
     marginTop: 14,
     textAlign: "right",
   },
   personalSection: {
-    marginTop: 16,
+    marginTop: 24,
   },
 });

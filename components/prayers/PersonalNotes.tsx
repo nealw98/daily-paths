@@ -99,10 +99,10 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId }) => {
   const hasChanges = content !== savedContent;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+    <View style={[styles.container, { backgroundColor: colors.cloud }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>
-          Personal Prayer Notes
+        <Text style={[styles.title, { color: colors.ocean }]}>
+          PERSONAL PRAYER NOTES
         </Text>
         {!isEditing && (
           <TouchableOpacity onPress={handleEdit}>
@@ -115,7 +115,7 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId }) => {
         <>
           <TextInput
             ref={inputRef}
-            style={[styles.input, { color: colors.text, borderColor: colors.border, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight }]}
+            style={[styles.input, { color: colors.ink, borderColor: colors.border, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight }]}
             value={content}
             onChangeText={setContent}
             placeholder="Write your personal prayers, intentions, or reflections..."
@@ -154,7 +154,7 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId }) => {
       ) : (
         <TouchableOpacity onPress={handleEdit} activeOpacity={0.7}>
           {content.trim() ? (
-            <Text style={[styles.noteContent, { color: colors.text, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight }]}>
+            <Text style={[styles.noteContent, { color: colors.ink, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight }]}>
               {content}
             </Text>
           ) : (
@@ -170,10 +170,14 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId }) => {
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 14,
-    borderWidth: 1,
+    borderRadius: 12,
     padding: 20,
     marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
   },
   header: {
     flexDirection: "row",
@@ -182,9 +186,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   title: {
-    fontFamily: fonts.headerFamily,
-    fontSize: 20,
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 16,
     fontWeight: "600",
+    letterSpacing: 1,
   },
   input: {
     fontFamily: fonts.loraRegular,
