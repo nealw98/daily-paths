@@ -38,21 +38,16 @@ export function useSubscription(userId?: string | null) {
 
     const init = async () => {
       try {
-        // If userId went from a value to null/undefined, logout from RevenueCat
+        // If userId went from a value to null/undefined (sign-out),
+        // DON'T logout from RevenueCat — entitlements are device-level.
+        // Just re-fetch status so the device's entitlement is still recognized.
         if (prevUserId.current && !userId && isRevenueCatInitialized()) {
-          await logoutRevenueCat();
+          prevUserId.current = userId;
+          const currentStatus = await getSubscriptionStatus();
           if (!cancelled) {
-            setStatus({
-              isSubscribed: false,
-              isTrialing: false,
-              isLegacy: false,
-              expirationDate: null,
-              productIdentifier: null,
-              willRenew: false,
-            });
+            setStatus(currentStatus);
             setLoading(false);
           }
-          prevUserId.current = userId;
           return;
         }
         prevUserId.current = userId;
@@ -60,6 +55,17 @@ export function useSubscription(userId?: string | null) {
         if (!initialized.current) {
           await initializeRevenueCat(userId || undefined);
           initialized.current = true;
+
+          // On first init (fresh install), restore purchases so RevenueCat
+          // picks up existing subscriptions tied to the App Store / Play Store
+          // account before we decide whether to show the paywall.
+          if (isRevenueCatInitialized()) {
+            try {
+              await restorePurchases();
+            } catch {
+              // Restore can fail silently — we'll still check status below
+            }
+          }
         }
 
         if (userId && isRevenueCatInitialized()) {

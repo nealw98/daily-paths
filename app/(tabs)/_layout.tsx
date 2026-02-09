@@ -18,10 +18,11 @@ export default function TabLayout() {
   const [paywallDismissed, setPaywallDismissed] = useState(false);
   const [signInDismissed, setSignInDismissed] = useState(false);
 
-  // Reset dismissed state when user signs out
+  // Reset sign-in dismissed state when user signs out
+  // (so the sign-in modal reappears), but do NOT reset paywallDismissed —
+  // entitlements are device-level and persist across sign-out.
   useEffect(() => {
     if (wasAuthenticated.current && !isAuthenticated) {
-      setPaywallDismissed(false);
       setSignInDismissed(false);
     }
     wasAuthenticated.current = isAuthenticated;

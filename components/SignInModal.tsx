@@ -10,6 +10,7 @@ import {
   Alert,
   ScrollView,
   Platform,
+  KeyboardAvoidingView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { fonts } from "../constants/theme";
@@ -93,6 +94,10 @@ export const SignInModal: React.FC<SignInModalProps> = ({
       onRequestClose={dismissable ? onClose : undefined}
     >
       <View style={[styles.container, { backgroundColor: colors.backdrop }]}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.keyboardAvoid}
+        >
         <View style={[styles.content, { backgroundColor: colors.background }]}>
           {/* Header */}
           <View style={styles.header}>
@@ -201,6 +206,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({
             </View>
           </ScrollView>
         </View>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
   );
@@ -208,6 +214,9 @@ export const SignInModal: React.FC<SignInModalProps> = ({
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  keyboardAvoid: {
     flex: 1,
     justifyContent: "flex-end",
   },
