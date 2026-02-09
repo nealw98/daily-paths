@@ -234,7 +234,7 @@ export const SettingsContent: React.FC<{
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.mainContent}>
-          {/* Appearance: Theme + Text Size */}
+          {/* 1. Appearance: Theme + Text Size */}
           <View style={[styles.sectionCard, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
             <View style={[styles.sectionHeader, { borderBottomColor: colors.mist }]}>
               <Ionicons name="color-palette-outline" size={22} color={colors.deepTeal} />
@@ -391,88 +391,7 @@ export const SettingsContent: React.FC<{
             </View>
           </View>
 
-          <View style={[styles.sectionCard, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
-            <View style={[styles.sectionHeader, { borderBottomColor: colors.mist }]}>
-              <Ionicons
-                name="information-circle-outline"
-                size={22}
-                color={colors.deepTeal}
-              />
-              <View style={styles.sectionHeaderText}>
-                <Text style={[styles.sectionTitle, { color: colors.deepTeal }]}>About</Text>
-              </View>
-            </View>
-            <View style={styles.sectionBody}>
-              <Text
-                style={{
-                  fontSize: 16,
-                  lineHeight: 24,
-                  fontFamily: fonts.loraRegular,
-                  color: colors.ink,
-                }}
-              >
-                Daily Paths supports your recovery with 366 original readings based on Al-Anon's Steps, Traditions, and Concepts. It is not affiliated with Al-Anon, AA or any 12-step fellowship.
-              </Text>
-            </View>
-          </View>
-
-          <View style={[styles.sectionCard, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
-            <View style={[styles.sectionHeader, { borderBottomColor: colors.mist }]}>
-              <Ionicons name="star-outline" size={22} color={colors.deepTeal} />
-              <View style={styles.sectionHeaderText}>
-                <Text style={[styles.sectionTitle, { color: colors.deepTeal }]}>Rate & Share</Text>
-                <Text style={[styles.sectionSubtitle, { color: colors.ink }]}>
-                  Help others discover Daily Paths
-                </Text>
-              </View>
-            </View>
-            <View style={styles.sectionBody}>
-              <View style={styles.buttonRow}>
-                <TouchableOpacity
-                  style={[styles.secondaryButton, { borderColor: colors.mist, backgroundColor: colors.pearl }]}
-                  onPress={handleRateApp}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="star" size={18} color={colors.deepTeal} />
-                  <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Rate App</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.secondaryButton, { borderColor: colors.mist, backgroundColor: colors.pearl }]}
-                  onPress={handleShareApp}
-                  disabled={isSharing}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="share-social" size={18} color={colors.deepTeal} />
-                  <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
-                    {isSharing ? "Sharing..." : "Share App"}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-
-          <View style={[styles.sectionCard, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
-            <View style={[styles.sectionHeader, { borderBottomColor: colors.mist }]}>
-              <Ionicons name="chatbubbles-outline" size={22} color={colors.deepTeal} />
-              <View style={styles.sectionHeaderText}>
-                <Text style={[styles.sectionTitle, { color: colors.deepTeal }]}>Share Feedback</Text>
-                <Text style={[styles.sectionSubtitle, { color: colors.ink }]}>
-                  Tell us what's working and what to improve
-                </Text>
-              </View>
-            </View>
-            <View style={styles.sectionBody}>
-              <TouchableOpacity
-                style={[styles.secondaryButton, { borderColor: colors.mist, backgroundColor: colors.pearl }]}
-                onPress={() => setShowFeedbackModal(true)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="chatbubble-ellipses" size={18} color={colors.deepTeal} />
-                <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Send Feedback</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
+          {/* 2. Daily Notification */}
           <View ref={reminderRef} style={[styles.sectionCard, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
             <View style={[styles.sectionHeader, { borderBottomColor: colors.mist }]}>
               <Ionicons name="notifications-outline" size={22} color={colors.deepTeal} />
@@ -565,6 +484,91 @@ export const SettingsContent: React.FC<{
                   </View>
                 </View>
               )}
+            </View>
+          </View>
+
+          {/* 3. Rate & Share */}
+          <View style={[styles.sectionCard, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
+            <View style={[styles.sectionHeader, { borderBottomColor: colors.mist }]}>
+              <Ionicons name="star-outline" size={22} color={colors.deepTeal} />
+              <View style={styles.sectionHeaderText}>
+                <Text style={[styles.sectionTitle, { color: colors.deepTeal }]}>Rate & Share</Text>
+                <Text style={[styles.sectionSubtitle, { color: colors.ink }]}>
+                  Help others discover Daily Paths
+                </Text>
+              </View>
+            </View>
+            <View style={styles.sectionBody}>
+              <View style={styles.buttonRow}>
+                <TouchableOpacity
+                  style={[styles.secondaryButton, { borderColor: colors.mist, backgroundColor: colors.pearl }]}
+                  onPress={handleRateApp}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="star" size={18} color={colors.deepTeal} />
+                  <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Rate App</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.secondaryButton, { borderColor: colors.mist, backgroundColor: colors.pearl }]}
+                  onPress={handleShareApp}
+                  disabled={isSharing}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="share-social" size={18} color={colors.deepTeal} />
+                  <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+                    {isSharing ? "Sharing..." : "Share App"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          {/* 4. Share Feedback */}
+          <View style={[styles.sectionCard, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
+            <View style={[styles.sectionHeader, { borderBottomColor: colors.mist }]}>
+              <Ionicons name="chatbubbles-outline" size={22} color={colors.deepTeal} />
+              <View style={styles.sectionHeaderText}>
+                <Text style={[styles.sectionTitle, { color: colors.deepTeal }]}>Share Feedback</Text>
+                <Text style={[styles.sectionSubtitle, { color: colors.ink }]}>
+                  Tell us what's working and what to improve
+                </Text>
+              </View>
+            </View>
+            <View style={styles.sectionBody}>
+              <TouchableOpacity
+                style={[styles.secondaryButton, { borderColor: colors.mist, backgroundColor: colors.pearl }]}
+                onPress={() => setShowFeedbackModal(true)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="chatbubble-ellipses" size={18} color={colors.deepTeal} />
+                <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Send Feedback</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* 5. About */}
+          <View style={[styles.sectionCard, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
+            <View style={[styles.sectionHeader, { borderBottomColor: colors.mist }]}>
+              <Ionicons
+                name="information-circle-outline"
+                size={22}
+                color={colors.deepTeal}
+              />
+              <View style={styles.sectionHeaderText}>
+                <Text style={[styles.sectionTitle, { color: colors.deepTeal }]}>About</Text>
+              </View>
+            </View>
+            <View style={styles.sectionBody}>
+              <Text
+                style={{
+                  fontSize: 16,
+                  lineHeight: 24,
+                  fontFamily: fonts.loraRegular,
+                  color: colors.ink,
+                }}
+              >
+                Daily Paths supports your recovery with 366 original readings based on Al-Anon's Steps, Traditions, and Concepts. It is not affiliated with Al-Anon, AA or any 12-step fellowship.
+              </Text>
             </View>
           </View>
         </View>
