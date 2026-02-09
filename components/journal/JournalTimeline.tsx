@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import {
   View,
   Text,
@@ -205,6 +206,8 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
   onRefresh,
 }) => {
   const { colors } = useTheme();
+  const { settings } = useSettings();
+  const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
 
   // Filter entries by category
   const filteredEntries = useMemo(() => {
@@ -262,7 +265,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
           {/* Preview text */}
           {preview ? (
             <Text
-              style={[styles.entryPreview, { color: colors.textSecondary }]}
+              style={[styles.entryPreview, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 4, lineHeight: (typography.bodyFontSize - 4) * 1.55 }]}
               numberOfLines={2}
             >
               {preview}

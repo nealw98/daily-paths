@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { View, Text, TextInput, StyleSheet } from "react-native";
 import { useTheme } from "../../hooks/useTheme";
+import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { fonts } from "../../constants/theme";
 import type { GuidedPrompt } from "../../constants/journalCategories";
 
@@ -20,6 +21,8 @@ export function GuidedPromptEditor({
   introText,
 }: GuidedPromptEditorProps) {
   const { colors } = useTheme();
+  const { settings } = useSettings();
+  const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
   const [focusedId, setFocusedId] = useState<string | null>(null);
 
   return (
@@ -32,6 +35,8 @@ export function GuidedPromptEditor({
             {
               fontFamily: fonts.headerFamilyItalic,
               color: colors.accent,
+              fontSize: typography.bodyFontSize,
+              lineHeight: typography.bodyFontSize * 1.5,
             },
           ]}
         >
@@ -61,7 +66,7 @@ export function GuidedPromptEditor({
               <Text
                 style={[
                   styles.questionText,
-                  { color: colors.text },
+                  { color: colors.text, fontSize: typography.bodyFontSize - 4, lineHeight: (typography.bodyFontSize - 4) * 1.35 },
                 ]}
               >
                 {prompt.question}
@@ -75,6 +80,8 @@ export function GuidedPromptEditor({
                 {
                   fontFamily: fonts.bodyFamilyRegular,
                   color: colors.text,
+                  fontSize: typography.bodyFontSize - 4,
+                  lineHeight: (typography.bodyFontSize - 4) * 1.65,
                   backgroundColor: isFocused
                     ? "#FFFFFF"
                     : colors.background,

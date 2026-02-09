@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -22,6 +22,7 @@ import {
   getCategoryBgColor,
   type EntryType,
 } from "../../constants/journalCategories";
+import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { GuidedPromptEditor } from "./GuidedPromptEditor";
 
 interface JournalEntryEditorProps {
@@ -46,6 +47,8 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
   isEditing = false,
 }) => {
   const { colors } = useTheme();
+  const { settings } = useSettings();
+  const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
   const categoryConfig = getCategoryById(entryType);
   const categoryLabel = getCategoryLabel(entryType);
   const categoryColor = getCategoryColor(entryType);
@@ -264,7 +267,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                 ref={inputRef}
                 style={[
                   styles.textInput,
-                  { color: colors.text },
+                  { color: colors.text, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight },
                 ]}
                 placeholder="What's on your mind..."
                 placeholderTextColor={colors.textSecondary + "60"}
@@ -287,7 +290,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                 <Text
                   style={[
                     styles.introText,
-                    { color: colors.accent },
+                    { color: colors.accent, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.5 },
                   ]}
                 >
                   {categoryConfig.introText}
@@ -310,7 +313,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                   <TextInput
                     style={[
                       styles.gratitudeInput,
-                      { color: colors.text },
+                      { color: colors.text, fontSize: typography.bodyFontSize - 2, lineHeight: typography.bodyLineHeight - 6 },
                     ]}
                     placeholder="I'm grateful for..."
                     placeholderTextColor={colors.textSecondary + "60"}

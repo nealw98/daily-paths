@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -23,6 +23,7 @@ import {
   getCategoryBgColor,
   type EntryType,
 } from "../../constants/journalCategories";
+import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { GuidedPromptEditor } from "./GuidedPromptEditor";
 
 interface JournalEntryDetailProps {
@@ -60,6 +61,8 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
   hasNext = false,
 }) => {
   const { colors } = useTheme();
+  const { settings } = useSettings();
+  const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -260,7 +263,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
             style={[styles.gratitudeReadItem, { borderBottomColor: colors.border }]}
           >
             <Text style={styles.gratitudeLeaf}>✨</Text>
-            <Text style={[styles.gratitudeReadText, { color: colors.text }]}>
+            <Text style={[styles.gratitudeReadText, { color: colors.text, fontSize: typography.bodyFontSize - 2, lineHeight: typography.bodyLineHeight - 6 }]}>
               {item}
             </Text>
           </View>
@@ -292,7 +295,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
                   {prompt.question}
                 </Text>
               </View>
-              <Text style={[styles.guidedReadResponse, { color: colors.text }]}>
+              <Text style={[styles.guidedReadResponse, { color: colors.text, fontSize: typography.bodyFontSize - 2, lineHeight: typography.bodyLineHeight - 6 }]}>
                 {value}
               </Text>
             </View>
@@ -301,7 +304,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
 
         {/* Fallback: show plain content if no structured_content */}
         {!entry.structured_content && entry.content && (
-          <Text style={[styles.contentText, { color: colors.text }]}>
+          <Text style={[styles.contentText, { color: colors.text, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight }]}>
             {entry.content}
           </Text>
         )}
@@ -331,7 +334,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
   const renderTextEdit = () => (
     <View style={styles.editContainer}>
       <TextInput
-        style={[styles.editInput, { color: colors.text }]}
+        style={[styles.editInput, { color: colors.text, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight }]}
         value={editContent}
         onChangeText={setEditContent}
         multiline
@@ -360,7 +363,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
         >
           <Text style={styles.gratitudeLeaf}>✨</Text>
           <TextInput
-            style={[styles.gratitudeEditInput, { color: colors.text }]}
+            style={[styles.gratitudeEditInput, { color: colors.text, fontSize: typography.bodyFontSize - 2, lineHeight: typography.bodyLineHeight - 6 }]}
             placeholder="I'm grateful for..."
             placeholderTextColor={colors.textSecondary + "60"}
             value={item}

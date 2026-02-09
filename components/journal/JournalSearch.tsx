@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
+import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { fonts } from "../../constants/theme";
 import type { JournalEntry } from "../../hooks/useJournalEntries";
 import {
@@ -32,6 +33,8 @@ export const JournalSearch: React.FC<JournalSearchProps> = ({
   onClose,
 }) => {
   const { colors } = useTheme();
+  const { settings } = useSettings();
+  const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<JournalEntry[]>([]);
   const [searched, setSearched] = useState(false);
@@ -121,7 +124,7 @@ export const JournalSearch: React.FC<JournalSearchProps> = ({
           </View>
 
           {/* Preview text */}
-          <Text style={[styles.resultText, { color: colors.text }]} numberOfLines={3}>
+          <Text style={[styles.resultText, { color: colors.text, fontSize: typography.bodyFontSize - 4, lineHeight: (typography.bodyFontSize - 4) * 1.47 }]} numberOfLines={3}>
             {highlightText(preview, query)}
           </Text>
         </View>
