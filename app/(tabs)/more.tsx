@@ -10,6 +10,8 @@ import { SettingsContent } from "../../components/SettingsContent";
 import { PaywallModal } from "../../components/PaywallModal";
 import { SignInModal } from "../../components/SignInModal";
 import { ExportOptionsModal } from "../../components/ExportOptionsModal";
+import { TealHeader } from "../../components/shared/TealHeader";
+import { StackedStones } from "../../components/icons";
 
 type MoreView = "menu" | "account";
 
@@ -61,24 +63,20 @@ export default function MoreTab() {
 
   return (
     <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={[styles.container, { backgroundColor: colors.pearl }]}
       edges={["top"]}
     >
-      <View
-        style={[
-          styles.header,
-          { backgroundColor: colors.background, borderBottomColor: colors.border },
-        ]}
-      >
-        <Text style={[styles.headerTitle, { color: colors.text }]}>More</Text>
-      </View>
+      <TealHeader
+        title="More"
+        leftIcon={<StackedStones size={28} color={colors.textOnAccent} />}
+      />
       <ScrollView style={styles.content}>
         {/* User info banner if authenticated */}
         {isAuthenticated && user?.email && (
           <View
             style={[
               styles.userBanner,
-              { backgroundColor: colors.cardBackground, borderColor: colors.border },
+              { backgroundColor: colors.cloud },
             ]}
           >
             <View style={[styles.userAvatar, { backgroundColor: colors.accent }]}>
@@ -106,7 +104,7 @@ export default function MoreTab() {
               <Ionicons
                 name={item.icon}
                 size={24}
-                color={item.available ? colors.accent : colors.textSecondary}
+                color={item.available ? colors.ocean : colors.textSecondary}
               />
               <Text
                 style={[
@@ -118,9 +116,9 @@ export default function MoreTab() {
               </Text>
             </View>
             {item.available ? (
-              <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+              <Ionicons name="chevron-forward" size={20} color={colors.seafoam} />
             ) : (
-              <Text style={[styles.comingSoon, { color: colors.textSecondary }]}>
+              <Text style={[styles.comingSoon, { color: colors.seafoam }]}>
                 Sign in required
               </Text>
             )}
@@ -164,16 +162,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-  },
-  headerTitle: {
-    fontFamily: fonts.headerFamily,
-    fontSize: 28,
-    fontWeight: "700",
-  },
   content: {
     flex: 1,
   },
@@ -185,7 +173,11 @@ const styles = StyleSheet.create({
     marginTop: 16,
     padding: 16,
     borderRadius: 14,
-    borderWidth: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   userAvatar: {
     width: 40,
@@ -221,9 +213,9 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   menuItemText: {
-    fontFamily: fonts.bodyFamilyRegular,
+    fontFamily: "Inter_500Medium",
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: "600",
   },
   comingSoon: {
     fontFamily: fonts.bodyFamily,
