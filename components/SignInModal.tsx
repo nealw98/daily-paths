@@ -93,11 +93,12 @@ export const SignInModal: React.FC<SignInModalProps> = ({
       animationType="slide"
       onRequestClose={dismissable ? onClose : undefined}
     >
-      <View style={[styles.container, { backgroundColor: colors.backdrop }]}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.keyboardAvoid}
-        >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={[styles.container, { backgroundColor: colors.backdrop }]}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
+      >
+        <View style={styles.keyboardAvoid}>
         <View style={[styles.content, { backgroundColor: colors.background }]}>
           {/* Header */}
           <View style={styles.header}>
@@ -114,7 +115,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({
             style={styles.scrollContent}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ paddingBottom: 40 }}
+            contentContainerStyle={{ paddingBottom: 20 }}
           >
             {/* Title */}
             <Text style={[styles.title, { color: colors.text }]}>
@@ -170,6 +171,8 @@ export const SignInModal: React.FC<SignInModalProps> = ({
                 autoCapitalize="none"
                 keyboardType="email-address"
                 autoCorrect={false}
+                autoComplete="email"
+                textContentType="emailAddress"
               />
               <TextInput
                 style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.cardBackground }]}
@@ -178,6 +181,8 @@ export const SignInModal: React.FC<SignInModalProps> = ({
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
+                autoComplete="password"
+                textContentType="password"
               />
               <TouchableOpacity
                 style={[styles.submitButton, { backgroundColor: colors.buttonPrimary }]}
@@ -206,8 +211,8 @@ export const SignInModal: React.FC<SignInModalProps> = ({
             </View>
           </ScrollView>
         </View>
-        </KeyboardAvoidingView>
-      </View>
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
@@ -223,8 +228,8 @@ const styles = StyleSheet.create({
   content: {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: "85%",
-    paddingBottom: 34,
+    maxHeight: "90%",
+    paddingBottom: 20,
   },
   header: {
     flexDirection: "row",
