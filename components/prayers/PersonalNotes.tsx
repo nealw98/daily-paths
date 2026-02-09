@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
+import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { fonts } from "../../constants/theme";
 import { supabase } from "../../lib/supabase";
 import { qaLog } from "../../utils/qaLog";
@@ -19,6 +20,8 @@ interface PersonalNotesProps {
 
 export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId }) => {
   const { colors } = useTheme();
+  const { settings } = useSettings();
+  const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
   const [content, setContent] = useState("");
   const [savedContent, setSavedContent] = useState("");
   const [isEditing, setIsEditing] = useState(false);
@@ -112,7 +115,7 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId }) => {
         <>
           <TextInput
             ref={inputRef}
-            style={[styles.input, { color: colors.text, borderColor: colors.border }]}
+            style={[styles.input, { color: colors.text, borderColor: colors.border, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight }]}
             value={content}
             onChangeText={setContent}
             placeholder="Write your personal prayers, intentions, or reflections..."
@@ -151,11 +154,11 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId }) => {
       ) : (
         <TouchableOpacity onPress={handleEdit} activeOpacity={0.7}>
           {content.trim() ? (
-            <Text style={[styles.noteContent, { color: colors.text }]}>
+            <Text style={[styles.noteContent, { color: colors.text, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight }]}>
               {content}
             </Text>
           ) : (
-            <Text style={[styles.placeholder, { color: colors.textSecondary + "60" }]}>
+            <Text style={[styles.placeholder, { color: colors.textSecondary + "60", fontSize: typography.bodyFontSize - 2, lineHeight: typography.bodyLineHeight - 6 }]}>
               Tap to add your personal prayers, intentions, or reflections...
             </Text>
           )}

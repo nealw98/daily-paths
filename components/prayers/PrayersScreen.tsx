@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
+import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { fonts } from "../../constants/theme";
 import { PRAYERS, type Prayer } from "../../constants/prayers";
 import { PersonalNotes } from "./PersonalNotes";
@@ -23,6 +24,8 @@ export const PrayersScreen: React.FC<PrayersScreenProps> = ({
   onBack,
 }) => {
   const { colors } = useTheme();
+  const { settings } = useSettings();
+  const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
   const [expandedPrayer, setExpandedPrayer] = useState<string | null>("serenity");
 
   const renderPrayer = (prayer: Prayer) => {
@@ -41,7 +44,7 @@ export const PrayersScreen: React.FC<PrayersScreenProps> = ({
           onPress={() => setExpandedPrayer(isExpanded ? null : prayer.id)}
           activeOpacity={0.7}
         >
-          <Text style={[styles.prayerTitle, { color: colors.text }]}>
+          <Text style={[styles.prayerTitle, { color: colors.text, fontSize: typography.bodyFontSize }]}>
             {prayer.title}
           </Text>
           <Ionicons
@@ -53,11 +56,11 @@ export const PrayersScreen: React.FC<PrayersScreenProps> = ({
 
         {isExpanded && (
           <View style={styles.prayerBody}>
-            <Text style={[styles.prayerText, { color: colors.text }]}>
+            <Text style={[styles.prayerText, { color: colors.text, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.625 }]}>
               {prayer.text}
             </Text>
             {prayer.source && (
-              <Text style={[styles.prayerSource, { color: colors.textSecondary }]}>
+              <Text style={[styles.prayerSource, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 2 }]}>
                 — {prayer.source}
               </Text>
             )}
@@ -94,7 +97,7 @@ export const PrayersScreen: React.FC<PrayersScreenProps> = ({
             Prayers
           </Text>
         )}
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+        <Text style={[styles.subtitle, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 4, lineHeight: (typography.bodyFontSize - 4) * 1.47 }]}>
           A collection of prayers for your recovery journey
         </Text>
 
