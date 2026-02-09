@@ -1,4 +1,4 @@
-import RNHTMLtoPDF from "react-native-html-to-pdf";
+import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { qaLog } from "./qaLog";
 import type { JournalEntry } from "../hooks/useJournalEntries";
@@ -186,18 +186,14 @@ export async function exportJournalToPDF(
 
     const html = generateHTML(filtered, options);
 
-    const result = await RNHTMLtoPDF.convert({
-      html,
-      fileName: `DailyPaths_Journal_${new Date().toISOString().split("T")[0]}`,
-      directory: "Documents",
-    });
+    const result = await Print.printToFileAsync({ html });
 
-    if (!result.filePath) {
-      qaLog("export", "PDF generation failed - no file path");
+    if (!result.uri) {
+      qaLog("export", "PDF generation failed - no file URI");
       return false;
     }
 
-    qaLog("export", "PDF generated", { filePath: result.filePath });
+    qaLog("export", "PDF generated", { filePath: result.uri });
 
     // Check if sharing is available
     const isAvailable = await Sharing.isAvailableAsync();
@@ -206,7 +202,7 @@ export async function exportJournalToPDF(
       return false;
     }
 
-    await Sharing.shareAsync(result.filePath, {
+    await Sharing.shareAsync(result.uri, {
       mimeType: "application/pdf",
       dialogTitle: "Share Journal Export",
     });
