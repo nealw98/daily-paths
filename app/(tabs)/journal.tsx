@@ -1,7 +1,7 @@
-import React, { useState, useCallback, useMemo } from "react";
-import { View, Text, StyleSheet, Alert, TouchableOpacity } from "react-native";
+import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { View, Text, StyleSheet, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "expo-router";
 import { useTheme } from "../../hooks/useTheme";
 import { useAuth } from "../../contexts/AuthContext";
 import { useJournalEntries, type JournalEntry } from "../../hooks/useJournalEntries";
@@ -9,7 +9,6 @@ import { useJournalStats } from "../../hooks/useJournalStats";
 import { JournalTimeline, type CategoryFilter } from "../../components/journal/JournalTimeline";
 import { JournalEntryEditor } from "../../components/journal/JournalEntryEditor";
 import { JournalEntryDetail } from "../../components/journal/JournalEntryDetail";
-import { JournalSearch } from "../../components/journal/JournalSearch";
 import { JournalCategoryPicker } from "../../components/journal/JournalCategoryPicker";
 import { TealHeader } from "../../components/shared/TealHeader";
 import { fonts } from "../../constants/theme";
@@ -17,10 +16,11 @@ import { getCategoryById, getCategoryLabel, type EntryType } from "../../constan
 import { EntryTypeIcon } from "../../utils/entryTypeIcon";
 import { FourSquares } from "../../components/icons";
 
-type JournalView = "timeline" | "editor" | "detail" | "search";
+type JournalView = "timeline" | "editor" | "detail";
 
 export default function JournalTab() {
   const { colors } = useTheme();
+  const navigation = useNavigation();
   const { user, isAuthenticated } = useAuth();
   const {
     entries,
@@ -28,12 +28,13 @@ export default function JournalTab() {
     createEntry,
     updateEntry,
     deleteEntry,
-    searchEntries,
     refreshEntries,
   } = useJournalEntries(user?.id);
   const stats = useJournalStats(entries);
 
   const [view, setView] = useState<JournalView>("timeline");
+  const viewRef = useRef(view);
+  useEffect(() => { viewRef.current = view; }, [view]);
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [selectedEntryType, setSelectedEntryType] = useState<EntryType>("journal");
@@ -54,6 +55,33 @@ export default function JournalTab() {
     return <EntryTypeIcon svgIcon={cat.svgIcon} size={28} color={colors.textOnAccent} />;
   }, [categoryFilter, colors.textOnAccent]);
 
+  // ─── Tab press → always return to timeline ─────────────────
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("tabPress" as any, (e: any) => {
+      if (viewRef.current !== "timeline") {
+        e.preventDefault();
+        if (viewRef.current === "editor") {
+          // Respect save/discard warning
+          Alert.alert("Discard this entry?", "Your writing will not be saved.", [
+            { text: "Keep Writing", style: "cancel" },
+            {
+              text: "Discard",
+              style: "destructive",
+              onPress: () => {
+                setSelectedEntry(null);
+                setView("timeline");
+              },
+            },
+          ]);
+        } else {
+          setSelectedEntry(null);
+          setView("timeline");
+        }
+      }
+    });
+    return unsubscribe;
+  }, [navigation]);
+
   // ─── Navigation ──────────────────────────────────────────
 
   const handleNewEntry = useCallback(() => {
@@ -70,10 +98,6 @@ export default function JournalTab() {
     setShowCategoryPicker(false);
     setSelectedEntryType(entryType);
     setView("editor");
-  }, []);
-
-  const handleSearch = useCallback(() => {
-    setView("search");
   }, []);
 
   const handleSelectEntry = useCallback(
@@ -212,16 +236,6 @@ export default function JournalTab() {
     );
   }
 
-  if (view === "search") {
-    return (
-      <JournalSearch
-        onSearch={searchEntries}
-        onSelectEntry={handleSelectEntry}
-        onClose={handleBackToTimeline}
-      />
-    );
-  }
-
   // Default: Timeline view
   return (
     <SafeAreaView
@@ -231,11 +245,6 @@ export default function JournalTab() {
       <TealHeader
         title={headerTitle}
         leftIcon={headerIcon}
-        rightAction={
-          <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
-            <Ionicons name="search" size={22} color={colors.textOnAccent} />
-          </TouchableOpacity>
-        }
       />
       <JournalTimeline
         entries={entries}
@@ -244,7 +253,6 @@ export default function JournalTab() {
         categoryFilter={categoryFilter}
         onFilterChange={handleFilterChange}
         onNewEntry={handleNewEntry}
-        onSearch={handleSearch}
         onSelectEntry={handleSelectEntry}
         onDeleteEntry={handleDeleteFromTimeline}
         onRefresh={refreshEntries}
@@ -261,9 +269,6 @@ export default function JournalTab() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  searchButton: {
-    padding: 4,
   },
   authPrompt: {
     flex: 1,

@@ -7,14 +7,13 @@ import { fonts } from "../../constants/theme";
 interface TealHeaderProps {
   title: string;
   leftIcon?: React.ReactNode;
-  rightAction?: React.ReactNode;
 }
 
 /**
  * Reusable teal gradient header used on Journal, Prayers, and other top-level screens.
  * Adapts automatically to the active theme's gradient colors.
  */
-export const TealHeader: React.FC<TealHeaderProps> = ({ title, leftIcon, rightAction }) => {
+export const TealHeader: React.FC<TealHeaderProps> = ({ title, leftIcon }) => {
   const { colors, themeId } = useTheme();
 
   const isSolid = colors.headerGradientStart === colors.headerGradientEnd;
@@ -25,7 +24,6 @@ export const TealHeader: React.FC<TealHeaderProps> = ({ title, leftIcon, rightAc
         {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
         <Text style={[styles.title, { color: colors.textOnAccent }]}>{title}</Text>
       </View>
-      {rightAction && <View style={styles.rightAction}>{rightAction}</View>}
     </View>
   );
 
@@ -56,9 +54,8 @@ const styles = StyleSheet.create({
     paddingBottom: 18,
   },
   inner: {
-    flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "center",
   },
   titleRow: {
     flexDirection: "row",
@@ -71,8 +68,5 @@ const styles = StyleSheet.create({
     fontFamily: fonts.headerFamilyItalic,
     fontSize: 32,
     lineHeight: 38,
-  },
-  rightAction: {
-    marginLeft: 12,
   },
 });

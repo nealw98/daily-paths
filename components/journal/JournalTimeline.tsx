@@ -45,7 +45,6 @@ interface JournalTimelineProps {
   categoryFilter: CategoryFilter;
   onFilterChange: (filter: CategoryFilter) => void;
   onNewEntry: () => void;
-  onSearch: () => void;
   onSelectEntry: (entry: JournalEntry) => void;
   onDeleteEntry: (entryId: string) => void;
   onRefresh: () => void;
@@ -203,7 +202,6 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
   categoryFilter,
   onFilterChange,
   onNewEntry,
-  onSearch,
   onSelectEntry,
   onDeleteEntry,
   onRefresh,

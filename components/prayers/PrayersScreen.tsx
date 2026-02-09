@@ -26,10 +26,35 @@ export const PrayersScreen: React.FC<PrayersScreenProps> = ({
   const { colors } = useTheme();
   const { settings } = useSettings();
   const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
-  const [expandedPrayer, setExpandedPrayer] = useState<string | null>("serenity");
+  const [expandedPrayer, setExpandedPrayer] = useState<string | null>("just-for-today");
+
+  /** Render prayer text with bold phrases (e.g. "Just for today", "Just for tonight") */
+  const renderPrayerText = (text: string, boldPhrases: string[]) => {
+    if (boldPhrases.length === 0) return text;
+
+    const pattern = new RegExp(`(${boldPhrases.map(p => p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`, "gi");
+    const parts = text.split(pattern);
+
+    return parts.map((part, i) => {
+      const isBold = boldPhrases.some(p => p.toLowerCase() === part.toLowerCase());
+      if (isBold) {
+        return (
+          <Text key={i} style={{ fontFamily: fonts.loraBold, fontWeight: "700" }}>
+            {part}
+          </Text>
+        );
+      }
+      return part;
+    });
+  };
 
   const renderPrayer = (prayer: Prayer) => {
     const isExpanded = expandedPrayer === prayer.id;
+
+    // Determine which phrases to bold in this prayer
+    const boldPhrases: string[] = [];
+    if (prayer.id === "just-for-today") boldPhrases.push("Just for today");
+    if (prayer.id === "just-for-tonight") boldPhrases.push("Just for tonight");
 
     return (
       <View key={prayer.id} style={styles.prayerSection}>
@@ -51,7 +76,7 @@ export const PrayersScreen: React.FC<PrayersScreenProps> = ({
         {isExpanded && (
           <View style={styles.prayerBody}>
             <Text style={[styles.prayerText, { color: colors.ink, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.625 }]}>
-              {prayer.text}
+              {renderPrayerText(prayer.text, boldPhrases)}
             </Text>
             {prayer.source && (
               <Text style={[styles.prayerSource, { color: colors.seafoam, fontSize: typography.bodyFontSize - 2 }]}>
