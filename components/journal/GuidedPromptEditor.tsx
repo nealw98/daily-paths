@@ -58,20 +58,15 @@ export function GuidedPromptEditor({
               },
             ]}
           >
-            {/* Label row */}
-            <View style={styles.labelRow}>
-              <View style={[styles.numberCircle, { backgroundColor: color, width: typography.bodyFontSize + 6, height: typography.bodyFontSize + 6, borderRadius: (typography.bodyFontSize + 6) / 2 }]}>
-                <Text style={[styles.numberText, { fontSize: typography.bodyFontSize - 8 }]}>{index + 1}</Text>
-              </View>
-              <Text
-                style={[
-                  styles.questionText,
-                  { color: colors.text, fontSize: typography.bodyFontSize - 4, lineHeight: (typography.bodyFontSize - 4) * 1.35 },
-                ]}
-              >
-                {prompt.question}
-              </Text>
-            </View>
+            {/* Question label */}
+            <Text
+              style={[
+                styles.questionText,
+                { color: colors.text, fontSize: typography.bodyFontSize - 4, lineHeight: (typography.bodyFontSize - 4) * 1.35 },
+              ]}
+            >
+              {prompt.question}
+            </Text>
 
             {/* TextInput */}
             <TextInput
@@ -133,38 +128,20 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
   },
   card: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
+    borderRadius: 14,
+    padding: 18,
+    marginBottom: 14,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
     elevation: 1,
-  },
-  labelRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 10,
-  },
-  numberCircle: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  numberText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "600",
   },
   questionText: {
     fontSize: 14,
     fontWeight: "600",
     lineHeight: 14 * 1.35,
-    flex: 1,
+    marginBottom: 10,
   },
   textInput: {
     borderWidth: 1.5,
@@ -179,6 +156,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontStyle: "italic",
     marginTop: 6,
-    paddingLeft: 36,
   },
 });

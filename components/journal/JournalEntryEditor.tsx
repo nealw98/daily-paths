@@ -19,11 +19,12 @@ import {
   getCategoryById,
   getCategoryLabel,
   getCategoryColor,
-  getCategoryBgColor,
   type EntryType,
 } from "../../constants/journalCategories";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { GuidedPromptEditor } from "./GuidedPromptEditor";
+import { EntryTypeIcon } from "../../utils/entryTypeIcon";
+import { Seedling } from "../../components/icons";
 
 interface JournalEntryEditorProps {
   entryType: EntryType;
@@ -52,7 +53,6 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
   const categoryConfig = getCategoryById(entryType);
   const categoryLabel = getCategoryLabel(entryType);
   const categoryColor = getCategoryColor(entryType);
-  const categoryBgColor = getCategoryBgColor(entryType);
   const editorType = categoryConfig?.editorType ?? "text";
 
   const [saving, setSaving] = useState(false);
@@ -229,40 +229,62 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={0}
       >
-        {/* Header */}
-        <View
-          style={[styles.header, { borderBottomColor: colors.border }]}
+        {/* Gradient Header — 2-line: title row + actions row */}
+        <LinearGradient
+          colors={[colors.headerGradientStart, colors.headerGradientEnd]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientHeader}
         >
+          {/* Row 1: Icon + Title */}
+          <View style={styles.headerTitleRow}>
+            {categoryConfig && (
+              <EntryTypeIcon svgIcon={categoryConfig.svgIcon} size={24} color={colors.textOnAccent} />
+            )}
+            <Text style={[styles.headerTitleText, { color: colors.textOnAccent }]}>
+              {isEditing ? "Edit " : ""}{categoryLabel}
+            </Text>
+          </View>
+          {/* Row 2: Back action */}
+          <View style={styles.headerActionsRow}>
+            <TouchableOpacity onPress={handleCancel} style={styles.headerBackButton}>
+              <Ionicons name="arrow-back" size={18} color={colors.textOnAccent + "CC"} />
+              <Text style={[styles.headerBackText, { color: colors.textOnAccent + "CC" }]}>Back</Text>
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
+
+        {/* Accent color strip */}
+        <View style={[styles.typeStrip, { backgroundColor: categoryColor }]} />
+
+        {/* Date bar */}
+        <View style={[styles.dateBar, { backgroundColor: colors.background }]}>
           <Text style={[styles.dateText, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 6 }]}>
             {isEditing ? "Editing Entry" : dateStr}
           </Text>
-          <View
-            style={[
-              styles.categoryBadge,
-              { backgroundColor: categoryBgColor },
-            ]}
-          >
-            {categoryConfig && (
-              <Text style={styles.categoryBadgeEmoji}>
-                {categoryConfig.emoji}
-              </Text>
-            )}
-            <Text
-              style={[styles.categoryBadgeText, { color: categoryColor, fontSize: typography.bodyFontSize - 8 }]}
-            >
-              {categoryLabel}
-            </Text>
-          </View>
         </View>
 
         {/* Editor Content */}
         <ScrollView
-          style={styles.editorScroll}
+          style={[styles.editorScroll, { backgroundColor: colors.background }]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
         >
           {editorType === "text" && (
             <View style={styles.textEditorContainer}>
+              {/* Intro quote */}
+              {categoryConfig?.introText && (
+                <View style={[styles.textIntroWrapper, { borderBottomColor: colors.border }]}>
+                  <Text
+                    style={[
+                      styles.introText,
+                      { color: colors.accent, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.5 },
+                    ]}
+                  >
+                    {categoryConfig.introText}
+                  </Text>
+                </View>
+              )}
               <TextInput
                 ref={inputRef}
                 style={[
@@ -309,7 +331,9 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                     },
                   ]}
                 >
-                  <Text style={styles.gratitudeLeaf}>✨</Text>
+                  <View style={styles.gratitudeIconWrapper}>
+                    <Seedling size={18} color={categoryColor} />
+                  </View>
                   <TextInput
                     style={[
                       styles.gratitudeInput,
@@ -463,32 +487,47 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
-  header: {
+  gradientHeader: {
     paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
+    paddingTop: 14,
+    paddingBottom: 16,
+  },
+  headerTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  headerTitleText: {
+    fontFamily: fonts.headerFamilyItalic,
+    fontSize: 28,
+    lineHeight: 34,
+  },
+  headerActionsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 8,
+  },
+  headerBackButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  headerBackText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  typeStrip: {
+    height: 3,
+  },
+  dateBar: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
   },
   dateText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
-  },
-  categoryBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    marginTop: 6,
-    alignSelf: "flex-start",
-  },
-  categoryBadgeEmoji: {
-    fontSize: 12,
-  },
-  categoryBadgeText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 12,
-    fontWeight: "600",
   },
   editorScroll: {
     flex: 1,
@@ -498,8 +537,15 @@ const styles = StyleSheet.create({
   textEditorContainer: {
     minHeight: 200,
   },
+  textIntroWrapper: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    marginBottom: 4,
+  },
   textInput: {
-    fontFamily: fonts.loraRegular,
+    fontFamily: fonts.bodyFamilyRegular,
     fontSize: 18,
     lineHeight: 28,
     paddingHorizontal: 20,
@@ -533,13 +579,12 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 1,
   },
-  gratitudeLeaf: {
-    fontSize: 16,
+  gratitudeIconWrapper: {
     marginTop: 2,
   },
   gratitudeInput: {
     flex: 1,
-    fontFamily: fonts.loraRegular,
+    fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
     lineHeight: 22,
     minHeight: 22,

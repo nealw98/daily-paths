@@ -20,8 +20,6 @@ import {
   getCategoryById,
   getCategoryLabel,
   getCategoryColor,
-  getCategoryBgColor,
-  getCategoryBadgeBgColor,
   type EntryType,
 } from "../../constants/journalCategories";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
@@ -73,7 +71,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
   const catConfig = getCategoryById(entryType);
   const catLabel = getCategoryLabel(entryType);
   const catColor = getCategoryColor(entryType);
-  const catBadgeBg = getCategoryBadgeBgColor(entryType);
+  // catBadgeBg removed — type info now in gradient header
   const editorType = catConfig?.editorType ?? "text";
 
   // ─── Edit state for text entries ──────────────────────
@@ -292,14 +290,9 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
 
           return (
             <View key={prompt.id} style={styles.guidedReadSection}>
-              <View style={styles.guidedReadLabelRow}>
-                <View style={[styles.numberCircle, { backgroundColor: catColor, width: typography.bodyFontSize + 6, height: typography.bodyFontSize + 6, borderRadius: (typography.bodyFontSize + 6) / 2 }]}>
-                  <Text style={[styles.numberText, { fontSize: typography.bodyFontSize - 8 }]}>{index + 1}</Text>
-                </View>
-                <Text style={[styles.guidedReadQuestion, { color: colors.text, fontSize: typography.bodyFontSize - 6 }]}>
-                  {prompt.question}
-                </Text>
-              </View>
+              <Text style={[styles.guidedReadQuestion, { color: colors.text, fontSize: typography.bodyFontSize - 6 }]}>
+                {prompt.question}
+              </Text>
               <Text style={[styles.guidedReadResponse, { color: colors.text, fontSize: typography.bodyFontSize - 2, lineHeight: typography.bodyLineHeight - 6 }]}>
                 {value}
               </Text>
@@ -324,6 +317,11 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
   const renderTextReadOnly = () => {
     return (
       <TouchableOpacity activeOpacity={0.8} onPress={() => setIsEditing(true)}>
+        {catConfig?.introText && (
+          <Text style={[styles.introText, { color: colors.accent, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.5 }]}>
+            {catConfig.introText}
+          </Text>
+        )}
         <Text style={[styles.contentText, { color: colors.text, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight }]}>
           {entry.content}
         </Text>
@@ -428,30 +426,41 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        {/* Header */}
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={colors.accent} />
-            <Text style={[styles.backText, { color: colors.accent, fontSize: typography.bodyFontSize - 4 }]}>Back</Text>
-          </TouchableOpacity>
+        {/* Gradient Header — 2-line: title row + actions row */}
+        <LinearGradient
+          colors={[colors.headerGradientStart, colors.headerGradientEnd]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientHeader}
+        >
+          {/* Row 1: Icon + Title */}
+          <View style={styles.headerTitleRow}>
+            {catConfig && (
+              <EntryTypeIcon svgIcon={catConfig.svgIcon} size={24} color={colors.textOnAccent} />
+            )}
+            <Text style={[styles.headerTitleText, { color: colors.textOnAccent }]}>
+              {catLabel}
+            </Text>
+          </View>
+          {/* Row 2: Back (left) + Delete (right) */}
+          <View style={styles.headerActionsRow}>
+            <TouchableOpacity onPress={onBack} style={styles.headerBackButton}>
+              <Ionicons name="arrow-back" size={18} color={colors.textOnAccent + "CC"} />
+              <Text style={[styles.headerBackText, { color: colors.textOnAccent + "CC" }]}>Back</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleDelete} style={styles.headerDeleteButton}>
+              <Ionicons name="trash-outline" size={18} color={colors.textOnAccent + "80"} />
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
 
-          <TouchableOpacity onPress={handleDelete} style={styles.deleteButton}>
-            <Ionicons name="trash-outline" size={22} color={colors.danger} />
-          </TouchableOpacity>
-        </View>
+        {/* Accent color strip */}
+        <View style={[styles.typeStrip, { backgroundColor: catColor }]} />
 
-        {/* Date & Time + Type Badge */}
-        <View style={[styles.dateBar, { backgroundColor: colors.cardBackground }]}>
+        {/* Date & Time */}
+        <View style={[styles.dateBar, { backgroundColor: colors.background }]}>
           <View style={styles.dateBarRow}>
             <Text style={[styles.dateText, { color: colors.text, fontSize: typography.bodyFontSize - 5 }]}>{dateStr}</Text>
-            <View style={styles.typeBadge}>
-              {catConfig && (
-                <EntryTypeIcon svgIcon={catConfig.svgIcon} size={13} color={catColor} />
-              )}
-              <Text style={[styles.typeBadgeLabel, { color: catColor, fontSize: typography.bodyFontSize - 9 }]}>
-                {catLabel}
-              </Text>
-            </View>
           </View>
           <Text style={[styles.timeText, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 7 }]}>
             {timeStr}
@@ -594,25 +603,42 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
+  gradientHeader: {
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 16,
   },
-  backButton: {
+  headerTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  headerTitleText: {
+    fontFamily: fonts.headerFamilyItalic,
+    fontSize: 28,
+    lineHeight: 34,
+  },
+  headerActionsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 8,
+  },
+  headerBackButton: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
   },
-  backText: {
+  headerBackText: {
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
+    fontSize: 14,
+    fontWeight: "500",
   },
-  deleteButton: {
-    padding: 8,
+  headerDeleteButton: {
+    padding: 4,
+  },
+  typeStrip: {
+    height: 3,
   },
   dateBar: {
     paddingHorizontal: 20,
@@ -628,19 +654,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
   },
-  typeBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  typeBadgeLabel: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 11,
-    fontWeight: "600",
-  },
+  // typeBadge styles removed — type info now shown in gradient header
   timeText: {
     fontFamily: fonts.bodyFamily,
     fontSize: 13,
@@ -653,8 +667,13 @@ const styles = StyleSheet.create({
   },
 
   // ─── Read-Only ────────────────────────────────────────
+  introText: {
+    fontFamily: fonts.headerFamilyItalic,
+    fontStyle: "italic",
+    marginBottom: 16,
+  },
   contentText: {
-    fontFamily: fonts.loraRegular,
+    fontFamily: fonts.bodyFamilyRegular,
     fontSize: 18,
     lineHeight: 28,
   },
@@ -678,7 +697,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   gratitudeReadText: {
-    fontFamily: fonts.loraRegular,
+    fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
     lineHeight: 22,
     flex: 1,
@@ -688,34 +707,15 @@ const styles = StyleSheet.create({
   guidedReadSection: {
     marginBottom: 20,
   },
-  guidedReadLabelRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 8,
-  },
-  numberCircle: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  numberText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "600",
-  },
   guidedReadQuestion: {
     fontSize: 14,
     fontWeight: "600",
-    flex: 1,
+    marginBottom: 8,
   },
   guidedReadResponse: {
-    fontFamily: fonts.loraRegular,
+    fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
     lineHeight: 24,
-    paddingLeft: 36,
   },
 
   // ─── Gratitude Edit ───────────────────────────────────
@@ -735,7 +735,7 @@ const styles = StyleSheet.create({
   },
   gratitudeEditInput: {
     flex: 1,
-    fontFamily: fonts.loraRegular,
+    fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
     lineHeight: 22,
     minHeight: 22,
@@ -762,7 +762,7 @@ const styles = StyleSheet.create({
     minHeight: 200,
   },
   editInput: {
-    fontFamily: fonts.loraRegular,
+    fontFamily: fonts.bodyFamilyRegular,
     fontSize: 18,
     lineHeight: 28,
     minHeight: 200,
