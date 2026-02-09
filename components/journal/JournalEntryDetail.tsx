@@ -172,21 +172,23 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
     }
   };
 
-  const handleDiscard = () => {
-    // Check for actual changes
-    let hasChanges = false;
+  // Track whether the edit state has diverged from the saved entry
+  const hasChanges = useMemo(() => {
     if (editorType === "text") {
-      hasChanges = editContent !== (entry.content ?? "");
+      return editContent !== (entry.content ?? "");
     } else if (editorType === "items") {
       const originalItems = entry.structured_content?.items
         ? (entry.structured_content.items as string[])
         : parseGratitudeItems(entry.content);
-      hasChanges = JSON.stringify(gratitudeItems) !== JSON.stringify(originalItems);
+      return JSON.stringify(gratitudeItems) !== JSON.stringify(originalItems);
     } else if (editorType === "guided") {
       const original = entry.structured_content ?? {};
-      hasChanges = JSON.stringify(guidedResponses) !== JSON.stringify(original);
+      return JSON.stringify(guidedResponses) !== JSON.stringify(original);
     }
+    return false;
+  }, [editorType, editContent, entry.content, entry.structured_content, gratitudeItems, guidedResponses]);
 
+  const handleDiscard = () => {
     if (hasChanges) {
       Alert.alert("Discard changes?", "Your edits will not be saved.", [
         { text: "Keep Editing", style: "cancel" },
@@ -284,18 +286,24 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
 
     return (
       <TouchableOpacity activeOpacity={0.8} onPress={() => setIsEditing(true)}>
-        {prompts.map((prompt, index) => {
+        {prompts.map((prompt) => {
           const value = responses[prompt.id];
-          if (!value || (typeof value === "string" && !value.trim())) return null;
+          const hasValue = value && typeof value === "string" && value.trim();
 
           return (
             <View key={prompt.id} style={styles.guidedReadSection}>
               <Text style={[styles.guidedReadQuestion, { color: colors.text, fontSize: typography.bodyFontSize - 6 }]}>
                 {prompt.question}
               </Text>
-              <Text style={[styles.guidedReadResponse, { color: colors.text, fontSize: typography.bodyFontSize - 2, lineHeight: typography.bodyLineHeight - 6 }]}>
-                {value}
-              </Text>
+              {hasValue ? (
+                <Text style={[styles.guidedReadResponse, { color: colors.text, fontSize: typography.bodyFontSize - 2, lineHeight: typography.bodyLineHeight - 6 }]}>
+                  {value}
+                </Text>
+              ) : (
+                <Text style={[styles.guidedReadResponse, { color: colors.textSecondary + "60", fontSize: typography.bodyFontSize - 2, fontStyle: "italic" }]}>
+                  Not answered
+                </Text>
+              )}
             </View>
           );
         })}
@@ -433,7 +441,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
           end={{ x: 1, y: 1 }}
           style={styles.gradientHeader}
         >
-          {/* Row 1: Icon + Title */}
+          {/* Icon + Title (centered) */}
           <View style={styles.headerTitleRow}>
             {catConfig && (
               <EntryTypeIcon svgIcon={catConfig.svgIcon} size={24} color={colors.textOnAccent} />
@@ -442,29 +450,24 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
               {catLabel}
             </Text>
           </View>
-          {/* Row 2: Back (left) + Delete (right) */}
-          <View style={styles.headerActionsRow}>
-            <TouchableOpacity onPress={onBack} style={styles.headerBackButton}>
-              <Ionicons name="arrow-back" size={18} color={colors.textOnAccent + "CC"} />
-              <Text style={[styles.headerBackText, { color: colors.textOnAccent + "CC" }]}>Back</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleDelete} style={styles.headerDeleteButton}>
-              <Ionicons name="trash-outline" size={18} color={colors.textOnAccent + "80"} />
-            </TouchableOpacity>
-          </View>
         </LinearGradient>
 
         {/* Accent color strip */}
         <View style={[styles.typeStrip, { backgroundColor: catColor }]} />
 
-        {/* Date & Time */}
+        {/* Date & Time + Delete */}
         <View style={[styles.dateBar, { backgroundColor: colors.background }]}>
           <View style={styles.dateBarRow}>
-            <Text style={[styles.dateText, { color: colors.text, fontSize: typography.bodyFontSize - 5 }]}>{dateStr}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.dateText, { color: colors.text, fontSize: typography.bodyFontSize - 5 }]}>{dateStr}</Text>
+              <Text style={[styles.timeText, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 7 }]}>
+                {timeStr}
+              </Text>
+            </View>
+            <TouchableOpacity onPress={handleDelete} style={styles.dateBarDeleteButton}>
+              <Ionicons name="trash-outline" size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
           </View>
-          <Text style={[styles.timeText, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 7 }]}>
-            {timeStr}
-          </Text>
         </View>
 
         {/* Content */}
@@ -508,16 +511,20 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
               <TouchableOpacity
                 style={styles.saveButtonWrapper}
                 onPress={handleSave}
-                disabled={saving}
+                disabled={saving || !hasChanges}
                 activeOpacity={0.85}
               >
                 <LinearGradient
-                  colors={["#2C5F5D", "#3A7573"]}
+                  colors={
+                    hasChanges
+                      ? ["#2C5F5D", "#3A7573"]
+                      : [colors.border, colors.border]
+                  }
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.saveEditButton}
                 >
-                  <Text style={[styles.saveEditText, { fontSize: typography.bodyFontSize - 4 }]}>
+                  <Text style={[styles.saveEditText, { color: hasChanges ? "#FFFFFF" : colors.textSecondary, fontSize: typography.bodyFontSize - 4 }]}>
                     {saving ? "Saving..." : "Save"}
                   </Text>
                 </LinearGradient>
@@ -554,6 +561,15 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
                   ]}
                 >
                   Prev
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.doneButton}
+                onPress={onBack}
+              >
+                <Text style={[styles.doneText, { color: colors.accent, fontSize: typography.bodyFontSize - 4 }]}>
+                  Done
                 </Text>
               </TouchableOpacity>
 
@@ -611,6 +627,7 @@ const styles = StyleSheet.create({
   headerTitleRow: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 10,
   },
   headerTitleText: {
@@ -618,24 +635,8 @@ const styles = StyleSheet.create({
     fontSize: 28,
     lineHeight: 34,
   },
-  headerActionsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 8,
-  },
-  headerBackButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  headerBackText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  headerDeleteButton: {
-    padding: 4,
+  dateBarDeleteButton: {
+    padding: 8,
   },
   typeStrip: {
     height: 3,
@@ -647,7 +648,6 @@ const styles = StyleSheet.create({
   dateBarRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
   },
   dateText: {
     fontFamily: fonts.bodyFamilyRegular,
@@ -790,6 +790,15 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 15,
     fontWeight: "500",
+  },
+  doneButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+  },
+  doneText: {
+    fontFamily: "Inter_500Medium",
+    fontSize: 15,
+    fontWeight: "600",
   },
   discardButton: {
     paddingVertical: 12,

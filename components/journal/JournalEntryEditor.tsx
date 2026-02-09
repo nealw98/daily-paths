@@ -236,7 +236,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
           end={{ x: 1, y: 1 }}
           style={styles.gradientHeader}
         >
-          {/* Row 1: Icon + Title */}
+          {/* Icon + Title (centered) */}
           <View style={styles.headerTitleRow}>
             {categoryConfig && (
               <EntryTypeIcon svgIcon={categoryConfig.svgIcon} size={24} color={colors.textOnAccent} />
@@ -244,13 +244,6 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
             <Text style={[styles.headerTitleText, { color: colors.textOnAccent }]}>
               {isEditing ? "Edit " : ""}{categoryLabel}
             </Text>
-          </View>
-          {/* Row 2: Back action */}
-          <View style={styles.headerActionsRow}>
-            <TouchableOpacity onPress={handleCancel} style={styles.headerBackButton}>
-              <Ionicons name="arrow-back" size={18} color={colors.textOnAccent + "CC"} />
-              <Text style={[styles.headerBackText, { color: colors.textOnAccent + "CC" }]}>Back</Text>
-            </TouchableOpacity>
           </View>
         </LinearGradient>
 
@@ -495,28 +488,13 @@ const styles = StyleSheet.create({
   headerTitleRow: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 10,
   },
   headerTitleText: {
     fontFamily: fonts.headerFamilyItalic,
     fontSize: 28,
     lineHeight: 34,
-  },
-  headerActionsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 8,
-  },
-  headerBackButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  headerBackText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
-    fontWeight: "500",
   },
   typeStrip: {
     height: 3,
