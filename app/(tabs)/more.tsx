@@ -60,14 +60,27 @@ export default function MoreTab() {
   ];
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top"]}>
-      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      edges={["top"]}
+    >
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: colors.background, borderBottomColor: colors.border },
+        ]}
+      >
         <Text style={[styles.headerTitle, { color: colors.text }]}>More</Text>
       </View>
       <ScrollView style={styles.content}>
         {/* User info banner if authenticated */}
         {isAuthenticated && user?.email && (
-          <View style={[styles.userBanner, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+          <View
+            style={[
+              styles.userBanner,
+              { backgroundColor: colors.cardBackground, borderColor: colors.border },
+            ]}
+          >
             <View style={[styles.userAvatar, { backgroundColor: colors.accent }]}>
               <Ionicons name="person" size={20} color={colors.textOnAccent} />
             </View>
@@ -127,7 +140,9 @@ export default function MoreTab() {
             }}
           >
             <Ionicons name="log-out-outline" size={20} color={colors.danger} />
-            <Text style={[styles.signOutText, { color: colors.danger }]}>Sign Out</Text>
+            <Text style={[styles.signOutText, { color: colors.danger }]}>
+              Sign Out
+            </Text>
           </TouchableOpacity>
         )}
       </ScrollView>
@@ -136,20 +151,11 @@ export default function MoreTab() {
         <SettingsContent onOpenQaLogs={() => setShowSettings(false)} />
       </SettingsModal>
 
-      <PaywallModal
-        visible={showPaywall}
-        onClose={() => setShowPaywall(false)}
-      />
+      <PaywallModal visible={showPaywall} onClose={() => setShowPaywall(false)} />
 
-      <SignInModal
-        visible={showSignIn}
-        onClose={() => setShowSignIn(false)}
-      />
+      <SignInModal visible={showSignIn} onClose={() => setShowSignIn(false)} />
 
-      <ExportOptionsModal
-        visible={showExport}
-        onClose={() => setShowExport(false)}
-      />
+      <ExportOptionsModal visible={showExport} onClose={() => setShowExport(false)} />
     </SafeAreaView>
   );
 }

@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { Tabs } from "expo-router";
-import { Ionicons, FontAwesome6 } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { fonts } from "../../constants/theme";
 import { useTheme } from "../../hooks/useTheme";
+import { LightOnWater, Feather, LeafOnWater, StackedStones } from "../../components/icons";
 import { useAuth } from "../../contexts/AuthContext";
 import { useSubscription } from "../../hooks/useSubscription";
 import { isRevenueCatInitialized } from "../../lib/subscription";
@@ -87,7 +88,7 @@ export default function TabLayout() {
           options={{
             title: "Today",
             tabBarIcon: ({ color, size }) => (
-              <Ionicons name="book" size={size} color={color} />
+              <LightOnWater size={size} color={color} />
             ),
           }}
         />
@@ -96,7 +97,7 @@ export default function TabLayout() {
           options={{
             title: "Journal",
             tabBarIcon: ({ color, size }) => (
-              <Ionicons name="create" size={size} color={color} />
+              <Feather size={size} color={color} />
             ),
           }}
         />
@@ -105,14 +106,8 @@ export default function TabLayout() {
           options={{
             title: "Prayers",
             tabBarIcon: ({ color, size }) => (
-              <FontAwesome6 name="hands-praying" size={size - 2} color={color} />
+              <LeafOnWater size={size} color={color} />
             ),
-          }}
-        />
-        <Tabs.Screen
-          name="steps"
-          options={{
-            href: null,
           }}
         />
         <Tabs.Screen
@@ -120,7 +115,7 @@ export default function TabLayout() {
           options={{
             title: "More",
             tabBarIcon: ({ color, size }) => (
-              <Ionicons name="ellipsis-horizontal" size={size} color={color} />
+              <StackedStones size={size} color={color} />
             ),
           }}
         />

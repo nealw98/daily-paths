@@ -9,6 +9,7 @@ export type EntryType =
   | "spot_check"
   | "nightly_review";
 export type EditorType = "text" | "items" | "guided";
+export type SvgIconName = "feather" | "seedling" | "softExhale" | "moonOnWater";
 
 export interface GuidedPrompt {
   /** Key in structured_content JSON */
@@ -29,6 +30,7 @@ export interface JournalCategory {
   color: string;
   bgColor: string;
   editorType: EditorType;
+  svgIcon: SvgIconName;
   description: string;
   introText?: string;
   guidedPrompts?: GuidedPrompt[];
@@ -66,6 +68,7 @@ export const JOURNAL_CATEGORIES: JournalCategory[] = [
     color: ENTRY_TYPE_COLORS.journal,
     bgColor: ENTRY_TYPE_BG_COLORS.journal,
     editorType: "text",
+    svgIcon: "feather",
     description: "Write freely about what's on your mind",
   },
   {
@@ -76,6 +79,7 @@ export const JOURNAL_CATEGORIES: JournalCategory[] = [
     color: ENTRY_TYPE_COLORS.gratitude,
     bgColor: ENTRY_TYPE_BG_COLORS.gratitude,
     editorType: "items",
+    svgIcon: "seedling",
     description: "Count your blessings today",
     introText: "What are you grateful for today?",
   },
@@ -87,6 +91,7 @@ export const JOURNAL_CATEGORIES: JournalCategory[] = [
     color: ENTRY_TYPE_COLORS.spot_check,
     bgColor: ENTRY_TYPE_BG_COLORS.spot_check,
     editorType: "guided",
+    svgIcon: "softExhale",
     description: "Work through what's happening right now",
     introText: "Pause. Breathe. Work through what's happening.",
     guidedPrompts: [
@@ -126,6 +131,7 @@ export const JOURNAL_CATEGORIES: JournalCategory[] = [
     color: ENTRY_TYPE_COLORS.nightly_review,
     bgColor: ENTRY_TYPE_BG_COLORS.nightly_review,
     editorType: "guided",
+    svgIcon: "moonOnWater",
     description: "Reflect on your day",
     introText:
       "Take a quiet moment to review your day with honesty and compassion.",
