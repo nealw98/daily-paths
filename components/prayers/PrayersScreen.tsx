@@ -13,15 +13,15 @@ import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { fonts } from "../../constants/theme";
 import { PRAYERS, type Prayer } from "../../constants/prayers";
 import { PersonalNotes } from "./PersonalNotes";
+import { TealHeader } from "../shared/TealHeader";
+import { LeafOnWater } from "../icons";
 
 interface PrayersScreenProps {
   userId: string | null;
-  onBack?: () => void;
 }
 
 export const PrayersScreen: React.FC<PrayersScreenProps> = ({
   userId,
-  onBack,
 }) => {
   const { colors } = useTheme();
   const { settings } = useSettings();
@@ -75,28 +75,17 @@ export const PrayersScreen: React.FC<PrayersScreenProps> = ({
       style={[styles.container, { backgroundColor: colors.background }]}
       edges={["top"]}
     >
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        {onBack ? (
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={colors.accent} />
-            <Text style={[styles.backText, { color: colors.accent }]}>Back</Text>
-          </TouchableOpacity>
-        ) : (
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Prayers</Text>
-        )}
-      </View>
+      {/* Teal Gradient Header */}
+      <TealHeader
+        title="Prayers"
+        leftIcon={<LeafOnWater size={28} color={colors.textOnAccent} />}
+      />
 
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {onBack && (
-          <Text style={[styles.screenTitle, { color: colors.text }]}>
-            Prayers
-          </Text>
-        )}
         <Text style={[styles.subtitle, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 4, lineHeight: (typography.bodyFontSize - 4) * 1.47 }]}>
           A collection of prayers for your recovery journey
         </Text>
@@ -117,27 +106,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  backText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
-  },
-  headerTitle: {
-    fontFamily: fonts.headerFamily,
-    fontSize: 28,
-    fontWeight: "700",
-  },
   scrollView: {
     flex: 1,
   },
@@ -145,12 +113,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 100,
-  },
-  screenTitle: {
-    fontFamily: fonts.headerFamily,
-    fontSize: 32,
-    fontWeight: "700",
-    marginBottom: 8,
   },
   subtitle: {
     fontFamily: fonts.bodyFamily,
