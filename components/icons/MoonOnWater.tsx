@@ -6,7 +6,7 @@ interface Props {
   strokeWidth?: number;
 }
 
-export function MoonOnWater({ size = 24, color = "#5B6E8A", strokeWidth = 1.8 }: Props) {
+export function MoonOnWater({ size = 24, color = "#4A6FA5", strokeWidth = 1.8 }: Props) {
   return (
     <Svg width={size} height={size} viewBox="0 0 32 32">
       <Path

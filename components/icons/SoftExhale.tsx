@@ -6,7 +6,7 @@ interface Props {
   strokeWidth?: number;
 }
 
-export function SoftExhale({ size = 24, color = "#B8604A", strokeWidth = 1.8 }: Props) {
+export function SoftExhale({ size = 24, color = "#D4553A", strokeWidth = 1.8 }: Props) {
   return (
     <Svg width={size} height={size} viewBox="0 0 32 32">
       <Path

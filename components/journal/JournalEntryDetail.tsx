@@ -21,10 +21,13 @@ import {
   getCategoryLabel,
   getCategoryColor,
   getCategoryBgColor,
+  getCategoryBadgeBgColor,
   type EntryType,
 } from "../../constants/journalCategories";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { GuidedPromptEditor } from "./GuidedPromptEditor";
+import { EntryTypeIcon } from "../../utils/entryTypeIcon";
+import { Seedling } from "../../components/icons";
 
 interface JournalEntryDetailProps {
   entry: JournalEntry;
@@ -70,7 +73,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
   const catConfig = getCategoryById(entryType);
   const catLabel = getCategoryLabel(entryType);
   const catColor = getCategoryColor(entryType);
-  const catBgColor = getCategoryBgColor(entryType);
+  const catBadgeBg = getCategoryBadgeBgColor(entryType);
   const editorType = catConfig?.editorType ?? "text";
 
   // ─── Edit state for text entries ──────────────────────
@@ -262,13 +265,15 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
             key={index}
             style={[styles.gratitudeReadItem, { borderBottomColor: colors.border }]}
           >
-            <Text style={styles.gratitudeLeaf}>✨</Text>
+            <View style={styles.gratitudeIcon}>
+                <Seedling size={16} color={catColor} />
+              </View>
             <Text style={[styles.gratitudeReadText, { color: colors.text, fontSize: typography.bodyFontSize - 2, lineHeight: typography.bodyLineHeight - 6 }]}>
               {item}
             </Text>
           </View>
         ))}
-        <Text style={[styles.tapHint, { color: colors.textSecondary }]}>
+        <Text style={[styles.tapHint, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 8 }]}>
           Tap to edit
         </Text>
       </TouchableOpacity>
@@ -288,10 +293,10 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
           return (
             <View key={prompt.id} style={styles.guidedReadSection}>
               <View style={styles.guidedReadLabelRow}>
-                <View style={[styles.numberCircle, { backgroundColor: catColor }]}>
-                  <Text style={styles.numberText}>{index + 1}</Text>
+                <View style={[styles.numberCircle, { backgroundColor: catColor, width: typography.bodyFontSize + 6, height: typography.bodyFontSize + 6, borderRadius: (typography.bodyFontSize + 6) / 2 }]}>
+                  <Text style={[styles.numberText, { fontSize: typography.bodyFontSize - 8 }]}>{index + 1}</Text>
                 </View>
-                <Text style={[styles.guidedReadQuestion, { color: colors.text }]}>
+                <Text style={[styles.guidedReadQuestion, { color: colors.text, fontSize: typography.bodyFontSize - 6 }]}>
                   {prompt.question}
                 </Text>
               </View>
@@ -309,7 +314,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
           </Text>
         )}
 
-        <Text style={[styles.tapHint, { color: colors.textSecondary }]}>
+        <Text style={[styles.tapHint, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 8 }]}>
           Tap to edit
         </Text>
       </TouchableOpacity>
@@ -319,10 +324,10 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
   const renderTextReadOnly = () => {
     return (
       <TouchableOpacity activeOpacity={0.8} onPress={() => setIsEditing(true)}>
-        <Text style={[styles.contentText, { color: colors.text }]}>
+        <Text style={[styles.contentText, { color: colors.text, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight }]}>
           {entry.content}
         </Text>
-        <Text style={[styles.tapHint, { color: colors.textSecondary }]}>
+        <Text style={[styles.tapHint, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 8 }]}>
           Tap to edit
         </Text>
       </TouchableOpacity>
@@ -361,7 +366,9 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
             },
           ]}
         >
-          <Text style={styles.gratitudeLeaf}>✨</Text>
+          <View style={styles.gratitudeIcon}>
+                <Seedling size={16} color={catColor} />
+              </View>
           <TextInput
             style={[styles.gratitudeEditInput, { color: colors.text, fontSize: typography.bodyFontSize - 2, lineHeight: typography.bodyLineHeight - 6 }]}
             placeholder="I'm grateful for..."
@@ -392,7 +399,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
         onPress={handleAddGratitudeSlot}
       >
         <Ionicons name="add" size={18} color={catColor} />
-        <Text style={[styles.addSlotText, { color: catColor }]}>add another</Text>
+        <Text style={[styles.addSlotText, { color: catColor, fontSize: typography.bodyFontSize - 6 }]}>add another</Text>
       </TouchableOpacity>
     </View>
   );
@@ -425,7 +432,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={colors.accent} />
-            <Text style={[styles.backText, { color: colors.accent }]}>Back</Text>
+            <Text style={[styles.backText, { color: colors.accent, fontSize: typography.bodyFontSize - 4 }]}>Back</Text>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={handleDelete} style={styles.deleteButton}>
@@ -436,15 +443,17 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
         {/* Date & Time + Type Badge */}
         <View style={[styles.dateBar, { backgroundColor: colors.cardBackground }]}>
           <View style={styles.dateBarRow}>
-            <Text style={[styles.dateText, { color: colors.text }]}>{dateStr}</Text>
-            <View style={[styles.typeBadge, { backgroundColor: catBgColor }]}>
-              {catConfig && <Text style={styles.typeBadgeEmoji}>{catConfig.emoji}</Text>}
-              <Text style={[styles.typeBadgeLabel, { color: catColor }]}>
+            <Text style={[styles.dateText, { color: colors.text, fontSize: typography.bodyFontSize - 5 }]}>{dateStr}</Text>
+            <View style={styles.typeBadge}>
+              {catConfig && (
+                <EntryTypeIcon svgIcon={catConfig.svgIcon} size={13} color={catColor} />
+              )}
+              <Text style={[styles.typeBadgeLabel, { color: catColor, fontSize: typography.bodyFontSize - 9 }]}>
                 {catLabel}
               </Text>
             </View>
           </View>
-          <Text style={[styles.timeText, { color: colors.textSecondary }]}>
+          <Text style={[styles.timeText, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 7 }]}>
             {timeStr}
           </Text>
         </View>
@@ -483,7 +492,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
                 style={[styles.discardButton, { backgroundColor: colors.cardBackground }]}
                 onPress={handleDiscard}
               >
-                <Text style={[styles.discardText, { color: colors.textSecondary }]}>
+                <Text style={[styles.discardText, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 4 }]}>
                   Discard
                 </Text>
               </TouchableOpacity>
@@ -499,7 +508,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
                   end={{ x: 1, y: 1 }}
                   style={styles.saveEditButton}
                 >
-                  <Text style={styles.saveEditText}>
+                  <Text style={[styles.saveEditText, { fontSize: typography.bodyFontSize - 4 }]}>
                     {saving ? "Saving..." : "Save"}
                   </Text>
                 </LinearGradient>
@@ -531,6 +540,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
                       color: hasPrev
                         ? colors.accent
                         : colors.textSecondary + "40",
+                      fontSize: typography.bodyFontSize - 5,
                     },
                   ]}
                 >
@@ -557,6 +567,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
                       color: hasNext
                         ? colors.accent
                         : colors.textSecondary + "40",
+                      fontSize: typography.bodyFontSize - 5,
                     },
                   ]}
                 >
@@ -620,13 +631,10 @@ const styles = StyleSheet.create({
   typeBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 5,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
-  },
-  typeBadgeEmoji: {
-    fontSize: 11,
   },
   typeBadgeLabel: {
     fontFamily: fonts.bodyFamilyRegular,
@@ -666,9 +674,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 0.5,
   },
-  gratitudeLeaf: {
-    fontSize: 16,
-    marginTop: 1,
+  gratitudeIcon: {
+    marginTop: 2,
   },
   gratitudeReadText: {
     fontFamily: fonts.loraRegular,

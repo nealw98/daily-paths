@@ -1,11 +1,13 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Modal } from "react-native";
 import { useTheme } from "../../hooks/useTheme";
+import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { fonts } from "../../constants/theme";
 import {
   JOURNAL_CATEGORIES,
   type EntryType,
 } from "../../constants/journalCategories";
+import { EntryTypeIcon } from "../../utils/entryTypeIcon";
 
 interface JournalCategoryPickerProps {
   visible: boolean;
@@ -26,6 +28,8 @@ export const JournalCategoryPicker: React.FC<JournalCategoryPickerProps> = ({
   onClose,
 }) => {
   const { colors } = useTheme();
+  const { settings } = useSettings();
+  const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
 
   return (
     <Modal
@@ -50,7 +54,7 @@ export const JournalCategoryPicker: React.FC<JournalCategoryPickerProps> = ({
             />
           </View>
 
-          <Text style={[styles.title, { color: colors.accent }]}>
+          <Text style={[styles.title, { color: colors.accent, fontSize: typography.bodyFontSize + 1 }]}>
             What would you like to do?
           </Text>
 
@@ -69,12 +73,14 @@ export const JournalCategoryPicker: React.FC<JournalCategoryPickerProps> = ({
                 onPress={() => onSelect(category.id)}
                 activeOpacity={0.6}
               >
-                <Text style={styles.emoji}>{category.emoji}</Text>
-                <Text style={[styles.cardName, { color: colors.text }]}>
+                <View style={styles.iconWrapper}>
+                  <EntryTypeIcon svgIcon={category.svgIcon} size={28} color={category.color} />
+                </View>
+                <Text style={[styles.cardName, { color: colors.text, fontSize: typography.bodyFontSize - 6 }]}>
                   {category.label}
                 </Text>
                 <Text
-                  style={[styles.cardDesc, { color: colors.textSecondary }]}
+                  style={[styles.cardDesc, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 9, lineHeight: (typography.bodyFontSize - 9) * 1.35 }]}
                 >
                   {category.description}
                 </Text>
@@ -131,8 +137,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1.5,
   },
-  emoji: {
-    fontSize: 28,
+  iconWrapper: {
     marginBottom: 8,
   },
   cardName: {

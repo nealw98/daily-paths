@@ -14,12 +14,13 @@ import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { fonts } from "../../constants/theme";
 import type { JournalEntry } from "../../hooks/useJournalEntries";
 import {
-  getCategoryById,
   getCategoryLabel,
   getCategoryColor,
   getCategoryBgColor,
+  getCategoryById,
   type EntryType,
 } from "../../constants/journalCategories";
+import { EntryTypeIcon } from "../../utils/entryTypeIcon";
 
 interface JournalSearchProps {
   onSearch: (query: string) => Promise<JournalEntry[]>;
@@ -89,10 +90,9 @@ export const JournalSearch: React.FC<JournalSearchProps> = ({
     });
 
     const entryType = (item.entry_type || "journal") as EntryType;
-    const catConfig = getCategoryById(entryType);
     const catLabel = getCategoryLabel(entryType);
     const catColor = getCategoryColor(entryType);
-    const catBgColor = getCategoryBgColor(entryType);
+    const catCardBg = getCategoryBgColor(entryType);
 
     // Show a snippet around the match
     const content = item.content ?? "";
@@ -102,19 +102,24 @@ export const JournalSearch: React.FC<JournalSearchProps> = ({
 
     return (
       <TouchableOpacity
-        style={[styles.resultCard, { backgroundColor: colors.cardBackground }]}
+        style={[
+          styles.resultCard,
+          { backgroundColor: catCardBg, borderLeftColor: catColor },
+        ]}
         onPress={() => onSelectEntry(item)}
         activeOpacity={0.7}
       >
-        {/* Top color strip */}
-        <View style={[styles.colorStrip, { backgroundColor: catColor }]} />
-
         <View style={styles.resultInner}>
-          {/* Header row: badge + date */}
+          {/* Header row: icon + type label + date */}
           <View style={styles.resultHeader}>
-            <View style={[styles.typeBadge, { backgroundColor: catBgColor }]}>
-              {catConfig && <Text style={styles.typeBadgeEmoji}>{catConfig.emoji}</Text>}
-              <Text style={[styles.typeBadgeLabel, { color: catColor }]}>
+            <View style={styles.resultTypeBadge}>
+              {(() => {
+                const cat = getCategoryById(entryType);
+                return cat ? (
+                  <EntryTypeIcon svgIcon={cat.svgIcon} size={14} color={catColor} />
+                ) : null;
+              })()}
+              <Text style={[styles.resultTypeLabel, { color: catColor }]}>
                 {catLabel}
               </Text>
             </View>
@@ -225,17 +230,14 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   resultCard: {
-    borderRadius: 16,
-    overflow: "hidden",
+    borderRadius: 14,
+    borderLeftWidth: 3.5,
     marginBottom: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 1,
-  },
-  colorStrip: {
-    height: 3,
   },
   resultInner: {
     padding: 16,
@@ -246,21 +248,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 8,
   },
-  typeBadge: {
+  resultTypeBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    gap: 5,
   },
-  typeBadgeEmoji: {
-    fontSize: 12,
-  },
-  typeBadgeLabel: {
+  resultTypeLabel: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 12,
     fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
   },
   resultDate: {
     fontFamily: fonts.bodyFamilyRegular,

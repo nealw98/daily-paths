@@ -60,8 +60,8 @@ export function GuidedPromptEditor({
           >
             {/* Label row */}
             <View style={styles.labelRow}>
-              <View style={[styles.numberCircle, { backgroundColor: color }]}>
-                <Text style={styles.numberText}>{index + 1}</Text>
+              <View style={[styles.numberCircle, { backgroundColor: color, width: typography.bodyFontSize + 6, height: typography.bodyFontSize + 6, borderRadius: (typography.bodyFontSize + 6) / 2 }]}>
+                <Text style={[styles.numberText, { fontSize: typography.bodyFontSize - 8 }]}>{index + 1}</Text>
               </View>
               <Text
                 style={[
@@ -105,7 +105,7 @@ export function GuidedPromptEditor({
               <Text
                 style={[
                   styles.hintText,
-                  { color: colors.textSecondary },
+                  { color: colors.textSecondary, fontSize: typography.bodyFontSize - 8 },
                 ]}
               >
                 {prompt.hint}

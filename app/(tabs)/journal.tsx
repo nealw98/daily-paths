@@ -11,8 +11,11 @@ import { JournalEntryEditor } from "../../components/journal/JournalEntryEditor"
 import { JournalEntryDetail } from "../../components/journal/JournalEntryDetail";
 import { JournalSearch } from "../../components/journal/JournalSearch";
 import { JournalCategoryPicker } from "../../components/journal/JournalCategoryPicker";
+import { TealHeader } from "../../components/shared/TealHeader";
 import { fonts } from "../../constants/theme";
-import type { EntryType } from "../../constants/journalCategories";
+import { getCategoryById, getCategoryLabel, type EntryType } from "../../constants/journalCategories";
+import { EntryTypeIcon } from "../../utils/entryTypeIcon";
+import { FourSquares } from "../../components/icons";
 
 type JournalView = "timeline" | "editor" | "detail" | "search";
 
@@ -35,7 +38,21 @@ export default function JournalTab() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [selectedEntryType, setSelectedEntryType] = useState<EntryType>("journal");
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
-  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("journal");
+
+  // Header title and icon reflect the active filter
+  const headerTitle = categoryFilter === "all"
+    ? "Notebook"
+    : getCategoryLabel(categoryFilter);
+
+  const headerIcon = useMemo(() => {
+    if (categoryFilter === "all") {
+      return <FourSquares size={28} color={colors.textOnAccent} />;
+    }
+    const cat = getCategoryById(categoryFilter);
+    if (!cat) return undefined;
+    return <EntryTypeIcon svgIcon={cat.svgIcon} size={28} color={colors.textOnAccent} />;
+  }, [categoryFilter, colors.textOnAccent]);
 
   // ─── Navigation ──────────────────────────────────────────
 
@@ -155,11 +172,7 @@ export default function JournalTab() {
         style={[styles.container, { backgroundColor: colors.background }]}
         edges={["top"]}
       >
-        <View
-          style={[styles.header, { borderBottomColor: colors.border }]}
-        >
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Journal</Text>
-        </View>
+        <TealHeader title="Journal" />
         <View style={styles.authPrompt}>
           <Text style={[styles.authTitle, { color: colors.textSecondary }]}>
             Sign in to start journaling
@@ -215,12 +228,15 @@ export default function JournalTab() {
       style={[styles.container, { backgroundColor: colors.background }]}
       edges={["top"]}
     >
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Journal</Text>
-        <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
-          <Ionicons name="search" size={22} color={colors.accent} />
-        </TouchableOpacity>
-      </View>
+      <TealHeader
+        title={headerTitle}
+        leftIcon={headerIcon}
+        rightAction={
+          <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
+            <Ionicons name="search" size={22} color={colors.textOnAccent} />
+          </TouchableOpacity>
+        }
+      />
       <JournalTimeline
         entries={entries}
         stats={stats}
@@ -245,19 +261,6 @@ export default function JournalTab() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-  },
-  headerTitle: {
-    fontFamily: fonts.headerFamily,
-    fontSize: 28,
-    fontWeight: "700",
   },
   searchButton: {
     padding: 4,

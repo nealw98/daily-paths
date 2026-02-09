@@ -6,7 +6,7 @@ interface Props {
   strokeWidth?: number;
 }
 
-export function Seedling({ size = 24, color = "#8B6E4E", strokeWidth = 1.8 }: Props) {
+export function Seedling({ size = 24, color = "#3DA35D", strokeWidth = 1.8 }: Props) {
   return (
     <Svg width={size} height={size} viewBox="0 0 32 32">
       <Path

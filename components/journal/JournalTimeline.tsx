@@ -3,6 +3,7 @@ import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import {
   View,
   Text,
+  ScrollView,
   TouchableOpacity,
   StyleSheet,
   FlatList,
@@ -16,12 +17,14 @@ import type { JournalEntry } from "../../hooks/useJournalEntries";
 import type { EntryType } from "../../constants/journalCategories";
 import type { JournalStats } from "../../hooks/useJournalStats";
 import {
-  getCategoryById,
   getCategoryLabel,
   getCategoryColor,
   getCategoryBgColor,
+  getCategoryById,
   JOURNAL_CATEGORIES,
 } from "../../constants/journalCategories";
+import { EntryTypeIcon } from "../../utils/entryTypeIcon";
+import { FourSquares } from "../icons";
 
 // ─── Public types ───────────────────────────────────────────────────────────
 
@@ -230,30 +233,35 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
       minute: "2-digit",
     });
 
-    const catConfig = getCategoryById(entry.entry_type);
     const catLabel = getCategoryLabel(entry.entry_type);
     const catColor = getCategoryColor(entry.entry_type);
-    const catBgColor = getCategoryBgColor(entry.entry_type);
+    const catCardBg = getCategoryBgColor(entry.entry_type);
     const preview = getEntryPreview(entry);
 
     return (
       <TouchableOpacity
-        style={[styles.entryCard, { backgroundColor: colors.cardBackground }]}
+        style={[
+          styles.entryCard,
+          {
+            backgroundColor: catCardBg,
+            borderLeftColor: catColor,
+          },
+        ]}
         onPress={() => onSelectEntry(entry)}
         activeOpacity={0.7}
       >
-        {/* Top color strip */}
-        <View style={[styles.colorStrip, { backgroundColor: catColor }]} />
-
         {/* Inner content */}
         <View style={styles.entryInner}>
-          {/* Header row: badge left, time right */}
+          {/* Header row: icon + type label left, time right */}
           <View style={styles.entryHeader}>
-            <View style={[styles.typeBadge, { backgroundColor: catBgColor }]}>
-              {catConfig && (
-                <Text style={styles.typeBadgeEmoji}>{catConfig.emoji}</Text>
-              )}
-              <Text style={[styles.typeBadgeLabel, { color: catColor }]}>
+            <View style={styles.entryTypeBadge}>
+              {(() => {
+                const cat = getCategoryById(entry.entry_type);
+                return cat ? (
+                  <EntryTypeIcon svgIcon={cat.svgIcon} size={14} color={catColor} />
+                ) : null;
+              })()}
+              <Text style={[styles.entryTypeLabel, { color: catColor }]}>
                 {catLabel}
               </Text>
             </View>
@@ -265,8 +273,8 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
           {/* Preview text */}
           {preview ? (
             <Text
-              style={[styles.entryPreview, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 4, lineHeight: (typography.bodyFontSize - 4) * 1.55 }]}
-              numberOfLines={2}
+              style={[styles.entryPreview, { color: colors.text, fontSize: typography.bodyFontSize - 4, lineHeight: (typography.bodyFontSize - 4) * 1.55 }]}
+              numberOfLines={3}
             >
               {preview}
             </Text>
@@ -282,11 +290,11 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
     const label = formatDateHeader(dateKey);
     return (
       <View style={styles.dateDivider}>
-        <View style={[styles.dateLine, { backgroundColor: colors.border }]} />
-        <Text style={[styles.dateLabel, { color: colors.textSecondary }]}>
+        <View style={[styles.dateLine, { backgroundColor: colors.accent + "30" }]} />
+        <Text style={[styles.dateLabel, { color: colors.accent }]}>
           {label}
         </Text>
-        <View style={[styles.dateLine, { backgroundColor: colors.border }]} />
+        <View style={[styles.dateLine, { backgroundColor: colors.accent + "30" }]} />
       </View>
     );
   };
@@ -313,7 +321,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
         <Text style={[styles.statNumber, { color: colors.accent }]}>
           {stats.thisMonth}
         </Text>
-        <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+        <Text style={[styles.statLabel, { color: colors.text }]}>
           this month
         </Text>
       </View>
@@ -321,7 +329,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
         <Text style={[styles.statNumber, { color: colors.accent }]}>
           {stats.thisWeek}
         </Text>
-        <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+        <Text style={[styles.statLabel, { color: colors.text }]}>
           this week
         </Text>
       </View>
@@ -329,7 +337,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
         <Text style={[styles.statNumber, { color: colors.accent }]}>
           {stats.today}
         </Text>
-        <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+        <Text style={[styles.statLabel, { color: colors.text }]}>
           today
         </Text>
       </View>
@@ -338,43 +346,63 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
 
   // ─── Render: Segmented Filter ───────────────────────────────────────────
 
-  const segments: { key: CategoryFilter; label: string }[] = [
-    { key: "all", label: "All" },
-    ...JOURNAL_CATEGORIES.map((cat) => ({
-      key: cat.id as CategoryFilter,
-      label: cat.emoji,
-    })),
-  ];
+  // Icon size scales with the user's text size; generous hit target for primary nav
+  const iconSize = Math.round(typography.bodyFontSize * 1.4);
+  const hitTarget = Math.round(iconSize * 1.8);
 
   const SegmentedFilter = () => (
     <View style={[styles.segmentedWrapper, { borderBottomColor: colors.border }]}>
-      <View style={styles.segmentedContainer}>
-        {segments.map((seg) => {
-          const isActive = categoryFilter === seg.key;
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.segmentedContainer}
+      >
+        {/* Category icon buttons */}
+        {JOURNAL_CATEGORIES.map((cat) => {
+          const isActive = categoryFilter === cat.id;
+          const catColor = getCategoryColor(cat.id);
           return (
             <TouchableOpacity
-              key={seg.key}
-              style={[styles.segment, isActive && styles.segmentActive]}
-              onPress={() => onFilterChange(seg.key)}
+              key={cat.id}
+              style={[
+                styles.filterIcon,
+                { width: hitTarget, height: hitTarget, borderRadius: Math.round(hitTarget * 0.3) },
+                isActive
+                  ? { backgroundColor: catColor + "14", borderColor: catColor + "35", borderWidth: 1.5 }
+                  : { borderColor: "transparent", borderWidth: 1.5 },
+              ]}
+              onPress={() => onFilterChange(cat.id as CategoryFilter)}
               activeOpacity={0.7}
             >
-              <Text
-                style={[
-                  styles.segmentText,
-                  seg.key === "all"
-                    ? styles.segmentTextAll
-                    : styles.segmentTextIcon,
-                  isActive
-                    ? styles.segmentTextActive
-                    : styles.segmentTextInactive,
-                ]}
-              >
-                {seg.label}
-              </Text>
+              <EntryTypeIcon
+                svgIcon={cat.svgIcon}
+                size={iconSize}
+                color={catColor}
+                strokeWidth={isActive ? 2.2 : 1.8}
+              />
             </TouchableOpacity>
           );
         })}
-      </View>
+
+        {/* All / Notebook icon — last position */}
+        <TouchableOpacity
+          style={[
+            styles.filterIcon,
+            { width: hitTarget, height: hitTarget, borderRadius: Math.round(hitTarget * 0.3) },
+            categoryFilter === "all"
+              ? { backgroundColor: colors.accent + "14", borderColor: colors.accent + "35", borderWidth: 1.5 }
+              : { borderColor: "transparent", borderWidth: 1.5 },
+          ]}
+          onPress={() => onFilterChange("all")}
+          activeOpacity={0.7}
+        >
+          <FourSquares
+            size={iconSize}
+            color={colors.accent}
+            strokeWidth={categoryFilter === "all" ? 2.2 : 1.8}
+          />
+        </TouchableOpacity>
+      </ScrollView>
     </View>
   );
 
@@ -484,58 +512,29 @@ const styles = StyleSheet.create({
   },
   statNumber: {
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: "600",
   },
   statLabel: {
     fontFamily: fonts.bodyFamily,
-    fontSize: 11,
+    fontSize: 12,
   },
 
-  // ─── Segmented Filter ──────────────────────────────────────────────────
+  // ─── Filter Icons ─────────────────────────────────────────────────────
   segmentedWrapper: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     borderBottomWidth: 1,
   },
   segmentedContainer: {
+    flexGrow: 1,
     flexDirection: "row",
-    backgroundColor: "#F5F0EB",
-    borderRadius: 12,
-    padding: 3,
-    gap: 2,
+    justifyContent: "center",
+    gap: 14,
   },
-  segment: {
-    flex: 1,
+  filterIcon: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 9,
-    paddingHorizontal: 4,
-    borderRadius: 10,
-  },
-  segmentActive: {
-    backgroundColor: "#FFFFFF",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  segmentText: {
-    fontFamily: fonts.bodyFamilyRegular,
-  },
-  segmentTextAll: {
-    fontSize: 12,
-  },
-  segmentTextIcon: {
-    fontSize: 13,
-  },
-  segmentTextActive: {
-    color: "#2C5F5D",
-    fontWeight: "600",
-  },
-  segmentTextInactive: {
-    color: "#8A8A8A",
   },
 
   // ─── Date Divider ────────────────────────────────────────────────────────
@@ -552,24 +551,21 @@ const styles = StyleSheet.create({
   },
   dateLabel: {
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 11,
+    fontSize: 12,
     textTransform: "uppercase",
-    letterSpacing: 1,
+    letterSpacing: 1.2,
   },
 
   // ─── Entry Card ──────────────────────────────────────────────────────────
   entryCard: {
-    borderRadius: 16,
-    overflow: "hidden",
-    marginBottom: 12,
+    borderRadius: 14,
+    borderLeftWidth: 3.5,
+    marginBottom: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 1,
-  },
-  colorStrip: {
-    height: 3,
   },
   entryInner: {
     paddingTop: 12,
@@ -582,21 +578,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 8,
   },
-  typeBadge: {
+  entryTypeBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    gap: 5,
   },
-  typeBadgeEmoji: {
-    fontSize: 12,
-  },
-  typeBadgeLabel: {
+  entryTypeLabel: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 12,
     fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
   },
   entryTime: {
     fontFamily: fonts.bodyFamily,
@@ -605,7 +597,7 @@ const styles = StyleSheet.create({
   entryPreview: {
     fontFamily: fonts.bodyFamily,
     fontSize: 14,
-    lineHeight: 21.7, // 14 * 1.55
+    lineHeight: 22,
   },
 
   // ─── FAB ─────────────────────────────────────────────────────────────────

@@ -38,22 +38,34 @@ export interface JournalCategory {
 
 /**
  * Type-specific accent colors for borders, badges, and number circles.
+ * Punchy and saturated — each type should be instantly recognizable.
  */
 export const ENTRY_TYPE_COLORS = {
-  journal: "#2C5F5D",
-  gratitude: "#8B6E4E",
-  spot_check: "#B8604A",
-  nightly_review: "#5B6E8A",
+  journal: "#8356C4",        // rich violet
+  gratitude: "#3DA35D",      // spring green
+  spot_check: "#D4553A",     // vivid coral-red
+  nightly_review: "#4A6FA5", // strong slate-blue
 } as const;
 
 /**
- * Tinted background colors (~6-7% opacity) for badges and cards.
+ * Tinted background colors for type badges (~12% opacity).
+ */
+export const ENTRY_TYPE_BADGE_BG_COLORS = {
+  journal: "rgba(131, 86, 196, 0.12)",
+  gratitude: "rgba(61, 163, 93, 0.12)",
+  spot_check: "rgba(212, 85, 58, 0.10)",
+  nightly_review: "rgba(74, 111, 165, 0.12)",
+} as const;
+
+/**
+ * Tinted background colors for full entry cards (~6-7% opacity).
+ * Lighter than badges so text remains readable.
  */
 export const ENTRY_TYPE_BG_COLORS = {
-  journal: "rgba(44, 95, 93, 0.06)",
-  gratitude: "rgba(139, 110, 78, 0.07)",
-  spot_check: "rgba(184, 96, 74, 0.06)",
-  nightly_review: "rgba(91, 110, 138, 0.07)",
+  journal: "rgba(131, 86, 196, 0.06)",
+  gratitude: "rgba(61, 163, 93, 0.06)",
+  spot_check: "rgba(212, 85, 58, 0.05)",
+  nightly_review: "rgba(74, 111, 165, 0.06)",
 } as const;
 
 /**
@@ -193,10 +205,19 @@ export function getCategoryColor(id: EntryType | string | null): string {
 }
 
 /**
- * Get the tinted background color for an entry type.
+ * Get the tinted card background color for an entry type.
  */
 export function getCategoryBgColor(id: EntryType | string | null): string {
   if (!id || !(id in ENTRY_TYPE_BG_COLORS))
     return ENTRY_TYPE_BG_COLORS.journal;
   return ENTRY_TYPE_BG_COLORS[id as EntryType];
+}
+
+/**
+ * Get the stronger badge background color for an entry type.
+ */
+export function getCategoryBadgeBgColor(id: EntryType | string | null): string {
+  if (!id || !(id in ENTRY_TYPE_BADGE_BG_COLORS))
+    return ENTRY_TYPE_BADGE_BG_COLORS.journal;
+  return ENTRY_TYPE_BADGE_BG_COLORS[id as EntryType];
 }

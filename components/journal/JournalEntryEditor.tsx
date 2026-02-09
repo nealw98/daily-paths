@@ -233,7 +233,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
         <View
           style={[styles.header, { borderBottomColor: colors.border }]}
         >
-          <Text style={[styles.dateText, { color: colors.textSecondary }]}>
+          <Text style={[styles.dateText, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 6 }]}>
             {isEditing ? "Editing Entry" : dateStr}
           </Text>
           <View
@@ -248,7 +248,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
               </Text>
             )}
             <Text
-              style={[styles.categoryBadgeText, { color: categoryColor }]}
+              style={[styles.categoryBadgeText, { color: categoryColor, fontSize: typography.bodyFontSize - 8 }]}
             >
               {categoryLabel}
             </Text>
@@ -357,7 +357,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                 <Text
                   style={[
                     styles.addItemText,
-                    { color: categoryColor },
+                    { color: categoryColor, fontSize: typography.bodyFontSize - 6 },
                   ]}
                 >
                   add another
@@ -367,7 +367,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
               <Text
                 style={[
                   styles.gratitudeHint,
-                  { color: colors.textSecondary },
+                  { color: colors.textSecondary, fontSize: typography.bodyFontSize - 8 },
                 ]}
               >
                 Write as many or as few as you'd like
@@ -410,7 +410,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
             onPress={handleCancel}
           >
             <Text
-              style={[styles.cancelText, { color: colors.textSecondary }]}
+              style={[styles.cancelText, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 4 }]}
             >
               Cancel
             </Text>
@@ -442,6 +442,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                   styles.saveText,
                   {
                     color: hasContent ? "#FFFFFF" : colors.textSecondary,
+                    fontSize: typography.bodyFontSize - 4,
                   },
                 ]}
               >

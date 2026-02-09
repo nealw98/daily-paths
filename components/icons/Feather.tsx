@@ -6,7 +6,7 @@ interface Props {
   strokeWidth?: number;
 }
 
-export function Feather({ size = 24, color = "#2C5F5D", strokeWidth = 1.6 }: Props) {
+export function Feather({ size = 24, color = "#8356C4", strokeWidth = 1.6 }: Props) {
   return (
     <Svg width={size} height={size} viewBox="0 0 32 32">
       <Path
