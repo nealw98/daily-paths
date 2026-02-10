@@ -34,6 +34,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [isLegacy, setIsLegacy] = useState(false);
   const mounted = useRef(true);
+  const signingOut = useRef(false);
 
   // Initialize auth state from existing session
   useEffect(() => {
@@ -41,6 +42,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const initAuth = async () => {
       try {
+        // getSession() returns whatever is cached in AsyncStorage, even if expired.
+        // Use getUser() to actually validate the token with the server.
         const {
           data: { session: currentSession },
         } = await supabase.auth.getSession();
@@ -48,11 +51,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!mounted.current) return;
 
         if (currentSession?.user) {
-          setUser(currentSession.user);
-          setSession(currentSession);
-          // Check legacy status
-          const legacy = await isLegacyUser(currentSession.user.id);
-          if (mounted.current) setIsLegacy(legacy);
+          // Validate the session is still active by calling getUser()
+          const { data: { user: validatedUser }, error: userError } = await supabase.auth.getUser();
+
+          if (!mounted.current) return;
+
+          if (userError || !validatedUser) {
+            // Session is stale/expired — clear it
+            qaLog("auth", "Stored session invalid, clearing", { error: userError?.message });
+            await supabase.auth.signOut();
+            setUser(null);
+            setSession(null);
+          } else {
+            setUser(validatedUser);
+            setSession(currentSession);
+            // Check legacy status
+            const legacy = await isLegacyUser(validatedUser.id);
+            if (mounted.current) setIsLegacy(legacy);
+          }
         }
       } catch (err) {
         qaLog("auth", "Error initializing auth", { error: String(err) });
@@ -70,6 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       qaLog("auth", `Auth state changed: ${event}`, { userId: newSession?.user?.id });
 
       if (!mounted.current) return;
+      if (signingOut.current) return; // Don't let listener restore state during sign-out
 
       setSession(newSession);
       setUser(newSession?.user ?? null);
@@ -105,7 +122,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signOut = useCallback(async () => {
-    await authSignOut();
+    signingOut.current = true;
+    try {
+      await authSignOut();
+    } catch (err) {
+      qaLog("auth", "Sign out error, clearing local state anyway", { error: String(err) });
+    }
+    // Always clear local state, even if Supabase call fails or
+    // onAuthStateChange doesn't fire (e.g. expired/stale session)
+    setUser(null);
+    setSession(null);
+    setIsLegacy(false);
+    signingOut.current = false;
   }, []);
 
   const forgotPassword = useCallback(async (email: string) => {

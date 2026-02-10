@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
@@ -119,12 +119,17 @@ export default function MoreTab() {
         {isAuthenticated && (
           <TouchableOpacity
             style={[styles.signOutButton, { borderColor: colors.danger + "40" }]}
-            onPress={async () => {
-              try {
-                await signOut();
-              } catch {
-                // handled by context
-              }
+            onPress={() => {
+              Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Sign Out",
+                  style: "destructive",
+                  onPress: async () => {
+                    await signOut();
+                  },
+                },
+              ]);
             }}
           >
             <Ionicons name="log-out-outline" size={20} color={colors.danger} />
