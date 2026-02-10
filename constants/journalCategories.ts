@@ -163,7 +163,7 @@ export const JOURNAL_CATEGORIES: JournalCategory[] = [
         id: "amends",
         question: "Do I owe anyone an amend?",
         placeholder: "Is there something I need to make right?",
-        hint: "This can wait until tomorrow — just note it here.",
+        hint: "",
       },
       {
         id: "did_well",

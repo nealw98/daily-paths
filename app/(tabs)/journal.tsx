@@ -39,7 +39,7 @@ export default function JournalTab() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [selectedEntryType, setSelectedEntryType] = useState<EntryType>("journal");
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
-  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("journal");
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
 
   // Header title and icon reflect the active filter
   const headerTitle = categoryFilter === "all"
@@ -55,28 +55,14 @@ export default function JournalTab() {
     return <EntryTypeIcon svgIcon={cat.svgIcon} size={28} color={colors.textOnAccent} />;
   }, [categoryFilter, colors.textOnAccent]);
 
-  // ─── Tab press → always return to timeline ─────────────────
+  // ─── Tab press → always return to "all" timeline ─────────────────
   useEffect(() => {
     const unsubscribe = navigation.addListener("tabPress" as any, (e: any) => {
       if (viewRef.current !== "timeline") {
         e.preventDefault();
-        if (viewRef.current === "editor") {
-          // Respect save/discard warning
-          Alert.alert("Discard this entry?", "Your writing will not be saved.", [
-            { text: "Keep Writing", style: "cancel" },
-            {
-              text: "Discard",
-              style: "destructive",
-              onPress: () => {
-                setSelectedEntry(null);
-                setView("timeline");
-              },
-            },
-          ]);
-        } else {
-          setSelectedEntry(null);
-          setView("timeline");
-        }
+        setSelectedEntry(null);
+        setCategoryFilter("all");
+        setView("timeline");
       }
     });
     return unsubscribe;

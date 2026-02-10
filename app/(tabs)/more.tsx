@@ -9,7 +9,6 @@ import { SettingsModal } from "../../components/SettingsModal";
 import { SettingsContent } from "../../components/SettingsContent";
 import { PaywallModal } from "../../components/PaywallModal";
 import { SignInModal } from "../../components/SignInModal";
-import { ExportOptionsModal } from "../../components/ExportOptionsModal";
 import { TealHeader } from "../../components/shared/TealHeader";
 import { StackedStones } from "../../components/icons";
 
@@ -22,16 +21,7 @@ export default function MoreTab() {
   const [showSettings, setShowSettings] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [showSignIn, setShowSignIn] = useState(false);
-  const [showExport, setShowExport] = useState(false);
-
   const menuItems = [
-    {
-      id: "export",
-      title: "Export Journal",
-      icon: "download-outline" as const,
-      available: isAuthenticated,
-      onPress: () => setShowExport(true),
-    },
     {
       id: "settings",
       title: "Settings",
@@ -153,7 +143,6 @@ export default function MoreTab() {
 
       <SignInModal visible={showSignIn} onClose={() => setShowSignIn(false)} />
 
-      <ExportOptionsModal visible={showExport} onClose={() => setShowExport(false)} />
     </SafeAreaView>
   );
 }

@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Share,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
@@ -123,6 +124,49 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
         },
       },
     ]);
+  };
+
+  const handleShare = async () => {
+    const lines: string[] = [];
+
+    // Date
+    lines.push(dateStr);
+    lines.push("");
+
+    // Type label
+    lines.push(catLabel.toUpperCase());
+    lines.push("");
+
+    // Content by type
+    if (editorType === "text") {
+      if (entry.content) lines.push(entry.content.trim());
+    } else if (editorType === "items") {
+      const items = entry.structured_content?.items
+        ? (entry.structured_content.items as string[])
+        : parseGratitudeItems(entry.content);
+      items.filter(Boolean).forEach((item) => lines.push(`• ${item}`));
+    } else if (editorType === "guided") {
+      const prompts = catConfig?.guidedPrompts ?? [];
+      const responses = entry.structured_content ?? {};
+      prompts.forEach((prompt) => {
+        const value = responses[prompt.id];
+        if (value && typeof value === "string" && value.trim()) {
+          lines.push(prompt.question);
+          lines.push(value.trim());
+          lines.push("");
+        }
+      });
+    }
+
+    lines.push("");
+    lines.push("-----");
+    lines.push("Shared from Daily Paths");
+
+    try {
+      await Share.share({ message: lines.join("\n") });
+    } catch (err) {
+      console.error("Error sharing entry:", err);
+    }
   };
 
   const handleSave = async () => {
@@ -294,10 +338,10 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
       <TouchableOpacity activeOpacity={0.8} onPress={() => setIsEditing(true)}>
         {answeredPrompts.map((prompt) => (
           <View key={prompt.id} style={styles.guidedReadSection}>
-            <Text style={[styles.guidedReadQuestion, { color: colors.text, fontSize: typography.bodyFontSize - 6 }]}>
+            <Text style={[styles.guidedReadQuestion, { color: colors.text, fontSize: typography.bodyFontSize - 2 }]}>
               {prompt.question}
             </Text>
-            <Text style={[styles.guidedReadResponse, { color: colors.text, fontSize: typography.bodyFontSize - 2, lineHeight: typography.bodyLineHeight - 6 }]}>
+            <Text style={[styles.guidedReadResponse, { color: colors.text, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight }]}>
               {responses[prompt.id]}
             </Text>
           </View>
@@ -320,11 +364,6 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
   const renderTextReadOnly = () => {
     return (
       <TouchableOpacity activeOpacity={0.8} onPress={() => setIsEditing(true)}>
-        {catConfig?.introText && (
-          <Text style={[styles.introText, { color: colors.accent, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.5 }]}>
-            {catConfig.introText}
-          </Text>
-        )}
         <Text style={[styles.contentText, { color: colors.text, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight }]}>
           {entry.content}
         </Text>
@@ -339,6 +378,13 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
 
   const renderTextEdit = () => (
     <View style={styles.editContainer}>
+      {catConfig?.introText && (
+        <View style={[styles.introWrapper, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.introText, { color: colors.accent, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.5 }]}>
+            {catConfig.introText}
+          </Text>
+        </View>
+      )}
       <TextInput
         style={[styles.editInput, { color: colors.text, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight }]}
         value={editContent}
@@ -456,9 +502,14 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
                 {timeStr}
               </Text>
             </View>
-            <TouchableOpacity onPress={handleDelete} style={styles.dateBarDeleteButton}>
-              <Ionicons name="trash-outline" size={18} color={colors.textSecondary} />
-            </TouchableOpacity>
+            <View style={styles.dateBarActions}>
+              <TouchableOpacity onPress={handleShare} style={styles.dateBarActionButton}>
+                <Ionicons name="share-outline" size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleDelete} style={styles.dateBarActionButton}>
+                <Ionicons name="trash-outline" size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -627,7 +678,12 @@ const styles = StyleSheet.create({
     fontSize: 28,
     lineHeight: 34,
   },
-  dateBarDeleteButton: {
+  dateBarActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  dateBarActionButton: {
     padding: 8,
   },
   dateBar: {
@@ -656,10 +712,14 @@ const styles = StyleSheet.create({
   },
 
   // ─── Read-Only ────────────────────────────────────────
+  introWrapper: {
+    borderBottomWidth: 1,
+    paddingBottom: 14,
+    marginBottom: 16,
+  },
   introText: {
     fontFamily: fonts.headerFamilyItalic,
-    fontStyle: "italic",
-    marginBottom: 16,
+    textAlign: "center",
   },
   contentText: {
     fontFamily: fonts.bodyFamilyRegular,

@@ -533,8 +533,8 @@ const styles = StyleSheet.create({
     fontFamily: fonts.headerFamilyItalic,
     fontSize: 18,
     lineHeight: 18 * 1.5,
-    fontStyle: "italic",
     marginBottom: 20,
+    textAlign: "center",
   },
   gratitudeCard: {
     flexDirection: "row",

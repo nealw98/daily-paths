@@ -57,7 +57,7 @@ export function GuidedPromptEditor({
             <Text
               style={[
                 styles.questionText,
-                { color: colors.text, fontSize: typography.bodyFontSize - 4, lineHeight: (typography.bodyFontSize - 4) * 1.35 },
+                { color: colors.text, fontSize: typography.bodyFontSize - 2, lineHeight: (typography.bodyFontSize - 2) * 1.35 },
               ]}
             >
               {prompt.question}
@@ -70,8 +70,8 @@ export function GuidedPromptEditor({
                 {
                   fontFamily: fonts.bodyFamilyRegular,
                   color: colors.text,
-                  fontSize: typography.bodyFontSize - 4,
-                  lineHeight: (typography.bodyFontSize - 4) * 1.65,
+                  fontSize: typography.bodyFontSize - 2,
+                  lineHeight: (typography.bodyFontSize - 2) * 1.65,
                   backgroundColor: isFocused
                     ? "#FFFFFF"
                     : colors.background,
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
   introText: {
     fontSize: 18,
     lineHeight: 18 * 1.5,
-    fontStyle: "italic",
+    textAlign: "center",
   },
   card: {
     marginBottom: 20,
