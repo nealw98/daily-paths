@@ -247,9 +247,6 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
           </View>
         </LinearGradient>
 
-        {/* Accent color strip */}
-        <View style={[styles.typeStrip, { backgroundColor: categoryColor }]} />
-
         {/* Date bar */}
         <View style={[styles.dateBar, { backgroundColor: colors.background }]}>
           <Text style={[styles.dateText, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 6 }]}>
@@ -319,8 +316,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                   style={[
                     styles.gratitudeCard,
                     {
-                      backgroundColor: colors.cardBackground,
-                      borderColor: "rgba(139, 110, 78, 0.08)",
+                      borderBottomColor: colors.border,
                     },
                   ]}
                 >
@@ -496,9 +492,6 @@ const styles = StyleSheet.create({
     fontSize: 28,
     lineHeight: 34,
   },
-  typeStrip: {
-    height: 3,
-  },
   dateBar: {
     paddingHorizontal: 20,
     paddingVertical: 10,
@@ -547,15 +540,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 10,
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
   },
   gratitudeIconWrapper: {
     marginTop: 2,

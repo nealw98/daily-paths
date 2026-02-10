@@ -284,29 +284,24 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
     const prompts = catConfig?.guidedPrompts ?? [];
     const responses = entry.structured_content ?? {};
 
+    // Only show prompts that have answers
+    const answeredPrompts = prompts.filter((p) => {
+      const v = responses[p.id];
+      return v && typeof v === "string" && v.trim();
+    });
+
     return (
       <TouchableOpacity activeOpacity={0.8} onPress={() => setIsEditing(true)}>
-        {prompts.map((prompt) => {
-          const value = responses[prompt.id];
-          const hasValue = value && typeof value === "string" && value.trim();
-
-          return (
-            <View key={prompt.id} style={styles.guidedReadSection}>
-              <Text style={[styles.guidedReadQuestion, { color: colors.text, fontSize: typography.bodyFontSize - 6 }]}>
-                {prompt.question}
-              </Text>
-              {hasValue ? (
-                <Text style={[styles.guidedReadResponse, { color: colors.text, fontSize: typography.bodyFontSize - 2, lineHeight: typography.bodyLineHeight - 6 }]}>
-                  {value}
-                </Text>
-              ) : (
-                <Text style={[styles.guidedReadResponse, { color: colors.textSecondary + "60", fontSize: typography.bodyFontSize - 2, fontStyle: "italic" }]}>
-                  Not answered
-                </Text>
-              )}
-            </View>
-          );
-        })}
+        {answeredPrompts.map((prompt) => (
+          <View key={prompt.id} style={styles.guidedReadSection}>
+            <Text style={[styles.guidedReadQuestion, { color: colors.text, fontSize: typography.bodyFontSize - 6 }]}>
+              {prompt.question}
+            </Text>
+            <Text style={[styles.guidedReadResponse, { color: colors.text, fontSize: typography.bodyFontSize - 2, lineHeight: typography.bodyLineHeight - 6 }]}>
+              {responses[prompt.id]}
+            </Text>
+          </View>
+        ))}
 
         {/* Fallback: show plain content if no structured_content */}
         {!entry.structured_content && entry.content && (
@@ -451,9 +446,6 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
             </Text>
           </View>
         </LinearGradient>
-
-        {/* Accent color strip */}
-        <View style={[styles.typeStrip, { backgroundColor: catColor }]} />
 
         {/* Date & Time + Delete */}
         <View style={[styles.dateBar, { backgroundColor: colors.background }]}>
@@ -637,9 +629,6 @@ const styles = StyleSheet.create({
   },
   dateBarDeleteButton: {
     padding: 8,
-  },
-  typeStrip: {
-    height: 3,
   },
   dateBar: {
     paddingHorizontal: 20,

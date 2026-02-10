@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from "react";
+import React, { useMemo } from "react";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import {
   View,
@@ -125,7 +125,7 @@ function getEntryPreview(entry: JournalEntry): string {
     ) {
       const joined = (entry.structured_content.items as string[])
         .filter(Boolean)
-        .join(" \u2022 ");
+        .join("\n");
       if (joined) {
         return joined.length > 120
           ? joined.substring(0, 120).trim() + "..."
@@ -138,7 +138,7 @@ function getEntryPreview(entry: JournalEntry): string {
         .split("\n")
         .map((line) => line.replace(/^-\s*/, "").trim())
         .filter(Boolean);
-      const joined = items.join(" \u2022 ");
+      const joined = items.join("\n");
       const stripped = stripMarkdown(joined);
       return stripped.length > 120
         ? stripped.substring(0, 120).trim() + "..."
@@ -184,48 +184,6 @@ function getEntryPreview(entry: JournalEntry): string {
   return "";
 }
 
-/**
- * Build the full (non-truncated) content for an expanded entry.
- */
-function getEntryFullContent(entry: JournalEntry): string {
-  if (entry.entry_type === "gratitude") {
-    if (entry.structured_content?.items && Array.isArray(entry.structured_content.items)) {
-      return (entry.structured_content.items as string[]).filter(Boolean).join(" \u2022 ");
-    }
-    if (entry.content) {
-      return entry.content
-        .split("\n")
-        .map((line) => line.replace(/^-\s*/, "").trim())
-        .filter(Boolean)
-        .join(" \u2022 ");
-    }
-    return "";
-  }
-
-  if (entry.content) {
-    return stripMarkdown(entry.content);
-  }
-  return "";
-}
-
-/**
- * For guided entries, build question/answer pairs.
- */
-function getGuidedContent(entry: JournalEntry): Array<{ question: string; answer: string }> {
-  const catConfig = getCategoryById(entry.entry_type as EntryType);
-  const prompts = catConfig?.guidedPrompts ?? [];
-  const responses = entry.structured_content ?? {};
-  const pairs: Array<{ question: string; answer: string }> = [];
-
-  for (const prompt of prompts) {
-    const value = responses[prompt.id];
-    if (value && typeof value === "string" && value.trim()) {
-      pairs.push({ question: prompt.question, answer: value.trim() });
-    }
-  }
-  return pairs;
-}
-
 /** Strip basic markdown formatting. */
 function stripMarkdown(text: string): string {
   return text
@@ -251,33 +209,6 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
   const { settings } = useSettings();
   const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
 
-  // ─── Expand/collapse state ────────────────────────────────────────────
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-  const [allExpanded, setAllExpanded] = useState(false);
-
-  const toggleEntry = useCallback((id: string) => {
-    setExpandedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  }, []);
-
-  const toggleAll = useCallback(() => {
-    if (allExpanded) {
-      setExpandedIds(new Set());
-      setAllExpanded(false);
-    } else {
-      const allIds = new Set(entries.map((e) => e.id));
-      setExpandedIds(allIds);
-      setAllExpanded(true);
-    }
-  }, [allExpanded, entries]);
-
   // Filter entries by category
   const filteredEntries = useMemo(() => {
     if (categoryFilter === "all") return entries;
@@ -292,7 +223,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
 
   // ─── Render: Entry Card ─────────────────────────────────────────────────
 
-  const renderEntryCard = (entry: JournalEntry, hideBottomLine: boolean) => {
+  const renderEntryCard = (entry: JournalEntry) => {
     const date = new Date(entry.created_at);
     const timeStr = date.toLocaleTimeString("en-US", {
       hour: "numeric",
@@ -302,22 +233,14 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
     const catLabel = getCategoryLabel(entry.entry_type);
     const catColor = getCategoryColor(entry.entry_type);
     const preview = getEntryPreview(entry);
-    const isExpanded = expandedIds.has(entry.id);
-    const isGuided = entry.entry_type === "spot_check" || entry.entry_type === "nightly_review";
 
     return (
-      <View
-        style={[
-          styles.entryCard,
-          !hideBottomLine && { borderBottomWidth: 1, borderBottomColor: colors.border },
-        ]}
+      <TouchableOpacity
+        style={styles.entryCard}
+        onPress={() => onSelectEntry(entry)}
+        activeOpacity={0.7}
       >
-        {/* Header row: tappable to expand/collapse */}
-        <TouchableOpacity
-          style={styles.entryInner}
-          onPress={() => toggleEntry(entry.id)}
-          activeOpacity={0.7}
-        >
+        <View style={styles.entryInner}>
           <View style={styles.entryHeader}>
             {categoryFilter === "all" ? (
               <View style={styles.entryTypeBadge}>
@@ -334,59 +257,21 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
             ) : (
               <View />
             )}
-            <View style={styles.entryHeaderRight}>
-              <Text style={[styles.entryTime, { color: colors.textSecondary }]}>
-                {timeStr}
-              </Text>
-              <Ionicons
-                name={isExpanded ? "chevron-up" : "chevron-down"}
-                size={16}
-                color={colors.textSecondary}
-              />
-            </View>
+            <Text style={[styles.entryTime, { color: colors.textSecondary }]}>
+              {timeStr}
+            </Text>
           </View>
 
-          {/* Collapsed: preview text */}
-          {!isExpanded && preview ? (
+          {preview ? (
             <Text
-              style={[styles.entryPreview, { color: colors.ink, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.55 }]}
+              style={[styles.entryPreview, { color: colors.ink, fontSize: typography.bodyFontSize - 2, lineHeight: (typography.bodyFontSize - 2) * 1.55 }]}
               numberOfLines={3}
             >
               {preview}
             </Text>
           ) : null}
-        </TouchableOpacity>
-
-        {/* Expanded: full content — tappable to open detail */}
-        {isExpanded && (
-          <TouchableOpacity
-            style={styles.expandedContent}
-            onPress={() => onSelectEntry(entry)}
-            activeOpacity={0.8}
-          >
-            {isGuided ? (
-              // Show question/answer pairs for guided entries
-              getGuidedContent(entry).map((pair, i) => (
-                <View key={i} style={styles.guidedPair}>
-                  <Text style={[styles.guidedQuestion, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 2 }]}>
-                    {pair.question}
-                  </Text>
-                  <Text style={[styles.guidedAnswer, { color: colors.ink, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.55 }]}>
-                    {pair.answer}
-                  </Text>
-                </View>
-              ))
-            ) : (
-              <Text style={[styles.entryFullText, { color: colors.ink, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.55 }]}>
-                {getEntryFullContent(entry)}
-              </Text>
-            )}
-            <Text style={[styles.tapToOpen, { color: colors.seafoam, fontSize: typography.bodyFontSize - 4 }]}>
-              Tap to open
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
+        </View>
+      </TouchableOpacity>
     );
   };
 
@@ -411,9 +296,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
     if (item.type === "header") {
       return renderDateDivider(item.date);
     }
-    const nextItem = timelineItems[index + 1];
-    const hideBottomLine = nextItem?.type === "header";
-    return renderEntryCard(item.data, hideBottomLine);
+    return renderEntryCard(item.data);
   };
 
   const keyExtractor = (item: TimelineItem, index: number) => {
@@ -520,22 +403,6 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
     <View style={styles.listHeader}>
       <StatsBar />
       <SegmentedFilter />
-      {filteredEntries.length > 0 && (
-        <TouchableOpacity
-          style={styles.expandAllButton}
-          onPress={toggleAll}
-          activeOpacity={0.7}
-        >
-          <Ionicons
-            name={allExpanded ? "contract-outline" : "expand-outline"}
-            size={14}
-            color={colors.seafoam}
-          />
-          <Text style={[styles.expandAllText, { color: colors.seafoam }]}>
-            {allExpanded ? "Collapse All" : "Expand All"}
-          </Text>
-        </TouchableOpacity>
-      )}
     </View>
   );
 
@@ -682,11 +549,20 @@ const styles = StyleSheet.create({
 
   // ─── Entry Card ──────────────────────────────────────────────────────────
   entryCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+    marginBottom: 10,
   },
   entryInner: {
-    paddingTop: 12,
-    paddingHorizontal: 16,
-    paddingBottom: 14,
+    paddingTop: 14,
+    paddingBottom: 16,
+    paddingLeft: 18,
+    paddingRight: 18,
   },
   entryHeader: {
     flexDirection: "row",
@@ -710,56 +586,10 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyFamily,
     fontSize: 12,
   },
-  entryHeaderRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
   entryPreview: {
-    fontFamily: fonts.bodyFamily,
+    fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
     lineHeight: 22,
-  },
-  expandedContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 14,
-  },
-  entryFullText: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: 14,
-    lineHeight: 22,
-  },
-  guidedPair: {
-    marginBottom: 12,
-  },
-  guidedQuestion: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  guidedAnswer: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: 14,
-    lineHeight: 22,
-  },
-  tapToOpen: {
-    fontFamily: fonts.bodyFamilyRegular,
-    marginTop: 10,
-    textAlign: "right",
-    fontStyle: "italic",
-  },
-  expandAllButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    gap: 4,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-  },
-  expandAllText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 12,
-    fontWeight: "500",
   },
 
   // ─── FAB ─────────────────────────────────────────────────────────────────

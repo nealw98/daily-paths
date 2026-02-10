@@ -41,20 +41,20 @@ export interface JournalCategory {
  * Punchy and saturated — each type should be instantly recognizable.
  */
 export const ENTRY_TYPE_COLORS = {
-  journal: "#8356C4",        // rich violet
+  journal: "#3366A8",        // true blue
   gratitude: "#3DA35D",      // spring green
   spot_check: "#D4553A",     // vivid coral-red
-  nightly_review: "#4A6FA5", // strong slate-blue
+  nightly_review: "#6B3FA0", // deep purple
 } as const;
 
 /**
  * Tinted background colors for type badges (~12% opacity).
  */
 export const ENTRY_TYPE_BADGE_BG_COLORS = {
-  journal: "rgba(131, 86, 196, 0.12)",
+  journal: "rgba(51, 102, 168, 0.12)",
   gratitude: "rgba(61, 163, 93, 0.12)",
   spot_check: "rgba(212, 85, 58, 0.10)",
-  nightly_review: "rgba(74, 111, 165, 0.12)",
+  nightly_review: "rgba(107, 63, 160, 0.12)",
 } as const;
 
 /**
@@ -62,10 +62,10 @@ export const ENTRY_TYPE_BADGE_BG_COLORS = {
  * Lighter than badges so text remains readable.
  */
 export const ENTRY_TYPE_BG_COLORS = {
-  journal: "rgba(131, 86, 196, 0.06)",
+  journal: "rgba(51, 102, 168, 0.06)",
   gratitude: "rgba(61, 163, 93, 0.06)",
   spot_check: "rgba(212, 85, 58, 0.05)",
-  nightly_review: "rgba(74, 111, 165, 0.06)",
+  nightly_review: "rgba(107, 63, 160, 0.06)",
 } as const;
 
 /**

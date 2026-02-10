@@ -220,32 +220,32 @@ export function getTextSizeMetrics(textSize: TextSize): {
   switch (textSize) {
     case "extraSmall":
       return {
-        bodyFontSize: 15 + androidBump,
-        bodyLineHeight: 26 + androidBump,
+        bodyFontSize: 13 + androidBump,
+        bodyLineHeight: 23 + androidBump,
         favoriteFontSize: 14 + androidBump,
         favoriteLineHeight: 18 + androidBump,
         favoriteDateFontSize: 12 + androidBump,
       };
     case "small":
       return {
-        bodyFontSize: 17 + androidBump,
-        bodyLineHeight: 29 + androidBump,
+        bodyFontSize: 15 + androidBump,
+        bodyLineHeight: 26 + androidBump,
         favoriteFontSize: 15 + androidBump,
         favoriteLineHeight: 20 + androidBump,
         favoriteDateFontSize: 13 + androidBump,
       };
     case "large":
       return {
-        bodyFontSize: 24 + androidBump,
-        bodyLineHeight: 40 + androidBump,
+        bodyFontSize: 22 + androidBump,
+        bodyLineHeight: 37 + androidBump,
         favoriteFontSize: 18 + androidBump,
         favoriteLineHeight: 24 + androidBump,
         favoriteDateFontSize: 16 + androidBump,
       };
     case "extraLarge":
       return {
-        bodyFontSize: 28 + androidBump,
-        bodyLineHeight: 46 + androidBump,
+        bodyFontSize: 26 + androidBump,
+        bodyLineHeight: 43 + androidBump,
         favoriteFontSize: 20 + androidBump,
         favoriteLineHeight: 26 + androidBump,
         favoriteDateFontSize: 18 + androidBump,
@@ -253,8 +253,8 @@ export function getTextSizeMetrics(textSize: TextSize): {
     case "medium":
     default:
       return {
-        bodyFontSize: 20 + androidBump,
-        bodyLineHeight: 34 + androidBump,
+        bodyFontSize: 18 + androidBump,
+        bodyLineHeight: 31 + androidBump,
         favoriteFontSize: 16 + androidBump,
         favoriteLineHeight: 21 + androidBump,
         favoriteDateFontSize: 14 + androidBump,

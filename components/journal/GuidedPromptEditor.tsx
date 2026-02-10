@@ -51,12 +51,7 @@ export function GuidedPromptEditor({
         return (
           <View
             key={prompt.id}
-            style={[
-              styles.card,
-              {
-                backgroundColor: colors.cardBackground,
-              },
-            ]}
+            style={styles.card}
           >
             {/* Question label */}
             <Text
@@ -128,14 +123,7 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
   },
   card: {
-    borderRadius: 14,
-    padding: 18,
-    marginBottom: 14,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
+    marginBottom: 20,
   },
   questionText: {
     fontSize: 14,
@@ -144,8 +132,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   textInput: {
-    borderWidth: 1.5,
-    borderRadius: 10,
+    borderWidth: 1,
+    borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 12,
     minHeight: 70,
