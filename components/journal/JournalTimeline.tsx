@@ -339,6 +339,14 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
   const iconSize = Math.round(typography.bodyFontSize * 1.4);
   const hitTarget = Math.round(iconSize * 1.8);
 
+  // Short labels for filter icons
+  const filterLabels: Record<string, string> = {
+    journal: "Journal",
+    gratitude: "Gratitude",
+    spot_check: "Spot Check",
+    nightly_review: "Nightly",
+  };
+
   const SegmentedFilter = () => (
     <View style={[styles.segmentedWrapper, { borderBottomColor: colors.border }]}>
       <ScrollView
@@ -354,42 +362,72 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
             <TouchableOpacity
               key={cat.id}
               style={[
-                styles.filterIcon,
-                { width: hitTarget, height: hitTarget, borderRadius: Math.round(hitTarget * 0.3) },
-                isActive
-                  ? { backgroundColor: catColor + "14", borderColor: catColor + "35", borderWidth: 1.5 }
-                  : { borderColor: "transparent", borderWidth: 1.5 },
+                styles.filterIconWrapper,
               ]}
               onPress={() => onFilterChange(cat.id as CategoryFilter)}
               activeOpacity={0.7}
             >
-              <EntryTypeIcon
-                svgIcon={cat.svgIcon}
-                size={iconSize}
-                color={catColor}
-                strokeWidth={isActive ? 2.2 : 1.8}
-              />
+              <View
+                style={[
+                  styles.filterIcon,
+                  { width: hitTarget, height: hitTarget, borderRadius: Math.round(hitTarget * 0.3) },
+                  isActive
+                    ? { backgroundColor: catColor + "14", borderColor: catColor + "35", borderWidth: 1.5 }
+                    : { borderColor: "transparent", borderWidth: 1.5 },
+                ]}
+              >
+                <EntryTypeIcon
+                  svgIcon={cat.svgIcon}
+                  size={iconSize}
+                  color={catColor}
+                  strokeWidth={isActive ? 2.2 : 1.8}
+                />
+              </View>
+              <Text
+                style={[
+                  styles.filterLabel,
+                  { color: isActive ? catColor : colors.textSecondary },
+                ]}
+                numberOfLines={1}
+              >
+                {filterLabels[cat.id] ?? cat.label}
+              </Text>
             </TouchableOpacity>
           );
         })}
 
-        {/* All / Notebook icon — last position */}
+        {/* All icon — last position */}
         <TouchableOpacity
           style={[
-            styles.filterIcon,
-            { width: hitTarget, height: hitTarget, borderRadius: Math.round(hitTarget * 0.3) },
-            categoryFilter === "all"
-              ? { backgroundColor: colors.accent + "14", borderColor: colors.accent + "35", borderWidth: 1.5 }
-              : { borderColor: "transparent", borderWidth: 1.5 },
+            styles.filterIconWrapper,
           ]}
           onPress={() => onFilterChange("all")}
           activeOpacity={0.7}
         >
-          <FourSquares
-            size={iconSize}
-            color={colors.accent}
-            strokeWidth={categoryFilter === "all" ? 2.2 : 1.8}
-          />
+          <View
+            style={[
+              styles.filterIcon,
+              { width: hitTarget, height: hitTarget, borderRadius: Math.round(hitTarget * 0.3) },
+              categoryFilter === "all"
+                ? { backgroundColor: colors.accent + "14", borderColor: colors.accent + "35", borderWidth: 1.5 }
+                : { borderColor: "transparent", borderWidth: 1.5 },
+            ]}
+          >
+            <FourSquares
+              size={iconSize}
+              color={colors.accent}
+              strokeWidth={categoryFilter === "all" ? 2.2 : 1.8}
+            />
+          </View>
+          <Text
+            style={[
+              styles.filterLabel,
+              { color: categoryFilter === "all" ? colors.accent : colors.textSecondary },
+            ]}
+            numberOfLines={1}
+          >
+            All
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -521,9 +559,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 14,
   },
+  filterIconWrapper: {
+    alignItems: "center",
+  },
   filterIcon: {
     alignItems: "center",
     justifyContent: "center",
+  },
+  filterLabel: {
+    fontFamily: fonts.bodyFamily,
+    fontSize: 10,
+    marginTop: 4,
+    textAlign: "center",
   },
 
   // ─── Date Divider ────────────────────────────────────────────────────────

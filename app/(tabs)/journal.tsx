@@ -43,7 +43,7 @@ export default function JournalTab() {
 
   // Header title and icon reflect the active filter
   const headerTitle = categoryFilter === "all"
-    ? "Notebook"
+    ? "Journal"
     : getCategoryLabel(categoryFilter);
 
   const headerIcon = useMemo(() => {

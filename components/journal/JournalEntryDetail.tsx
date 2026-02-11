@@ -714,7 +714,7 @@ const styles = StyleSheet.create({
   // ─── Read-Only ────────────────────────────────────────
   introWrapper: {
     borderBottomWidth: 1,
-    paddingBottom: 14,
+    paddingBottom: 8,
     marginBottom: 16,
   },
   introText: {
