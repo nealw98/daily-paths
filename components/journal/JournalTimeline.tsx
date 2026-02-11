@@ -386,7 +386,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
               <Text
                 style={[
                   styles.filterLabel,
-                  { color: isActive ? catColor : colors.textSecondary },
+                  { color: catColor },
                 ]}
                 numberOfLines={1}
               >
@@ -422,7 +422,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
           <Text
             style={[
               styles.filterLabel,
-              { color: categoryFilter === "all" ? colors.accent : colors.textSecondary },
+              { color: colors.accent },
             ]}
             numberOfLines={1}
           >
@@ -567,8 +567,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   filterLabel: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: 12,
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 10,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
     marginTop: 5,
     textAlign: "center",
   },
