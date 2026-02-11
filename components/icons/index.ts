@@ -6,3 +6,4 @@ export { Seedling } from "./Seedling";
 export { SoftExhale } from "./SoftExhale";
 export { MoonOnWater } from "./MoonOnWater";
 export { FourSquares } from "./FourSquares";
+export { Nautilus } from "./Nautilus";

@@ -39,7 +39,7 @@ export const JournalCategoryPicker: React.FC<JournalCategoryPickerProps> = ({
       onRequestClose={onClose}
     >
       <TouchableOpacity
-        style={styles.backdrop}
+        style={[styles.backdrop, { backgroundColor: colors.backdrop }]}
         activeOpacity={1}
         onPress={onClose}
       >
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.35)",
+    // backgroundColor set inline via colors.backdrop for dark mode
   },
   sheet: {
     borderTopLeftRadius: 24,

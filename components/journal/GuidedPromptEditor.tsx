@@ -73,11 +73,11 @@ export function GuidedPromptEditor({
                   fontSize: typography.bodyFontSize - 2,
                   lineHeight: (typography.bodyFontSize - 2) * 1.65,
                   backgroundColor: isFocused
-                    ? "#FFFFFF"
+                    ? colors.cardBackground
                     : colors.background,
                   borderColor: isFocused
                     ? colors.highlight
-                    : "rgba(0,0,0,0.06)",
+                    : colors.border,
                 },
               ]}
               value={responses[prompt.id] ?? ""}

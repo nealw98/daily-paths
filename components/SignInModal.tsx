@@ -36,6 +36,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async () => {
     if (!email.trim() || !password.trim()) {
@@ -174,16 +175,29 @@ export const SignInModal: React.FC<SignInModalProps> = ({
                 autoComplete="email"
                 textContentType="emailAddress"
               />
-              <TextInput
-                style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.cardBackground }]}
-                placeholder="Password"
-                placeholderTextColor={colors.textSecondary}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                autoComplete="password"
-                textContentType="password"
-              />
+              <View style={[styles.passwordRow, { borderColor: colors.border, backgroundColor: colors.cardBackground }]}>
+                <TextInput
+                  style={[styles.passwordInput, { color: colors.text }]}
+                  placeholder="Password"
+                  placeholderTextColor={colors.textSecondary}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  autoComplete="password"
+                  textContentType="password"
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword((prev) => !prev)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  style={styles.eyeButton}
+                >
+                  <Ionicons
+                    name={showPassword ? "eye-off-outline" : "eye-outline"}
+                    size={20}
+                    color={colors.textSecondary}
+                  />
+                </TouchableOpacity>
+              </View>
               <TouchableOpacity
                 style={[styles.submitButton, { backgroundColor: colors.buttonPrimary }]}
                 onPress={handleSubmit}
@@ -303,6 +317,22 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
+  },
+  passwordRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+  },
+  passwordInput: {
+    flex: 1,
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 15,
+    paddingVertical: 12,
+  },
+  eyeButton: {
+    padding: 4,
   },
   submitButton: {
     borderRadius: 12,

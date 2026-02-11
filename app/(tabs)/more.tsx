@@ -10,7 +10,7 @@ import { SettingsContent } from "../../components/SettingsContent";
 import { PaywallModal } from "../../components/PaywallModal";
 import { SignInModal } from "../../components/SignInModal";
 import { TealHeader } from "../../components/shared/TealHeader";
-import { StackedStones } from "../../components/icons";
+import { Nautilus } from "../../components/icons";
 
 type MoreView = "menu" | "account";
 
@@ -57,8 +57,8 @@ export default function MoreTab() {
       edges={["top"]}
     >
       <TealHeader
-        title="More"
-        leftIcon={<StackedStones size={28} color={colors.textOnAccent} />}
+        title="Settings"
+        leftIcon={<Nautilus size={28} color={colors.textOnAccent} />}
       />
       <ScrollView style={styles.content}>
         {/* User info banner if authenticated */}

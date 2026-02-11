@@ -77,7 +77,7 @@ export const NegativeFeedbackModal: React.FC<NegativeFeedbackModalProps> = ({
         activeOpacity={1}
         onPress={handleClose}
       >
-        <View style={styles.modalContainer} onStartShouldSetResponder={() => true}>
+        <View style={[styles.modalContainer, { backgroundColor: colors.cardBackground }]} onStartShouldSetResponder={() => true}>
           <View style={styles.header}>
             <Text style={styles.title}>What could be improved?</Text>
             <TouchableOpacity onPress={handleClose} style={styles.closeIcon}>
@@ -159,7 +159,7 @@ const CheckboxOption: React.FC<CheckboxOptionProps> = ({
       onPress={onToggle}
       activeOpacity={0.7}
     >
-      <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
+      <View style={[styles.checkbox, { backgroundColor: colors.background }, checked && styles.checkboxChecked]}>
         {checked && (
           <Ionicons name="checkmark" size={16} color="#fff" />
         )}
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalContainer: {
-    backgroundColor: '#fff',
+    // backgroundColor set inline via colors.cardBackground
     borderRadius: 16,
     maxHeight: '80%',
     shadowColor: '#000',
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 6,
     borderWidth: 2,
-    backgroundColor: '#fff',
+    // backgroundColor set inline via colors.background
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
   submitText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-    color: '#fff',
+    color: '#fff', // intentional: white text on accent-colored submit button
     fontWeight: '600',
   },
 });

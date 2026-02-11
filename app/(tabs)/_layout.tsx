@@ -3,7 +3,7 @@ import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { fonts } from "../../constants/theme";
 import { useTheme } from "../../hooks/useTheme";
-import { LightOnWater, Feather, LeafOnWater, StackedStones } from "../../components/icons";
+import { LightOnWater, Feather, LeafOnWater, Nautilus } from "../../components/icons";
 import { useAuth } from "../../contexts/AuthContext";
 import { useSubscription } from "../../hooks/useSubscription";
 import { isRevenueCatInitialized } from "../../lib/subscription";
@@ -113,9 +113,9 @@ export default function TabLayout() {
         <Tabs.Screen
           name="more"
           options={{
-            title: "More",
+            title: "Settings",
             tabBarIcon: ({ color, size }) => (
-              <StackedStones size={size} color={color} />
+              <Nautilus size={size} color={color} />
             ),
           }}
         />

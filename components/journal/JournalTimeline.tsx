@@ -236,7 +236,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
 
     return (
       <TouchableOpacity
-        style={styles.entryCard}
+        style={[styles.entryCard, { backgroundColor: colors.cardBackground }]}
         onPress={() => onSelectEntry(entry)}
         activeOpacity={0.7}
       >
@@ -454,12 +454,12 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
         activeOpacity={0.85}
       >
         <LinearGradient
-          colors={["#2C5F5D", "#3A7573"]}
+          colors={[colors.heroGradientStart, colors.heroGradientEnd]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.fab}
         >
-          <Ionicons name="add" size={28} color="#FFFFFF" />
+          <Ionicons name="add" size={28} color={colors.textOnAccent} />
         </LinearGradient>
       </TouchableOpacity>
     </View>
@@ -549,7 +549,7 @@ const styles = StyleSheet.create({
 
   // ─── Entry Card ──────────────────────────────────────────────────────────
   entryCard: {
-    backgroundColor: "#FFFFFF",
+    // backgroundColor set inline via colors.cardBackground
     borderRadius: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },

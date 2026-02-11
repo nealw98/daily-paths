@@ -125,6 +125,7 @@ export const InlineTimePicker: React.FC<InlineTimePickerProps> = ({
           <TouchableOpacity
             style={[
               styles.periodChip,
+              { backgroundColor: colors.cardBackground, borderColor: colors.border },
               !isPM && styles.periodChipSelected,
             ]}
             activeOpacity={0.8}
@@ -143,6 +144,7 @@ export const InlineTimePicker: React.FC<InlineTimePickerProps> = ({
           <TouchableOpacity
             style={[
               styles.periodChip,
+              { backgroundColor: colors.cardBackground, borderColor: colors.border },
               isPM && styles.periodChipSelected,
             ]}
             activeOpacity={0.8}
@@ -213,7 +215,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 999,
     borderWidth: 1,
-    backgroundColor: "#fff",
+    // backgroundColor set inline via colors.cardBackground
   },
   periodChipSelected: {
   },
@@ -222,7 +224,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   periodLabelSelected: {
-    color: "#fff",
+    color: "#fff", // intentional: white text on accent-colored selected chip
   },
   footerRow: {
     marginTop: 8,

@@ -155,7 +155,7 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
             <Ionicons
               name="thumbs-up"
               size={24}
-              color={currentRating === 'positive' ? '#fff' : colors.ocean}
+              color={currentRating === 'positive' ? colors.textOnAccent : colors.ocean}
             />
           </TouchableOpacity>
 
@@ -172,7 +172,7 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
             <Ionicons
               name="thumbs-down"
               size={24}
-              color={currentRating === 'negative' ? '#fff' : colors.ocean}
+              color={currentRating === 'negative' ? colors.textOnAccent : colors.ocean}
             />
           </TouchableOpacity>
         </View>
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#fff',
+    // backgroundColor set inline via styles (colors.pearl)
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,

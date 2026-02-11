@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContainer: {
-    backgroundColor: "#fff",
+    // backgroundColor set inline via colors
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: "80%",
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 16,
     paddingHorizontal: 16,
-    backgroundColor: "#fff",
+    // backgroundColor set inline via colors
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 2,

@@ -409,7 +409,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
             styles.gratitudeEditCard,
             {
               backgroundColor: colors.cardBackground,
-              borderColor: "rgba(139, 110, 78, 0.08)",
+              borderColor: colors.border,
             },
           ]}
         >
@@ -442,7 +442,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
         </View>
       ))}
       <TouchableOpacity
-        style={[styles.addSlotButton, { borderColor: "rgba(139, 110, 78, 0.25)" }]}
+        style={[styles.addSlotButton, { borderColor: colors.border }]}
         onPress={handleAddGratitudeSlot}
       >
         <Ionicons name="add" size={18} color={catColor} />
@@ -560,14 +560,14 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
                 <LinearGradient
                   colors={
                     hasChanges
-                      ? ["#2C5F5D", "#3A7573"]
+                      ? [colors.heroGradientStart, colors.heroGradientEnd]
                       : [colors.border, colors.border]
                   }
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.saveEditButton}
                 >
-                  <Text style={[styles.saveEditText, { color: hasChanges ? "#FFFFFF" : colors.textSecondary, fontSize: typography.bodyFontSize - 4 }]}>
+                  <Text style={[styles.saveEditText, { color: hasChanges ? colors.textOnAccent : colors.textSecondary, fontSize: typography.bodyFontSize - 4 }]}>
                     {saving ? "Saving..." : "Save"}
                   </Text>
                 </LinearGradient>
@@ -877,6 +877,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
     fontWeight: "600",
-    color: "#FFFFFF",
+    // color set inline via colors.textOnAccent
   },
 });

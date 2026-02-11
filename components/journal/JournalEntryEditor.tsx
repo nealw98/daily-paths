@@ -358,7 +358,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
               <TouchableOpacity
                 style={[
                   styles.addItemButton,
-                  { borderColor: "rgba(139, 110, 78, 0.25)" },
+                  { borderColor: colors.border },
                 ]}
                 onPress={handleAddGratitudeSlot}
               >
@@ -438,7 +438,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
             <LinearGradient
               colors={
                 hasContent
-                  ? ["#2C5F5D", "#3A7573"]
+                  ? [colors.heroGradientStart, colors.heroGradientEnd]
                   : [colors.border, colors.border]
               }
               start={{ x: 0, y: 0 }}
@@ -448,13 +448,13 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
               <Ionicons
                 name="checkmark"
                 size={18}
-                color={hasContent ? "#FFFFFF" : colors.textSecondary}
+                color={hasContent ? colors.textOnAccent : colors.textSecondary}
               />
               <Text
                 style={[
                   styles.saveText,
                   {
-                    color: hasContent ? "#FFFFFF" : colors.textSecondary,
+                    color: hasContent ? colors.textOnAccent : colors.textSecondary,
                     fontSize: typography.bodyFontSize - 4,
                   },
                 ]}
