@@ -557,7 +557,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     flexDirection: "row",
     justifyContent: "center",
-    gap: 14,
+    gap: 20,
   },
   filterIconWrapper: {
     alignItems: "center",
@@ -568,8 +568,8 @@ const styles = StyleSheet.create({
   },
   filterLabel: {
     fontFamily: fonts.bodyFamily,
-    fontSize: 10,
-    marginTop: 4,
+    fontSize: 12,
+    marginTop: 5,
     textAlign: "center",
   },
 
