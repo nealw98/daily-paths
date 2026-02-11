@@ -9,6 +9,7 @@ import {
 import {
   Inter_300Light,
   Inter_400Regular,
+  Inter_600SemiBold,
 } from "@expo-google-fonts/inter";
 import {
   Lora_400Regular,
@@ -85,6 +86,7 @@ export default function RootLayout() {
       CormorantGaramond_700Bold_Italic,
       Inter_300Light,
       Inter_400Regular,
+      Inter_600SemiBold,
       Lora_400Regular,
       Lora_400Regular_Italic,
       Lora_700Bold,

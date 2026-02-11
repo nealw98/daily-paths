@@ -338,7 +338,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
       <TouchableOpacity activeOpacity={0.8} onPress={() => setIsEditing(true)}>
         {answeredPrompts.map((prompt) => (
           <View key={prompt.id} style={styles.guidedReadSection}>
-            <Text style={[styles.guidedReadQuestion, { color: colors.text, fontSize: typography.bodyFontSize - 2 }]}>
+            <Text style={[styles.guidedReadQuestion, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 2 }]}>
               {prompt.question}
             </Text>
             <Text style={[styles.guidedReadResponse, { color: colors.text, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight }]}>
@@ -757,12 +757,14 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   guidedReadQuestion: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 8,
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 13,
+    letterSpacing: 0.3,
+    textTransform: "uppercase",
+    marginBottom: 6,
   },
   guidedReadResponse: {
-    fontFamily: fonts.bodyFamilyRegular,
+    fontFamily: fonts.bodyFamily,
     fontSize: 16,
     lineHeight: 24,
   },

@@ -242,21 +242,17 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
       >
         <View style={styles.entryInner}>
           <View style={styles.entryHeader}>
-            {categoryFilter === "all" ? (
-              <View style={styles.entryTypeBadge}>
-                {(() => {
-                  const cat = getCategoryById(entry.entry_type);
-                  return cat ? (
-                    <EntryTypeIcon svgIcon={cat.svgIcon} size={14} color={catColor} />
-                  ) : null;
-                })()}
-                <Text style={[styles.entryTypeLabel, { color: catColor }]}>
-                  {catLabel}
-                </Text>
-              </View>
-            ) : (
-              <View />
-            )}
+            <View style={styles.entryTypeBadge}>
+              {(() => {
+                const cat = getCategoryById(entry.entry_type);
+                return cat ? (
+                  <EntryTypeIcon svgIcon={cat.svgIcon} size={14} color={catColor} />
+                ) : null;
+              })()}
+              <Text style={[styles.entryTypeLabel, { color: catColor }]}>
+                {catLabel}
+              </Text>
+            </View>
             <Text style={[styles.entryTime, { color: colors.textSecondary }]}>
               {timeStr}
             </Text>

@@ -445,12 +445,12 @@ export default function Index() {
           activeOpacity={0.85}
         >
           <LinearGradient
-            colors={["#2C5F5D", "#3A7573"]}
+            colors={[colors.heroGradientStart, colors.heroGradientEnd]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.fab}
           >
-            <Ionicons name="add" size={28} color="#FFFFFF" />
+            <Ionicons name="add" size={28} color={colors.textOnAccent} />
           </LinearGradient>
         </TouchableOpacity>
       )}
