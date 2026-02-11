@@ -66,8 +66,11 @@ export const SignInModal: React.FC<SignInModalProps> = ({
   const handleAppleSignIn = async () => {
     setLoading(true);
     try {
-      await signInApple();
-      onClose();
+      const result = await signInApple();
+      // Only close if sign-in succeeded (null = user cancelled)
+      if (result !== null && result !== undefined) {
+        onClose();
+      }
     } catch (err: any) {
       Alert.alert("Apple Sign In Error", err.message || "Something went wrong.");
     } finally {
@@ -78,8 +81,11 @@ export const SignInModal: React.FC<SignInModalProps> = ({
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
-      await signInGoogle();
-      onClose();
+      const result = await signInGoogle();
+      // Only close if sign-in succeeded (null = user cancelled)
+      if (result !== null && result !== undefined) {
+        onClose();
+      }
     } catch (err: any) {
       Alert.alert("Google Sign In Error", err.message || "Something went wrong.");
     } finally {

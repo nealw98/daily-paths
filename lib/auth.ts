@@ -3,6 +3,16 @@ import { qaLog } from "../utils/qaLog";
 import { getOrCreateDeviceId } from "../utils/deviceIdentity";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { Platform } from "react-native";
+import {
+  GoogleSignin,
+  isErrorWithCode,
+  statusCodes,
+} from "@react-native-google-signin/google-signin";
+
+// Configure Google Sign-In at module load
+GoogleSignin.configure({
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+});
 
 /**
  * Authentication library for Daily Paths Unlimited.
@@ -103,19 +113,62 @@ export async function signInWithGoogle() {
   qaLog("auth", "Starting Google sign-in");
 
   try {
-    // Google Sign-In uses OAuth flow via Supabase
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    // Check for Play Services on Android (no-op on iOS)
+    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+
+    // Trigger the native Google sign-in dialog
+    const response = await GoogleSignin.signIn();
+
+    if (response.type === "cancelled") {
+      qaLog("auth", "Google sign-in cancelled by user");
+      return null; // User cancelled, not an error
+    }
+
+    const idToken = response.data?.idToken;
+
+    if (!idToken) {
+      throw new Error("No ID token received from Google");
+    }
+
+    // Exchange the Google ID token with Supabase — same pattern as Apple
+    const { data, error } = await supabase.auth.signInWithIdToken({
       provider: "google",
+      token: idToken,
     });
 
     if (error) {
-      qaLog("auth", "Google sign-in failed", { error: error.message });
+      qaLog("auth", "Google sign-in Supabase error", { error: error.message });
       throw error;
     }
 
-    qaLog("auth", "Google sign-in initiated", { url: data.url });
+    qaLog("auth", "Google sign-in successful", { userId: data.user?.id });
+
+    if (data.user) {
+      await linkDeviceToUser(data.user.id);
+      await createUserProfile(data.user.id);
+    }
+
     return data;
-  } catch (err) {
+  } catch (err: any) {
+    if (isErrorWithCode(err)) {
+      switch (err.code) {
+        case statusCodes.SIGN_IN_CANCELLED:
+          qaLog("auth", "Google sign-in cancelled by user");
+          return null;
+        case statusCodes.IN_PROGRESS:
+          qaLog("auth", "Google sign-in already in progress");
+          return null;
+        case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
+          qaLog("auth", "Play Services not available");
+          throw new Error(
+            "Google Play Services is not available. Please update Google Play Services and try again."
+          );
+        default:
+          qaLog("auth", "Google sign-in failed", { code: err.code, error: String(err) });
+          throw err;
+      }
+    }
+
     qaLog("auth", "Google sign-in exception", { error: String(err) });
     throw err;
   }
