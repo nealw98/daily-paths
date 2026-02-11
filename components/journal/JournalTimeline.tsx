@@ -238,7 +238,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
 
     return (
       <TouchableOpacity
-        style={[styles.entryCard, { backgroundColor: colors.cardBackground }]}
+        style={[styles.entryCard, { backgroundColor: colors.cardBackground, borderTopColor: catColor, borderTopWidth: 2.5 }]}
         onPress={() => onSelectEntry(entry)}
         activeOpacity={0.7}
       >
