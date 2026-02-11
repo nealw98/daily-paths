@@ -147,14 +147,16 @@ function getEntryPreview(entry: JournalEntry): string {
     return "";
   }
 
-  // Guided entries (spot_check, nightly_review): prefer structured_content first non-empty value
+  // Guided entries (spot_check, nightly_review): use first answered prompt in defined order
   if (
     entry.entry_type === "spot_check" ||
     entry.entry_type === "nightly_review"
   ) {
     if (entry.structured_content) {
-      const values = Object.values(entry.structured_content);
-      for (const val of values) {
+      const cat = getCategoryById(entry.entry_type);
+      const prompts = cat?.guidedPrompts ?? [];
+      for (const prompt of prompts) {
+        const val = entry.structured_content[prompt.id];
         if (typeof val === "string" && val.trim()) {
           const cleaned = stripMarkdown(val.trim());
           return cleaned.length > 120

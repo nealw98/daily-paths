@@ -92,16 +92,16 @@ export default function JournalTab() {
       setSelectedEntry(entry);
       setSelectedIndex(idx >= 0 ? idx : 0);
       setView("detail");
-      // Background refresh so timeline is up-to-date with other devices
-      refreshEntries();
     },
-    [entries, refreshEntries]
+    [entries]
   );
 
   const handleBackToTimeline = useCallback(() => {
     setSelectedEntry(null);
     setView("timeline");
-  }, []);
+    // Refresh when returning to timeline so it picks up cross-device changes
+    refreshEntries();
+  }, [refreshEntries]);
 
   const handleFilterChange = useCallback((filter: CategoryFilter) => {
     setCategoryFilter(filter);
