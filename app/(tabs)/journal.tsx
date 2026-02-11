@@ -92,8 +92,10 @@ export default function JournalTab() {
       setSelectedEntry(entry);
       setSelectedIndex(idx >= 0 ? idx : 0);
       setView("detail");
+      // Background refresh so timeline is up-to-date with other devices
+      refreshEntries();
     },
-    [entries]
+    [entries, refreshEntries]
   );
 
   const handleBackToTimeline = useCallback(() => {
