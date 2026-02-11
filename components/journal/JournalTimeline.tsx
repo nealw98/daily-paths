@@ -380,7 +380,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
                   svgIcon={cat.svgIcon}
                   size={iconSize}
                   color={catColor}
-                  strokeWidth={isActive ? 2.2 : 1.8}
+                  strokeWidth={isActive ? 2.6 : 2.2}
                 />
               </View>
               <Text
@@ -416,7 +416,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
             <FourSquares
               size={iconSize}
               color={colors.accent}
-              strokeWidth={categoryFilter === "all" ? 2.2 : 1.8}
+              strokeWidth={categoryFilter === "all" ? 2.6 : 2.2}
             />
           </View>
           <Text
@@ -570,7 +570,7 @@ const styles = StyleSheet.create({
   filterLabel: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 10,
-    fontWeight: "600",
+    fontWeight: "700",
     textTransform: "uppercase",
     letterSpacing: 0.8,
     marginTop: 5,
