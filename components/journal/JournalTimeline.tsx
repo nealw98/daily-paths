@@ -525,7 +525,7 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: "row",
     gap: 10,
-    marginBottom: 14,
+    marginBottom: 8,
   },
   statPill: {
     flex: 1,
