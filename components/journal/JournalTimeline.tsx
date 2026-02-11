@@ -336,8 +336,8 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
   // ─── Render: Segmented Filter ───────────────────────────────────────────
 
   // Icon size scales with the user's text size; generous hit target for primary nav
-  const iconSize = Math.round(typography.bodyFontSize * 1.4);
-  const hitTarget = Math.round(iconSize * 1.8);
+  const iconSize = Math.round(typography.bodyFontSize * 1.25);
+  const hitTarget = Math.round(iconSize * 1.7);
 
   // Short labels for filter icons
   const filterLabels: Record<string, string> = {
@@ -557,10 +557,11 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     flexDirection: "row",
     justifyContent: "center",
-    gap: 20,
+    gap: 16,
   },
   filterIconWrapper: {
     alignItems: "center",
+    minWidth: 52,
   },
   filterIcon: {
     alignItems: "center",
