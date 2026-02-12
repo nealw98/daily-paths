@@ -32,6 +32,7 @@ import { useAvailableDates } from "../hooks/useAvailableDates";
 import { hasSeenInstruction, markInstructionSeen, type BookmarkData } from "../utils/bookmarkStorage";
 import { parseDateLocal } from "../utils/dateUtils";
 import { useTheme } from "../hooks/useTheme";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Notifications from "expo-notifications";
 
 console.log("[STARTUP] index.tsx module loading...");
@@ -40,7 +41,8 @@ export default function Index() {
   console.log("[STARTUP] Index function called");
   
   const { colors, colorScheme } = useTheme();
-  
+  const insets = useSafeAreaInsets();
+
   let router;
   try {
     console.log("[STARTUP-INDEX] Getting router...");
@@ -431,8 +433,8 @@ export default function Index() {
     <>
       {content}
       
-      {/* Persistent Action Bar - stays above modals */}
-      <View style={[styles.actionBar, { backgroundColor: colors.pearl, borderTopColor: colors.mist }]}>
+      {/* Persistent Action Bar - stays above modals; add bottom inset on Android so it sits above system nav bar */}
+      <View style={[styles.actionBar, { backgroundColor: colors.pearl, borderTopColor: colors.mist, paddingBottom: 16 + insets.bottom }]}>
         <TouchableOpacity
           onPress={handleOpenBookmarks}
           style={[styles.actionButton, { backgroundColor: colors.cloud }]}
