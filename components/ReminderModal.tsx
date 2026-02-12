@@ -168,45 +168,43 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
               </View>
             </View>
 
-            {showTimePicker && settings.dailyReminderEnabled && (
+            {showTimePicker && settings.dailyReminderEnabled ? (
               <View style={styles.timePickerContainer}>
                 <DateTimePicker
                   value={tempReminderDate ?? reminderDate}
                   mode="time"
                   display={Platform.OS === "ios" ? "spinner" : "default"}
                   themeVariant={isDark ? "dark" : "light"}
-                  onChange={(_, selectedDate) => {
-                    // On Android, the native dialog has its own OK/Cancel. When it dismisses,
-                    // we get one onChange call. Handle it here to avoid nested-modal freeze.
+                  onChange={(event, selectedDate) => {
                     if (Platform.OS === "android") {
                       setShowTimePicker(false);
                       setTempReminderDate(null);
-                      if (!selectedDate) return; // User cancelled native dialog
-                      (async () => {
-                        await setDailyReminderTime(formatTimeStorage(selectedDate));
-                        await updateNotificationWithThought();
-                        if (onShowToast) {
-                          onShowToast(`You'll receive the Thought for the Day at ${formatTimeDisplay(selectedDate)}`);
-                        }
-                      })();
+                      if (event.type === "set" && selectedDate) {
+                        (async () => {
+                          await setDailyReminderTime(formatTimeStorage(selectedDate));
+                          await updateNotificationWithThought();
+                          if (onShowToast) {
+                            onShowToast(`You'll receive the Thought for the Day at ${formatTimeDisplay(selectedDate)}`);
+                          }
+                        })();
+                      }
                     } else {
                       if (!selectedDate) return;
                       setTempReminderDate(selectedDate);
                     }
                   }}
                 />
-                {/* iOS: inline spinner needs confirm/cancel; Android: native dialog handles it */}
-                {Platform.OS === "ios" && (
-                  <View style={styles.timePickerActions}>
-                    <TouchableOpacity
-                      style={[styles.timePickerButtonSecondary, { backgroundColor: colors.mist }]}
-                      onPress={() => {
-                        setShowTimePicker(false);
-                        setTempReminderDate(null);
-                      }}
-                    >
-                      <Text style={[styles.timePickerButtonSecondaryText, { color: colors.ink }]}>Cancel</Text>
-                    </TouchableOpacity>
+                <View style={styles.timePickerActions}>
+                  <TouchableOpacity
+                    style={[styles.timePickerButtonSecondary, { backgroundColor: colors.mist }]}
+                    onPress={() => {
+                      setShowTimePicker(false);
+                      setTempReminderDate(null);
+                    }}
+                  >
+                    <Text style={[styles.timePickerButtonSecondaryText, { color: colors.ink }]}>Cancel</Text>
+                  </TouchableOpacity>
+                  {Platform.OS === "ios" ? (
                     <TouchableOpacity
                       style={[styles.timePickerButtonPrimary, { backgroundColor: colors.deepTeal }]}
                       onPress={async () => {
@@ -222,10 +220,10 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                     >
                       <Text style={styles.timePickerButtonPrimaryText}>Set time</Text>
                     </TouchableOpacity>
-                  </View>
-                )}
+                  ) : null}
+                </View>
               </View>
-            )}
+            ) : null}
           </ScrollView>
         </Animated.View>
       </TouchableOpacity>

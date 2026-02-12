@@ -26,7 +26,7 @@ export const PrayersScreen: React.FC<PrayersScreenProps> = ({
   const { colors } = useTheme();
   const { settings } = useSettings();
   const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
-  const [expandedPrayer, setExpandedPrayer] = useState<string | null>("just-for-today");
+  const [expandedPrayer, setExpandedPrayer] = useState<string | null>(null);
 
   /** Render prayer text with bold phrases (e.g. "Just for today", "Just for tonight") */
   const renderPrayerText = (text: string, boldPhrases: string[]) => {

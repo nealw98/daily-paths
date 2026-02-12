@@ -27,16 +27,6 @@ export function Nautilus({ size = 24, color = "#2C5F5D", strokeWidth = 1.4 }: Pr
         stroke={color}
         strokeWidth={strokeWidth}
       />
-      {/* Water line */}
-      <Path
-        d="M5 28c3.5-1.5 6.5 0 10.5-1s7-1.5 11 0"
-        stroke={color}
-        strokeWidth={strokeWidth}
-        fill="none"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        opacity={0.3}
-      />
     </Svg>
   );
 }

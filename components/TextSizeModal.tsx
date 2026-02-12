@@ -140,9 +140,10 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
           >
-            {/* Theme section — long-press label to reveal extended themes */}
+            {/* Theme section — long-press to reveal extended themes, press to hide */}
             <TouchableOpacity
               activeOpacity={0.7}
+              onPress={() => showExtended && setShowExtended(false)}
               onLongPress={() => setShowExtended(true)}
               delayLongPress={600}
             >

@@ -10,8 +10,12 @@ import {
 } from "@react-native-google-signin/google-signin";
 
 // Configure Google Sign-In at module load
+// iOS requires iosClientId (or GoogleService-Info.plist); webClientId alone works for Android
 GoogleSignin.configure({
   webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+  ...(Platform.OS === "ios" && {
+    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+  }),
 });
 
 /**

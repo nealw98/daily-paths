@@ -13,7 +13,7 @@ import {
   KeyboardAvoidingView,
   Alert,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Constants from "expo-constants";
 import { Ionicons } from "@expo/vector-icons";
@@ -86,6 +86,7 @@ function formatTimeStorage(date: Date): string {
 
 export default function MoreTab() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const { user, isAuthenticated, signOut } = useAuth();
   const { settings, setTextSize, setThemeId, setColorScheme, setDailyReminderEnabled, setDailyReminderTime } =
     useSettings();
@@ -540,7 +541,7 @@ export default function MoreTab() {
         </TouchableOpacity>
 
         {/* ── 7. About Footer ─────────────────────────────── */}
-        <View style={styles.aboutSection}>
+        <View style={[styles.aboutSection, { paddingBottom: 8 + insets.bottom }]}>
           <Text style={[styles.aboutText, { color: colors.ink }]}>
             Daily Paths supports your recovery with 366 original readings based on Al-Anon's Steps, Traditions, and Concepts. It is not affiliated with Al-Anon, AA or any 12-step fellowship.
           </Text>
