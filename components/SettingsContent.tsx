@@ -19,6 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { fonts, lightColors } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSettings, TextSize } from "../hooks/useSettings";
 import { useAppFeedback } from "../hooks/useAppFeedback";
 import { shareApp } from "../utils/rateShareTracking";
@@ -63,6 +64,7 @@ export const SettingsContent: React.FC<{
   scrollToSection,
 }) => {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const { settings, setTextSize, setDailyReminderEnabled, setDailyReminderTime } =
     useSettings();
   const { submitting: submittingFeedback, submitFeedback } = useAppFeedback();
@@ -280,7 +282,7 @@ export const SettingsContent: React.FC<{
         </View>
       </ScrollView>
 
-      <View style={[styles.legalSection, { borderTopColor: colors.mist }]}>
+      <View style={[styles.legalSection, { borderTopColor: colors.mist, paddingBottom: 8 + insets.bottom }]}>
         <View style={styles.legalRow}>
           <TouchableOpacity
             activeOpacity={0.7}
