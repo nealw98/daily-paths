@@ -176,40 +176,54 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                   display={Platform.OS === "ios" ? "spinner" : "default"}
                   themeVariant={isDark ? "dark" : "light"}
                   onChange={(_, selectedDate) => {
-                    if (!selectedDate) return;
-                    setTempReminderDate(selectedDate);
+                    // On Android, the native dialog has its own OK/Cancel. When it dismisses,
+                    // we get one onChange call. Handle it here to avoid nested-modal freeze.
+                    if (Platform.OS === "android") {
+                      setShowTimePicker(false);
+                      setTempReminderDate(null);
+                      if (!selectedDate) return; // User cancelled native dialog
+                      (async () => {
+                        await setDailyReminderTime(formatTimeStorage(selectedDate));
+                        await updateNotificationWithThought();
+                        if (onShowToast) {
+                          onShowToast(`You'll receive the Thought for the Day at ${formatTimeDisplay(selectedDate)}`);
+                        }
+                      })();
+                    } else {
+                      if (!selectedDate) return;
+                      setTempReminderDate(selectedDate);
+                    }
                   }}
                 />
-                <View style={styles.timePickerActions}>
-                  <TouchableOpacity
-                    style={[styles.timePickerButtonSecondary, { backgroundColor: colors.mist }]}
-                    onPress={() => {
-                      setShowTimePicker(false);
-                      setTempReminderDate(null);
-                    }}
-                  >
-                    <Text style={[styles.timePickerButtonSecondaryText, { color: colors.ink }]}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.timePickerButtonPrimary, { backgroundColor: colors.deepTeal }]}
-                    onPress={async () => {
-                      const finalDate = tempReminderDate ?? reminderDate;
-                      setShowTimePicker(false);
-                      setTempReminderDate(null);
-                      await setDailyReminderTime(formatTimeStorage(finalDate));
-                      
-                      // Update notification with new time and current thought
-                      await updateNotificationWithThought();
-                      
-                      if (onShowToast) {
-                        const timeStr = formatTimeDisplay(finalDate);
-                        onShowToast(`You'll receive the Thought for the Day at ${timeStr}`);
-                      }
-                    }}
-                  >
-                    <Text style={styles.timePickerButtonPrimaryText}>Set time</Text>
-                  </TouchableOpacity>
-                </View>
+                {/* iOS: inline spinner needs confirm/cancel; Android: native dialog handles it */}
+                {Platform.OS === "ios" && (
+                  <View style={styles.timePickerActions}>
+                    <TouchableOpacity
+                      style={[styles.timePickerButtonSecondary, { backgroundColor: colors.mist }]}
+                      onPress={() => {
+                        setShowTimePicker(false);
+                        setTempReminderDate(null);
+                      }}
+                    >
+                      <Text style={[styles.timePickerButtonSecondaryText, { color: colors.ink }]}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.timePickerButtonPrimary, { backgroundColor: colors.deepTeal }]}
+                      onPress={async () => {
+                        const finalDate = tempReminderDate ?? reminderDate;
+                        setShowTimePicker(false);
+                        setTempReminderDate(null);
+                        await setDailyReminderTime(formatTimeStorage(finalDate));
+                        await updateNotificationWithThought();
+                        if (onShowToast) {
+                          onShowToast(`You'll receive the Thought for the Day at ${formatTimeDisplay(finalDate)}`);
+                        }
+                      }}
+                    >
+                      <Text style={styles.timePickerButtonPrimaryText}>Set time</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
             )}
           </ScrollView>
