@@ -86,7 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       qaLog("auth", `Auth state changed: ${event}`, { userId: newSession?.user?.id });
 
       if (!mounted.current) return;
-      if (signingOut.current) return; // Don't let listener restore state during sign-out
+      if (signingOut.current && newSession?.user) return; // Don't let listener restore user during sign-out
 
       setSession(newSession);
       setUser(newSession?.user ?? null);

@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Animated } from "react-native";
+import { View, Text, StyleSheet, Modal, TouchableOpacity, Pressable, ScrollView, Animated } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { fonts } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
@@ -48,7 +48,15 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
   const { settings, setTextSize, setThemeId, setColorScheme } = useSettings();
   const { updateThemeMode } = useAnalytics();
   const slideAnim = React.useRef(new Animated.Value(0)).current;
+  const scrollRef = React.useRef<ScrollView>(null);
   const [showExtended, setShowExtended] = React.useState(false);
+
+  // When extended shows, scroll to top so "Theme" stays visible for tap-to-hide
+  React.useEffect(() => {
+    if (showExtended) {
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
+    }
+  }, [showExtended]);
 
   const handleThemeChange = (optionId: string) => {
     if (optionId === "system") {
@@ -137,18 +145,20 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
           </View>
 
           <ScrollView
+            ref={scrollRef}
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
           >
             {/* Theme section — long-press to reveal extended themes, press to hide */}
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => showExtended && setShowExtended(false)}
+            <Pressable
+              hitSlop={12}
+              onPress={() => setShowExtended(false)}
               onLongPress={() => setShowExtended(true)}
-              delayLongPress={600}
+              delayLongPress={500}
+              style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
             >
               <Text style={[styles.sectionLabel, { color: colors.deepTeal }]}>Theme</Text>
-            </TouchableOpacity>
+            </Pressable>
 
             {/* Default theme options (always visible) */}
             <View style={styles.themeOptions}>
@@ -190,10 +200,16 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
               })}
             </View>
 
-            {/* Extended color themes (hidden until long-press on "Theme") */}
+            {/* Extended color themes (hidden until long-press on "Theme"); tap Theme or Colors to hide */}
             {shouldShowExtended && (
               <>
-                <Text style={[styles.sectionLabel, { color: colors.deepTeal, marginTop: -36 }]}>Colors</Text>
+                <Pressable
+                  hitSlop={12}
+                  onPress={() => setShowExtended(false)}
+                  style={({ pressed }) => [{ marginTop: -36, opacity: pressed ? 0.7 : 1 }]}
+                >
+                  <Text style={[styles.sectionLabel, { color: colors.deepTeal }]}>Colors</Text>
+                </Pressable>
                 <View style={styles.themeOptions}>
                   {EXTENDED_THEME_OPTIONS.map((option) => {
                     const isSelected =

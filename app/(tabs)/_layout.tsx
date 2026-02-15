@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import Constants from "expo-constants";
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { fonts } from "../../constants/theme";
@@ -49,11 +50,15 @@ export default function TabLayout() {
   // on SignInModal serves as the dev bypass to test the app without auth.
   const signInDismissable = !revenueCatActive; // dismissable only in dev mode
 
+  // Simulator/emulator: allow dismissing paywall for testing (no real purchases)
+  const isSimulator = !Constants.isDevice;
+  const paywallDismissable = __DEV__ || isSimulator;
+
   return (
     <>
       <PaywallModal
         visible={showPaywall}
-        dismissable={false}
+        dismissable={paywallDismissable}
         onClose={() => {
           refreshSub();
           setPaywallDismissed(true);

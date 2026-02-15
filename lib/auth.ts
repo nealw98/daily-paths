@@ -11,12 +11,20 @@ import {
 
 // Configure Google Sign-In at module load
 // iOS requires iosClientId (or GoogleService-Info.plist); webClientId alone works for Android
-GoogleSignin.configure({
-  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-  ...(Platform.OS === "ios" && {
-    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-  }),
-});
+const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+
+if (webClientId && (Platform.OS !== "ios" || iosClientId)) {
+  GoogleSignin.configure({
+    webClientId,
+    ...(Platform.OS === "ios" && iosClientId && { iosClientId }),
+  });
+} else if (__DEV__) {
+  qaLog(
+    "auth",
+    "Google Sign-In not configured: need EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID and (on iOS) EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID in .env"
+  );
+}
 
 /**
  * Authentication library for Daily Paths Unlimited.
@@ -116,6 +124,12 @@ export async function signInWithApple() {
 export async function signInWithGoogle() {
   qaLog("auth", "Starting Google sign-in");
 
+  if (Platform.OS === "ios" && !iosClientId) {
+    throw new Error(
+      "Google Sign-In is not configured for iOS. Add EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID to your .env file and restart Metro."
+    );
+  }
+
   try {
     // Check for Play Services on Android (no-op on iOS)
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
@@ -182,7 +196,12 @@ export async function signInWithGoogle() {
 
 export async function signOut() {
   qaLog("auth", "Signing out");
-  const { error } = await supabase.auth.signOut();
+  try {
+    await GoogleSignin.signOut();
+  } catch (e) {
+    qaLog("auth", "GoogleSignin.signOut non-fatal", { error: String(e) });
+  }
+  const { error } = await supabase.auth.signOut({ scope: "local" });
   if (error) {
     qaLog("auth", "Sign out failed", { error: error.message });
     throw error;
