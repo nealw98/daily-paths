@@ -3,7 +3,7 @@ import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { fonts } from "../../constants/theme";
 import { useTheme } from "../../hooks/useTheme";
-import { LightOnWater, Feather, LeafOnWater, Nautilus } from "../../components/icons";
+import { LightOnWater, Feather, LeafOnWater, Microphone, Nautilus } from "../../components/icons";
 import { useAuth } from "../../contexts/AuthContext";
 import { useSubscription } from "../../hooks/useSubscription";
 import { isRevenueCatInitialized } from "../../lib/subscription";
@@ -107,6 +107,15 @@ export default function TabLayout() {
             title: "Prayers",
             tabBarIcon: ({ color, size }) => (
               <LeafOnWater size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="speakers"
+          options={{
+            title: "Speakers",
+            tabBarIcon: ({ color, size }) => (
+              <Microphone size={size} color={color} />
             ),
           }}
         />
