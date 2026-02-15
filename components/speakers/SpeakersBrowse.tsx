@@ -171,13 +171,6 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
             {speaker.title}
           </Text>
 
-          {/* Quote */}
-          {speaker.quote && (
-            <Text style={[styles.quote, { color: colors.textSecondary }]} numberOfLines={1}>
-              &ldquo;{speaker.quote}&rdquo;
-            </Text>
-          )}
-
           {/* Explicit badge */}
           {speaker.explicit && (
             <View style={[styles.explicitBadge, { backgroundColor: colors.danger + "15" }]}>
@@ -341,34 +334,29 @@ const styles = StyleSheet.create({
   },
   typeLabel: {
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 10,
-    fontWeight: "700",
+    fontSize: 11,
+    fontWeight: "600",
     textTransform: "uppercase",
-    letterSpacing: 1.2,
+    letterSpacing: 0.8,
   },
 
   // ─── Speaker Info ──────────────────────────────────────────────────────────
   speakerName: {
-    fontFamily: fonts.loraBold,
-    fontSize: 18,
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 16,
+    fontWeight: "600",
     marginBottom: 2,
   },
   hometown: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 13,
-    marginBottom: 6,
+    fontFamily: fonts.bodyFamily,
+    fontSize: 12,
+    marginBottom: 4,
   },
   title: {
-    fontFamily: fonts.loraItalic,
-    fontSize: 15,
-    marginBottom: 4,
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 14,
+    lineHeight: 20,
   },
-  quote: {
-    fontFamily: fonts.loraItalic,
-    fontSize: 13,
-    marginBottom: 4,
-  },
-
   // ─── Explicit Badge ────────────────────────────────────────────────────────
   explicitBadge: {
     alignSelf: "flex-start",

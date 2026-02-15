@@ -92,15 +92,15 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Back button header */}
+      {/* Back row */}
       <TouchableOpacity
         style={styles.backButton}
         onPress={onBack}
         activeOpacity={0.7}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        <Ionicons name="arrow-back" size={22} color={colors.accent} />
-        <Text style={[styles.backLabel, { color: colors.accent }]}>Speakers</Text>
+        <Ionicons name="chevron-back" size={20} color={colors.accent} />
+        <Text style={[styles.backLabel, { color: colors.accent }]}>Back</Text>
       </TouchableOpacity>
 
       <ScrollView

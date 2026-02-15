@@ -64,6 +64,10 @@ export default function SpeakersTab() {
         style={[styles.container, { backgroundColor: colors.background }]}
         edges={["top"]}
       >
+        <TealHeader
+          title="Speakers"
+          leftIcon={<Microphone size={28} color={colors.textOnAccent} />}
+        />
         <SpeakerDetail
           speaker={selectedSpeaker}
           autoPlay={autoPlay}
