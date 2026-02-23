@@ -23,8 +23,8 @@ import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform }
 import * as Notifications from "expo-notifications";
 import * as Updates from "expo-updates";
 import { installGlobalErrorHandler } from "../utils/errorLogger";
-import { PostHogProvider } from 'posthog-react-native';
 import { initializeRevenueCat } from "../lib/subscription";
+import { initMixpanel } from "../lib/mixpanel";
 
 console.log("[STARTUP] _layout.tsx module loading...");
 console.log("[STARTUP] Platform:", Platform.OS, Platform.Version);
@@ -102,6 +102,7 @@ export default function RootLayout() {
   useEffect(() => {
     if (fontsLoaded) {
       initializeRevenueCat();
+      initMixpanel();
     }
   }, [fontsLoaded]);
 
@@ -191,37 +192,8 @@ export default function RootLayout() {
   }
 
   console.log("[STARTUP] Fonts loaded, rendering main app with SettingsProvider");
-  
-  const posthogApiKey = process.env.EXPO_PUBLIC_POSTHOG_API_KEY;
-  const posthogHost = process.env.EXPO_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
-  
-  console.log("[POSTHOG] API Key present:", !!posthogApiKey, "Key prefix:", posthogApiKey?.substring(0, 10));
-  console.log("[POSTHOG] Host:", posthogHost);
 
-  // Wrap content in PostHogProvider only if API key is available
-  const wrapWithPostHog = (children: React.ReactNode) => {
-    if (!posthogApiKey) {
-      console.log("[POSTHOG] API key not found, skipping analytics");
-      return children;
-    }
-    console.log("[POSTHOG] Initializing PostHogProvider");
-    return (
-      <PostHogProvider
-        apiKey={posthogApiKey}
-        options={{
-          host: posthogHost,
-          enableSessionReplay: true,
-          flushAt: 1, // Flush after every event (for debugging)
-          flushInterval: 10000, // Flush every 10 seconds
-        }}
-        autocapture
-      >
-        {children}
-      </PostHogProvider>
-    );
-  };
-
-  return wrapWithPostHog(
+  return (
     <SettingsProvider>
       <AuthProvider>
         {updateReady && (

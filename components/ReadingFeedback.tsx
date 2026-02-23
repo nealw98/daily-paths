@@ -72,7 +72,7 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
     // Optimistically update local state immediately for visual feedback
     setLocalRating(rating);
     
-    // Track in PostHog
+    // Track in analytics
     if (rating === 'positive' || rating === 'negative') {
       trackReadingRated(
         readingId,

@@ -154,7 +154,7 @@ export default function Index() {
     recordDailyActivity();
   }, []);
 
-  // Track app opened event (PostHog)
+  // Track app opened event
   useEffect(() => {
     trackAppOpened();
   }, []);
@@ -176,7 +176,7 @@ export default function Index() {
   useEffect(() => {
     if (reading?.id) {
       recordReadingView(reading.id);
-      // Start tracking in PostHog (event fires when user navigates away or app goes to background)
+      // Start tracking reading view (event fires when user navigates away or app goes to background)
       startReadingView(reading.id, currentDate, reading.title, navigationMethod);
     }
   }, [reading?.id]);
@@ -254,21 +254,15 @@ export default function Index() {
 
   // Wrapper for bookmark toggle that handles rate modal and analytics
   const handleBookmarkToggle = async () => {
-    console.log('[POSTHOG] handleBookmarkToggle called, reading?.id:', reading?.id);
     const result = await toggleBookmark();
-    console.log('[POSTHOG] toggleBookmark result:', result);
-    
-    // Track favorite/unfavorite in PostHog
+
+    // Track favorite/unfavorite in analytics
     if (reading?.id) {
       if (result.newState) {
-        console.log('[POSTHOG] Calling trackReadingFavorited');
         trackReadingFavorited(reading.id, currentDate);
       } else {
-        console.log('[POSTHOG] Calling trackReadingUnfavorited');
         trackReadingUnfavorited(reading.id, currentDate);
       }
-    } else {
-      console.log('[POSTHOG] No reading?.id, skipping analytics');
     }
     
     if (result.shouldShowRatePrompt) {

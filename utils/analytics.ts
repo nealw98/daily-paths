@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
-import { usePostHog } from 'posthog-react-native';
+import { getMixpanel } from '../lib/mixpanel';
 import { getOrCreateDeviceId, isDeveloperDevice } from './deviceIdentity';
 
 // Event names as constants for consistency
@@ -46,6 +46,9 @@ export function formatReadingDisplay(date: Date): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+// Theme mode type
+export type ThemeMode = 'light' | 'dark' | 'system';
+
 // Reading view tracking state (for time spent calculation)
 // Only foreground time is counted; background ends the session, foreground starts a new one.
 interface ReadingViewState {
@@ -59,77 +62,57 @@ interface ReadingViewState {
   foregroundSegmentStart: number | null;
 }
 
-// Theme mode type
-export type ThemeMode = 'light' | 'dark' | 'system';
-
 // Hook for using analytics in components
 export function useAnalytics() {
-  const posthog = usePostHog();
   const hasIdentified = useRef(false);
   const hasTrackedAppOpen = useRef(false);
-  const hasLoggedStatus = useRef(false);
   const currentReadingView = useRef<ReadingViewState | null>(null);
   const appState = useRef<AppStateStatus>(AppState.currentState);
   const [isDeveloper, setIsDeveloper] = useState(false);
   const themeModeRef = useRef<ThemeMode>('system');
-
-  // Log PostHog status once
-  useEffect(() => {
-    if (!hasLoggedStatus.current) {
-      console.log('[POSTHOG] usePostHog() returned:', posthog ? 'PostHog instance' : 'null');
-      hasLoggedStatus.current = true;
-    }
-  }, [posthog]);
 
   // Check developer mode status
   useEffect(() => {
     (async () => {
       const devMode = await isDeveloperDevice();
       setIsDeveloper(devMode);
-      console.log('[POSTHOG] Developer mode:', devMode);
     })();
   }, []);
 
   // Update theme mode (called from components that have access to settings)
-  // Sets both the ref (for event properties) and person property (for demographics)
   const updateThemeMode = useCallback((mode: ThemeMode) => {
     themeModeRef.current = mode;
-    console.log('[POSTHOG] Theme mode updated:', mode);
-    
-    // Set as person property for demographic analysis using $set
-    if (posthog) {
-      console.log('[POSTHOG] Setting person property theme_mode:', mode);
-      posthog.capture('$set', { $set: { theme_mode: mode } });
+    const mp = getMixpanel();
+    if (mp) {
+      mp.getPeople().set({ theme_mode: mode });
     }
-  }, [posthog]);
+  }, []);
 
   // Identify user with persistent device ID
   useEffect(() => {
-    if (!posthog || hasIdentified.current) return;
-    
+    if (hasIdentified.current) return;
+
     (async () => {
+      const mp = getMixpanel();
+      if (!mp) return;
       try {
         const deviceId = await getOrCreateDeviceId();
-        console.log('[POSTHOG] Identifying user with device ID:', deviceId);
-        posthog.identify(deviceId);
+        mp.identify(deviceId);
         hasIdentified.current = true;
+        console.log('[ANALYTICS] Identified user:', deviceId);
       } catch (err) {
-        console.log('[POSTHOG] Failed to identify user:', err);
+        console.log('[ANALYTICS] Failed to identify user:', err);
       }
     })();
-  }, [posthog]);
+  }, []);
 
-  // Fire reading_viewed event with foreground-only time spent, then end session (clear state).
+  // Fire reading_viewed event with foreground-only time spent, then end session.
   const fireReadingViewedEvent = useCallback(() => {
     const viewState = currentReadingView.current;
-    if (!viewState) {
-      console.log('[POSTHOG] fireReadingViewedEvent: No current view state');
-      return;
-    }
-    if (!posthog) {
-      console.log('[POSTHOG] fireReadingViewedEvent: PostHog not available');
-      return;
-    }
+    if (!viewState) return;
+
+    const mp = getMixpanel();
+    if (!mp) return;
 
     const currentSegmentMs = viewState.foregroundSegmentStart
       ? Date.now() - viewState.foregroundSegmentStart
@@ -140,51 +123,26 @@ export function useAnalytics() {
     // End session: clear so we don't count time for this reading anymore
     currentReadingView.current = null;
 
-    // Only track if user spent at least 1 second (avoid accidental quick swipes)
+    // Only track if user spent at least 1 second
     if (timeSpentSeconds >= 1) {
-      // Build the event payload explicitly
-      const readingDate = formatReadingDate(viewState.readingDate);
-      const readingDisplay = formatReadingDisplay(viewState.readingDate);
-      const readingTitle = viewState.readingTitle;
-
-      const eventPayload = {
+      mp.track(ANALYTICS_EVENTS.READING_VIEWED, {
         reading_id: viewState.readingId,
-        reading_date: readingDate,
-        reading_display: readingDisplay,
-        reading_title: readingTitle,
+        reading_date: formatReadingDate(viewState.readingDate),
+        reading_display: formatReadingDisplay(viewState.readingDate),
+        reading_title: viewState.readingTitle,
         navigation_method: viewState.navigationMethod,
         time_spent_seconds: timeSpentSeconds,
         is_developer: isDeveloper,
         theme_mode: themeModeRef.current,
-      };
-
-      console.log('[POSTHOG] ===== FIRING READING_VIEWED EVENT =====');
-      console.log('[POSTHOG] Event name:', ANALYTICS_EVENTS.READING_VIEWED);
-      console.log('[POSTHOG] Full payload:', JSON.stringify(eventPayload, null, 2));
-      console.log('[POSTHOG] reading_id:', eventPayload.reading_id);
-      console.log('[POSTHOG] reading_date:', eventPayload.reading_date);
-      console.log('[POSTHOG] reading_display:', eventPayload.reading_display);
-      console.log('[POSTHOG] reading_title:', eventPayload.reading_title);
-      console.log('[POSTHOG] navigation_method:', eventPayload.navigation_method);
-      console.log('[POSTHOG] time_spent_seconds:', eventPayload.time_spent_seconds);
-
-      posthog.capture(ANALYTICS_EVENTS.READING_VIEWED, eventPayload);
-
-      console.log('[POSTHOG] Calling flush() for reading_viewed...');
-      posthog.flush().then(() => {
-        console.log('[POSTHOG] reading_viewed flush() completed');
-      }).catch((err: unknown) => {
-        console.log('[POSTHOG] reading_viewed flush() error:', err);
       });
-    } else {
-      console.log('[POSTHOG] fireReadingViewedEvent: Time spent too short:', timeSpentSeconds, 'seconds');
+      mp.flush();
     }
-  }, [posthog, isDeveloper]);
+  }, [isDeveloper]);
 
   // Handle app state changes (foreground/background)
   useEffect(() => {
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
-      // App going to background: pause timer, end session (fire reading_viewed with foreground time, clear state)
+      // App going to background: pause timer, fire reading_viewed, clear state
       if (appState.current === 'active' && nextAppState.match(/inactive|background/)) {
         const view = currentReadingView.current;
         if (view && view.foregroundSegmentStart !== null) {
@@ -192,13 +150,14 @@ export function useAnalytics() {
           view.foregroundSegmentStart = null;
         }
         fireReadingViewedEvent();
-        hasTrackedAppOpen.current = false; // Allow new app_opened on next foreground
+        hasTrackedAppOpen.current = false;
       }
 
-      // App coming to foreground (new session is started by index.tsx calling startReadingView)
+      // App coming to foreground
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-        if (posthog && !hasTrackedAppOpen.current) {
-          posthog.capture(ANALYTICS_EVENTS.APP_OPENED, {
+        const mp = getMixpanel();
+        if (mp && !hasTrackedAppOpen.current) {
+          mp.track(ANALYTICS_EVENTS.APP_OPENED, {
             is_developer: isDeveloper,
             theme_mode: themeModeRef.current,
           });
@@ -211,49 +170,30 @@ export function useAnalytics() {
 
     const subscription = AppState.addEventListener('change', handleAppStateChange);
     return () => subscription?.remove();
-  }, [posthog, fireReadingViewedEvent, isDeveloper]);
+  }, [fireReadingViewedEvent, isDeveloper]);
 
   // Track app opened (called on initial mount)
   const trackAppOpened = useCallback(() => {
-    if (!posthog) {
-      console.log('[POSTHOG] trackAppOpened: PostHog not available');
-      return;
-    }
-    if (hasTrackedAppOpen.current) {
-      console.log('[POSTHOG] trackAppOpened: Already tracked this session');
-      return;
-    }
-    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.APP_OPENED, { is_developer: isDeveloper, theme_mode: themeModeRef.current });
-    posthog.capture(ANALYTICS_EVENTS.APP_OPENED, { 
+    const mp = getMixpanel();
+    if (!mp) return;
+    if (hasTrackedAppOpen.current) return;
+
+    mp.track(ANALYTICS_EVENTS.APP_OPENED, {
       is_developer: isDeveloper,
       theme_mode: themeModeRef.current,
     });
-    console.log('[POSTHOG] Calling flush()...');
-    posthog.flush().then(() => {
-      console.log('[POSTHOG] flush() completed successfully');
-    }).catch((err: unknown) => {
-      console.log('[POSTHOG] flush() error:', err);
-    });
+    mp.flush();
     hasTrackedAppOpen.current = true;
-  }, [posthog, isDeveloper]);
+  }, [isDeveloper]);
 
-  // Start tracking a reading view (called when reading appears or when app returns to foreground).
-  // Session ends when user navigates away or app goes to background.
+  // Start tracking a reading view (called when reading appears or app returns to foreground)
   const startReadingView = useCallback((
     readingId: string,
     readingDate: Date,
     readingTitle: string,
     navigationMethod: NavigationMethod
   ) => {
-    console.log('[POSTHOG] ===== START READING VIEW =====');
-    console.log('[POSTHOG] readingId:', readingId);
-    console.log('[POSTHOG] readingDate:', readingDate);
-    console.log('[POSTHOG] readingDate type:', typeof readingDate);
-    console.log('[POSTHOG] readingDate instanceof Date:', readingDate instanceof Date);
-    console.log('[POSTHOG] readingTitle:', readingTitle);
-    console.log('[POSTHOG] navigationMethod:', navigationMethod);
-
-    // Fire event for previous reading before starting new one (no-op if none)
+    // Fire event for previous reading before starting new one
     fireReadingViewedEvent();
 
     const isActive = AppState.currentState === 'active';
@@ -265,13 +205,6 @@ export function useAnalytics() {
       accumulatedForegroundMs: 0,
       foregroundSegmentStart: isActive ? Date.now() : null,
     };
-
-    console.log('[POSTHOG] Stored view state:', JSON.stringify({
-      readingId: currentReadingView.current.readingId,
-      readingTitle: currentReadingView.current.readingTitle,
-      navigationMethod: currentReadingView.current.navigationMethod,
-      foregroundSegmentStart: currentReadingView.current.foregroundSegmentStart != null,
-    }));
   }, [fireReadingViewedEvent]);
 
   const trackReadingRated = useCallback((
@@ -279,94 +212,71 @@ export function useAnalytics() {
     readingDate: Date,
     rating: RatingType
   ) => {
-    posthog?.capture(ANALYTICS_EVENTS.READING_RATED, {
+    getMixpanel()?.track(ANALYTICS_EVENTS.READING_RATED, {
       reading_id: readingId,
       reading_date: formatReadingDate(readingDate),
       rating,
       is_developer: isDeveloper,
       theme_mode: themeModeRef.current,
     });
-  }, [posthog, isDeveloper]);
+  }, [isDeveloper]);
 
   const trackReadingFavorited = useCallback((readingId: string, readingDate: Date) => {
-    if (!posthog) {
-      console.log('[POSTHOG] trackReadingFavorited: PostHog not available');
-      return;
-    }
-    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.READING_FAVORITED, { reading_id: readingId, is_developer: isDeveloper, theme_mode: themeModeRef.current });
-    posthog.capture(ANALYTICS_EVENTS.READING_FAVORITED, {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.READING_FAVORITED, {
       reading_id: readingId,
       reading_date: formatReadingDate(readingDate),
       is_developer: isDeveloper,
       theme_mode: themeModeRef.current,
     });
-    posthog.flush().then(() => {
-      console.log('[POSTHOG] reading_favorited flush() completed');
-    }).catch((err: unknown) => {
-      console.log('[POSTHOG] reading_favorited flush() error:', err);
-    });
-  }, [posthog, isDeveloper]);
+    mp.flush();
+  }, [isDeveloper]);
 
   const trackReadingUnfavorited = useCallback((readingId: string, readingDate: Date) => {
-    if (!posthog) {
-      console.log('[POSTHOG] trackReadingUnfavorited: PostHog not available');
-      return;
-    }
-    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.READING_UNFAVORITED, { reading_id: readingId, is_developer: isDeveloper, theme_mode: themeModeRef.current });
-    posthog.capture(ANALYTICS_EVENTS.READING_UNFAVORITED, {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.READING_UNFAVORITED, {
       reading_id: readingId,
       reading_date: formatReadingDate(readingDate),
       is_developer: isDeveloper,
       theme_mode: themeModeRef.current,
     });
-    posthog.flush().then(() => {
-      console.log('[POSTHOG] reading_unfavorited flush() completed');
-    }).catch((err: unknown) => {
-      console.log('[POSTHOG] reading_unfavorited flush() error:', err);
-    });
-  }, [posthog, isDeveloper]);
+    mp.flush();
+  }, [isDeveloper]);
 
   const trackRateModalShown = useCallback((trigger: 'bookmark' | 'positive_feedback' | 'settings_button') => {
-    if (!posthog) {
-      console.log('[POSTHOG] trackRateModalShown: PostHog not available');
-      return;
-    }
-    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.RATE_MODAL_SHOWN, { trigger, is_developer: isDeveloper, theme_mode: themeModeRef.current });
-    posthog.capture(ANALYTICS_EVENTS.RATE_MODAL_SHOWN, {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.RATE_MODAL_SHOWN, {
       trigger,
       is_developer: isDeveloper,
       theme_mode: themeModeRef.current,
     });
-    posthog.flush();
-  }, [posthog, isDeveloper]);
+    mp.flush();
+  }, [isDeveloper]);
 
   const trackRateModalDismissed = useCallback((trigger: 'bookmark' | 'positive_feedback' | 'settings_button') => {
-    if (!posthog) {
-      console.log('[POSTHOG] trackRateModalDismissed: PostHog not available');
-      return;
-    }
-    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.RATE_MODAL_DISMISSED, { trigger, is_developer: isDeveloper, theme_mode: themeModeRef.current });
-    posthog.capture(ANALYTICS_EVENTS.RATE_MODAL_DISMISSED, {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.RATE_MODAL_DISMISSED, {
       trigger,
       is_developer: isDeveloper,
       theme_mode: themeModeRef.current,
     });
-    posthog.flush();
-  }, [posthog, isDeveloper]);
+    mp.flush();
+  }, [isDeveloper]);
 
   const trackRateModalOpenedStore = useCallback((trigger: 'bookmark' | 'positive_feedback' | 'settings_button') => {
-    if (!posthog) {
-      console.log('[POSTHOG] trackRateModalOpenedStore: PostHog not available');
-      return;
-    }
-    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.RATE_MODAL_OPENED_STORE, { trigger, is_developer: isDeveloper, theme_mode: themeModeRef.current });
-    posthog.capture(ANALYTICS_EVENTS.RATE_MODAL_OPENED_STORE, {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.RATE_MODAL_OPENED_STORE, {
       trigger,
       is_developer: isDeveloper,
       theme_mode: themeModeRef.current,
     });
-    posthog.flush();
-  }, [posthog, isDeveloper]);
+    mp.flush();
+  }, [isDeveloper]);
 
   return {
     trackAppOpened,
