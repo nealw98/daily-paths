@@ -18,6 +18,10 @@ import { JournalEntryEditor } from "../../components/journal/JournalEntryEditor"
 import type { EntryType } from "../../constants/journalCategories";
 import { useAuth } from "../../contexts/AuthContext";
 import { useJournalEntries } from "../../hooks/useJournalEntries";
+import { useTrialStatus } from "../../hooks/useTrialStatus";
+import { useSubscription } from "../../hooks/useSubscription";
+import { getRequiredGate } from "../../utils/accessControl";
+import { PaywallModal } from "../../components/PaywallModal";
 import { DatePickerModal } from "../../components/DatePickerModal";
 import { BookmarkListModal } from "../../components/BookmarkListModal";
 import { DismissibleToast } from "../../components/DismissibleToast";
@@ -78,11 +82,16 @@ export default function Index() {
   const [navigationMethod, setNavigationMethod] = useState<NavigationMethod>('app_open');
   const [showJournalPicker, setShowJournalPicker] = useState(false);
   const [journalEntryType, setJournalEntryType] = useState<EntryType | null>(null);
+  const [showPaywall, setShowPaywall] = useState(false);
   console.log("[STARTUP-INDEX] State initialized");
 
   // Journal entry creation from Today page
   const { user, isAuthenticated: isAuthed } = useAuth();
   const { createEntry } = useJournalEntries(user?.id);
+
+  // Paywall gating for the journal FAB
+  const trialStatus = useTrialStatus();
+  const { status: subStatus, refresh: refreshSub } = useSubscription(user?.id);
   
   // Analytics
   const { trackAppOpened, startReadingView, trackReadingFavorited, trackReadingUnfavorited, updateThemeMode } = useAnalytics();
@@ -436,10 +445,17 @@ export default function Index() {
       {content}
 
       {/* Journal FAB — only show when reading is visible */}
-      {reading && isAuthed && (
+      {reading && (
         <TouchableOpacity
           style={styles.fabTouchable}
-          onPress={() => setShowJournalPicker(true)}
+          onPress={() => {
+            const gate = getRequiredGate(subStatus, trialStatus, isAuthed);
+            if (gate === "paywall") {
+              setShowPaywall(true);
+            } else {
+              setShowJournalPicker(true);
+            }
+          }}
           activeOpacity={0.85}
         >
           <LinearGradient
@@ -486,6 +502,15 @@ export default function Index() {
         visible={showRateModal}
         onClose={() => setShowRateModal(false)}
         trigger="bookmark"
+      />
+
+      <PaywallModal
+        visible={showPaywall}
+        dismissable
+        onClose={() => {
+          setShowPaywall(false);
+          refreshSub();
+        }}
       />
     </>
   );
