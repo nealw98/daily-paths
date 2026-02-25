@@ -93,11 +93,13 @@ export const NegativeFeedbackModal: React.FC<NegativeFeedbackModalProps> = ({
               label="Content is unclear"
               checked={reasons.unclear}
               onToggle={() => setReasons((r) => ({ ...r, unclear: !r.unclear }))}
+              colors={colors}
             />
             <CheckboxOption
               label="Too long or wordy"
               checked={reasons.tooLong}
               onToggle={() => setReasons((r) => ({ ...r, tooLong: !r.tooLong }))}
+              colors={colors}
             />
             <CheckboxOption
               label="Not relevant"
@@ -105,11 +107,13 @@ export const NegativeFeedbackModal: React.FC<NegativeFeedbackModalProps> = ({
               onToggle={() =>
                 setReasons((r) => ({ ...r, notApplicable: !r.notApplicable }))
               }
+              colors={colors}
             />
             <CheckboxOption
               label="Language/tone issues"
               checked={reasons.language}
               onToggle={() => setReasons((r) => ({ ...r, language: !r.language }))}
+              colors={colors}
             />
 
             <View style={styles.otherContainer}>
@@ -146,12 +150,14 @@ interface CheckboxOptionProps {
   label: string;
   checked: boolean;
   onToggle: () => void;
+  colors: Record<string, string>;
 }
 
 const CheckboxOption: React.FC<CheckboxOptionProps> = ({
   label,
   checked,
   onToggle,
+  colors,
 }) => {
   return (
     <TouchableOpacity

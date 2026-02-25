@@ -5,6 +5,7 @@ import Purchases, {
 } from "react-native-purchases";
 import { Platform } from "react-native";
 import { qaLog } from "../utils/qaLog";
+import { getSubscriptionOverride } from "../utils/subscriptionOverride";
 
 /**
  * RevenueCat subscription management for Daily Paths Unlimited.
@@ -161,6 +162,24 @@ export async function restorePurchases(): Promise<CustomerInfo> {
  * Get current subscription status.
  */
 export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
+  // QA override: skip RevenueCat and report "not subscribed"
+  try {
+    const overrideActive = await getSubscriptionOverride();
+    if (overrideActive) {
+      qaLog("subscription", "QA override active — reporting not subscribed");
+      return {
+        isSubscribed: false,
+        isTrialing: false,
+        isLegacy: false,
+        expirationDate: null,
+        productIdentifier: null,
+        willRenew: false,
+      };
+    }
+  } catch {
+    // Override check failed — fall through to real RevenueCat
+  }
+
   try {
     const customerInfo = await Purchases.getCustomerInfo();
     const entitlement = customerInfo.entitlements.active[ENTITLEMENT_ID];

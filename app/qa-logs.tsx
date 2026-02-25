@@ -21,6 +21,7 @@ import { resetRateShareTracking } from "../utils/rateShareTracking";
 import { isDeveloperDevice, setDeveloperDevice, getOrCreateDeviceId } from "../utils/deviceIdentity";
 import { getTrialStatus, resetTrial, expireTrial } from "../utils/trialTimer";
 import { clearFreemiumMigrationFlag } from "../utils/dataMigration";
+import { enableSubscriptionOverride, clearSubscriptionOverride } from "../utils/subscriptionOverride";
 
 export default function QaLogsScreen() {
   const { colors } = useTheme();
@@ -217,6 +218,28 @@ export default function QaLogsScreen() {
     }
   };
 
+  const handleForceNoSubscription = async () => {
+    try {
+      await enableSubscriptionOverride();
+      qaLog("freemium", "Subscription override enabled (force no subscription)");
+      alert("Subscription override active. Navigate to a premium tab to see the paywall.");
+    } catch (err) {
+      qaLog("freemium", "Error enabling subscription override", { error: String(err) });
+      alert("Failed to enable subscription override");
+    }
+  };
+
+  const handleClearSubscriptionOverride = async () => {
+    try {
+      await clearSubscriptionOverride();
+      qaLog("freemium", "Subscription override cleared");
+      alert("Subscription override cleared. Real RevenueCat status will be used.");
+    } catch (err) {
+      qaLog("freemium", "Error clearing subscription override", { error: String(err) });
+      alert("Failed to clear subscription override");
+    }
+  };
+
   return (
     <View
       style={[
@@ -350,6 +373,20 @@ export default function QaLogsScreen() {
             onPress={handleClearLocalPrayerNotes}
           >
             <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Clear Local Prayer Notes</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleForceNoSubscription}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Force No Subscription</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleClearSubscriptionOverride}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Clear Subscription Override</Text>
           </TouchableOpacity>
         </View>
       </View>
