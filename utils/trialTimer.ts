@@ -88,7 +88,20 @@ export async function getTrialStatus(): Promise<TrialStatus> {
 
 /**
  * Reset the trial (dev / testing only).
+ * Removes the start timestamp so the next app interaction starts a fresh trial.
  */
 export async function resetTrial(): Promise<void> {
   await AsyncStorage.removeItem(TRIAL_START_KEY);
+}
+
+/**
+ * Immediately expire the trial (dev / testing only).
+ * Sets the start date to 8 days ago so the trial appears expired without
+ * needing to manipulate the device clock.
+ */
+export async function expireTrial(): Promise<void> {
+  const expired = new Date(
+    Date.now() - TRIAL_DURATION_MS - 24 * 60 * 60 * 1000,
+  );
+  await AsyncStorage.setItem(TRIAL_START_KEY, expired.toISOString());
 }

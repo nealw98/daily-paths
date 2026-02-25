@@ -202,3 +202,11 @@ export async function migrateTrialDataToSupabase(userId: string): Promise<void> 
     qaLog("migration", "Freemium migration exception", { error: String(err) });
   }
 }
+
+/**
+ * Clear the freemium migration flag so migration re-runs on next sign-in.
+ * Dev / testing only.
+ */
+export async function clearFreemiumMigrationFlag(): Promise<void> {
+  await AsyncStorage.removeItem(FREEMIUM_MIGRATION_DONE_KEY);
+}

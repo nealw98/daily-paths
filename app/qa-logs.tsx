@@ -19,6 +19,8 @@ import { useTheme } from "../hooks/useTheme";
 import { clearQaLogs, useQaLogs, qaLog } from "../utils/qaLog";
 import { resetRateShareTracking } from "../utils/rateShareTracking";
 import { isDeveloperDevice, setDeveloperDevice, getOrCreateDeviceId } from "../utils/deviceIdentity";
+import { getTrialStatus, resetTrial, expireTrial } from "../utils/trialTimer";
+import { clearFreemiumMigrationFlag } from "../utils/dataMigration";
 
 export default function QaLogsScreen() {
   const { colors } = useTheme();
@@ -141,6 +143,80 @@ export default function QaLogsScreen() {
     }
   };
 
+  // ─── Freemium testing helpers ──────────────────────────────────────────
+
+  const handleShowTrialStatus = async () => {
+    try {
+      const status = await getTrialStatus();
+      const lines = [
+        `isInTrial: ${status.isInTrial}`,
+        `trialExpired: ${status.trialExpired}`,
+        `neverStarted: ${status.neverStarted}`,
+        `daysRemaining: ${status.daysRemaining}`,
+        `trialStartDate: ${status.trialStartDate ?? "null"}`,
+      ];
+      alert(lines.join("\n"));
+      qaLog("freemium", "Trial status checked", status);
+    } catch (err) {
+      alert("Failed to read trial status");
+    }
+  };
+
+  const handleResetTrial = async () => {
+    try {
+      await resetTrial();
+      qaLog("freemium", "Trial reset");
+      alert("Trial reset. Restart the app to begin a fresh 7-day trial.");
+    } catch (err) {
+      qaLog("freemium", "Error resetting trial", { error: String(err) });
+      alert("Failed to reset trial");
+    }
+  };
+
+  const handleExpireTrial = async () => {
+    try {
+      await expireTrial();
+      qaLog("freemium", "Trial expired manually");
+      alert("Trial expired. Premium tabs will now show the paywall.");
+    } catch (err) {
+      qaLog("freemium", "Error expiring trial", { error: String(err) });
+      alert("Failed to expire trial");
+    }
+  };
+
+  const handleClearMigrationFlag = async () => {
+    try {
+      await clearFreemiumMigrationFlag();
+      qaLog("freemium", "Migration flag cleared");
+      alert("Migration flag cleared. Local data will migrate again on next sign-in.");
+    } catch (err) {
+      qaLog("freemium", "Error clearing migration flag", { error: String(err) });
+      alert("Failed to clear migration flag");
+    }
+  };
+
+  const handleClearLocalJournal = async () => {
+    try {
+      await AsyncStorage.removeItem("@daily_paths_local_journal");
+      qaLog("freemium", "Local journal entries cleared");
+      alert("Local journal entries cleared.");
+    } catch (err) {
+      qaLog("freemium", "Error clearing local journal", { error: String(err) });
+      alert("Failed to clear local journal");
+    }
+  };
+
+  const handleClearLocalPrayerNotes = async () => {
+    try {
+      await AsyncStorage.removeItem("@daily_paths_local_prayer_notes");
+      qaLog("freemium", "Local prayer notes cleared");
+      alert("Local prayer notes cleared.");
+    } catch (err) {
+      qaLog("freemium", "Error clearing local prayer notes", { error: String(err) });
+      alert("Failed to clear local prayer notes");
+    }
+  };
+
   return (
     <View
       style={[
@@ -229,6 +305,52 @@ export default function QaLogsScreen() {
           {updateStatus && (
             <Text style={[styles.meta, { width: "100%" }]}>{updateStatus}</Text>
           )}
+        </View>
+
+        <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>Freemium Testing</Text>
+        <View style={styles.actionsRow}>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleShowTrialStatus}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Show Trial Status</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleResetTrial}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Reset Trial</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleExpireTrial}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Expire Trial</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleClearMigrationFlag}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Clear Migration Flag</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleClearLocalJournal}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Clear Local Journal</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleClearLocalPrayerNotes}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Clear Local Prayer Notes</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
