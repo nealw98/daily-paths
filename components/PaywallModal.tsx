@@ -27,8 +27,8 @@ interface PaywallModalProps {
 
 const FEATURES = [
   { icon: "create-outline" as const, title: "Journal", desc: "Write and reflect on your recovery journey" },
-  { icon: "book-outline" as const, title: "Prayers", desc: "Al-Anon prayers with personal notes" },
   { icon: "mic-outline" as const, title: "Speakers", desc: "Browse and listen to recovery audio" },
+  { icon: "book-outline" as const, title: "Prayers", desc: "Al-Anon prayers with personal notes" },
   { icon: "cloud-outline" as const, title: "Cloud Sync", desc: "Access your data across all devices" },
   { icon: "search-outline" as const, title: "Search", desc: "Search through all your journal entries" },
 ];

@@ -111,6 +111,7 @@ export const PremiumGate: React.FC<PremiumGateProps> = ({ children }) => {
       <SignInModal
         visible
         dismissable={devBypass}
+        initialMode={gate === "signin" ? "signin" : undefined}
         onClose={() => {
           setPurchaseCompleted(false);
           refreshSub();

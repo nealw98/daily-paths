@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.nealwagner.dailypaths",
-      "buildNumber": "26",
+      "buildNumber": "24",
       "appStoreUrl": "https://apps.apple.com/app/id6755981862",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false

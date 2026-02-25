@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,21 +12,40 @@ import {
   Platform,
   KeyboardAvoidingView,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { fonts } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
 import { useAuth } from "../contexts/AuthContext";
 
+const HAS_ACCOUNT_KEY = "@daily_paths_has_account";
+
+/** Record that this device has successfully signed in at least once. */
+export async function markHasAccount(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(HAS_ACCOUNT_KEY, "true");
+  } catch {
+    // Non-critical — don't crash
+  }
+}
+
 interface SignInModalProps {
   visible: boolean;
   /** When false, close button is hidden (used as mandatory gate). */
   dismissable?: boolean;
+  /**
+   * Override the initial mode. When omitted the modal auto-detects:
+   * if the device has previously signed in → "signin" (Welcome Back),
+   * otherwise → "signup" (Create Account).
+   */
+  initialMode?: "signin" | "signup";
   onClose: () => void;
 }
 
 export const SignInModal: React.FC<SignInModalProps> = ({
   visible,
   dismissable = true,
+  initialMode,
   onClose,
 }) => {
   const { colors } = useTheme();
@@ -35,8 +54,19 @@ export const SignInModal: React.FC<SignInModalProps> = ({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<"signin" | "signup">(initialMode ?? "signup");
   const [showPassword, setShowPassword] = useState(false);
+
+  // Auto-detect mode when no explicit initialMode is provided
+  useEffect(() => {
+    if (initialMode || !visible) return;
+    AsyncStorage.getItem(HAS_ACCOUNT_KEY).then((value) => {
+      setMode(value === "true" ? "signin" : "signup");
+    }).catch(() => {
+      // Default to signup if check fails
+      setMode("signup");
+    });
+  }, [visible, initialMode]);
 
   const handleSubmit = async () => {
     if (!email.trim() || !password.trim()) {
@@ -47,6 +77,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({
     try {
       if (mode === "signup") {
         await signUp(email.trim(), password.trim());
+        await markHasAccount();
         Alert.alert(
           "Account Created",
           "Check your email to confirm your account, then sign in.",
@@ -54,6 +85,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({
         );
       } else {
         await signIn(email.trim(), password.trim());
+        await markHasAccount();
         onClose();
       }
     } catch (err: any) {
@@ -69,6 +101,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({
       const result = await signInApple();
       // Only close if sign-in succeeded (null = user cancelled)
       if (result !== null && result !== undefined) {
+        await markHasAccount();
         onClose();
       }
     } catch (err: any) {
@@ -84,6 +117,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({
       const result = await signInGoogle();
       // Only close if sign-in succeeded (null = user cancelled)
       if (result !== null && result !== undefined) {
+        await markHasAccount();
         onClose();
       }
     } catch (err: any) {
