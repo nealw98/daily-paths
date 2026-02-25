@@ -1,70 +1,91 @@
 import type { SubscriptionStatus } from "../lib/subscription";
+import type { TrialStatus } from "./trialTimer";
 
 /**
- * Access control helpers for Daily Paths Unlimited features.
- * Determines whether a user can access premium features based on
- * subscription status, trial period, or legacy user status.
+ * Access control helpers for the Daily Paths freemium model.
+ *
+ * Premium features (Journal, Prayers, Speakers) are free during the 7-day
+ * local trial, then require a subscription.  The daily reader is free forever.
  */
 
-const TRIAL_DURATION_DAYS = 14;
+// ─── Gate type ───────────────────────────────────────────────────────────────
+
+export type GateType = "none" | "paywall" | "signin";
 
 /**
- * Check if user can access Unlimited features (journal, gratitude, export, etc.).
+ * Determine which gate (if any) should block a premium tab.
+ *
+ * Priority:
+ *  1. Local trial active             → no gate
+ *  2. Entitlement + authenticated    → no gate
+ *  3. Entitlement + NOT authenticated → sign-in gate
+ *  4. No entitlement + trial expired → paywall gate
  */
-export function canAccessUnlimitedFeatures(subscription: SubscriptionStatus): boolean {
-  // Legacy users always have access
+export function getRequiredGate(
+  subscription: SubscriptionStatus,
+  trial: TrialStatus,
+  isAuthenticated: boolean,
+): GateType {
+  // During the local 7-day trial, everything is unlocked — no gate needed.
+  if (trial.isInTrial) return "none";
+
+  // User has a subscription or legacy lifetime access AND is signed in.
+  if ((subscription.isSubscribed || subscription.isLegacy) && isAuthenticated) {
+    return "none";
+  }
+
+  // Device has an entitlement (paid or legacy) but the user isn't signed in.
+  // They need to sign in so we can load their cloud data.
+  if (subscription.isSubscribed || subscription.isLegacy) {
+    return "signin";
+  }
+
+  // Trial expired and no entitlement — show the paywall.
+  return "paywall";
+}
+
+// ─── Legacy helpers (kept for backward compat during transition) ─────────────
+
+/**
+ * Check whether the user has an active entitlement (subscription or legacy).
+ * Does NOT consider the local trial — use `getRequiredGate` for full logic.
+ */
+export function canAccessUnlimitedFeatures(
+  subscription: SubscriptionStatus,
+): boolean {
   if (subscription.isLegacy) return true;
-
-  // Active subscribers have access
   if (subscription.isSubscribed) return true;
-
   return false;
 }
 
 /**
- * Check if user is currently in their free trial period.
+ * Inverse of `canAccessUnlimitedFeatures`.
  */
-export function isInTrial(subscription: SubscriptionStatus): boolean {
-  return subscription.isTrialing;
+export function shouldShowPaywall(
+  subscription: SubscriptionStatus,
+): boolean {
+  return !canAccessUnlimitedFeatures(subscription);
 }
 
-/**
- * Calculate days remaining in trial period.
- * Returns 0 if not in trial or trial has expired.
- */
-export function daysRemainingInTrial(subscription: SubscriptionStatus): number {
-  if (!subscription.isTrialing || !subscription.expirationDate) return 0;
-
-  const expiration = new Date(subscription.expirationDate);
-  const now = new Date();
-  const diffMs = expiration.getTime() - now.getTime();
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-
-  return Math.max(0, diffDays);
-}
+// ─── Status messages ─────────────────────────────────────────────────────────
 
 /**
- * Get a user-friendly description of their access status.
+ * User-friendly description of the current access level.
  */
-export function getAccessStatusMessage(subscription: SubscriptionStatus): string {
+export function getAccessStatusMessage(
+  subscription: SubscriptionStatus,
+  trial?: TrialStatus,
+): string {
   if (subscription.isLegacy) {
     return "Lifetime Access";
   }
-  if (subscription.isTrialing) {
-    const days = daysRemainingInTrial(subscription);
-    if (days <= 1) return "Trial expires today";
-    return `${days} days left in trial`;
-  }
   if (subscription.isSubscribed) {
-    return "Unlimited Subscriber";
+    return "Premium Subscriber";
+  }
+  if (trial?.isInTrial) {
+    const d = trial.daysRemaining;
+    if (d <= 1) return "Free access expires today";
+    return `${d} days of free access remaining`;
   }
   return "Free";
-}
-
-/**
- * Check if we should show the paywall to this user.
- * Returns true if they don't have access and should see the paywall.
- */
-export function shouldShowPaywall(subscription: SubscriptionStatus): boolean {
-  return !canAccessUnlimitedFeatures(subscription);
 }

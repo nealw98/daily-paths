@@ -34,6 +34,7 @@ import { useAvailableDates } from "../../hooks/useAvailableDates";
 import { hasSeenInstruction, markInstructionSeen, type BookmarkData } from "../../utils/bookmarkStorage";
 import { parseDateLocal } from "../../utils/dateUtils";
 import { useTheme } from "../../hooks/useTheme";
+import { useLegacyPrompt } from "../../hooks/useLegacyPrompt";
 import * as Notifications from "expo-notifications";
 
 console.log("[STARTUP] index.tsx module loading...");
@@ -42,7 +43,10 @@ export default function Index() {
   console.log("[STARTUP] Index function called");
   
   const { colors, colorScheme } = useTheme();
-  
+
+  // One-time legacy user welcome prompt (iOS only, runs once after v2.5 update)
+  useLegacyPrompt();
+
   let router;
   try {
     console.log("[STARTUP-INDEX] Getting router...");

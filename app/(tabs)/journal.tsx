@@ -4,21 +4,31 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "expo-router";
 import { useTheme } from "../../hooks/useTheme";
 import { useAuth } from "../../contexts/AuthContext";
-import { useJournalEntries, type JournalEntry } from "../../hooks/useJournalEntries";
+import { useJournalStorage } from "../../hooks/useJournalStorage";
 import { useJournalStats } from "../../hooks/useJournalStats";
 import { JournalTimeline, type CategoryFilter } from "../../components/journal/JournalTimeline";
 import { JournalEntryEditor } from "../../components/journal/JournalEntryEditor";
 import { JournalEntryDetail } from "../../components/journal/JournalEntryDetail";
 import { JournalCategoryPicker } from "../../components/journal/JournalCategoryPicker";
 import { TealHeader } from "../../components/shared/TealHeader";
+import { PremiumGate } from "../../components/PremiumGate";
 import { fonts } from "../../constants/theme";
 import { getCategoryById, getCategoryLabel, type EntryType } from "../../constants/journalCategories";
 import { EntryTypeIcon } from "../../utils/entryTypeIcon";
 import { FourSquares } from "../../components/icons";
+import type { JournalEntry } from "../../hooks/useJournalEntries";
 
 type JournalView = "timeline" | "editor" | "detail";
 
 export default function JournalTab() {
+  return (
+    <PremiumGate>
+      <JournalTabContent />
+    </PremiumGate>
+  );
+}
+
+function JournalTabContent() {
   const { colors } = useTheme();
   const navigation = useNavigation();
   const { user, isAuthenticated } = useAuth();
@@ -29,7 +39,7 @@ export default function JournalTab() {
     updateEntry,
     deleteEntry,
     refreshEntries,
-  } = useJournalEntries(user?.id);
+  } = useJournalStorage(user?.id, isAuthenticated);
   const stats = useJournalStats(entries);
 
   const [view, setView] = useState<JournalView>("timeline");
@@ -176,27 +186,6 @@ export default function JournalTab() {
     }
   }, [selectedIndex, entries]);
 
-  // ─── Not Authenticated ──────────────────────────────────
-
-  if (!isAuthenticated) {
-    return (
-      <SafeAreaView
-        style={[styles.container, { backgroundColor: colors.background }]}
-        edges={["top"]}
-      >
-        <TealHeader title="Journal" />
-        <View style={styles.authPrompt}>
-          <Text style={[styles.authTitle, { color: colors.textSecondary }]}>
-            Sign in to start journaling
-          </Text>
-          <Text style={[styles.authSubtitle, { color: colors.textSecondary + "80" }]}>
-            Your journal entries are private and synced across your devices.
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   // ─── Render Current View ─────────────────────────────────
 
   if (view === "editor") {
@@ -257,24 +246,5 @@ export default function JournalTab() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  authPrompt: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 40,
-  },
-  authTitle: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  authSubtitle: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: 14,
-    textAlign: "center",
-    lineHeight: 20,
   },
 });

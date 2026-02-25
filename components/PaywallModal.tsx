@@ -26,12 +26,11 @@ interface PaywallModalProps {
 }
 
 const FEATURES = [
-  { icon: "create-outline" as const, title: "Personal Journal", desc: "Write and reflect on your journey" },
-  { icon: "heart-outline" as const, title: "Gratitude List", desc: "Daily gratitude practice" },
+  { icon: "create-outline" as const, title: "Journal", desc: "Write and reflect on your recovery journey" },
   { icon: "book-outline" as const, title: "Prayers", desc: "Al-Anon prayers with personal notes" },
-  { icon: "cloud-outline" as const, title: "Cloud Sync", desc: "Access across all your devices" },
-  { icon: "download-outline" as const, title: "PDF Export", desc: "Export your journal entries" },
-  { icon: "search-outline" as const, title: "Journal Search", desc: "Search through all your entries" },
+  { icon: "mic-outline" as const, title: "Speakers", desc: "Browse and listen to recovery audio" },
+  { icon: "cloud-outline" as const, title: "Cloud Sync", desc: "Access your data across all devices" },
+  { icon: "search-outline" as const, title: "Search", desc: "Search through all your journal entries" },
 ];
 
 export const PaywallModal: React.FC<PaywallModalProps> = ({
@@ -175,9 +174,6 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
                   <Text style={[styles.packagePrice, { color: colors.accent }]}>
                     {annualPkg.product.priceString}/year
                   </Text>
-                  <Text style={[styles.packageSavings, { color: colors.textSecondary }]}>
-                    14-day free trial
-                  </Text>
                 </TouchableOpacity>
               )}
 
@@ -204,9 +200,6 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
                   <Text style={[styles.packagePrice, { color: colors.accent }]}>
                     {monthlyPkg.product.priceString}/month
                   </Text>
-                  <Text style={[styles.packageSavings, { color: colors.textSecondary }]}>
-                    14-day free trial
-                  </Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -221,7 +214,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
                 <ActivityIndicator color={colors.textOnAccent} />
               ) : (
                 <Text style={[styles.ctaText, { color: colors.textOnAccent }]}>
-                  Start Free Trial
+                  Subscribe Now
                 </Text>
               )}
             </TouchableOpacity>
@@ -240,8 +233,8 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
             {/* Legal */}
             <Text style={[styles.legalText, { color: colors.textSecondary }]}>
               Payment will be charged to your App Store account at confirmation
-              of purchase. Subscription automatically renews unless auto-renew is
-              turned off at least 24-hours before the end of the current period.
+              of purchase. Subscription automatically renews unless cancelled at
+              least 24 hours before the end of the current period.
             </Text>
           </ScrollView>
         </View>

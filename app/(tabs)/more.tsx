@@ -199,16 +199,20 @@ export default function MoreTab() {
   };
 
   const handleSignOut = () => {
-    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Sign Out",
-        style: "destructive",
-        onPress: async () => {
-          await signOut();
+    Alert.alert(
+      "Sign Out",
+      "Signing out will hide your journal and premium features until you sign back in. Your data won't be lost.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Sign Out",
+          style: "destructive",
+          onPress: async () => {
+            await signOut();
+          },
         },
-      },
-    ]);
+      ],
+    );
   };
 
   return (

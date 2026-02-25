@@ -25,6 +25,7 @@ import * as Updates from "expo-updates";
 import { installGlobalErrorHandler } from "../utils/errorLogger";
 import { initializeRevenueCat } from "../lib/subscription";
 import { initMixpanel } from "../lib/mixpanel";
+import { ensureTrialStarted } from "../utils/trialTimer";
 
 console.log("[STARTUP] _layout.tsx module loading...");
 console.log("[STARTUP] Platform:", Platform.OS, Platform.Version);
@@ -103,6 +104,7 @@ export default function RootLayout() {
     if (fontsLoaded) {
       initializeRevenueCat();
       initMixpanel();
+      ensureTrialStarted();
     }
   }, [fontsLoaded]);
 

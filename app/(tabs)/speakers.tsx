@@ -9,11 +9,20 @@ import { TealHeader } from "../../components/shared/TealHeader";
 import { Microphone } from "../../components/icons";
 import { SpeakersBrowse } from "../../components/speakers/SpeakersBrowse";
 import { SpeakerDetail } from "../../components/speakers/SpeakerDetail";
+import { PremiumGate } from "../../components/PremiumGate";
 import type { Speaker } from "../../types/speakers";
 
 type SpeakerView = "browse" | "detail";
 
 export default function SpeakersTab() {
+  return (
+    <PremiumGate>
+      <SpeakersTabContent />
+    </PremiumGate>
+  );
+}
+
+function SpeakersTabContent() {
   const { colors } = useTheme();
   const navigation = useNavigation();
   const { speakers, loading, refresh } = useSpeakers();

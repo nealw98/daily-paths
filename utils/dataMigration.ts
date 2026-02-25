@@ -108,3 +108,97 @@ async function migrateSettings(userId: string): Promise<void> {
     qaLog("migration", "Settings migration error", { error: String(err) });
   }
 }
+
+// ─── Freemium trial data migration ──────────────────────────────────────────
+
+const FREEMIUM_MIGRATION_DONE_KEY = "@daily_paths_freemium_migration_done";
+const LOCAL_JOURNAL_KEY = "@daily_paths_local_journal";
+const LOCAL_PRAYER_KEY = "@daily_paths_local_prayer_notes";
+
+/**
+ * Migrate locally-stored trial data (journal entries + prayer notes) to
+ * Supabase after the user subscribes and creates an account.
+ *
+ * Idempotent — a flag in AsyncStorage prevents re-running.  Local data is
+ * intentionally NOT deleted so it survives a later sign-out cycle (the
+ * PremiumGate will block access anyway).
+ */
+export async function migrateTrialDataToSupabase(userId: string): Promise<void> {
+  try {
+    const done = await AsyncStorage.getItem(FREEMIUM_MIGRATION_DONE_KEY);
+    if (done === "true") {
+      qaLog("migration", "Freemium trial migration skipped — already done");
+      return;
+    }
+
+    qaLog("migration", "Starting freemium trial data migration", { userId });
+
+    // ── Journal entries ──────────────────────────────────────────────────
+    const journalRaw = await AsyncStorage.getItem(LOCAL_JOURNAL_KEY);
+    if (journalRaw) {
+      const entries: Array<{
+        entry_type: string;
+        content: string | null;
+        structured_content: Record<string, any> | null;
+        created_at: string;
+        updated_at: string;
+      }> = JSON.parse(journalRaw);
+
+      if (entries.length > 0) {
+        const rows = entries.map((e) => ({
+          user_id: userId,
+          entry_type: e.entry_type,
+          content: e.content,
+          structured_content: e.structured_content,
+          created_at: e.created_at,
+          updated_at: e.updated_at,
+        }));
+
+        const { error } = await supabase
+          .from("journal_entries")
+          .insert(rows);
+
+        if (error) {
+          qaLog("migration", "Error migrating trial journal entries", {
+            error: error.message,
+          });
+          return; // Don't mark as done — allow retry
+        }
+
+        qaLog("migration", `Migrated ${rows.length} trial journal entries`);
+      }
+    }
+
+    // ── Prayer notes ─────────────────────────────────────────────────────
+    const prayerRaw = await AsyncStorage.getItem(LOCAL_PRAYER_KEY);
+    if (prayerRaw) {
+      const parsed: { content: string; updated_at: string } =
+        JSON.parse(prayerRaw);
+
+      if (parsed.content?.trim()) {
+        const { error } = await supabase.from("prayer_notes").upsert(
+          {
+            user_id: userId,
+            content: parsed.content.trim(),
+          },
+          { onConflict: "user_id" },
+        );
+
+        if (error) {
+          qaLog("migration", "Error migrating trial prayer notes", {
+            error: error.message,
+          });
+          return;
+        }
+
+        qaLog("migration", "Migrated trial prayer notes");
+      }
+    }
+
+    // ── Mark complete ────────────────────────────────────────────────────
+    await AsyncStorage.setItem(FREEMIUM_MIGRATION_DONE_KEY, "true");
+    qaLog("migration", "Freemium trial data migration complete");
+  } catch (err) {
+    qaLog("migration", "Freemium migration exception", { error: String(err) });
+  }
+}

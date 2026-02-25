@@ -1,0 +1,94 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+/**
+ * Local 7-day trial timer for the freemium model.
+ *
+ * The clock starts on first app open and is stored as an ISO timestamp in
+ * AsyncStorage.  During the trial window every feature is accessible without
+ * an account.  After the window expires, premium tabs (Journal, Prayers,
+ * Speakers) require a subscription.
+ */
+
+const TRIAL_START_KEY = "@daily_paths_trial_start";
+const TRIAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+export interface TrialStatus {
+  /** True when within the 7-day window */
+  isInTrial: boolean;
+  /** True when past the 7-day window */
+  trialExpired: boolean;
+  /** True when no trial start has been recorded yet (very first launch) */
+  neverStarted: boolean;
+  /** ISO date string of when the trial started, or null */
+  trialStartDate: string | null;
+  /** Whole days remaining (0 when expired) */
+  daysRemaining: number;
+}
+
+/**
+ * Ensure a trial-start timestamp exists.  Safe to call on every launch —
+ * only writes if the key doesn't exist yet.
+ */
+export async function ensureTrialStarted(): Promise<void> {
+  try {
+    const existing = await AsyncStorage.getItem(TRIAL_START_KEY);
+    if (!existing) {
+      await AsyncStorage.setItem(TRIAL_START_KEY, new Date().toISOString());
+    }
+  } catch (err) {
+    // AsyncStorage failure should not crash the app
+    console.warn("[trialTimer] ensureTrialStarted error:", err);
+  }
+}
+
+/**
+ * Read the current trial status.
+ */
+export async function getTrialStatus(): Promise<TrialStatus> {
+  try {
+    const startStr = await AsyncStorage.getItem(TRIAL_START_KEY);
+
+    if (!startStr) {
+      return {
+        isInTrial: false,
+        trialExpired: false,
+        neverStarted: true,
+        trialStartDate: null,
+        daysRemaining: 7,
+      };
+    }
+
+    const startMs = new Date(startStr).getTime();
+    const elapsed = Date.now() - startMs;
+    const remaining = Math.max(
+      0,
+      Math.ceil((TRIAL_DURATION_MS - elapsed) / (24 * 60 * 60 * 1000)),
+    );
+
+    return {
+      isInTrial: elapsed < TRIAL_DURATION_MS,
+      trialExpired: elapsed >= TRIAL_DURATION_MS,
+      neverStarted: false,
+      trialStartDate: startStr,
+      daysRemaining: remaining,
+    };
+  } catch (err) {
+    console.warn("[trialTimer] getTrialStatus error:", err);
+    // Fail-open: treat as trial active so the user isn't locked out by a
+    // transient storage error.
+    return {
+      isInTrial: true,
+      trialExpired: false,
+      neverStarted: false,
+      trialStartDate: null,
+      daysRemaining: 7,
+    };
+  }
+}
+
+/**
+ * Reset the trial (dev / testing only).
+ */
+export async function resetTrial(): Promise<void> {
+  await AsyncStorage.removeItem(TRIAL_START_KEY);
+}

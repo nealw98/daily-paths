@@ -10,6 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
+import { useLocalPrayerNotes } from "../../hooks/useLocalPrayerNotes";
 import { fonts } from "../../constants/theme";
 import { supabase } from "../../lib/supabase";
 import { qaLog } from "../../utils/qaLog";
@@ -18,10 +19,21 @@ interface PersonalNotesProps {
   userId: string | null;
 }
 
+/**
+ * Personal prayer notes component with dual storage support.
+ *
+ * When `userId` is null (during the free trial), notes are saved to
+ * AsyncStorage via `useLocalPrayerNotes`.  When authenticated (`userId`
+ * is present), notes are saved directly to Supabase.
+ */
 export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId }) => {
   const { colors } = useTheme();
   const { settings } = useSettings();
   const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
+
+  // Local storage hook — always called (Rules of Hooks)
+  const localNotes = useLocalPrayerNotes();
+
   const [content, setContent] = useState("");
   const [savedContent, setSavedContent] = useState("");
   const [isEditing, setIsEditing] = useState(false);
@@ -29,62 +41,76 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId }) => {
   const [loading, setLoading] = useState(true);
   const inputRef = useRef<TextInput>(null);
 
-  // Load existing notes
+  // ── Load notes from appropriate source ─────────────────────────────
   useEffect(() => {
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
+    if (userId) {
+      // Authenticated: load from Supabase
+      const loadFromSupabase = async () => {
+        try {
+          const { data } = await supabase
+            .from("prayer_notes")
+            .select("content")
+            .eq("user_id", userId)
+            .single();
 
-    const loadNotes = async () => {
-      try {
-        const { data } = await supabase
-          .from("prayer_notes")
-          .select("content")
-          .eq("user_id", userId)
-          .single();
-
-        if (data) {
-          setContent(data.content);
-          setSavedContent(data.content);
+          if (data) {
+            setContent(data.content);
+            setSavedContent(data.content);
+          }
+        } catch (err) {
+          qaLog("prayers", "Error loading prayer notes", { error: String(err) });
+        } finally {
+          setLoading(false);
         }
-      } catch (err) {
-        qaLog("prayers", "Error loading prayer notes", { error: String(err) });
-      } finally {
+      };
+      loadFromSupabase();
+    } else {
+      // Trial / anonymous: load from local storage
+      if (!localNotes.loading) {
+        setContent(localNotes.content);
+        setSavedContent(localNotes.content);
         setLoading(false);
       }
-    };
+    }
+  }, [userId, localNotes.loading, localNotes.content]);
 
-    loadNotes();
-  }, [userId]);
-
+  // ── Save to appropriate storage ────────────────────────────────────
   const handleSave = useCallback(async () => {
-    if (!userId) return;
-
     setSaving(true);
     try {
-      const { error } = await supabase.from("prayer_notes").upsert(
-        {
-          user_id: userId,
-          content: content.trim(),
-        },
-        { onConflict: "user_id" }
-      );
+      if (userId) {
+        // Authenticated: save to Supabase
+        const { error } = await supabase.from("prayer_notes").upsert(
+          {
+            user_id: userId,
+            content: content.trim(),
+          },
+          { onConflict: "user_id" }
+        );
 
-      if (error) {
-        Alert.alert("Error", "Failed to save your notes.");
-        qaLog("prayers", "Error saving prayer notes", { error: error.message });
+        if (error) {
+          Alert.alert("Error", "Failed to save your notes.");
+          qaLog("prayers", "Error saving prayer notes", { error: error.message });
+          return;
+        }
       } else {
-        setSavedContent(content);
-        setIsEditing(false);
-        qaLog("prayers", "Prayer notes saved");
+        // Trial / anonymous: save to AsyncStorage
+        const success = await localNotes.saveContent(content);
+        if (!success) {
+          Alert.alert("Error", "Failed to save your notes.");
+          return;
+        }
       }
+
+      setSavedContent(content);
+      setIsEditing(false);
+      qaLog("prayers", "Prayer notes saved", { storage: userId ? "supabase" : "local" });
     } catch (err) {
       Alert.alert("Error", "Something went wrong.");
     } finally {
       setSaving(false);
     }
-  }, [userId, content]);
+  }, [userId, content, localNotes]);
 
   const handleEdit = () => {
     setIsEditing(true);
