@@ -8,6 +8,7 @@ import { useTheme } from "../hooks/useTheme";
 import { isRevenueCatInitialized, loginRevenueCat } from "../lib/subscription";
 import { getRequiredGate, canAccessUnlimitedFeatures } from "../utils/accessControl";
 import { migrateTrialDataToSupabase } from "../utils/dataMigration";
+import { performLegacyMigration, grantLifetimeEntitlement } from "../utils/legacyUserMigration";
 import { PaywallModal } from "./PaywallModal";
 import { SignInModal } from "./SignInModal";
 import { qaLog } from "../utils/qaLog";
@@ -59,6 +60,14 @@ export const PremiumGate: React.FC<PremiumGateProps> = ({ children }) => {
           qaLog("PremiumGate", "Fresh sign-in detected, linking RevenueCat + migrating data");
           await loginRevenueCat(user.id);
           await migrateTrialDataToSupabase(user.id);
+
+          // Detect legacy users and grant RevenueCat lifetime entitlement
+          const isLegacy = await performLegacyMigration(user.id);
+          if (isLegacy) {
+            qaLog("PremiumGate", "Legacy user detected, granting lifetime entitlement");
+            await grantLifetimeEntitlement(user.id);
+          }
+
           refreshSub();
         } catch (err) {
           qaLog("PremiumGate", "Post-sign-in error", { error: String(err) });

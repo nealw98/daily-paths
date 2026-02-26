@@ -201,7 +201,7 @@ export async function signOut() {
   } catch (e) {
     qaLog("auth", "GoogleSignin.signOut non-fatal", { error: String(e) });
   }
-  const { error } = await supabase.auth.signOut({ scope: "local" });
+  const { error } = await supabase.auth.signOut();
   if (error) {
     qaLog("auth", "Sign out failed", { error: error.message });
     throw error;

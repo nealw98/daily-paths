@@ -12,8 +12,9 @@ import { getSubscriptionOverride } from "../utils/subscriptionOverride";
  * Products: Monthly ($3.99), Annual ($29.99) with 14-day free trial.
  */
 
-// Entitlement ID configured in RevenueCat dashboard
+// Entitlement IDs configured in RevenueCat dashboard
 const ENTITLEMENT_ID = "unlimited";
+const LIFETIME_ENTITLEMENT_ID = "lifetime";
 
 // API keys from environment (set in .env)
 const REVENUECAT_IOS_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY || "";
@@ -183,6 +184,19 @@ export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
   try {
     const customerInfo = await Purchases.getCustomerInfo();
     const entitlement = customerInfo.entitlements.active[ENTITLEMENT_ID];
+    const lifetimeEntitlement = customerInfo.entitlements.active[LIFETIME_ENTITLEMENT_ID];
+
+    // Lifetime entitlement (legacy users granted via Edge Function)
+    if (lifetimeEntitlement) {
+      return {
+        isSubscribed: true,
+        isTrialing: false,
+        isLegacy: true,
+        expirationDate: null,
+        productIdentifier: lifetimeEntitlement.productIdentifier,
+        willRenew: false,
+      };
+    }
 
     if (!entitlement) {
       return {
@@ -198,7 +212,7 @@ export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
     return {
       isSubscribed: true,
       isTrialing: entitlement.periodType === "TRIAL",
-      isLegacy: entitlement.productIdentifier === "lifetime_legacy",
+      isLegacy: false,
       expirationDate: entitlement.expirationDate,
       productIdentifier: entitlement.productIdentifier,
       willRenew: entitlement.willRenew,

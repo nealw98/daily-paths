@@ -1,4 +1,5 @@
 import { Tabs } from "expo-router";
+import { Platform } from "react-native";
 import { fonts } from "../../constants/theme";
 import { useTheme } from "../../hooks/useTheme";
 import { LightOnWater, Feather, LeafOnWater, Microphone, Nautilus } from "../../components/icons";
@@ -22,6 +23,9 @@ export default function TabLayout() {
           backgroundColor: colors.background,
           borderTopColor: colors.border,
           borderTopWidth: 1,
+          height: Platform.OS === "android" ? 70 : 84,
+          paddingBottom: Platform.OS === "android" ? 14 : 28,
+          paddingTop: 8,
         },
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textSecondary,

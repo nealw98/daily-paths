@@ -133,7 +133,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     setSession(null);
     setIsLegacy(false);
-    signingOut.current = false;
+    // Keep the guard active briefly so any in-flight auth listener events
+    // (e.g. a token refresh that was already in progress) are blocked.
+    setTimeout(() => {
+      signingOut.current = false;
+    }, 2000);
   }, []);
 
   const forgotPassword = useCallback(async (email: string) => {

@@ -72,13 +72,14 @@ export function useSubscription(userId?: string | null) {
           await loginRevenueCat(userId);
         }
 
-        // Fetch current status
-        const currentStatus = await getSubscriptionStatus();
-        if (!cancelled) setStatus(currentStatus);
+        // Fetch current status & packages (only if RevenueCat is ready)
+        if (isRevenueCatInitialized()) {
+          const currentStatus = await getSubscriptionStatus();
+          if (!cancelled) setStatus(currentStatus);
 
-        // Fetch available packages
-        const availablePackages = await getOfferings();
-        if (!cancelled) setPackages(availablePackages);
+          const availablePackages = await getOfferings();
+          if (!cancelled) setPackages(availablePackages);
+        }
       } catch (err) {
         qaLog("subscription", "Hook init error", { error: String(err) });
       } finally {
