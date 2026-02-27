@@ -15,7 +15,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { fonts } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
 import { useSubscription } from "../hooks/useSubscription";
-import { useAuth } from "../contexts/AuthContext";
 import type { PurchasesPackage } from "react-native-purchases";
 
 interface PaywallModalProps {
@@ -44,8 +43,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
   onDismiss,
 }) => {
   const { colors } = useTheme();
-  const { user } = useAuth();
-  const { packages, purchase, restore, purchasing } = useSubscription(user?.id);
+  const { packages, purchase, restore, purchasing } = useSubscription();
   const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage | null>(null);
   const [restoring, setRestoring] = useState(false);
 

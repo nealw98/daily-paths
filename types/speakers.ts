@@ -12,4 +12,5 @@ export interface Speaker {
   youtube_url: string;
   audio_url: string;
   quote: string | null;
+  created_at: string;
 }

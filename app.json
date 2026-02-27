@@ -30,7 +30,6 @@
       },
       "package": "com.nealw98.dailypaths",
       "versionCode": 23,
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "playStoreUrl": "https://play.google.com/store/apps/details?id=com.nealw98.dailypaths"
     },

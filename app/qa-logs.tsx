@@ -365,7 +365,7 @@ export default function QaLogsScreen() {
             activeOpacity={0.8}
             onPress={handleClearLocalJournal}
           >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Clear Local Journal</Text>
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Clear Local Notebook</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}

@@ -22,6 +22,7 @@ type SortMode = "newest" | "oldest" | "az";
 interface SpeakersBrowseProps {
   speakers: Speaker[];
   loading: boolean;
+  error: string | null;
   onSelectSpeaker: (speaker: Speaker, autoPlay: boolean) => void;
   onRefresh: () => void;
 }
@@ -31,6 +32,7 @@ interface SpeakersBrowseProps {
 export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
   speakers,
   loading,
+  error,
   onSelectSpeaker,
   onRefresh,
 }) => {
@@ -60,10 +62,10 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
     const sorted = [...result];
     switch (sortMode) {
       case "newest":
-        sorted.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+        sorted.sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
         break;
       case "oldest":
-        sorted.sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+        sorted.sort((a, b) => (a.created_at || "").localeCompare(b.created_at || ""));
         break;
       case "az":
         sorted.sort((a, b) => a.speaker.localeCompare(b.speaker));
@@ -198,6 +200,21 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
 
   const ListEmpty = () => {
     if (loading) return null;
+
+    if (error) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="cloud-offline-outline" size={48} color={colors.danger + "80"} />
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>
+            Unable to load speakers
+          </Text>
+          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+            Pull down to try again.
+          </Text>
+        </View>
+      );
+    }
+
     return (
       <View style={styles.emptyContainer}>
         <Ionicons name="mic-off-outline" size={48} color={colors.textSecondary + "60"} />

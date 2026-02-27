@@ -25,7 +25,7 @@ export default function SpeakersTab() {
 function SpeakersTabContent() {
   const { colors } = useTheme();
   const navigation = useNavigation();
-  const { speakers, loading, refresh } = useSpeakers();
+  const { speakers, loading, error, refresh } = useSpeakers();
 
   // Audio player lives at the tab level so playback persists across views and tabs
   const player = useAudioPlayer();
@@ -101,6 +101,7 @@ function SpeakersTabContent() {
       <SpeakersBrowse
         speakers={speakers}
         loading={loading}
+        error={error}
         onSelectSpeaker={handleSelectSpeaker}
         onRefresh={refresh}
       />

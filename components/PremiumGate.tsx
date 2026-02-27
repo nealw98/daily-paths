@@ -1,12 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
-import { View, ActivityIndicator, StyleSheet } from "react-native";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import Constants from "expo-constants";
+import { router, useNavigation } from "expo-router";
 import { useAuth } from "../contexts/AuthContext";
-import { useSubscription } from "../hooks/useSubscription";
-import { useTrialStatus } from "../hooks/useTrialStatus";
-import { useTheme } from "../hooks/useTheme";
-import { isRevenueCatInitialized, loginRevenueCat } from "../lib/subscription";
-import { getRequiredGate, canAccessUnlimitedFeatures } from "../utils/accessControl";
+import { useSubscriptionContext } from "../contexts/SubscriptionContext";
 import { migrateTrialDataToSupabase } from "../utils/dataMigration";
 import { performLegacyMigration, grantLifetimeEntitlement } from "../utils/legacyUserMigration";
 import { PaywallModal } from "./PaywallModal";
@@ -16,12 +12,9 @@ import { qaLog } from "../utils/qaLog";
 /**
  * Per-tab access gate for premium features (Journal, Prayers, Speakers).
  *
- * Replaces the old global PaywallModal + SignInModal gates from _layout.tsx.
- * Wraps the premium tab's content and shows the appropriate gate when access
- * is denied.
- *
- * When gated, children are NOT rendered (their hooks don't execute).
- * When open, children render normally.
+ * Children always render immediately (hooks execute, content visible).
+ * If the user lacks access, PaywallModal or SignInModal overlays on top.
+ * This matches the Today tab's instant-render behavior.
  */
 
 interface PremiumGateProps {
@@ -29,14 +22,9 @@ interface PremiumGateProps {
 }
 
 export const PremiumGate: React.FC<PremiumGateProps> = ({ children }) => {
-  const { colors } = useTheme();
   const { user, isAuthenticated } = useAuth();
-  const {
-    status: subStatus,
-    loading: subLoading,
-    refresh: refreshSub,
-  } = useSubscription(user?.id);
-  const trialStatus = useTrialStatus();
+  const navigation = useNavigation();
+  const { gate, refresh: refreshSub } = useSubscriptionContext();
 
   // Track previous auth state to detect fresh sign-ins
   const prevAuth = useRef(isAuthenticated);
@@ -45,20 +33,30 @@ export const PremiumGate: React.FC<PremiumGateProps> = ({ children }) => {
   // potentially show the sign-in modal.  This state bridges that transition.
   const [purchaseCompleted, setPurchaseCompleted] = useState(false);
 
-  const revenueCatActive = isRevenueCatInitialized();
-  const stillLoading = subLoading || trialStatus.loading;
+  // When the user dismisses the paywall ("Not Now" / X), we set this to true
+  // so the modal unmounts before we navigate away.
+  const [dismissed, setDismissed] = useState(false);
 
   // Dev / simulator bypass — allow dismissing modals for testing
   const isSimulator = !Constants.isDevice;
   const devBypass = __DEV__ || isSimulator;
 
-  // ── Detect fresh sign-in → link RevenueCat + migrate data ──────────
+  // ── Reset dismissed state when this tab regains focus ────────────────
+  // So the paywall shows again if the user navigates back to a premium tab.
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      setDismissed(false);
+    });
+    return unsubscribe;
+  }, [navigation]);
+
+  // ── Detect fresh sign-in → migrate data ─────────────────────────────
+  // loginRevenueCat is now handled by SubscriptionContext.
   useEffect(() => {
     if (!prevAuth.current && isAuthenticated && user?.id) {
       (async () => {
         try {
-          qaLog("PremiumGate", "Fresh sign-in detected, linking RevenueCat + migrating data");
-          await loginRevenueCat(user.id);
+          qaLog("PremiumGate", "Fresh sign-in detected, migrating data");
           await migrateTrialDataToSupabase(user.id);
 
           // Detect legacy users and grant RevenueCat lifetime entitlement
@@ -77,66 +75,45 @@ export const PremiumGate: React.FC<PremiumGateProps> = ({ children }) => {
     prevAuth.current = isAuthenticated;
   }, [isAuthenticated, user?.id, refreshSub]);
 
-  // ── Loading state ──────────────────────────────────────────────────────
-  if (stillLoading) {
-    return (
-      <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.accent} />
-      </View>
-    );
-  }
+  // ── Dismiss handler — hides Modal overlay, then navigates to home ─────
+  const handleDismiss = useCallback(() => {
+    setDismissed(true);
+    // Use setTimeout so the modal unmounts before navigation
+    setTimeout(() => {
+      router.navigate("/(tabs)/today");
+    }, 50);
+  }, []);
 
-  // ── Compute gate ───────────────────────────────────────────────────────
-  // When RevenueCat isn't configured (dev mode without API keys), treat
-  // entitlement as satisfied — only the trial timer and auth matter.
-  const gate = !revenueCatActive
-    ? (trialStatus.isInTrial || isAuthenticated ? "none" as const : "none" as const)
-    : getRequiredGate(subStatus, trialStatus, isAuthenticated);
+  // ── Always render children; overlay modals when gated ─────────────────
+  return (
+    <>
+      {children}
 
-  // ── No gate — render content ───────────────────────────────────────────
-  if (gate === "none" && !purchaseCompleted) {
-    return <>{children}</>;
-  }
+      {/* Paywall overlay */}
+      {gate === "paywall" && !purchaseCompleted && !dismissed && (
+        <PaywallModal
+          visible
+          dismissable
+          onClose={() => {
+            refreshSub();
+            setPurchaseCompleted(true);
+          }}
+          onDismiss={handleDismiss}
+        />
+      )}
 
-  // ── Paywall gate ───────────────────────────────────────────────────────
-  if (gate === "paywall" && !purchaseCompleted) {
-    return (
-      <PaywallModal
-        visible
-        dismissable={devBypass}
-        onClose={() => {
-          refreshSub();
-          setPurchaseCompleted(true);
-        }}
-      />
-    );
-  }
-
-  // ── Sign-in gate ───────────────────────────────────────────────────────
-  // Shown when device has entitlement but user isn't authenticated,
-  // OR immediately after a purchase (purchaseCompleted === true).
-  if (gate === "signin" || purchaseCompleted) {
-    return (
-      <SignInModal
-        visible
-        dismissable={devBypass}
-        initialMode={gate === "signin" ? "signin" : undefined}
-        onClose={() => {
-          setPurchaseCompleted(false);
-          refreshSub();
-        }}
-      />
-    );
-  }
-
-  // Fallback (shouldn't reach here)
-  return <>{children}</>;
+      {/* Sign-in overlay */}
+      {(gate === "signin" || purchaseCompleted) && !dismissed && (
+        <SignInModal
+          visible
+          dismissable={devBypass}
+          initialMode={gate === "signin" ? "signin" : undefined}
+          onClose={() => {
+            setPurchaseCompleted(false);
+            refreshSub();
+          }}
+        />
+      )}
+    </>
+  );
 };
-
-const styles = StyleSheet.create({
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-});

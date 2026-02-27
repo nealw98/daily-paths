@@ -93,7 +93,7 @@ export default function Index() {
 
   // Paywall gating for the journal FAB
   const trialStatus = useTrialStatus();
-  const { status: subStatus, refresh: refreshSub } = useSubscription(user?.id);
+  const { status: subStatus, refresh: refreshSub } = useSubscription();
   
   // Analytics
   const { trackAppOpened, startReadingView, trackReadingFavorited, trackReadingUnfavorited, updateThemeMode } = useAnalytics();

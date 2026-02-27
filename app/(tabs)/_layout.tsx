@@ -1,5 +1,6 @@
 import { Tabs } from "expo-router";
 import { Platform } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fonts } from "../../constants/theme";
 import { useTheme } from "../../hooks/useTheme";
 import { LightOnWater, Feather, LeafOnWater, Microphone, Nautilus } from "../../components/icons";
@@ -14,6 +15,7 @@ import { LightOnWater, Feather, LeafOnWater, Microphone, Nautilus } from "../../
  */
 export default function TabLayout() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -23,8 +25,8 @@ export default function TabLayout() {
           backgroundColor: colors.background,
           borderTopColor: colors.border,
           borderTopWidth: 1,
-          height: Platform.OS === "android" ? 70 : 84,
-          paddingBottom: Platform.OS === "android" ? 14 : 28,
+          height: (Platform.OS === "android" ? 56 : 56) + insets.bottom,
+          paddingBottom: insets.bottom,
           paddingTop: 8,
         },
         tabBarActiveTintColor: colors.accent,
@@ -48,7 +50,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="journal"
         options={{
-          title: "Journal",
+          title: "Notebook",
           tabBarIcon: ({ color, size }) => (
             <Feather size={size} color={color} />
           ),

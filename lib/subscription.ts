@@ -4,6 +4,7 @@ import Purchases, {
   LOG_LEVEL,
 } from "react-native-purchases";
 import { Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { qaLog } from "../utils/qaLog";
 import { getSubscriptionOverride } from "../utils/subscriptionOverride";
 
@@ -19,6 +20,8 @@ const LIFETIME_ENTITLEMENT_ID = "lifetime";
 // API keys from environment (set in .env)
 const REVENUECAT_IOS_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY || "";
 const REVENUECAT_ANDROID_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY || "";
+
+const SUBSCRIPTION_CACHE_KEY = "@daily_paths_subscription_status_v1";
 
 export interface SubscriptionStatus {
   isSubscribed: boolean;
@@ -186,9 +189,11 @@ export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
     const entitlement = customerInfo.entitlements.active[ENTITLEMENT_ID];
     const lifetimeEntitlement = customerInfo.entitlements.active[LIFETIME_ENTITLEMENT_ID];
 
+    let result: SubscriptionStatus;
+
     // Lifetime entitlement (legacy users granted via Edge Function)
     if (lifetimeEntitlement) {
-      return {
+      result = {
         isSubscribed: true,
         isTrialing: false,
         isLegacy: true,
@@ -196,10 +201,8 @@ export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
         productIdentifier: lifetimeEntitlement.productIdentifier,
         willRenew: false,
       };
-    }
-
-    if (!entitlement) {
-      return {
+    } else if (!entitlement) {
+      result = {
         isSubscribed: false,
         isTrialing: false,
         isLegacy: false,
@@ -207,20 +210,31 @@ export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
         productIdentifier: null,
         willRenew: false,
       };
+    } else {
+      result = {
+        isSubscribed: true,
+        isTrialing: entitlement.periodType === "TRIAL",
+        isLegacy: false,
+        expirationDate: entitlement.expirationDate,
+        productIdentifier: entitlement.productIdentifier,
+        willRenew: entitlement.willRenew,
+      };
     }
 
-    return {
-      isSubscribed: true,
-      isTrialing: entitlement.periodType === "TRIAL",
-      isLegacy: false,
-      expirationDate: entitlement.expirationDate,
-      productIdentifier: entitlement.productIdentifier,
-      willRenew: entitlement.willRenew,
-    };
+    await cacheSubscriptionStatus(result);
+    return result;
   } catch (err) {
     qaLog("subscription", "Error getting subscription status", {
       error: String(err),
     });
+
+    // Fall back to cached status so a paying subscriber isn't locked out
+    const cached = await getCachedSubscriptionStatus();
+    if (cached) {
+      qaLog("subscription", "Returning cached subscription status");
+      return cached;
+    }
+
     return {
       isSubscribed: false,
       isTrialing: false,
@@ -237,4 +251,31 @@ export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
  */
 export function isRevenueCatInitialized(): boolean {
   return isInitialized;
+}
+
+/**
+ * Cache the subscription status to AsyncStorage for offline/error fallback.
+ */
+export async function cacheSubscriptionStatus(
+  status: SubscriptionStatus,
+): Promise<void> {
+  try {
+    await AsyncStorage.setItem(SUBSCRIPTION_CACHE_KEY, JSON.stringify(status));
+  } catch {
+    // Non-critical
+  }
+}
+
+/**
+ * Read the last cached subscription status from AsyncStorage.
+ * Returns null if no cache exists (first-ever launch).
+ */
+export async function getCachedSubscriptionStatus(): Promise<SubscriptionStatus | null> {
+  try {
+    const raw = await AsyncStorage.getItem(SUBSCRIPTION_CACHE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as SubscriptionStatus;
+  } catch {
+    return null;
+  }
 }

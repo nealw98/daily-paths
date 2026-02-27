@@ -31,7 +31,7 @@ export function useSpeakers() {
       const { data, error: fetchError } = await supabase
         .from("speakers")
         .select("*")
-        .order("date", { ascending: false });
+        .order("created_at", { ascending: false });
 
       if (fetchError) {
         qaLog("speakers", "Error fetching speakers", {
@@ -43,7 +43,10 @@ export function useSpeakers() {
 
       if (mounted.current) {
         setSpeakers(data || []);
-        qaLog("speakers", "Fetched speakers", { count: (data || []).length });
+        qaLog("speakers", "Fetched speakers", {
+          count: (data || []).length,
+          ...(data?.length === 0 && { warning: "0 rows returned — check Supabase RLS on speakers table" }),
+        });
       }
     } catch (err) {
       qaLog("speakers", "Exception fetching speakers", { error: String(err) });

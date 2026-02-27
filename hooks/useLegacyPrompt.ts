@@ -20,7 +20,7 @@ const LEGACY_PROMPT_KEY = "@daily_paths_legacy_prompt_shown";
 
 export function useLegacyPrompt() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
-  const { status: subStatus, loading: subLoading } = useSubscription(user?.id);
+  const { status: subStatus, loading: subLoading } = useSubscription();
   const prompted = useRef(false);
 
   useEffect(() => {

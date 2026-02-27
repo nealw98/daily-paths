@@ -19,13 +19,12 @@ import {
 import { fallbackColors } from "../constants/theme";
 import { SettingsProvider } from "../hooks/useSettings";
 import { AuthProvider } from "../contexts/AuthContext";
+import { SubscriptionProvider } from "../contexts/SubscriptionContext";
 import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import * as Updates from "expo-updates";
 import { installGlobalErrorHandler } from "../utils/errorLogger";
-import { initializeRevenueCat } from "../lib/subscription";
 import { initMixpanel } from "../lib/mixpanel";
-import { ensureTrialStarted } from "../utils/trialTimer";
 
 console.log("[STARTUP] _layout.tsx module loading...");
 console.log("[STARTUP] Platform:", Platform.OS, Platform.Version);
@@ -97,14 +96,11 @@ export default function RootLayout() {
     console.error("[STARTUP] ERROR loading fonts:", err);
   }
 
-  // Initialize RevenueCat SDK early so entitlement status is ready before tabs render.
-  // User ID is not available here (inside AuthProvider); useSubscription will call
-  // loginRevenueCat(userId) later when the user signs in.
+  // Initialize analytics once fonts are loaded.
+  // RevenueCat and trial timer are now managed by SubscriptionContext.
   useEffect(() => {
     if (fontsLoaded) {
-      initializeRevenueCat();
       initMixpanel();
-      ensureTrialStarted();
     }
   }, [fontsLoaded]);
 
@@ -198,6 +194,7 @@ export default function RootLayout() {
   return (
     <SettingsProvider>
       <AuthProvider>
+        <SubscriptionProvider>
         {updateReady && (
           <View style={styles.updateBanner}>
             <Text style={styles.updateText}>
@@ -231,6 +228,7 @@ export default function RootLayout() {
             contentStyle: { backgroundColor: colors.pearl },
           }}
         />
+        </SubscriptionProvider>
       </AuthProvider>
     </SettingsProvider>
   );
