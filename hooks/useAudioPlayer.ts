@@ -19,6 +19,7 @@ export function useAudioPlayer() {
   const [durationMs, setDurationMs] = useState(0);
   const [rate, setRateState] = useState(1);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [didJustFinish, setDidJustFinish] = useState(false);
 
   // Track the currently loaded URI so we can avoid reloading the same file
   const currentUriRef = useRef<string | null>(null);
@@ -48,6 +49,12 @@ export function useAudioPlayer() {
     setPositionMs(status.positionMillis);
     setDurationMs(status.durationMillis ?? 0);
     setLoadError(null);
+
+    if (status.didJustFinish) {
+      setDidJustFinish(true);
+    } else {
+      setDidJustFinish(false);
+    }
   }, []);
 
   const load = useCallback(
@@ -177,6 +184,7 @@ export function useAudioPlayer() {
     durationMs,
     rate,
     loadError,
+    didJustFinish,
     currentUri: currentUriRef.current,
   };
 }

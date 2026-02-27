@@ -8,6 +8,7 @@ import { performLegacyMigration, grantLifetimeEntitlement } from "../utils/legac
 import { PaywallModal } from "./PaywallModal";
 import { SignInModal } from "./SignInModal";
 import { qaLog } from "../utils/qaLog";
+import { useAnalytics } from "../utils/analytics";
 
 /**
  * Per-tab access gate for premium features (Journal, Prayers, Speakers).
@@ -25,6 +26,7 @@ export const PremiumGate: React.FC<PremiumGateProps> = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
   const navigation = useNavigation();
   const { gate, refresh: refreshSub } = useSubscriptionContext();
+  const { trackPaywallShown, trackPaywallDismissed } = useAnalytics();
 
   // Track previous auth state to detect fresh sign-ins
   const prevAuth = useRef(isAuthenticated);
@@ -75,14 +77,22 @@ export const PremiumGate: React.FC<PremiumGateProps> = ({ children }) => {
     prevAuth.current = isAuthenticated;
   }, [isAuthenticated, user?.id, refreshSub]);
 
+  // ── Track paywall shown ─────────────────────────────────────────────
+  useEffect(() => {
+    if (gate === "paywall" && !purchaseCompleted && !dismissed) {
+      trackPaywallShown();
+    }
+  }, [gate, purchaseCompleted, dismissed, trackPaywallShown]);
+
   // ── Dismiss handler — hides Modal overlay, then navigates to home ─────
   const handleDismiss = useCallback(() => {
+    trackPaywallDismissed();
     setDismissed(true);
     // Use setTimeout so the modal unmounts before navigation
     setTimeout(() => {
       router.navigate("/(tabs)/today");
     }, 50);
-  }, []);
+  }, [trackPaywallDismissed]);
 
   // ── Always render children; overlay modals when gated ─────────────────
   return (

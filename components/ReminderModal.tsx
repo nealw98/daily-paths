@@ -5,6 +5,7 @@ import { fonts } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
 import { useSettings } from "../hooks/useSettings";
 import { updateNotificationWithThought } from "../utils/notificationSync";
+import { useAnalytics } from "../utils/analytics";
 
 function parseTimeToDate(time: string): Date {
   const [h = "8", m = "0"] = time.split(":");
@@ -41,6 +42,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
 }) => {
   const { colors, isDark } = useTheme();
   const { settings, setDailyReminderEnabled, setDailyReminderTime } = useSettings();
+  const { trackReminderSet, trackReminderChanged, trackReminderDisabled } = useAnalytics();
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [tempReminderDate, setTempReminderDate] = useState<Date | null>(null);
   const slideAnim = React.useRef(new Animated.Value(0)).current;
@@ -74,12 +76,15 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
 
   const handleReminderToggle = async (enabled: boolean) => {
     await setDailyReminderEnabled(enabled);
-    
+
     // Update notification with thought if enabling
     if (enabled) {
       await updateNotificationWithThought();
+      trackReminderSet(settings.dailyReminderTime);
+    } else {
+      trackReminderDisabled();
     }
-    
+
     if (enabled && onShowToast) {
       const timeStr = formatTimeDisplay(reminderDate);
       onShowToast(`You'll receive the Thought for the Day at ${timeStr}`);
@@ -181,8 +186,11 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                       setTempReminderDate(null);
                       if (event.type === "set" && selectedDate) {
                         (async () => {
-                          await setDailyReminderTime(formatTimeStorage(selectedDate));
+                          const oldTime = settings.dailyReminderTime;
+                          const newTime = formatTimeStorage(selectedDate);
+                          await setDailyReminderTime(newTime);
                           await updateNotificationWithThought();
+                          trackReminderChanged(oldTime, newTime);
                           if (onShowToast) {
                             onShowToast(`You'll receive the Thought for the Day at ${formatTimeDisplay(selectedDate)}`);
                           }
@@ -209,10 +217,13 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                       style={[styles.timePickerButtonPrimary, { backgroundColor: colors.deepTeal }]}
                       onPress={async () => {
                         const finalDate = tempReminderDate ?? reminderDate;
+                        const oldTime = settings.dailyReminderTime;
+                        const newTime = formatTimeStorage(finalDate);
                         setShowTimePicker(false);
                         setTempReminderDate(null);
-                        await setDailyReminderTime(formatTimeStorage(finalDate));
+                        await setDailyReminderTime(newTime);
                         await updateNotificationWithThought();
+                        trackReminderChanged(oldTime, newTime);
                         if (onShowToast) {
                           onShowToast(`You'll receive the Thought for the Day at ${formatTimeDisplay(finalDate)}`);
                         }

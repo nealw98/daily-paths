@@ -27,12 +27,12 @@ interface PaywallModalProps {
 }
 
 const FEATURES = [
-  { icon: "mic-outline" as const, title: "Speakers", desc: "Listen to recovery speakers, with new talks added regularly" },
+  { icon: "mic-outline" as const, title: "Speakers", desc: "Listen to recovery speakers, with new talks added all the time" },
   { icon: "create-outline" as const, title: "Journal", desc: "Write and reflect on your recovery journey" },
-  { icon: "leaf-outline" as const, title: "Prayers", desc: "Save and reflect on your personal prayers" },
   { icon: "clipboard-outline" as const, title: "Spot Check Inventory", desc: "Quick emotional check-ins" },
   { icon: "heart-outline" as const, title: "Gratitude List", desc: "Track what you're grateful for each day" },
   { icon: "moon-outline" as const, title: "Nightly Review", desc: "Reflect on your day before rest" },
+  { icon: "leaf-outline" as const, title: "Prayers", desc: "Save and reflect on your personal prayers" },
   { icon: "cloud-outline" as const, title: "Cloud Sync", desc: "Access your data across all devices" },
 ];
 

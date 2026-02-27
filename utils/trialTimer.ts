@@ -1,4 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { trackEvent } from "./trackEvent";
+import { ANALYTICS_EVENTS } from "./analytics";
 
 /**
  * Local 7-day trial timer for the freemium model.
@@ -10,6 +12,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
  */
 
 const TRIAL_START_KEY = "@daily_paths_trial_start";
+const TRIAL_ENDED_TRACKED_KEY = "@daily_paths_trial_ended_tracked";
 const TRIAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 export interface TrialStatus {
@@ -34,6 +37,7 @@ export async function ensureTrialStarted(): Promise<void> {
     const existing = await AsyncStorage.getItem(TRIAL_START_KEY);
     if (!existing) {
       await AsyncStorage.setItem(TRIAL_START_KEY, new Date().toISOString());
+      trackEvent(ANALYTICS_EVENTS.TRIAL_STARTED, {}, true);
     }
   } catch (err) {
     // AsyncStorage failure should not crash the app
@@ -64,6 +68,22 @@ export async function getTrialStatus(): Promise<TrialStatus> {
       0,
       Math.ceil((TRIAL_DURATION_MS - elapsed) / (24 * 60 * 60 * 1000)),
     );
+
+    // Fire trial_ended exactly once when expiry is first detected
+    if (elapsed >= TRIAL_DURATION_MS) {
+      try {
+        const alreadyTracked = await AsyncStorage.getItem(TRIAL_ENDED_TRACKED_KEY);
+        if (!alreadyTracked) {
+          await AsyncStorage.setItem(TRIAL_ENDED_TRACKED_KEY, "true");
+          trackEvent(ANALYTICS_EVENTS.TRIAL_ENDED, {
+            trial_start_date: startStr,
+            trial_duration_days: 7,
+          }, true);
+        }
+      } catch {
+        // Non-critical analytics — don't block status return
+      }
+    }
 
     return {
       isInTrial: elapsed < TRIAL_DURATION_MS,

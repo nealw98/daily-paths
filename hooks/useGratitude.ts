@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { qaLog } from "../utils/qaLog";
+import { trackEvent } from "../utils/trackEvent";
+import { ANALYTICS_EVENTS } from "../utils/analytics";
 
 export interface GratitudeEntry {
   id: string;
@@ -172,6 +174,18 @@ export function useGratitude(userId: string | null | undefined) {
         }
 
         qaLog("gratitude", "Entry saved", { date: todayStr, itemCount: filteredItems.length });
+
+        // Track create vs edit based on whether an entry existed before save
+        const isEdit = !!todayEntry;
+        trackEvent(
+          isEdit ? ANALYTICS_EVENTS.GRATITUDE_ENTRY_EDITED : ANALYTICS_EVENTS.GRATITUDE_ENTRY_CREATED,
+          {
+            entry_type: 'gratitude',
+            item_count: filteredItems.length,
+            date: todayStr,
+          },
+        );
+
         return true;
       } catch (err) {
         qaLog("gratitude", "Exception saving entry", { error: String(err) });

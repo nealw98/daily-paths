@@ -5,6 +5,7 @@ import { useNavigation } from "expo-router";
 import { useTheme } from "../../hooks/useTheme";
 import { useSpeakers, getSpeakerAudioUrl } from "../../hooks/useSpeakers";
 import { useAudioPlayer } from "../../hooks/useAudioPlayer";
+import { useAnalytics } from "../../utils/analytics";
 import { TealHeader } from "../../components/shared/TealHeader";
 import { Microphone } from "../../components/icons";
 import { SpeakersBrowse } from "../../components/speakers/SpeakersBrowse";
@@ -26,6 +27,7 @@ function SpeakersTabContent() {
   const { colors } = useTheme();
   const navigation = useNavigation();
   const { speakers, loading, error, refresh } = useSpeakers();
+  const { trackSpeakerAudioCompleted } = useAnalytics();
 
   // Audio player lives at the tab level so playback persists across views and tabs
   const player = useAudioPlayer();
@@ -38,6 +40,17 @@ function SpeakersTabContent() {
 
   const [selectedSpeaker, setSelectedSpeaker] = useState<Speaker | null>(null);
   const [autoPlay, setAutoPlay] = useState(false);
+
+  // Track speaker audio completion
+  useEffect(() => {
+    if (player.didJustFinish && selectedSpeaker) {
+      trackSpeakerAudioCompleted(
+        selectedSpeaker.id,
+        selectedSpeaker.speaker,
+        player.durationMs,
+      );
+    }
+  }, [player.didJustFinish]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Tab press resets to browse (audio keeps playing)
   useEffect(() => {

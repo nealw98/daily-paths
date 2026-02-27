@@ -13,11 +13,7 @@ export const ANALYTICS_EVENTS = {
   RATE_MODAL_SHOWN: 'rate_modal_shown',
   RATE_MODAL_DISMISSED: 'rate_modal_dismissed',
   RATE_MODAL_OPENED_STORE: 'rate_modal_opened_store',
-  // Unlimited feature events
-  JOURNAL_ENTRY_CREATED: 'journal_entry_created',
-  JOURNAL_ENTRY_EDITED: 'journal_entry_edited',
-  JOURNAL_ENTRY_DELETED: 'journal_entry_deleted',
-  GRATITUDE_ENTRY_CREATED: 'gratitude_entry_created',
+  // Subscription & paywall events
   SUBSCRIPTION_STARTED: 'subscription_started',
   SUBSCRIPTION_CANCELLED: 'subscription_cancelled',
   TRIAL_STARTED: 'trial_started',
@@ -25,6 +21,38 @@ export const ANALYTICS_EVENTS = {
   PAYWALL_SHOWN: 'paywall_shown',
   PAYWALL_DISMISSED: 'paywall_dismissed',
   LEGACY_USER_IDENTIFIED: 'legacy_user_identified',
+  // Reminder events
+  REMINDER_SET: 'reminder_set',
+  REMINDER_CHANGED: 'reminder_changed',
+  REMINDER_DISABLED: 'reminder_disabled',
+  // Notebook
+  NOTEBOOK_OPENED: 'notebook_opened',
+  // Journal CRUD
+  JOURNAL_ENTRY_CREATED: 'journal_entry_created',
+  JOURNAL_ENTRY_VIEWED: 'journal_entry_viewed',
+  JOURNAL_ENTRY_EDITED: 'journal_entry_edited',
+  JOURNAL_ENTRY_DELETED: 'journal_entry_deleted',
+  // Gratitude CRUD
+  GRATITUDE_ENTRY_CREATED: 'gratitude_entry_created',
+  GRATITUDE_ENTRY_VIEWED: 'gratitude_entry_viewed',
+  GRATITUDE_ENTRY_EDITED: 'gratitude_entry_edited',
+  GRATITUDE_ENTRY_DELETED: 'gratitude_entry_deleted',
+  // Spot Check CRUD
+  SPOT_CHECK_CREATED: 'spot_check_created',
+  SPOT_CHECK_VIEWED: 'spot_check_viewed',
+  SPOT_CHECK_EDITED: 'spot_check_edited',
+  SPOT_CHECK_DELETED: 'spot_check_deleted',
+  // Nightly Review CRUD
+  NIGHTLY_REVIEW_CREATED: 'nightly_review_created',
+  NIGHTLY_REVIEW_VIEWED: 'nightly_review_viewed',
+  NIGHTLY_REVIEW_EDITED: 'nightly_review_edited',
+  NIGHTLY_REVIEW_DELETED: 'nightly_review_deleted',
+  // Prayers
+  PRAYER_VIEWED: 'prayer_viewed',
+  // Speaker Audio
+  SPEAKER_AUDIO_PLAYED: 'speaker_audio_played',
+  SPEAKER_AUDIO_PAUSED: 'speaker_audio_paused',
+  SPEAKER_AUDIO_COMPLETED: 'speaker_audio_completed',
 } as const;
 
 // Navigation method types
@@ -278,7 +306,151 @@ export function useAnalytics() {
     mp.flush();
   }, [isDeveloper]);
 
+  // ─── Paywall ──────────────────────────────────────────────────────────
+
+  const trackPaywallShown = useCallback(() => {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.PAYWALL_SHOWN, {
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+    mp.flush();
+  }, [isDeveloper]);
+
+  const trackPaywallDismissed = useCallback(() => {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.PAYWALL_DISMISSED, {
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+    mp.flush();
+  }, [isDeveloper]);
+
+  // ─── Reminders ───────────────────────────────────────────────────────
+
+  const trackReminderSet = useCallback((time: string) => {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.REMINDER_SET, {
+      reminder_time: time,
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+    mp.flush();
+  }, [isDeveloper]);
+
+  const trackReminderChanged = useCallback((oldTime: string, newTime: string) => {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.REMINDER_CHANGED, {
+      old_time: oldTime,
+      new_time: newTime,
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+  }, [isDeveloper]);
+
+  const trackReminderDisabled = useCallback(() => {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.REMINDER_DISABLED, {
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+  }, [isDeveloper]);
+
+  // ─── Notebook ────────────────────────────────────────────────────────
+
+  const trackNotebookOpened = useCallback(() => {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.NOTEBOOK_OPENED, {
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+  }, [isDeveloper]);
+
+  // ─── Notebook Entry Viewed (dispatches by entry_type) ────────────────
+
+  const trackEntryViewed = useCallback((entryType: string, entryId: string) => {
+    const mp = getMixpanel();
+    if (!mp) return;
+
+    const eventMap: Record<string, string> = {
+      journal: ANALYTICS_EVENTS.JOURNAL_ENTRY_VIEWED,
+      spot_check: ANALYTICS_EVENTS.SPOT_CHECK_VIEWED,
+      nightly_review: ANALYTICS_EVENTS.NIGHTLY_REVIEW_VIEWED,
+      gratitude: ANALYTICS_EVENTS.GRATITUDE_ENTRY_VIEWED,
+    };
+    const eventName = eventMap[entryType];
+    if (!eventName) return;
+
+    mp.track(eventName, {
+      entry_id: entryId,
+      entry_type: entryType,
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+  }, [isDeveloper]);
+
+  // ─── Prayers ─────────────────────────────────────────────────────────
+
+  const trackPrayerViewed = useCallback((prayerId: string, prayerName: string) => {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.PRAYER_VIEWED, {
+      prayer_id: prayerId,
+      prayer_name: prayerName,
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+  }, [isDeveloper]);
+
+  // ─── Speaker Audio ───────────────────────────────────────────────────
+
+  const trackSpeakerAudioPlayed = useCallback((speakerId: string, speakerName: string, talkTitle: string) => {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.SPEAKER_AUDIO_PLAYED, {
+      speaker_id: speakerId,
+      speaker_name: speakerName,
+      talk_title: talkTitle,
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+  }, [isDeveloper]);
+
+  const trackSpeakerAudioPaused = useCallback((speakerId: string, speakerName: string, positionMs: number, durationMs: number) => {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.SPEAKER_AUDIO_PAUSED, {
+      speaker_id: speakerId,
+      speaker_name: speakerName,
+      position_seconds: Math.round(positionMs / 1000),
+      duration_seconds: Math.round(durationMs / 1000),
+      percent_complete: durationMs > 0 ? Math.round((positionMs / durationMs) * 100) : 0,
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+  }, [isDeveloper]);
+
+  const trackSpeakerAudioCompleted = useCallback((speakerId: string, speakerName: string, durationMs: number) => {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.SPEAKER_AUDIO_COMPLETED, {
+      speaker_id: speakerId,
+      speaker_name: speakerName,
+      duration_seconds: Math.round(durationMs / 1000),
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+    mp.flush();
+  }, [isDeveloper]);
+
   return {
+    // Existing
     trackAppOpened,
     startReadingView,
     trackReadingRated,
@@ -288,5 +460,21 @@ export function useAnalytics() {
     trackRateModalDismissed,
     trackRateModalOpenedStore,
     updateThemeMode,
+    // Paywall
+    trackPaywallShown,
+    trackPaywallDismissed,
+    // Reminders
+    trackReminderSet,
+    trackReminderChanged,
+    trackReminderDisabled,
+    // Notebook
+    trackNotebookOpened,
+    trackEntryViewed,
+    // Prayers
+    trackPrayerViewed,
+    // Speaker Audio
+    trackSpeakerAudioPlayed,
+    trackSpeakerAudioPaused,
+    trackSpeakerAudioCompleted,
   };
 }

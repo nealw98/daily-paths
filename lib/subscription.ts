@@ -7,6 +7,8 @@ import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { qaLog } from "../utils/qaLog";
 import { getSubscriptionOverride } from "../utils/subscriptionOverride";
+import { trackEvent } from "../utils/trackEvent";
+import { ANALYTICS_EVENTS } from "../utils/analytics";
 
 /**
  * RevenueCat subscription management for Daily Paths Unlimited.
@@ -134,6 +136,14 @@ export async function purchasePackage(
       entitlements: Object.keys(customerInfo.entitlements.active),
     });
 
+    if (isActive) {
+      trackEvent(ANALYTICS_EVENTS.SUBSCRIPTION_STARTED, {
+        package_identifier: pkg.identifier,
+        price_string: pkg.product.priceString,
+        product_identifier: pkg.product.identifier,
+      }, true);
+    }
+
     return customerInfo;
   } catch (err: any) {
     if (err.userCancelled) {
@@ -219,6 +229,19 @@ export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
         productIdentifier: entitlement.productIdentifier,
         willRenew: entitlement.willRenew,
       };
+    }
+
+    // Detect cancellation: willRenew flipped from true to false while still subscribed
+    try {
+      const cached = await getCachedSubscriptionStatus();
+      if (cached && cached.willRenew && !result.willRenew && result.isSubscribed && !result.isLegacy) {
+        trackEvent(ANALYTICS_EVENTS.SUBSCRIPTION_CANCELLED, {
+          product_identifier: result.productIdentifier,
+          expiration_date: result.expirationDate,
+        }, true);
+      }
+    } catch {
+      // Non-critical — don't block status return
     }
 
     await cacheSubscriptionStatus(result);

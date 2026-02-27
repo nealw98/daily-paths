@@ -6,6 +6,7 @@ import { useTheme } from "../../hooks/useTheme";
 import { useAuth } from "../../contexts/AuthContext";
 import { useJournalStorage } from "../../hooks/useJournalStorage";
 import { useJournalStats } from "../../hooks/useJournalStats";
+import { useAnalytics } from "../../utils/analytics";
 import { JournalTimeline, type CategoryFilter } from "../../components/journal/JournalTimeline";
 import { JournalEntryEditor } from "../../components/journal/JournalEntryEditor";
 import { JournalEntryDetail } from "../../components/journal/JournalEntryDetail";
@@ -32,6 +33,7 @@ function JournalTabContent() {
   const { colors } = useTheme();
   const navigation = useNavigation();
   const { user, isAuthenticated } = useAuth();
+  const { trackNotebookOpened, trackEntryViewed } = useAnalytics();
   const {
     entries,
     loading,
@@ -64,6 +66,14 @@ function JournalTabContent() {
     if (!cat) return undefined;
     return <EntryTypeIcon svgIcon={cat.svgIcon} size={28} color={colors.textOnAccent} />;
   }, [categoryFilter, colors.textOnAccent]);
+
+  // ─── Track notebook opened on tab focus ─────────────────────────
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus" as any, () => {
+      trackNotebookOpened();
+    });
+    return unsubscribe;
+  }, [navigation, trackNotebookOpened]);
 
   // ─── Tab press → always return to "all" timeline ─────────────────
   useEffect(() => {
@@ -102,8 +112,9 @@ function JournalTabContent() {
       setSelectedEntry(entry);
       setSelectedIndex(idx >= 0 ? idx : 0);
       setView("detail");
+      trackEntryViewed(entry.entry_type, entry.id);
     },
-    [entries]
+    [entries, trackEntryViewed]
   );
 
   const handleBackToTimeline = useCallback(() => {

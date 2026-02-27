@@ -4,6 +4,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 import Purchases from "react-native-purchases";
 import { isRevenueCatInitialized } from "../lib/subscription";
+import { trackEvent } from "./trackEvent";
+import { ANALYTICS_EVENTS } from "./analytics";
 
 /**
  * Legacy user migration for Daily Paths Unlimited.
@@ -92,6 +94,10 @@ export async function performLegacyMigration(userId: string): Promise<boolean> {
             originalVersion,
             userId,
           });
+          trackEvent(ANALYTICS_EVENTS.LEGACY_USER_IDENTIFIED, {
+            detection_method: 'app_store_receipt',
+            original_version: originalVersion,
+          }, true);
           await markLegacyInSupabase(userId);
           await AsyncStorage.setItem(LEGACY_MIGRATION_KEY, "true");
           return true;
@@ -118,6 +124,9 @@ export async function performLegacyMigration(userId: string): Promise<boolean> {
           userId,
           hasBookmarks: !!hasBookmarks,
         });
+        trackEvent(ANALYTICS_EVENTS.LEGACY_USER_IDENTIFIED, {
+          detection_method: 'build_version_fallback',
+        }, true);
         await markLegacyInSupabase(userId);
         await AsyncStorage.setItem(LEGACY_MIGRATION_KEY, "true");
         return true;

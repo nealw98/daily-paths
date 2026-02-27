@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
+import { useAnalytics } from "../../utils/analytics";
 import { fonts } from "../../constants/theme";
 import { EqualizerBars } from "./EqualizerBars";
 import { getSpeakerAudioUrl } from "../../hooks/useSpeakers";
@@ -55,6 +56,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
   player,
 }) => {
   const { colors } = useTheme();
+  const { trackSpeakerAudioPlayed, trackSpeakerAudioPaused } = useAnalytics();
   const [trackWidth, setTrackWidth] = useState(0);
   const hasLoadedRef = useRef(false);
 
@@ -230,7 +232,15 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
             {/* Play/Pause */}
             <TouchableOpacity
               style={[styles.playPauseButton, { backgroundColor: colors.accent }]}
-              onPress={player.isPlaying ? player.pause : player.play}
+              onPress={() => {
+                if (player.isPlaying) {
+                  trackSpeakerAudioPaused(speaker.id, speaker.speaker, player.positionMs, player.durationMs);
+                  player.pause();
+                } else {
+                  trackSpeakerAudioPlayed(speaker.id, speaker.speaker, speaker.title);
+                  player.play();
+                }
+              }}
               activeOpacity={0.7}
             >
               <Ionicons

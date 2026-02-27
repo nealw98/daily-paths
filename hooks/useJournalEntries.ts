@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { qaLog } from "../utils/qaLog";
+import { trackEvent } from "../utils/trackEvent";
+import { ANALYTICS_EVENTS } from "../utils/analytics";
 import type { EntryType } from "../constants/journalCategories";
 
 export type { EntryType };
@@ -25,6 +27,7 @@ export function useJournalEntries(userId: string | null | undefined) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(true);
+  const entriesRef = useRef<JournalEntry[]>([]);
 
   // Fetch all entries for the current user
   const fetchEntries = useCallback(async () => {
@@ -76,6 +79,39 @@ export function useJournalEntries(userId: string | null | undefined) {
     };
   }, [fetchEntries]);
 
+  // Keep entriesRef in sync for use in deleteEntry without adding entries to deps
+  useEffect(() => {
+    entriesRef.current = entries;
+  }, [entries]);
+
+  // Map entry_type to the correct analytics event name
+  const entryEventName = (
+    entryType: string,
+    action: 'created' | 'edited' | 'deleted',
+  ): string | null => {
+    const map: Record<string, Record<string, string>> = {
+      created: {
+        journal: ANALYTICS_EVENTS.JOURNAL_ENTRY_CREATED,
+        spot_check: ANALYTICS_EVENTS.SPOT_CHECK_CREATED,
+        nightly_review: ANALYTICS_EVENTS.NIGHTLY_REVIEW_CREATED,
+        gratitude: ANALYTICS_EVENTS.GRATITUDE_ENTRY_CREATED,
+      },
+      edited: {
+        journal: ANALYTICS_EVENTS.JOURNAL_ENTRY_EDITED,
+        spot_check: ANALYTICS_EVENTS.SPOT_CHECK_EDITED,
+        nightly_review: ANALYTICS_EVENTS.NIGHTLY_REVIEW_EDITED,
+        gratitude: ANALYTICS_EVENTS.GRATITUDE_ENTRY_EDITED,
+      },
+      deleted: {
+        journal: ANALYTICS_EVENTS.JOURNAL_ENTRY_DELETED,
+        spot_check: ANALYTICS_EVENTS.SPOT_CHECK_DELETED,
+        nightly_review: ANALYTICS_EVENTS.NIGHTLY_REVIEW_DELETED,
+        gratitude: ANALYTICS_EVENTS.GRATITUDE_ENTRY_DELETED,
+      },
+    };
+    return map[action]?.[entryType] ?? null;
+  };
+
   // Create a new journal entry
   const createEntry = useCallback(
     async (
@@ -116,6 +152,15 @@ export function useJournalEntries(userId: string | null | undefined) {
             id: data.id,
             type: entryType,
           });
+
+          const eventName = entryEventName(entryType, 'created');
+          if (eventName) {
+            trackEvent(eventName, {
+              entry_id: data.id,
+              entry_type: entryType,
+              has_structured_content: !!structuredContent,
+            });
+          }
         }
 
         return data;
@@ -164,6 +209,15 @@ export function useJournalEntries(userId: string | null | undefined) {
             prev.map((entry) => (entry.id === entryId ? data : entry))
           );
           qaLog("journal", "Entry updated", { id: entryId });
+
+          const entryType = data.entry_type || 'journal';
+          const eventName = entryEventName(entryType, 'edited');
+          if (eventName) {
+            trackEvent(eventName, {
+              entry_id: entryId,
+              entry_type: entryType,
+            });
+          }
         }
 
         return data;
@@ -179,6 +233,9 @@ export function useJournalEntries(userId: string | null | undefined) {
   const deleteEntry = useCallback(
     async (entryId: string): Promise<boolean> => {
       if (!userId) return false;
+
+      // Capture entry_type before deletion for analytics
+      const entryToDelete = entriesRef.current.find((e) => e.id === entryId);
 
       try {
         const { error: deleteError } = await supabase
@@ -196,6 +253,16 @@ export function useJournalEntries(userId: string | null | undefined) {
 
         setEntries((prev) => prev.filter((entry) => entry.id !== entryId));
         qaLog("journal", "Entry deleted", { id: entryId });
+
+        const entryType = entryToDelete?.entry_type || 'journal';
+        const eventName = entryEventName(entryType, 'deleted');
+        if (eventName) {
+          trackEvent(eventName, {
+            entry_id: entryId,
+            entry_type: entryType,
+          });
+        }
+
         return true;
       } catch (err) {
         qaLog("journal", "Exception deleting entry", { error: String(err) });

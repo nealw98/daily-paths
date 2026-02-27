@@ -10,6 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
+import { useAnalytics } from "../../utils/analytics";
 import { fonts } from "../../constants/theme";
 import { PRAYERS, type Prayer } from "../../constants/prayers";
 import { PersonalNotes } from "./PersonalNotes";
@@ -25,6 +26,7 @@ export const PrayersScreen: React.FC<PrayersScreenProps> = ({
 }) => {
   const { colors } = useTheme();
   const { settings } = useSettings();
+  const { trackPrayerViewed } = useAnalytics();
   const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
   const [expandedPrayer, setExpandedPrayer] = useState<string | null>(null);
 
@@ -60,7 +62,13 @@ export const PrayersScreen: React.FC<PrayersScreenProps> = ({
       <View key={prayer.id} style={styles.prayerSection}>
         <TouchableOpacity
           style={styles.prayerHeader}
-          onPress={() => setExpandedPrayer(isExpanded ? null : prayer.id)}
+          onPress={() => {
+            const expanding = !isExpanded;
+            setExpandedPrayer(expanding ? prayer.id : null);
+            if (expanding) {
+              trackPrayerViewed(prayer.id, prayer.title);
+            }
+          }}
           activeOpacity={0.7}
         >
           <Text style={[styles.prayerTitle, { color: colors.ocean, fontSize: typography.bodyFontSize + 2 }]}>
