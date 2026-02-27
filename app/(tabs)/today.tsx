@@ -22,6 +22,7 @@ import { useTrialStatus } from "../../hooks/useTrialStatus";
 import { useSubscription } from "../../hooks/useSubscription";
 import { getRequiredGate } from "../../utils/accessControl";
 import { PaywallModal } from "../../components/PaywallModal";
+import { SignInModal } from "../../components/SignInModal";
 import { DatePickerModal } from "../../components/DatePickerModal";
 import { BookmarkListModal } from "../../components/BookmarkListModal";
 import { DismissibleToast } from "../../components/DismissibleToast";
@@ -83,6 +84,7 @@ export default function Index() {
   const [showJournalPicker, setShowJournalPicker] = useState(false);
   const [journalEntryType, setJournalEntryType] = useState<EntryType | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [showSignIn, setShowSignIn] = useState(false);
   console.log("[STARTUP-INDEX] State initialized");
 
   // Journal entry creation from Today page
@@ -452,6 +454,8 @@ export default function Index() {
             const gate = getRequiredGate(subStatus, trialStatus, isAuthed);
             if (gate === "paywall") {
               setShowPaywall(true);
+            } else if (gate === "signin") {
+              setShowSignIn(true);
             } else {
               setShowJournalPicker(true);
             }
@@ -509,6 +513,16 @@ export default function Index() {
         dismissable
         onClose={() => {
           setShowPaywall(false);
+          refreshSub();
+        }}
+      />
+
+      <SignInModal
+        visible={showSignIn}
+        dismissable
+        initialMode="signin"
+        onClose={() => {
+          setShowSignIn(false);
           refreshSub();
         }}
       />

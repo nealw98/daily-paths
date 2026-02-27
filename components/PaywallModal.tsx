@@ -23,11 +23,14 @@ interface PaywallModalProps {
   /** When false, close button is hidden (used as mandatory gate). */
   dismissable?: boolean;
   onClose: () => void;
+  /** Called when user taps "Not Now" — navigate away without purchasing. */
+  onDismiss?: () => void;
 }
 
 const FEATURES = [
-  { icon: "mic-outline" as const, title: "Speakers", desc: "Browse and listen to recovery audio" },
+  { icon: "mic-outline" as const, title: "Speakers", desc: "Listen to recovery speakers, with new talks added regularly" },
   { icon: "create-outline" as const, title: "Journal", desc: "Write and reflect on your recovery journey" },
+  { icon: "leaf-outline" as const, title: "Prayers", desc: "Save and reflect on your personal prayers" },
   { icon: "clipboard-outline" as const, title: "Spot Check Inventory", desc: "Quick emotional check-ins" },
   { icon: "heart-outline" as const, title: "Gratitude List", desc: "Track what you're grateful for each day" },
   { icon: "moon-outline" as const, title: "Nightly Review", desc: "Reflect on your day before rest" },
@@ -38,6 +41,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
   visible,
   dismissable = true,
   onClose,
+  onDismiss,
 }) => {
   const { colors } = useTheme();
   const { user } = useAuth();
@@ -88,7 +92,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
       visible={visible}
       transparent
       animationType="slide"
-      onRequestClose={dismissable ? onClose : undefined}
+      onRequestClose={dismissable && onDismiss ? onDismiss : undefined}
     >
       <KeyboardAvoidingView
         style={[styles.container, { backgroundColor: colors.backdrop }]}
@@ -97,8 +101,8 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
         <View style={[styles.content, { backgroundColor: colors.background }]}>
           {/* Header */}
           <View style={styles.header}>
-            {dismissable ? (
-              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            {dismissable && onDismiss ? (
+              <TouchableOpacity onPress={onDismiss} style={styles.closeButton}>
                 <Ionicons name="close" size={28} color={colors.textSecondary} />
               </TouchableOpacity>
             ) : (
@@ -237,6 +241,18 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
               of purchase. Subscription automatically renews unless cancelled at
               least 24 hours before the end of the current period.
             </Text>
+
+            {/* Not Now */}
+            {onDismiss && (
+              <TouchableOpacity
+                style={styles.notNowButton}
+                onPress={onDismiss}
+              >
+                <Text style={[styles.notNowText, { color: colors.textSecondary }]}>
+                  Not Now
+                </Text>
+              </TouchableOpacity>
+            )}
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
@@ -379,6 +395,15 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 16,
     marginTop: 8,
-    paddingBottom: 16,
+  },
+  notNowButton: {
+    alignItems: "center",
+    paddingVertical: 16,
+    marginTop: 4,
+  },
+  notNowText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 15,
+    fontWeight: "500",
   },
 });

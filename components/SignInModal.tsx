@@ -49,13 +49,14 @@ export const SignInModal: React.FC<SignInModalProps> = ({
   onClose,
 }) => {
   const { colors } = useTheme();
-  const { signIn, signUp, signInApple, signInGoogle } = useAuth();
+  const { signIn, signUp, signInApple, signInGoogle, forgotPassword } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"signin" | "signup">(initialMode ?? "signup");
   const [showPassword, setShowPassword] = useState(false);
+  const [showEmailForm, setShowEmailForm] = useState(false);
 
   // Auto-detect mode when no explicit initialMode is provided
   useEffect(() => {
@@ -106,6 +107,23 @@ export const SignInModal: React.FC<SignInModalProps> = ({
       }
     } catch (err: any) {
       Alert.alert("Apple Sign In Error", err.message || "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    const resetEmail = email.trim();
+    if (!resetEmail) {
+      Alert.alert("Enter Email", "Enter your email address above, then tap Forgot Password.");
+      return;
+    }
+    setLoading(true);
+    try {
+      await forgotPassword(resetEmail);
+      Alert.alert("Check Your Email", "We sent a password reset link to your email.");
+    } catch (err: any) {
+      Alert.alert("Reset Error", err.message || "Something went wrong.");
     } finally {
       setLoading(false);
     }
@@ -194,75 +212,99 @@ export const SignInModal: React.FC<SignInModalProps> = ({
               </TouchableOpacity>
             </View>
 
-            {/* Divider */}
-            <View style={styles.dividerRow}>
-              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-              <Text style={[styles.dividerText, { color: colors.textSecondary }]}>or</Text>
-              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-            </View>
-
-            {/* Email/Password Form */}
-            <View style={styles.form}>
-              <TextInput
-                style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.cardBackground }]}
-                placeholder="Email"
-                placeholderTextColor={colors.textSecondary}
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                autoCorrect={false}
-                autoComplete="email"
-                textContentType="emailAddress"
-              />
-              <View style={[styles.passwordRow, { borderColor: colors.border, backgroundColor: colors.cardBackground }]}>
-                <TextInput
-                  style={[styles.passwordInput, { color: colors.text }]}
-                  placeholder="Password"
-                  placeholderTextColor={colors.textSecondary}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  autoComplete="password"
-                  textContentType="password"
-                />
-                <TouchableOpacity
-                  onPress={() => setShowPassword((prev) => !prev)}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  style={styles.eyeButton}
-                >
-                  <Ionicons
-                    name={showPassword ? "eye-off-outline" : "eye-outline"}
-                    size={20}
-                    color={colors.textSecondary}
-                  />
-                </TouchableOpacity>
-              </View>
+            {/* Email toggle */}
+            {!showEmailForm ? (
               <TouchableOpacity
-                style={[styles.submitButton, { backgroundColor: colors.buttonPrimary }]}
-                onPress={handleSubmit}
-                disabled={loading}
+                style={styles.emailToggle}
+                onPress={() => setShowEmailForm(true)}
               >
-                {loading ? (
-                  <ActivityIndicator color={colors.textOnAccent} />
-                ) : (
-                  <Text style={[styles.submitText, { color: colors.textOnAccent }]}>
-                    {mode === "signin" ? "Sign In" : "Create Account"}
-                  </Text>
-                )}
-              </TouchableOpacity>
-
-              {/* Toggle sign-in / sign-up */}
-              <TouchableOpacity
-                onPress={() => setMode(mode === "signin" ? "signup" : "signin")}
-              >
-                <Text style={[styles.toggleText, { color: colors.accent }]}>
-                  {mode === "signin"
-                    ? "Need an account? Create one"
-                    : "Already have an account? Sign in"}
+                <Text style={[styles.emailToggleText, { color: colors.textSecondary }]}>
+                  Use email instead
                 </Text>
               </TouchableOpacity>
-            </View>
+            ) : (
+              <>
+                {/* Divider */}
+                <View style={styles.dividerRow}>
+                  <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+                  <Text style={[styles.dividerText, { color: colors.textSecondary }]}>or</Text>
+                  <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+                </View>
+
+                {/* Email/Password Form */}
+                <View style={styles.form}>
+                  <TextInput
+                    style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.cardBackground }]}
+                    placeholder="Email"
+                    placeholderTextColor={colors.textSecondary}
+                    value={email}
+                    onChangeText={setEmail}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    autoCorrect={false}
+                    autoComplete="email"
+                    textContentType="emailAddress"
+                  />
+                  <View style={[styles.passwordRow, { borderColor: colors.border, backgroundColor: colors.cardBackground }]}>
+                    <TextInput
+                      style={[styles.passwordInput, { color: colors.text }]}
+                      placeholder="Password"
+                      placeholderTextColor={colors.textSecondary}
+                      value={password}
+                      onChangeText={setPassword}
+                      secureTextEntry={!showPassword}
+                      autoComplete="password"
+                      textContentType="password"
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowPassword((prev) => !prev)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      style={styles.eyeButton}
+                    >
+                      <Ionicons
+                        name={showPassword ? "eye-off-outline" : "eye-outline"}
+                        size={20}
+                        color={colors.textSecondary}
+                      />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Forgot Password (sign-in mode only) */}
+                  {mode === "signin" && (
+                    <TouchableOpacity onPress={handleForgotPassword} disabled={loading}>
+                      <Text style={[styles.forgotText, { color: colors.accent }]}>
+                        Forgot Password?
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
+                  <TouchableOpacity
+                    style={[styles.submitButton, { backgroundColor: colors.buttonPrimary }]}
+                    onPress={handleSubmit}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color={colors.textOnAccent} />
+                    ) : (
+                      <Text style={[styles.submitText, { color: colors.textOnAccent }]}>
+                        {mode === "signin" ? "Sign In" : "Create Account"}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+
+                  {/* Toggle sign-in / sign-up */}
+                  <TouchableOpacity
+                    onPress={() => setMode(mode === "signin" ? "signup" : "signin")}
+                  >
+                    <Text style={[styles.toggleText, { color: colors.accent }]}>
+                      {mode === "signin"
+                        ? "Need an account? Create one"
+                        : "Already have an account? Sign in"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
           </ScrollView>
         </View>
         </View>
@@ -390,5 +432,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: "center",
     paddingVertical: 12,
+  },
+  emailToggle: {
+    alignItems: "center",
+    paddingVertical: 14,
+  },
+  emailToggleText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  forgotText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 13,
+    textAlign: "right",
   },
 });
