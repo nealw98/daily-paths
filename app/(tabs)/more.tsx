@@ -313,7 +313,8 @@ export default function MoreTab() {
 
           {showExtendedThemes && (
             <>
-              <Text style={[styles.cardLabel, { color: colors.deepTeal }]}>Colors</Text>
+              <View style={[styles.cardDivider, { backgroundColor: colors.mist }]} />
+              <Text style={[styles.cardLabel, { color: colors.deepTeal }]}>Premium Colors — Thank You for Subscribing!</Text>
               <View style={styles.themeOptions}>
                 {EXTENDED_THEME_OPTIONS.map((option) => {
                   const isSelected =
@@ -591,7 +592,7 @@ export default function MoreTab() {
       </ScrollView>
 
       {/* ── Modals ──────────────────────────────────────── */}
-      <PaywallModal visible={showPaywall} onClose={() => setShowPaywall(false)} />
+      <PaywallModal visible={showPaywall} onClose={() => { setShowPaywall(false); setShowExtendedThemes(true); }} />
       <SignInModal visible={showSignIn} onClose={() => setShowSignIn(false)} />
 
       <Modal
