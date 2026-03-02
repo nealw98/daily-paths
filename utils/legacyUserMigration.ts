@@ -13,13 +13,10 @@ import { ANALYTICS_EVENTS } from "./analytics";
  * Detects users who purchased the original paid app and grants them
  * the "lifetime" entitlement in RevenueCat via a Supabase Edge Function.
  *
- * Detection methods (in priority order):
- *  1. App Store receipt — restorePurchases() syncs the receipt with RevenueCat.
- *     If originalApplicationVersion is a pre-2.5 build, the user bought the
- *     original paid app.
- *  2. Build version fallback — if no receipt is available, check whether
- *     local data from a pre-2.5 install exists (bookmarks, device ID, etc.)
- *     which indicates an upgrade from the paid version.
+ * Detection: restorePurchases() syncs the App Store receipt with RevenueCat.
+ * If originalApplicationVersion is a pre-2.5 build, the user bought the
+ * original paid app. The receipt is tied to the Apple ID, so it persists
+ * across devices.
  */
 
 const LEGACY_MIGRATION_KEY = "@daily_paths_legacy_migration_done";
@@ -38,6 +35,19 @@ export async function hasCompletedLegacyMigration(): Promise<boolean> {
     return value === "true";
   } catch {
     return false;
+  }
+}
+
+/**
+ * Mark legacy migration as complete. Called by the migration orchestrator
+ * after the lifetime entitlement has been successfully granted (or when
+ * the user is confirmed non-legacy).
+ */
+export async function markLegacyMigrationDone(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(LEGACY_MIGRATION_KEY, "true");
+  } catch {
+    // Non-critical — will retry next session
   }
 }
 
@@ -99,42 +109,15 @@ export async function performLegacyMigration(userId: string): Promise<boolean> {
             original_version: originalVersion,
           }, true);
           await markLegacyInSupabase(userId);
-          await AsyncStorage.setItem(LEGACY_MIGRATION_KEY, "true");
+          // NOTE: Do NOT set LEGACY_MIGRATION_KEY here. The caller must
+          // grant the lifetime entitlement first; only after a successful
+          // grant should markLegacyMigrationDone() be called. This ensures
+          // a failed grant retries on the next app session.
           return true;
         }
       }
     } catch (err) {
-      qaLog("migration", "Receipt check failed, falling through to build version check", {
-        error: String(err),
-      });
-    }
-
-    // ── Method 2: Build version fallback ─────────────────────────────────
-    // If the receipt check didn't find a legacy user (e.g. receipt unavailable),
-    // look for local data that only exists on devices that ran a pre-2.5 build.
-    // The bookmarks key and device ID key were used in all pre-2.5 versions but
-    // the trial start key was introduced in 2.5 — so if bookmarks exist without
-    // a trial start, this device upgraded from the paid version.
-    try {
-      const hasBookmarks = await AsyncStorage.getItem("@daily_paths_bookmarks");
-      const hasTrialStart = await AsyncStorage.getItem("@daily_paths_trial_start");
-
-      if (hasBookmarks && !hasTrialStart) {
-        qaLog("migration", "Legacy user detected via pre-2.5 local data", {
-          userId,
-          hasBookmarks: !!hasBookmarks,
-        });
-        trackEvent(ANALYTICS_EVENTS.LEGACY_USER_IDENTIFIED, {
-          detection_method: 'build_version_fallback',
-        }, true);
-        await markLegacyInSupabase(userId);
-        await AsyncStorage.setItem(LEGACY_MIGRATION_KEY, "true");
-        return true;
-      }
-    } catch (err) {
-      qaLog("migration", "Build version fallback check failed", {
-        error: String(err),
-      });
+      qaLog("migration", "Receipt check failed", { error: String(err) });
     }
 
     qaLog("migration", "Not a legacy user");

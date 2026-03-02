@@ -42,8 +42,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const initAuth = async () => {
       try {
-        // getSession() returns whatever is cached in AsyncStorage, even if expired.
-        // Use getUser() to actually validate the token with the server.
+        // getSession() returns whatever is cached in AsyncStorage.
+        // Trust it immediately so the UI unblocks, then validate in the background.
         const {
           data: { session: currentSession },
         } = await supabase.auth.getSession();
@@ -51,24 +51,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!mounted.current) return;
 
         if (currentSession?.user) {
-          // Validate the session is still active by calling getUser()
-          const { data: { user: validatedUser }, error: userError } = await supabase.auth.getUser();
+          // Accept cached session right away so the app renders instantly
+          setUser(currentSession.user);
+          setSession(currentSession);
+          setLoading(false);
 
-          if (!mounted.current) return;
-
-          if (userError || !validatedUser) {
-            // Session is stale/expired — clear it
-            qaLog("auth", "Stored session invalid, clearing", { error: userError?.message });
-            await supabase.auth.signOut();
-            setUser(null);
-            setSession(null);
-          } else {
-            setUser(validatedUser);
-            setSession(currentSession);
-            // Check legacy status
-            const legacy = await isLegacyUser(validatedUser.id);
+          // Check legacy status (non-blocking)
+          isLegacyUser(currentSession.user.id).then((legacy) => {
             if (mounted.current) setIsLegacy(legacy);
-          }
+          });
+
+          // Validate with the server in the background — if the token is
+          // truly expired, onAuthStateChange will fire SIGNED_OUT and clear state.
+          supabase.auth.getUser().then(({ error: userError }) => {
+            if (!mounted.current) return;
+            if (userError) {
+              qaLog("auth", "Background validation failed, signing out", { error: userError.message });
+              supabase.auth.signOut();
+              setUser(null);
+              setSession(null);
+            }
+          });
+          return; // loading already set to false above
         }
       } catch (err) {
         qaLog("auth", "Error initializing auth", { error: String(err) });

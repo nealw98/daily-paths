@@ -1,13 +1,9 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import Constants from "expo-constants";
 import { router, useNavigation } from "expo-router";
-import { useAuth } from "../contexts/AuthContext";
 import { useSubscriptionContext } from "../contexts/SubscriptionContext";
-import { migrateTrialDataToSupabase } from "../utils/dataMigration";
-import { performLegacyMigration, grantLifetimeEntitlement } from "../utils/legacyUserMigration";
 import { PaywallModal } from "./PaywallModal";
 import { SignInModal } from "./SignInModal";
-import { qaLog } from "../utils/qaLog";
 import { useAnalytics } from "../utils/analytics";
 
 /**
@@ -23,13 +19,9 @@ interface PremiumGateProps {
 }
 
 export const PremiumGate: React.FC<PremiumGateProps> = ({ children }) => {
-  const { user, isAuthenticated } = useAuth();
   const navigation = useNavigation();
   const { gate, refresh: refreshSub } = useSubscriptionContext();
   const { trackPaywallShown, trackPaywallDismissed } = useAnalytics();
-
-  // Track previous auth state to detect fresh sign-ins
-  const prevAuth = useRef(isAuthenticated);
 
   // After a purchase the paywall closes; we need to re-evaluate the gate and
   // potentially show the sign-in modal.  This state bridges that transition.
@@ -51,31 +43,6 @@ export const PremiumGate: React.FC<PremiumGateProps> = ({ children }) => {
     });
     return unsubscribe;
   }, [navigation]);
-
-  // ── Detect fresh sign-in → migrate data ─────────────────────────────
-  // loginRevenueCat is now handled by SubscriptionContext.
-  useEffect(() => {
-    if (!prevAuth.current && isAuthenticated && user?.id) {
-      (async () => {
-        try {
-          qaLog("PremiumGate", "Fresh sign-in detected, migrating data");
-          await migrateTrialDataToSupabase(user.id);
-
-          // Detect legacy users and grant RevenueCat lifetime entitlement
-          const isLegacy = await performLegacyMigration(user.id);
-          if (isLegacy) {
-            qaLog("PremiumGate", "Legacy user detected, granting lifetime entitlement");
-            await grantLifetimeEntitlement(user.id);
-          }
-
-          refreshSub();
-        } catch (err) {
-          qaLog("PremiumGate", "Post-sign-in error", { error: String(err) });
-        }
-      })();
-    }
-    prevAuth.current = isAuthenticated;
-  }, [isAuthenticated, user?.id, refreshSub]);
 
   // ── Track paywall shown ─────────────────────────────────────────────
   useEffect(() => {

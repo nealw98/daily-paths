@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Stack, useRouter } from "expo-router";
 import { useFonts } from "expo-font";
 import {
@@ -18,13 +18,16 @@ import {
 } from "@expo-google-fonts/lora";
 import { fallbackColors } from "../constants/theme";
 import { SettingsProvider } from "../hooks/useSettings";
-import { AuthProvider } from "../contexts/AuthContext";
+import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { SubscriptionProvider } from "../contexts/SubscriptionContext";
+import { SignInModal } from "../components/SignInModal";
+import { usePostAuthMigration } from "../hooks/usePostAuthMigration";
 import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import * as Updates from "expo-updates";
 import { installGlobalErrorHandler } from "../utils/errorLogger";
 import { initMixpanel } from "../lib/mixpanel";
+import { qaLog } from "../utils/qaLog";
 
 console.log("[STARTUP] _layout.tsx module loading...");
 console.log("[STARTUP] Platform:", Platform.OS, Platform.Version);
@@ -106,22 +109,26 @@ export default function RootLayout() {
 
   // Check for OTA updates once on startup; if downloaded, prompt to restart.
   useEffect(() => {
-    console.log("[STARTUP] Updates useEffect running, __DEV__:", __DEV__);
+    qaLog("Updates", "Check starting", { __DEV__ });
     if (__DEV__) return; // skip in dev client
     let cancelled = false;
     (async () => {
       try {
-        console.log("[STARTUP] Checking for updates...");
+        qaLog("Updates", "Checking for updates...");
         const result = await Updates.checkForUpdateAsync();
-        console.log("[STARTUP] Update check result:", result);
+        qaLog("Updates", "Check result", { isAvailable: result.isAvailable });
         if (result.isAvailable) {
+          qaLog("Updates", "Downloading update...");
           await Updates.fetchUpdateAsync();
+          qaLog("Updates", "Download complete, ready to restart");
           if (!cancelled) {
             setUpdateReady(true);
           }
+        } else {
+          qaLog("Updates", "App is up to date");
         }
       } catch (err) {
-        console.log("[Updates] check/fetch failed", err);
+        qaLog("Updates", "Check/fetch failed", { error: String(err) });
       }
     })();
     return () => {
@@ -146,12 +153,12 @@ export default function RootLayout() {
 
   const handleRestart = async () => {
     try {
+      qaLog("Updates", "Restarting app to apply update");
       setRestarting(true);
       await Updates.reloadAsync();
     } catch (err) {
       setRestarting(false);
-      // eslint-disable-next-line no-console
-      console.log("[Updates] reload failed", err);
+      qaLog("Updates", "Reload failed", { error: String(err) });
     }
   };
 
@@ -161,20 +168,21 @@ export default function RootLayout() {
     if (checkingUpdate || restarting) return;
     setCheckingUpdate(true);
     try {
+      qaLog("Updates", "Manual check starting");
       const result = await Updates.checkForUpdateAsync();
       if (!result.isAvailable) {
-        // eslint-disable-next-line no-console
-        console.log("[Updates] No update available");
+        qaLog("Updates", "Manual check: no update available");
         setCheckingUpdate(false);
         return;
       }
+      qaLog("Updates", "Manual check: downloading update...");
       await Updates.fetchUpdateAsync();
+      qaLog("Updates", "Manual check: download complete, restarting");
       setCheckingUpdate(false);
       await handleRestart();
     } catch (err) {
       setCheckingUpdate(false);
-      // eslint-disable-next-line no-console
-      console.log("[Updates] Manual check failed", err);
+      qaLog("Updates", "Manual check failed", { error: String(err) });
     }
   };
 
@@ -194,44 +202,90 @@ export default function RootLayout() {
   return (
     <SettingsProvider>
       <AuthProvider>
-        <SubscriptionProvider>
-        {updateReady && (
-          <View style={styles.updateBanner}>
-            <Text style={styles.updateText}>
-              Update available. Restart to apply.
-            </Text>
-            <View style={styles.updateActions}>
-              <TouchableOpacity
-                style={[styles.updateButtonPrimary, { backgroundColor: colors.seafoam }]}
-                onPress={handleRestart}
-                disabled={restarting}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.updateButtonPrimaryText, { color: colors.deepTeal }]}>
-                  {restarting ? "Restarting..." : "Restart"}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.updateButtonSecondary}
-                onPress={() => setUpdateReady(false)}
-                activeOpacity={0.8}
-                disabled={restarting}
-              >
-                <Text style={styles.updateButtonSecondaryText}>Later</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: colors.pearl },
-          }}
-        />
-        </SubscriptionProvider>
+        <AuthGate>
+          <SubscriptionProvider>
+            <PostAuthMigrationRunner>
+              {updateReady && (
+                <View style={styles.updateBanner}>
+                  <Text style={styles.updateText}>
+                    Update available. Restart to apply.
+                  </Text>
+                  <View style={styles.updateActions}>
+                    <TouchableOpacity
+                      style={[styles.updateButtonPrimary, { backgroundColor: colors.seafoam }]}
+                      onPress={handleRestart}
+                      disabled={restarting}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.updateButtonPrimaryText, { color: colors.deepTeal }]}>
+                        {restarting ? "Restarting..." : "Restart"}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.updateButtonSecondary}
+                      onPress={() => setUpdateReady(false)}
+                      activeOpacity={0.8}
+                      disabled={restarting}
+                    >
+                      <Text style={styles.updateButtonSecondaryText}>Later</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  contentStyle: { backgroundColor: colors.pearl },
+                }}
+              />
+            </PostAuthMigrationRunner>
+          </SubscriptionProvider>
+        </AuthGate>
       </AuthProvider>
     </SettingsProvider>
   );
+}
+
+// ─── Auth Gate ─────────────────────────────────────────────────────────────────
+// Blocks all content until the user is authenticated. Shows a loading spinner
+// while checking for an existing session, then a non-dismissable SignInModal.
+
+function AuthGate({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, loading } = useAuth();
+  const wasAuthenticated = useRef(false);
+
+  useEffect(() => {
+    if (isAuthenticated) wasAuthenticated.current = true;
+  }, [isAuthenticated]);
+
+  if (loading) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: fallbackColors.pearl }]}>
+        <ActivityIndicator size="large" color={fallbackColors.ocean} />
+      </View>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <SignInModal
+        visible
+        dismissable={false}
+        signedOut={wasAuthenticated.current}
+        onClose={() => {}}
+      />
+    );
+  }
+
+  return <>{children}</>;
+}
+
+// ─── Post-Auth Migration Runner ───────────────────────────────────────────────
+// Thin wrapper that runs post-sign-in tasks (trial migration, legacy detection).
+
+function PostAuthMigrationRunner({ children }: { children: React.ReactNode }) {
+  usePostAuthMigration();
+  return <>{children}</>;
 }
 
 // Static styles without theme colors (colors applied inline based on theme)

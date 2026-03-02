@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -29,6 +29,7 @@ import { qaLog } from "../../utils/qaLog";
 import { fonts } from "../../constants/theme";
 import { TealHeader } from "../../components/shared/TealHeader";
 import { Nautilus } from "../../components/icons";
+import { useSubscription } from "../../hooks/useSubscription";
 import { PaywallModal } from "../../components/PaywallModal";
 import { SignInModal } from "../../components/SignInModal";
 import { RateAppModal } from "../../components/RateAppModal";
@@ -91,6 +92,7 @@ export default function MoreTab() {
   const { settings, setTextSize, setThemeId, setColorScheme, setDailyReminderEnabled, setDailyReminderTime } =
     useSettings();
   const { submitting: submittingFeedback, submitFeedback } = useAppFeedback();
+  const { status } = useSubscription();
   const { updateThemeMode } = useAnalytics();
   const router = useRouter();
 
@@ -104,6 +106,17 @@ export default function MoreTab() {
   const [feedbackContact, setFeedbackContact] = useState("");
   const [isSharing, setIsSharing] = useState(false);
   const [showExtendedThemes, setShowExtendedThemes] = useState(false);
+
+  // Revert to default theme and hide premium colors when subscription lapses
+  useEffect(() => {
+    if (!status.isSubscribed) {
+      setShowExtendedThemes(false);
+      if (EXTENDED_THEME_OPTIONS.some((t) => t.id === settings.themeId)) {
+        setThemeId("ocean-light");
+        updateThemeMode("light");
+      }
+    }
+  }, [status.isSubscribed]);
 
   const expoConfig: any = Constants.expoConfig ?? {};
   const appVersion =
@@ -201,7 +214,7 @@ export default function MoreTab() {
   const handleSignOut = () => {
     Alert.alert(
       "Sign Out",
-      "Signing out will hide your journal and premium features until you sign back in. Your data won't be lost.",
+      "You'll need to sign back in to use the app. Your data won't be lost.",
       [
         { text: "Cancel", style: "cancel" },
         {

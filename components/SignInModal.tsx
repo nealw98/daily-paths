@@ -33,12 +33,10 @@ interface SignInModalProps {
   visible: boolean;
   /** When false, close button is hidden (used as mandatory gate). */
   dismissable?: boolean;
-  /**
-   * Override the initial mode. When omitted the modal auto-detects:
-   * if the device has previously signed in → "signin" (Welcome Back),
-   * otherwise → "signup" (Create Account).
-   */
+  /** Override the initial mode. Defaults to "signin" when omitted. */
   initialMode?: "signin" | "signup";
+  /** When true, shows a "signed out" message instead of the default subtitle. */
+  signedOut?: boolean;
   onClose: () => void;
 }
 
@@ -46,6 +44,7 @@ export const SignInModal: React.FC<SignInModalProps> = ({
   visible,
   dismissable = true,
   initialMode,
+  signedOut = false,
   onClose,
 }) => {
   const { colors } = useTheme();
@@ -54,19 +53,14 @@ export const SignInModal: React.FC<SignInModalProps> = ({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"signin" | "signup">(initialMode ?? "signup");
+  const [mode, setMode] = useState<"signin" | "signup">(initialMode ?? "signin");
   const [showPassword, setShowPassword] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
 
-  // Auto-detect mode when no explicit initialMode is provided
+  // Reset to default mode when modal opens (unless overridden)
   useEffect(() => {
     if (initialMode || !visible) return;
-    AsyncStorage.getItem(HAS_ACCOUNT_KEY).then((value) => {
-      setMode(value === "true" ? "signin" : "signup");
-    }).catch(() => {
-      // Default to signup if check fails
-      setMode("signup");
-    });
+    setMode("signin");
   }, [visible, initialMode]);
 
   const handleSubmit = async () => {
@@ -79,18 +73,29 @@ export const SignInModal: React.FC<SignInModalProps> = ({
       if (mode === "signup") {
         await signUp(email.trim(), password.trim());
         await markHasAccount();
-        Alert.alert(
-          "Account Created",
-          "Check your email to confirm your account, then sign in.",
-          [{ text: "OK", onPress: onClose }]
-        );
+        onClose();
       } else {
         await signIn(email.trim(), password.trim());
         await markHasAccount();
         onClose();
       }
     } catch (err: any) {
-      Alert.alert("Auth Error", err.message || "Something went wrong.");
+      const msg = err.message || "Something went wrong.";
+      if (
+        mode === "signin" &&
+        msg.toLowerCase().includes("invalid login credentials")
+      ) {
+        Alert.alert(
+          "No Account Found",
+          "No account found with that email. Would you like to create one?",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Create Account", onPress: () => setMode("signup") },
+          ]
+        );
+      } else {
+        Alert.alert("Auth Error", msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -181,9 +186,11 @@ export const SignInModal: React.FC<SignInModalProps> = ({
               {mode === "signin" ? "Welcome Back" : "Create Account"}
             </Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              {mode === "signin"
-                ? "Sign in to sync your data across devices"
-                : "Create an account to get started"}
+              {signedOut && mode === "signin"
+                ? "You've been signed out. Sign in to continue."
+                : mode === "signin"
+                  ? "Sign in to sync your data across devices"
+                  : "Create an account to get started"}
             </Text>
 
             {/* Social Sign-In Buttons */}
@@ -292,19 +299,21 @@ export const SignInModal: React.FC<SignInModalProps> = ({
                     )}
                   </TouchableOpacity>
 
-                  {/* Toggle sign-in / sign-up */}
-                  <TouchableOpacity
-                    onPress={() => setMode(mode === "signin" ? "signup" : "signin")}
-                  >
-                    <Text style={[styles.toggleText, { color: colors.accent }]}>
-                      {mode === "signin"
-                        ? "Need an account? Create one"
-                        : "Already have an account? Sign in"}
-                    </Text>
-                  </TouchableOpacity>
                 </View>
               </>
             )}
+
+            {/* Bottom mode toggle — always visible */}
+            <TouchableOpacity
+              onPress={() => setMode(mode === "signin" ? "signup" : "signin")}
+              style={styles.bottomToggle}
+            >
+              <Text style={[styles.toggleText, { color: colors.accent }]}>
+                {mode === "signin"
+                  ? "New here? Create an account."
+                  : "Already have an account? Sign in."}
+              </Text>
+            </TouchableOpacity>
           </ScrollView>
         </View>
         </View>
@@ -432,6 +441,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: "center",
     paddingVertical: 12,
+  },
+  bottomToggle: {
+    alignItems: "center",
+    marginTop: 8,
   },
   emailToggle: {
     alignItems: "center",

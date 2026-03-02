@@ -61,6 +61,16 @@ export async function signUpWithEmail(email: string, password: string) {
     qaLog("auth", "Email sign-up failed", { error: error.message });
     throw error;
   }
+
+  // If no session was created, email confirmation is likely still enabled.
+  // We don't support that flow — surface a clear error instead of silently hanging.
+  if (!data.session) {
+    qaLog("auth", "Sign-up returned no session (email confirmation required?)");
+    throw new Error(
+      "Account created but requires email confirmation. Please check your email, then sign in."
+    );
+  }
+
   qaLog("auth", "Email sign-up successful", { userId: data.user?.id });
   // Link device and create profile after successful sign-up
   if (data.user) {
