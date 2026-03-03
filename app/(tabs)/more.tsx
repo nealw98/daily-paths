@@ -33,6 +33,8 @@ import { useSubscription } from "../../hooks/useSubscription";
 import { PaywallModal } from "../../components/PaywallModal";
 import { SignInModal } from "../../components/SignInModal";
 import { RateAppModal } from "../../components/RateAppModal";
+import { DeleteAccountModal } from "../../components/DeleteAccountModal";
+import { requestAccountDeletion } from "../../lib/accountDeletion";
 
 /** Default theme options (visible to all users) */
 const DEFAULT_THEME_OPTIONS: { id: string; displayName: string; icon?: string }[] = [
@@ -106,6 +108,7 @@ export default function MoreTab() {
   const [feedbackContact, setFeedbackContact] = useState("");
   const [isSharing, setIsSharing] = useState(false);
   const [showExtendedThemes, setShowExtendedThemes] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Revert to default theme and hide premium colors when subscription lapses
   useEffect(() => {
@@ -226,6 +229,25 @@ export default function MoreTab() {
         },
       ],
     );
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      await requestAccountDeletion();
+      setShowDeleteModal(false);
+      Alert.alert(
+        "Account Deletion Scheduled",
+        "Your account will be permanently deleted in 30 days. Sign back in before then to cancel.",
+        [{
+          text: "OK",
+          onPress: async () => {
+            await signOut();
+          },
+        }],
+      );
+    } catch (err: any) {
+      Alert.alert("Error", err.message || "Failed to request account deletion. Please try again.");
+    }
   };
 
   return (
@@ -568,7 +590,42 @@ export default function MoreTab() {
           <Ionicons name="chevron-forward" size={20} color={colors.seafoam} />
         </TouchableOpacity>
 
-        {/* ── 7. About Footer ─────────────────────────────── */}
+        {/* ── 7. Delete Account ─────────────────────────────── */}
+        {isAuthenticated && (
+          <View style={[styles.card, { backgroundColor: colors.cloud, borderColor: colors.mist, marginTop: 16 }]}>
+            <Text style={[styles.sectionLabel, { color: colors.ink }]}>Account</Text>
+            {status.isSubscribed && !status.isLegacy ? (
+              <>
+                <Text style={[styles.deleteBlockedText, { color: colors.textSecondary }]}>
+                  To delete your account, please cancel your subscription first. Once your subscription has expired, you can delete your account.
+                </Text>
+                <TouchableOpacity
+                  style={[styles.primaryButton, { backgroundColor: colors.deepTeal, marginTop: 12 }]}
+                  onPress={() => {
+                    const url = Platform.select({
+                      ios: "https://apps.apple.com/account/subscriptions",
+                      android: "https://play.google.com/store/account/subscriptions?package=com.nealw98.dailypaths",
+                    });
+                    if (url) Linking.openURL(url);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.primaryButtonText, { color: colors.textOnAccent }]}>Manage Subscription</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <TouchableOpacity
+                style={[styles.primaryButton, { backgroundColor: colors.danger, marginTop: 4 }]}
+                onPress={() => setShowDeleteModal(true)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.primaryButtonText, { color: "#FFFFFF" }]}>Delete Account</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        {/* ── 8. About Footer ─────────────────────────────── */}
         <View style={[styles.aboutSection, { paddingBottom: 8 + insets.bottom }]}>
           <Text style={[styles.aboutText, { color: colors.ink }]}>
             Daily Paths supports your recovery with 366 original readings based on Al-Anon's Steps, Traditions, and Concepts. It is not affiliated with Al-Anon, AA or any 12-step fellowship.
@@ -617,6 +674,12 @@ export default function MoreTab() {
       {/* ── Modals ──────────────────────────────────────── */}
       <PaywallModal visible={showPaywall} onClose={() => { setShowPaywall(false); setShowExtendedThemes(true); }} />
       <SignInModal visible={showSignIn} onClose={() => setShowSignIn(false)} />
+      <DeleteAccountModal
+        visible={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteAccount}
+        isLegacy={status.isLegacy}
+      />
 
       <Modal
         visible={showFeedbackModal}
@@ -914,6 +977,12 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
     fontWeight: "600",
+  },
+  deleteBlockedText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 4,
   },
 
   /* ── Subscription Row ──────────────────────────── */

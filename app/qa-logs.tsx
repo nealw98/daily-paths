@@ -22,6 +22,7 @@ import { isDeveloperDevice, setDeveloperDevice, getOrCreateDeviceId } from "../u
 import { getTrialStatus, resetTrial, expireTrial } from "../utils/trialTimer";
 import { clearFreemiumMigrationFlag } from "../utils/dataMigration";
 import { enableSubscriptionOverride, clearSubscriptionOverride } from "../utils/subscriptionOverride";
+import { useSubscriptionContext } from "../contexts/SubscriptionContext";
 
 export default function QaLogsScreen() {
   const { colors } = useTheme();
@@ -31,6 +32,7 @@ export default function QaLogsScreen() {
   const insets = useSafeAreaInsets();
   const logs = useQaLogs();
   const router = useRouter();
+  const { trialStatus } = useSubscriptionContext();
   const [updating, setUpdating] = React.useState(false);
   const [updateStatus, setUpdateStatus] = React.useState<string | null>(null);
   const [copyStatus, setCopyStatus] = React.useState<string | null>(null);
@@ -166,6 +168,7 @@ export default function QaLogsScreen() {
   const handleResetTrial = async () => {
     try {
       await resetTrial();
+      await trialStatus.refresh();
       qaLog("freemium", "Trial reset");
       alert("Trial reset. Restart the app to begin a fresh 7-day trial.");
     } catch (err) {
@@ -177,6 +180,7 @@ export default function QaLogsScreen() {
   const handleExpireTrial = async () => {
     try {
       await expireTrial();
+      await trialStatus.refresh();
       qaLog("freemium", "Trial expired manually");
       alert("Trial expired. Premium tabs will now show the paywall.");
     } catch (err) {

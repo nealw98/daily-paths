@@ -93,6 +93,20 @@ export const SignInModal: React.FC<SignInModalProps> = ({
             { text: "Create Account", onPress: () => setMode("signup") },
           ]
         );
+      } else if (
+        mode === "signup" &&
+        (msg.toLowerCase().includes("already registered") ||
+         msg.toLowerCase().includes("already been registered") ||
+         msg.toLowerCase().includes("already exists"))
+      ) {
+        Alert.alert(
+          "Account Exists",
+          "An account with this email already exists. If you previously requested deletion, sign in to restore it.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Sign In Instead", onPress: () => setMode("signin") },
+          ]
+        );
       } else {
         Alert.alert("Auth Error", msg);
       }
