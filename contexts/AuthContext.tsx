@@ -110,18 +110,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
+    signingOut.current = false;
     await signInWithEmail(email, password);
   }, []);
 
   const signUp = useCallback(async (email: string, password: string) => {
+    signingOut.current = false;
     await signUpWithEmail(email, password);
   }, []);
 
   const signInApple = useCallback(async () => {
+    signingOut.current = false;
     await signInWithApple();
   }, []);
 
   const signInGoogle = useCallback(async () => {
+    signingOut.current = false;
     await signInWithGoogle();
   }, []);
 
@@ -137,11 +141,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     setSession(null);
     setIsLegacy(false);
-    // Keep the guard active briefly so any in-flight auth listener events
-    // (e.g. a token refresh that was already in progress) are blocked.
-    setTimeout(() => {
-      signingOut.current = false;
-    }, 2000);
+    // signingOut guard stays active until the user explicitly signs in again,
+    // preventing stale token-refresh events from silently restoring the session.
   }, []);
 
   const forgotPassword = useCallback(async (email: string) => {

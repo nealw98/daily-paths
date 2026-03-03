@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { fonts } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
 import { useSubscription } from "../hooks/useSubscription";
+import { useSubscriptionContext } from "../contexts/SubscriptionContext";
 import type { PurchasesPackage } from "react-native-purchases";
 
 interface PaywallModalProps {
@@ -44,6 +45,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
 }) => {
   const { colors } = useTheme();
   const { packages, purchase, restore, purchasing } = useSubscription();
+  const { trialStatus } = useSubscriptionContext();
   const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage | null>(null);
   const [restoring, setRestoring] = useState(false);
 
@@ -90,7 +92,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
       visible={visible}
       transparent
       animationType="slide"
-      onRequestClose={dismissable && onDismiss ? onDismiss : undefined}
+      onRequestClose={dismissable ? (onDismiss ?? onClose) : undefined}
     >
       <KeyboardAvoidingView
         style={[styles.container, { backgroundColor: colors.backdrop }]}
@@ -99,8 +101,8 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
         <View style={[styles.content, { backgroundColor: colors.background }]}>
           {/* Header */}
           <View style={styles.header}>
-            {dismissable && onDismiss ? (
-              <TouchableOpacity onPress={onDismiss} style={styles.closeButton}>
+            {dismissable ? (
+              <TouchableOpacity onPress={onDismiss ?? onClose} style={styles.closeButton}>
                 <Ionicons name="close" size={28} color={colors.textSecondary} />
               </TouchableOpacity>
             ) : (
@@ -120,6 +122,16 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               Deepen your recovery journey
             </Text>
+
+            {/* Trial Countdown */}
+            {trialStatus.isInTrial && (
+              <View style={[styles.trialBanner, { backgroundColor: colors.cardBackground }]}>
+                <Ionicons name="time-outline" size={18} color={colors.accent} />
+                <Text style={[styles.trialText, { color: colors.text }]}>
+                  {trialStatus.daysRemaining} {trialStatus.daysRemaining === 1 ? "day" : "days"} left in your free trial
+                </Text>
+              </View>
+            )}
 
             {/* Features */}
             <View style={styles.featuresList}>
@@ -298,6 +310,21 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 8,
     marginBottom: 24,
+  },
+  trialBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  trialText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 14,
+    fontWeight: "600",
   },
   featuresList: {
     gap: 16,
