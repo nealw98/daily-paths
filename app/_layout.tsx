@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Stack, useRouter } from "expo-router";
 import { useFonts } from "expo-font";
 import {
@@ -20,7 +20,6 @@ import { fallbackColors } from "../constants/theme";
 import { SettingsProvider } from "../hooks/useSettings";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { SubscriptionProvider } from "../contexts/SubscriptionContext";
-import { SignInModal } from "../components/SignInModal";
 import { usePostAuthMigration } from "../hooks/usePostAuthMigration";
 import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform, Alert } from "react-native";
 import * as Notifications from "expo-notifications";
@@ -202,7 +201,6 @@ export default function RootLayout() {
   return (
     <SettingsProvider>
       <AuthProvider>
-        <AuthGate>
           <SubscriptionProvider>
             <PostAuthMigrationRunner>
               <DeletionBanner />
@@ -241,45 +239,11 @@ export default function RootLayout() {
               />
             </PostAuthMigrationRunner>
           </SubscriptionProvider>
-        </AuthGate>
       </AuthProvider>
     </SettingsProvider>
   );
 }
 
-// ─── Auth Gate ─────────────────────────────────────────────────────────────────
-// Blocks all content until the user is authenticated. Shows a loading spinner
-// while checking for an existing session, then a non-dismissable SignInModal.
-
-function AuthGate({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, loading } = useAuth();
-  const wasAuthenticated = useRef(false);
-
-  useEffect(() => {
-    if (isAuthenticated) wasAuthenticated.current = true;
-  }, [isAuthenticated]);
-
-  if (loading) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor: fallbackColors.pearl }]}>
-        <ActivityIndicator size="large" color={fallbackColors.ocean} />
-      </View>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <SignInModal
-        visible
-        dismissable={false}
-        signedOut={wasAuthenticated.current}
-        onClose={() => {}}
-      />
-    );
-  }
-
-  return <>{children}</>;
-}
 
 // ─── Post-Auth Migration Runner ───────────────────────────────────────────────
 // Thin wrapper that runs post-sign-in tasks (trial migration, legacy detection).
