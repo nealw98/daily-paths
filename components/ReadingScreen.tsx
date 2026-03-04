@@ -100,7 +100,11 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   const scrollViewRef = useRef<ScrollView>(null);
   const translateX = useRef(new Animated.Value(0)).current;
   const heartScale = useRef(new Animated.Value(1)).current;
-  const screenWidth = Dimensions.get("window").width;
+  const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
+
+  // Scale header for smaller screens. Full size at ≥ 844pt (iPhone 14);
+  // shrinks aggressively for iPhone SE / small Android, floor at 65%.
+  const hScale = Math.min(1, Math.max(0.65, (screenHeight - 300) / 544));
   const [isSwiping, setIsSwiping] = useState(false);
   const prevDateRef = useRef(onPrevDate);
   const nextDateRef = useRef(onNextDate);
@@ -443,10 +447,13 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
           colors={[colors.headerGradientStart, colors.headerGradientEnd]}
           start={{ x: 0, y: 0 }}
           end={themeId === "twilight-fire" ? { x: 0, y: 1 } : { x: 1, y: 1 }}
-          style={styles.header}
+          style={[styles.header, {
+            paddingTop: 16 * hScale,
+            paddingBottom: 24 * hScale,
+          }]}
         >
-          <View style={styles.headerTop}>
-            <Text style={[styles.logo, { color: colors.textOnAccent }]}>Al-Anon Daily Paths</Text>
+          <View style={[styles.headerTop, { marginBottom: 20 * hScale }]}>
+            <Text style={[styles.logo, { color: colors.textOnAccent, fontSize: 40 * hScale }]}>Al-Anon Daily Paths</Text>
             {/* Legacy test button to trigger instruction modal kept for possible future use:
             {onShowInstruction && (
               <TouchableOpacity
@@ -460,9 +467,9 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
           </View>
 
           <View style={styles.dateNav}>
-            <TouchableOpacity onPress={onPrevDate} style={styles.navButton}>
+            <TouchableOpacity onPress={onPrevDate} style={[styles.navButton, { width: 36 * hScale, height: 36 * hScale, borderRadius: 18 * hScale }]}>
               <BlurView intensity={20} tint="light" style={styles.blurNavButton}>
-                <Ionicons name="chevron-back" size={20} color={colors.textOnAccent} />
+                <Ionicons name="chevron-back" size={Math.round(20 * hScale)} color={colors.textOnAccent} />
               </BlurView>
             </TouchableOpacity>
 
@@ -476,15 +483,15 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                     <Text style={[styles.calendarMonthText, { color: colors.textOnAccent }]}>{month}</Text>
                   </View>
                   <View style={[styles.calendarDay, { backgroundColor: colors.calendarDayBackground }]}>
-                    <Text style={[styles.calendarDayText, { color: colors.calendarDayText }]}>{day}</Text>
+                    <Text style={[styles.calendarDayText, { color: colors.calendarDayText, fontSize: 28 * hScale, lineHeight: 28 * hScale }]}>{day}</Text>
                   </View>
                 </View>
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={onNextDate} style={styles.navButton}>
+            <TouchableOpacity onPress={onNextDate} style={[styles.navButton, { width: 36 * hScale, height: 36 * hScale, borderRadius: 18 * hScale }]}>
               <BlurView intensity={20} tint="light" style={styles.blurNavButton}>
-                <Ionicons name="chevron-forward" size={20} color={colors.textOnAccent} />
+                <Ionicons name="chevron-forward" size={Math.round(20 * hScale)} color={colors.textOnAccent} />
               </BlurView>
             </TouchableOpacity>
           </View>
