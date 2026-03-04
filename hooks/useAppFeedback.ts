@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Platform } from 'react-native';
+import { Platform, Dimensions, PixelRatio } from 'react-native';
 import Constants from 'expo-constants';
+import * as Device from 'expo-device';
 import { supabase } from '../lib/supabase';
 import { getOrCreateDeviceId } from '../utils/deviceIdentity';
 import { qaLog } from '../utils/qaLog';
@@ -29,6 +30,8 @@ export function useAppFeedback() {
       const appVersion = expoConfig.version ?? Constants.nativeAppVersion ?? 'dev';
       const buildNumber = expoConfig.ios?.buildNumber ?? Constants.nativeBuildVersion ?? 'dev';
 
+      const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
       const feedbackData = {
         device_id: deviceId,
         feedback_text: feedbackText.trim(),
@@ -36,6 +39,12 @@ export function useAppFeedback() {
         app_version: appVersion,
         build_number: buildNumber,
         platform: Platform.OS,
+        device_model: Device.modelName ?? null,
+        os_version: `${Platform.OS === 'ios' ? 'iOS' : 'Android'} ${Platform.Version}`,
+        screen_height: Math.round(screenHeight),
+        screen_width: Math.round(screenWidth),
+        font_scale: PixelRatio.getFontScale(),
+        manufacturer: Platform.OS === 'android' ? (Device.manufacturer ?? null) : null,
       };
 
       qaLog('app-feedback', 'Submitting feedback', {
