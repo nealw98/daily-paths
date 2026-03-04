@@ -4,7 +4,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { fonts } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
 import { useSettings } from "../hooks/useSettings";
-import { updateNotificationWithThought } from "../utils/notificationSync";
+import { scheduleWeekOfNotifications } from "../utils/notificationSync";
 import { useAnalytics } from "../utils/analytics";
 
 function parseTimeToDate(time: string): Date {
@@ -79,7 +79,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
 
     // Update notification with thought if enabling
     if (enabled) {
-      await updateNotificationWithThought();
+      await scheduleWeekOfNotifications();
       trackReminderSet(settings.dailyReminderTime);
     } else {
       trackReminderDisabled();
@@ -189,7 +189,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                           const oldTime = settings.dailyReminderTime;
                           const newTime = formatTimeStorage(selectedDate);
                           await setDailyReminderTime(newTime);
-                          await updateNotificationWithThought();
+                          await scheduleWeekOfNotifications();
                           trackReminderChanged(oldTime, newTime);
                           if (onShowToast) {
                             onShowToast(`You'll receive the Thought for the Day at ${formatTimeDisplay(selectedDate)}`);
@@ -222,7 +222,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                         setShowTimePicker(false);
                         setTempReminderDate(null);
                         await setDailyReminderTime(newTime);
-                        await updateNotificationWithThought();
+                        await scheduleWeekOfNotifications();
                         trackReminderChanged(oldTime, newTime);
                         if (onShowToast) {
                           onShowToast(`You'll receive the Thought for the Day at ${formatTimeDisplay(finalDate)}`);

@@ -1,7 +1,7 @@
 import React from "react";
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { scheduleDailyReminder, cancelDailyReminder } from "../utils/dailyReminder";
+import { ensureNotificationPermissions, cancelDailyReminder } from "../utils/dailyReminder";
 
 console.log("[STARTUP] useSettings.ts module loading...");
 
@@ -162,24 +162,22 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
   const setDailyReminderEnabled = React.useCallback(
     async (enabled: boolean) => {
       if (enabled) {
-        const ok = await scheduleDailyReminder(settings.dailyReminderTime);
+        const ok = await ensureNotificationPermissions();
         await updateSettings({ dailyReminderEnabled: ok });
       } else {
         await cancelDailyReminder();
         await updateSettings({ dailyReminderEnabled: false });
       }
     },
-    [settings.dailyReminderTime, updateSettings]
+    [updateSettings]
   );
 
   const setDailyReminderTime = React.useCallback(
     async (time: string) => {
       await updateSettings({ dailyReminderTime: time });
-      if (settings.dailyReminderEnabled) {
-        await scheduleDailyReminder(time);
-      }
+      // Actual scheduling is handled by callers via scheduleWeekOfNotifications()
     },
-    [settings.dailyReminderEnabled, updateSettings]
+    [updateSettings]
   );
 
   const value = React.useMemo<SettingsContextValue>(

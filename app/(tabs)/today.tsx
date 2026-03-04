@@ -32,7 +32,6 @@ import { markRatePromptShown, recordFirstUseIfNeeded } from "../../utils/rateSha
 import { recordDailyActivity, recordReadingView } from "../../utils/deviceIdentity";
 import { qaLog } from "../../utils/qaLog";
 import { useAnalytics, NavigationMethod } from "../../utils/analytics";
-import { updateNotificationWithThought } from "../../utils/notificationSync";
 import { useReading } from "../../hooks/useReading";
 import { useBookmarkManager } from "../../hooks/useBookmarkManager";
 import { useAvailableDates } from "../../hooks/useAvailableDates";
@@ -170,10 +169,7 @@ export default function Index() {
     trackAppOpened();
   }, []);
 
-  // Update notification with latest thought on app launch
-  useEffect(() => {
-    updateNotificationWithThought();
-  }, []);
+  // Notification scheduling is handled by useReading after prefetch completes
 
   // Refs for AppState listener so foreground handler sees latest reading/date/navigation
   const readingRef = useRef(reading);

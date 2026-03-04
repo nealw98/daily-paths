@@ -24,7 +24,7 @@ import { useSettings, TextSize } from "../../hooks/useSettings";
 import { useAppFeedback } from "../../hooks/useAppFeedback";
 import { useAnalytics } from "../../utils/analytics";
 import { shareApp } from "../../utils/rateShareTracking";
-import { updateNotificationWithThought } from "../../utils/notificationSync";
+import { scheduleWeekOfNotifications } from "../../utils/notificationSync";
 import { qaLog } from "../../utils/qaLog";
 import { fonts } from "../../constants/theme";
 import { TealHeader } from "../../components/shared/TealHeader";
@@ -164,7 +164,7 @@ export default function MoreTab() {
   const handleReminderToggle = async (enabled: boolean) => {
     await setDailyReminderEnabled(enabled);
     if (enabled) {
-      await updateNotificationWithThought();
+      await scheduleWeekOfNotifications();
     }
   };
 
@@ -516,7 +516,7 @@ export default function MoreTab() {
                     setShowTimePicker(false);
                     setTempReminderDate(null);
                     await setDailyReminderTime(formatTimeStorage(finalDate));
-                    await updateNotificationWithThought();
+                    await scheduleWeekOfNotifications();
                   }}
                 >
                   <Text style={[styles.timePickerBtnText, { color: colors.textOnAccent }]}>Set time</Text>

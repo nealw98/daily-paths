@@ -8,7 +8,7 @@ import {
   type CachedReading,
 } from "../utils/readingCache";
 import { qaLog } from "../utils/qaLog";
-import { updateNotificationWithThought } from "../utils/notificationSync";
+import { scheduleWeekOfNotifications } from "../utils/notificationSync";
 
 const PREFETCH_WINDOW_DAYS = 6; // today + next 6 days
 const prefetchedDateKeys = new Set<string>();
@@ -153,8 +153,16 @@ export function useReading(date: Date) {
   }, [date]);
 
   // Prefetch today + a short horizon so users can read offline.
+  // After prefetch completes, schedule notifications so they pick up all 7 days.
   useEffect(() => {
-    prefetchUpcomingReadings(date);
+    prefetchUpcomingReadings(date).then(() => {
+      const isToday = formatDateLocal(date) === formatDateLocal(new Date());
+      if (isToday) {
+        scheduleWeekOfNotifications().catch(err =>
+          console.warn('[useReading] Failed to schedule notifications after prefetch:', err)
+        );
+      }
+    });
   }, [date]);
 
   async function fetchReading() {
@@ -263,8 +271,8 @@ export function useReading(date: Date) {
           // Update notification with new thought if this is today's reading
           const isToday = formatDateLocal(date) === formatDateLocal(new Date());
           if (isToday && transformedReading.thoughtForDay) {
-            updateNotificationWithThought().catch(err => 
-              console.warn('[useReading] Failed to update notification:', err)
+            scheduleWeekOfNotifications().catch(err =>
+              console.warn('[useReading] Failed to schedule notifications:', err)
             );
           }
           

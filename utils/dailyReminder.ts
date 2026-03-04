@@ -21,7 +21,6 @@ export async function ensureNotificationPermissions(): Promise<boolean> {
 
 /**
  * Cancel any existing scheduled notifications for this app.
- * For this project, we only schedule the single daily reminder.
  */
 export async function cancelDailyReminder(): Promise<void> {
   try {
@@ -48,81 +47,77 @@ export async function getScheduledNotifications() {
 }
 
 /**
- * Schedule (or reschedule) the Al-Anon Daily Paths reminder at the given local time.
- *
- * `time` is "HH:MM" in 24h format, e.g. "08:00".
- * `thoughtForDay` is optional - if provided, notification will include the actual thought.
- * Returns true if a reminder was scheduled, false if permissions were denied.
+ * Schedule a single one-time notification for a specific date with the given thought.
+ * If the target time has already passed, the notification is silently skipped.
  */
-export async function scheduleDailyReminder(time: string, thoughtForDay?: string): Promise<boolean> {
-  const hasPermission = await ensureNotificationPermissions();
-  if (!hasPermission) {
-    console.warn("Notification permission not granted; daily reminder not scheduled.");
-    return false;
+export async function scheduleSingleDayNotification(
+  date: Date,
+  time: { hour: number; minute: number },
+  thoughtForDay: string
+): Promise<void> {
+  const triggerDate = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+    time.hour,
+    time.minute,
+    0
+  );
+
+  // Don't schedule if the time has already passed
+  if (triggerDate <= new Date()) {
+    console.log(`[Reminder] Skipping ${triggerDate.toLocaleDateString()} — time already passed`);
+    return;
   }
 
-  // Clear any previous daily reminder so we don't accumulate duplicates.
-  await cancelDailyReminder();
+  const id = await Notifications.scheduleNotificationAsync({
+    content: {
+      title: "Daily Paths",
+      body: `Today's Thought: ${thoughtForDay}`,
+      sound: "default",
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DATE,
+      date: triggerDate,
+    },
+  });
 
-  const [hourStr = "8", minuteStr = "0"] = time.split(":");
-  const hour = Number(hourStr);
-  const minute = Number(minuteStr);
+  console.log(`[Reminder] Scheduled one-time notification for ${triggerDate.toLocaleDateString()} — id: ${id}`);
+}
 
-  // Create a date for the notification time TODAY in local timezone
-  const now = new Date();
-  const scheduledTime = new Date();
-  scheduledTime.setHours(hour, minute, 0, 0);
-
-  // If that time has already passed today, schedule for tomorrow
-  if (scheduledTime <= now) {
-    scheduledTime.setDate(scheduledTime.getDate() + 1);
-    console.log(`[Reminder] Time ${hour}:${minute.toString().padStart(2, '0')} has passed today, scheduling for tomorrow`);
-  }
-
-  console.log(`[Reminder] Scheduling daily notification for ${scheduledTime.toLocaleString()}`);
-
-  // Use platform-specific trigger types
-  // iOS supports CALENDAR triggers, Android needs DAILY trigger
+/**
+ * Schedule a generic repeating notification as a fallback.
+ * This fires on any day where no one-time notification was pre-scheduled
+ * (e.g. day 8+ after last app open, or if cache was empty).
+ */
+export async function scheduleGenericFallbackNotification(
+  time: { hour: number; minute: number }
+): Promise<void> {
   let trigger: Notifications.NotificationTriggerInput;
-  
+
   if (Platform.OS === "ios") {
-    // iOS: Use calendar trigger for exact time scheduling
     trigger = {
       type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
       repeats: true,
-      hour: hour,
-      minute: minute,
+      hour: time.hour,
+      minute: time.minute,
     };
   } else {
-    // Android: Use DAILY trigger type which is supported
     trigger = {
       type: Notifications.SchedulableTriggerInputTypes.DAILY,
-      hour: hour,
-      minute: minute,
+      hour: time.hour,
+      minute: time.minute,
     };
   }
 
-  const notificationId = await Notifications.scheduleNotificationAsync({
+  const id = await Notifications.scheduleNotificationAsync({
     content: {
-      title: "Al-Anon Daily Paths",
-      body: thoughtForDay 
-        ? `Today's Thought: ${thoughtForDay}`
-        : "It\u2019s time for today\u2019s Daily Path. A few quiet moments can shift the whole day.",
+      title: "Daily Paths",
+      body: "It\u2019s time for today\u2019s Daily Path. Open the app to read today\u2019s reflection.",
       sound: "default",
     },
     trigger,
   });
 
-  console.log(`[Reminder] Notification scheduled with ID: ${notificationId}`);
-
-  // Log what's scheduled for debugging
-  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-  console.log(`[Reminder] Total scheduled notifications: ${scheduled.length}`);
-  if (scheduled.length > 0) {
-    console.log(`[Reminder] Next trigger:`, scheduled[0].trigger);
-  }
-
-  return true;
+  console.log(`[Reminder] Scheduled generic fallback notification — id: ${id}`);
 }
-
-
