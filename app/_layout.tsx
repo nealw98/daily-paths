@@ -22,6 +22,7 @@ import * as Notifications from "expo-notifications";
 import * as Updates from "expo-updates";
 import { installGlobalErrorHandler } from "../utils/errorLogger";
 import { PostHogProvider } from 'posthog-react-native';
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 console.log("[STARTUP] _layout.tsx module loading...");
 console.log("[STARTUP] Platform:", Platform.OS, Platform.Version);
@@ -208,8 +209,10 @@ export default function RootLayout() {
     );
   };
 
-  return wrapWithPostHog(
-    <SettingsProvider>
+  return (
+    <SafeAreaProvider>
+      {wrapWithPostHog(
+        <SettingsProvider>
         {updateReady && (
           <View style={styles.updateBanner}>
             <Text style={styles.updateText}>
@@ -244,6 +247,8 @@ export default function RootLayout() {
           }}
         />
       </SettingsProvider>
+      )}
+    </SafeAreaProvider>
   );
 }
 
