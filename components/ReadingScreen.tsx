@@ -483,7 +483,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                     <Text style={[styles.calendarMonthText, { color: colors.textOnAccent }]}>{month}</Text>
                   </View>
                   <View style={[styles.calendarDay, { backgroundColor: colors.calendarDayBackground }]}>
-                    <Text style={[styles.calendarDayText, { color: colors.calendarDayText, fontSize: 28 * hScale, lineHeight: 28 * hScale }]}>{day}</Text>
+                    <Text style={[styles.calendarDayText, { color: colors.calendarDayText, fontSize: 22 * hScale, lineHeight: 22 * hScale }]}>{day}</Text>
                   </View>
                 </View>
               </View>
@@ -824,16 +824,16 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   calendarDay: {
-    paddingVertical: 6,
+    paddingVertical: 3,
     paddingHorizontal: 4,
     alignItems: "center",
     backgroundColor: "rgba(255, 255, 255, 0.65)",
   },
   calendarDayText: {
     fontFamily: fonts.headerFamily,
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: "600",
-    lineHeight: 28,
+    lineHeight: 22,
   },
   content: {
     flex: 1,
