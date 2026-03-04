@@ -50,8 +50,8 @@ export const TealHeader: React.FC<TealHeaderProps> = ({ title, leftIcon }) => {
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 22,
+    paddingTop: 24,
+    paddingBottom: 20,
   },
   inner: {
     alignItems: "center",
@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: fonts.headerFamilyItalic,
-    fontSize: 36,
-    lineHeight: 42,
+    fontSize: 38,
+    lineHeight: 46,
   },
 });
