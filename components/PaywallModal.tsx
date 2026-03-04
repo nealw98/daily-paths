@@ -10,6 +10,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Linking,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { fonts } from "../constants/theme";
@@ -44,7 +45,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
   onDismiss,
 }) => {
   const { colors } = useTheme();
-  const { packages, purchase, restore, purchasing } = useSubscription();
+  const { status, packages, purchase, restore, purchasing } = useSubscription();
   const { trialStatus } = useSubscriptionContext();
   const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage | null>(null);
   const [restoring, setRestoring] = useState(false);
@@ -245,9 +246,28 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
               </Text>
             </TouchableOpacity>
 
+            {/* Cancel / Manage via store (only for active subscribers) */}
+            {status.isSubscribed && !status.isLegacy && (
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => {
+                  const url = Platform.select({
+                    ios: "https://apps.apple.com/account/subscriptions",
+                    android:
+                      "https://play.google.com/store/account/subscriptions?package=com.nealw98.dailypaths",
+                  });
+                  if (url) Linking.openURL(url);
+                }}
+              >
+                <Text style={[styles.cancelText, { color: colors.textSecondary }]}>
+                  Cancel Subscription
+                </Text>
+              </TouchableOpacity>
+            )}
+
             {/* Legal */}
             <Text style={[styles.legalText, { color: colors.textSecondary }]}>
-              Payment will be charged to your App Store account at confirmation
+              Payment will be charged to your {Platform.OS === "ios" ? "App Store" : "Google Play"} account at confirmation
               of purchase. Subscription automatically renews unless cancelled at
               least 24 hours before the end of the current period.
             </Text>
@@ -420,6 +440,16 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 16,
     marginTop: 8,
+  },
+  cancelButton: {
+    alignItems: "center",
+    paddingVertical: 12,
+    marginBottom: 4,
+  },
+  cancelText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 14,
+    textDecorationLine: "underline",
   },
   notNowButton: {
     alignItems: "center",

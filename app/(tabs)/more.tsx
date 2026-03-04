@@ -570,17 +570,7 @@ export default function MoreTab() {
         {/* ── 6. Manage Subscription ──────────────────────── */}
         <TouchableOpacity
           style={[styles.subscriptionRow, { backgroundColor: colors.cloud, borderColor: colors.mist }]}
-          onPress={() => {
-            if (status.isSubscribed && !status.isLegacy) {
-              const url = Platform.select({
-                ios: "https://apps.apple.com/account/subscriptions",
-                android: "https://play.google.com/store/account/subscriptions?package=com.nealw98.dailypaths",
-              });
-              if (url) Linking.openURL(url);
-            } else {
-              setShowPaywall(true);
-            }
-          }}
+          onPress={() => setShowPaywall(true)}
           activeOpacity={0.8}
         >
           <View style={styles.subscriptionLeft}>
