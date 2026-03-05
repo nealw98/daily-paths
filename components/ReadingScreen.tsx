@@ -788,6 +788,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 20,
+    paddingHorizontal: 24,
     paddingBottom: 100,
   },
   title: {
