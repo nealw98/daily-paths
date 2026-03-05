@@ -48,7 +48,7 @@ const renderInlineMarkdown = (text: string, italicStyle: any) => {
 
     const italicText = match[2] ?? match[3];
     parts.push(
-      <Text key={`italic-${key++}`} style={italicStyle}>
+      <Text key={`italic-${key++}`} style={italicStyle} maxFontSizeMultiplier={1}>
         {italicText}
       </Text>
     );
@@ -403,7 +403,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
           }]}
         >
           <View style={[styles.headerTop, { marginBottom: 20 * hScale }]}>
-            <Text style={[styles.logo, { fontSize: 40 * hScale }]}>Al-Anon Daily Paths</Text>
+            <Text style={styles.logo} maxFontSizeMultiplier={1} allowFontScaling={false}>Al-Anon Daily Paths</Text>
             {/* Legacy test button to trigger instruction modal kept for possible future use:
             {onShowInstruction && (
               <TouchableOpacity
@@ -430,10 +430,10 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
               <View style={styles.calendarCardWrapper}>
                 <View style={[styles.calendarCard, { borderColor: isDark ? colors.mist : "rgba(255, 255, 255, 0.25)", backgroundColor: isDark ? colors.cloud : undefined }]}>
                   <View style={[styles.calendarMonth, { backgroundColor: isDark ? "rgba(74, 139, 141, 0.6)" : colors.deepTeal }]}>
-                    <Text style={styles.calendarMonthText}>{month}</Text>
+                    <Text style={styles.calendarMonthText} maxFontSizeMultiplier={1}>{month}</Text>
                   </View>
                   <View style={[styles.calendarDay, { backgroundColor: isDark ? colors.cloud : "rgba(255, 255, 255, 0.65)" }]}>
-                    <Text style={[styles.calendarDayText, { color: colors.deepTeal, fontSize: 28 * hScale, lineHeight: 28 * hScale }]}>{day}</Text>
+                    <Text style={[styles.calendarDayText, { color: colors.deepTeal, fontSize: 28 * hScale, lineHeight: 28 * hScale }]} maxFontSizeMultiplier={1}>{day}</Text>
                   </View>
                 </View>
               </View>
@@ -491,6 +491,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                     styles.title,
                     { fontSize: headingTypography.titleFontSize, color: colors.ocean },
                   ]}
+                  maxFontSizeMultiplier={1}
                 >
                   {reading.title}
                 </Text>
@@ -508,6 +509,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                         color: colors.ink,
                       },
                     ]}
+                    maxFontSizeMultiplier={1}
                   >
                     {renderInlineMarkdown(
                       applicationQuote,
@@ -525,6 +527,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                           color: colors.seafoam,
                         },
                       ]}
+                      maxFontSizeMultiplier={1}
                     >
                       {applicationReference}
                     </Text>
@@ -543,6 +546,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                       color: colors.ink,
                     },
                   ]}
+                  maxFontSizeMultiplier={1}
                 >
                   {renderInlineMarkdown(paragraph, styles.inlineItalic)}
                 </Text>
@@ -559,6 +563,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                       color: colors.ink,
                     },
                   ]}
+                  maxFontSizeMultiplier={1}
                 >
                   {renderInlineMarkdown(paragraph, styles.inlineItalic)}
                 </Text>
@@ -580,6 +585,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                           color: colors.ink,
                         },
                       ]}
+                      maxFontSizeMultiplier={1}
                     >
                       {renderInlineMarkdown(paragraph, styles.inlineItalic)}
                     </Text>
@@ -599,6 +605,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                         styles.thoughtLabel,
                         { fontSize: headingTypography.thoughtLabelFontSize, color: colors.ocean },
                       ]}
+                      maxFontSizeMultiplier={1}
                     >
                       Thought for the Day
                     </Text>
@@ -611,6 +618,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                           color: colors.deepTeal,
                         },
                       ]}
+                      maxFontSizeMultiplier={1}
                     >
                       {reading.thoughtForDay}
                     </Text>
