@@ -30,7 +30,8 @@ import { fonts } from "../../constants/theme";
 import { TealHeader } from "../../components/shared/TealHeader";
 import { Nautilus } from "../../components/icons";
 import { useSubscription } from "../../hooks/useSubscription";
-import { PaywallModal } from "../../components/PaywallModal";
+import { useSubscriptionContext } from "../../contexts/SubscriptionContext";
+import { SubscriptionManagementModal } from "../../components/SubscriptionManagementModal";
 import { SignInModal } from "../../components/SignInModal";
 import { RateAppModal } from "../../components/RateAppModal";
 import { DeleteAccountModal } from "../../components/DeleteAccountModal";
@@ -90,15 +91,16 @@ function formatTimeStorage(date: Date): string {
 export default function MoreTab() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const { user, isAuthenticated, signOut } = useAuth();
+  const { user, isAuthenticated, signOut, isLegacy } = useAuth();
   const { settings, setTextSize, setThemeId, setColorScheme, setDailyReminderEnabled, setDailyReminderTime } =
     useSettings();
   const { submitting: submittingFeedback, submitFeedback } = useAppFeedback();
   const { status } = useSubscription();
+  const { trialStatus } = useSubscriptionContext();
   const { updateThemeMode } = useAnalytics();
   const router = useRouter();
 
-  const [showPaywall, setShowPaywall] = useState(false);
+  const [showManageSubscription, setShowManageSubscription] = useState(false);
   const [showSignIn, setShowSignIn] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [tempReminderDate, setTempReminderDate] = useState<Date | null>(null);
@@ -570,7 +572,7 @@ export default function MoreTab() {
         {/* ── 6. Manage Subscription ──────────────────────── */}
         <TouchableOpacity
           style={[styles.subscriptionRow, { backgroundColor: colors.cloud, borderColor: colors.mist }]}
-          onPress={() => setShowPaywall(true)}
+          onPress={() => setShowManageSubscription(true)}
           activeOpacity={0.8}
         >
           <View style={styles.subscriptionLeft}>
@@ -662,7 +664,12 @@ export default function MoreTab() {
       </ScrollView>
 
       {/* ── Modals ──────────────────────────────────────── */}
-      <PaywallModal visible={showPaywall} onClose={() => { setShowPaywall(false); setShowExtendedThemes(true); }} />
+      <SubscriptionManagementModal
+        visible={showManageSubscription}
+        onClose={() => { setShowManageSubscription(false); setShowExtendedThemes(true); }}
+        isLegacy={isLegacy}
+        trialDaysRemaining={status.isSubscribed ? 0 : trialStatus.daysRemaining}
+      />
       <SignInModal visible={showSignIn} onClose={() => setShowSignIn(false)} />
       <DeleteAccountModal
         visible={showDeleteModal}
