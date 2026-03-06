@@ -30,8 +30,7 @@ import { fonts } from "../../constants/theme";
 import { TealHeader } from "../../components/shared/TealHeader";
 import { Nautilus } from "../../components/icons";
 import { useSubscription } from "../../hooks/useSubscription";
-import { useSubscriptionContext } from "../../contexts/SubscriptionContext";
-import { SubscriptionManagementModal } from "../../components/SubscriptionManagementModal";
+import RevenueCatUI from "react-native-purchases-ui";
 import { SignInModal } from "../../components/SignInModal";
 import { RateAppModal } from "../../components/RateAppModal";
 import { DeleteAccountModal } from "../../components/DeleteAccountModal";
@@ -95,12 +94,10 @@ export default function MoreTab() {
   const { settings, setTextSize, setThemeId, setColorScheme, setDailyReminderEnabled, setDailyReminderTime } =
     useSettings();
   const { submitting: submittingFeedback, submitFeedback } = useAppFeedback();
-  const { status } = useSubscription();
-  const { trialStatus } = useSubscriptionContext();
+  const { status, refresh } = useSubscription();
   const { updateThemeMode } = useAnalytics();
   const router = useRouter();
 
-  const [showManageSubscription, setShowManageSubscription] = useState(false);
   const [showSignIn, setShowSignIn] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [tempReminderDate, setTempReminderDate] = useState<Date | null>(null);
@@ -572,7 +569,18 @@ export default function MoreTab() {
         {/* ── 6. Manage Subscription ──────────────────────── */}
         <TouchableOpacity
           style={[styles.subscriptionRow, { backgroundColor: colors.cloud, borderColor: colors.mist }]}
-          onPress={() => setShowManageSubscription(true)}
+          onPress={async () => {
+            try {
+              await RevenueCatUI.presentCustomerCenter({
+                callbacks: {
+                  onRestoreCompleted: () => refresh(),
+                },
+              });
+              await refresh();
+            } catch {
+              // Customer Center failed to present
+            }
+          }}
           activeOpacity={0.8}
         >
           <View style={styles.subscriptionLeft}>
@@ -593,12 +601,17 @@ export default function MoreTab() {
                 </Text>
                 <TouchableOpacity
                   style={[styles.primaryButton, { backgroundColor: colors.deepTeal, marginTop: 12 }]}
-                  onPress={() => {
-                    const url = Platform.select({
-                      ios: "https://apps.apple.com/account/subscriptions",
-                      android: "https://play.google.com/store/account/subscriptions?package=com.nealw98.dailypaths",
-                    });
-                    if (url) Linking.openURL(url);
+                  onPress={async () => {
+                    try {
+                      await RevenueCatUI.presentCustomerCenter({
+                        callbacks: {
+                          onRestoreCompleted: () => refresh(),
+                        },
+                      });
+                      await refresh();
+                    } catch {
+                      // Customer Center failed to present
+                    }
                   }}
                   activeOpacity={0.8}
                 >
@@ -664,12 +677,6 @@ export default function MoreTab() {
       </ScrollView>
 
       {/* ── Modals ──────────────────────────────────────── */}
-      <SubscriptionManagementModal
-        visible={showManageSubscription}
-        onClose={() => { setShowManageSubscription(false); setShowExtendedThemes(true); }}
-        isLegacy={isLegacy}
-        trialDaysRemaining={status.isSubscribed ? 0 : trialStatus.daysRemaining}
-      />
       <SignInModal visible={showSignIn} onClose={() => setShowSignIn(false)} />
       <DeleteAccountModal
         visible={showDeleteModal}
