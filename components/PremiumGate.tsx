@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import Constants from "expo-constants";
 import { router, useNavigation } from "expo-router";
+import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
 import { useSubscriptionContext } from "../contexts/SubscriptionContext";
-import { PaywallModal } from "./PaywallModal";
 import { SignInModal } from "./SignInModal";
 import { useAnalytics } from "../utils/analytics";
+import { qaLog } from "../utils/qaLog";
 
 /**
  * Per-tab access gate for premium features (Journal, Prayers, Speakers).
@@ -23,63 +24,56 @@ export const PremiumGate: React.FC<PremiumGateProps> = ({ children }) => {
   const { gate, refresh: refreshSub } = useSubscriptionContext();
   const { trackPaywallShown, trackPaywallDismissed } = useAnalytics();
 
-  // After a purchase the paywall closes; we need to re-evaluate the gate and
-  // potentially show the sign-in modal.  This state bridges that transition.
   const [purchaseCompleted, setPurchaseCompleted] = useState(false);
-
-  // When the user dismisses the paywall ("Not Now" / X), we set this to true
-  // so the modal unmounts before we navigate away.
   const [dismissed, setDismissed] = useState(false);
+  const presentingPaywall = useRef(false);
 
-  // Dev / simulator bypass — allow dismissing modals for testing
   const isSimulator = !Constants.isDevice;
   const devBypass = __DEV__ || isSimulator;
 
-  // ── Reset dismissed state when this tab regains focus ────────────────
-  // So the paywall shows again if the user navigates back to a premium tab.
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
       setDismissed(false);
+      presentingPaywall.current = false;
     });
     return unsubscribe;
   }, [navigation]);
 
-  // ── Track paywall shown ─────────────────────────────────────────────
+  // Present RevenueCat's native paywall when gate requires it
   useEffect(() => {
-    if (gate === "paywall" && !purchaseCompleted && !dismissed) {
-      trackPaywallShown();
-    }
-  }, [gate, purchaseCompleted, dismissed, trackPaywallShown]);
+    if (gate !== "paywall" || purchaseCompleted || dismissed || presentingPaywall.current) return;
 
-  // ── Dismiss handler — hides Modal overlay, then navigates to home ─────
-  const handleDismiss = useCallback(() => {
-    trackPaywallDismissed();
-    setDismissed(true);
-    // Use setTimeout so the modal unmounts before navigation
-    setTimeout(() => {
-      router.navigate("/(tabs)/today");
-    }, 50);
-  }, [trackPaywallDismissed]);
+    presentingPaywall.current = true;
+    trackPaywallShown();
+    qaLog("paywall", "PremiumGate presenting paywall", { gate });
 
-  // ── Always render children; overlay modals when gated ─────────────────
+    (async () => {
+      try {
+        const result = await RevenueCatUI.presentPaywall();
+        qaLog("paywall", "Paywall result", { result });
+
+        if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) {
+          refreshSub();
+          setPurchaseCompleted(true);
+        } else {
+          trackPaywallDismissed();
+          setDismissed(true);
+          setTimeout(() => router.navigate("/(tabs)/today"), 50);
+        }
+      } catch (err) {
+        qaLog("paywall", "Paywall error", { error: String(err) });
+        setDismissed(true);
+        setTimeout(() => router.navigate("/(tabs)/today"), 50);
+      } finally {
+        presentingPaywall.current = false;
+      }
+    })();
+  }, [gate, purchaseCompleted, dismissed, trackPaywallShown, trackPaywallDismissed, refreshSub]);
+
   return (
     <>
       {children}
 
-      {/* Paywall overlay */}
-      {gate === "paywall" && !purchaseCompleted && !dismissed && (
-        <PaywallModal
-          visible
-          dismissable
-          onClose={() => {
-            refreshSub();
-            setPurchaseCompleted(true);
-          }}
-          onDismiss={handleDismiss}
-        />
-      )}
-
-      {/* Sign-in overlay */}
       {(gate === "signin" || purchaseCompleted) && !dismissed && (
         <SignInModal
           visible

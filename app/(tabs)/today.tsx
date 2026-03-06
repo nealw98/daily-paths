@@ -21,7 +21,7 @@ import { useJournalEntries } from "../../hooks/useJournalEntries";
 import { useTrialStatus } from "../../hooks/useTrialStatus";
 import { useSubscription } from "../../hooks/useSubscription";
 import { getRequiredGate } from "../../utils/accessControl";
-import { PaywallModal } from "../../components/PaywallModal";
+import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
 import { SignInModal } from "../../components/SignInModal";
 import { DatePickerModal } from "../../components/DatePickerModal";
 import { BookmarkListModal } from "../../components/BookmarkListModal";
@@ -78,7 +78,7 @@ export default function Index() {
   const [navigationMethod, setNavigationMethod] = useState<NavigationMethod>('app_open');
   const [showJournalPicker, setShowJournalPicker] = useState(false);
   const [journalEntryType, setJournalEntryType] = useState<EntryType | null>(null);
-  const [showPaywall, setShowPaywall] = useState(false);
+  const [presentingPaywall, setPresentingPaywall] = useState(false);
   const [showSignIn, setShowSignIn] = useState(false);
   console.log("[STARTUP-INDEX] State initialized");
 
@@ -442,10 +442,24 @@ export default function Index() {
       {reading && (
         <TouchableOpacity
           style={styles.fabTouchable}
-          onPress={() => {
+          onPress={async () => {
             const gate = getRequiredGate(subStatus, trialStatus, isAuthed);
             if (gate === "paywall") {
-              setShowPaywall(true);
+              if (presentingPaywall) return;
+              setPresentingPaywall(true);
+              qaLog("paywall", "FAB presenting paywall");
+              try {
+                const result = await RevenueCatUI.presentPaywall();
+                qaLog("paywall", "FAB paywall result", { result });
+                if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) {
+                  refreshSub();
+                }
+              } catch (err) {
+                qaLog("paywall", "FAB paywall error", { error: String(err) });
+              } finally {
+                setPresentingPaywall(false);
+              }
+              return;
             } else if (gate === "signin") {
               setShowSignIn(true);
             } else {
@@ -498,15 +512,6 @@ export default function Index() {
         visible={showRateModal}
         onClose={() => setShowRateModal(false)}
         trigger="bookmark"
-      />
-
-      <PaywallModal
-        visible={showPaywall}
-        dismissable
-        onClose={() => {
-          setShowPaywall(false);
-          refreshSub();
-        }}
       />
 
       <SignInModal

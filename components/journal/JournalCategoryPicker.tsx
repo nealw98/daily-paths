@@ -76,11 +76,11 @@ export const JournalCategoryPicker: React.FC<JournalCategoryPickerProps> = ({
                 <View style={styles.iconWrapper}>
                   <EntryTypeIcon svgIcon={category.svgIcon} size={28} color={category.color} />
                 </View>
-                <Text style={[styles.cardName, { color: colors.text, fontSize: typography.bodyFontSize - 6 }]}>
+                <Text style={[styles.cardName, { color: colors.text, fontSize: typography.bodyFontSize - 2 }]}>
                   {category.label}
                 </Text>
                 <Text
-                  style={[styles.cardDesc, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 9, lineHeight: (typography.bodyFontSize - 9) * 1.35 }]}
+                  style={[styles.cardDesc, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 4, lineHeight: (typography.bodyFontSize - 4) * 1.35 }]}
                 >
                   {category.description}
                 </Text>

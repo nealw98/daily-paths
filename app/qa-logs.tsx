@@ -20,9 +20,8 @@ import { clearQaLogs, useQaLogs, qaLog } from "../utils/qaLog";
 import { resetRateShareTracking } from "../utils/rateShareTracking";
 import { isDeveloperDevice, setDeveloperDevice, getOrCreateDeviceId } from "../utils/deviceIdentity";
 import { getTrialStatus, resetTrial, expireTrial } from "../utils/trialTimer";
-import { clearFreemiumMigrationFlag } from "../utils/dataMigration";
-import { enableSubscriptionOverride, clearSubscriptionOverride } from "../utils/subscriptionOverride";
 import { useSubscriptionContext } from "../contexts/SubscriptionContext";
+import { useSubscription } from "../hooks/useSubscription";
 
 export default function QaLogsScreen() {
   const { colors } = useTheme();
@@ -33,6 +32,7 @@ export default function QaLogsScreen() {
   const logs = useQaLogs();
   const router = useRouter();
   const { trialStatus } = useSubscriptionContext();
+  const { status: subStatus } = useSubscription();
   const [updating, setUpdating] = React.useState(false);
   const [updateStatus, setUpdateStatus] = React.useState<string | null>(null);
   const [copyStatus, setCopyStatus] = React.useState<string | null>(null);
@@ -189,60 +189,18 @@ export default function QaLogsScreen() {
     }
   };
 
-  const handleClearMigrationFlag = async () => {
-    try {
-      await clearFreemiumMigrationFlag();
-      qaLog("freemium", "Migration flag cleared");
-      alert("Migration flag cleared. Local data will migrate again on next sign-in.");
-    } catch (err) {
-      qaLog("freemium", "Error clearing migration flag", { error: String(err) });
-      alert("Failed to clear migration flag");
+  const entitlementLabel = React.useMemo(() => {
+    if (subStatus.isLegacy) return "Lifetime Access";
+    if (subStatus.isSubscribed) {
+      const pid = subStatus.productIdentifier ?? "unknown";
+      const renew = subStatus.willRenew ? "renews" : "expires";
+      const exp = subStatus.expirationDate
+        ? new Date(subStatus.expirationDate).toLocaleDateString()
+        : "—";
+      return `${pid} (${renew} ${exp})`;
     }
-  };
-
-  const handleClearLocalJournal = async () => {
-    try {
-      await AsyncStorage.removeItem("@daily_paths_local_journal");
-      qaLog("freemium", "Local journal entries cleared");
-      alert("Local journal entries cleared.");
-    } catch (err) {
-      qaLog("freemium", "Error clearing local journal", { error: String(err) });
-      alert("Failed to clear local journal");
-    }
-  };
-
-  const handleClearLocalPrayerNotes = async () => {
-    try {
-      await AsyncStorage.removeItem("@daily_paths_local_prayer_notes");
-      qaLog("freemium", "Local prayer notes cleared");
-      alert("Local prayer notes cleared.");
-    } catch (err) {
-      qaLog("freemium", "Error clearing local prayer notes", { error: String(err) });
-      alert("Failed to clear local prayer notes");
-    }
-  };
-
-  const handleForceNoSubscription = async () => {
-    try {
-      await enableSubscriptionOverride();
-      qaLog("freemium", "Subscription override enabled (force no subscription)");
-      alert("Subscription override active. Navigate to a premium tab to see the paywall.");
-    } catch (err) {
-      qaLog("freemium", "Error enabling subscription override", { error: String(err) });
-      alert("Failed to enable subscription override");
-    }
-  };
-
-  const handleClearSubscriptionOverride = async () => {
-    try {
-      await clearSubscriptionOverride();
-      qaLog("freemium", "Subscription override cleared");
-      alert("Subscription override cleared. Real RevenueCat status will be used.");
-    } catch (err) {
-      qaLog("freemium", "Error clearing subscription override", { error: String(err) });
-      alert("Failed to clear subscription override");
-    }
-  };
+    return "None";
+  }, [subStatus]);
 
   return (
     <View
@@ -335,6 +293,14 @@ export default function QaLogsScreen() {
         </View>
 
         <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>Freemium Testing</Text>
+
+        <View style={[styles.entitlementRow, { backgroundColor: "#fff", borderColor: colors.mist }]}>
+          <Text style={[styles.entitlementLabel, { color: colors.ink }]}>Active Entitlement</Text>
+          <Text style={[styles.entitlementValue, { color: subStatus.isSubscribed ? colors.deepTeal : colors.textSecondary }]}>
+            {entitlementLabel}
+          </Text>
+        </View>
+
         <View style={styles.actionsRow}>
           <TouchableOpacity
             style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
@@ -356,41 +322,6 @@ export default function QaLogsScreen() {
             onPress={handleExpireTrial}
           >
             <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Expire Trial</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
-            activeOpacity={0.8}
-            onPress={handleClearMigrationFlag}
-          >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Clear Migration Flag</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
-            activeOpacity={0.8}
-            onPress={handleClearLocalJournal}
-          >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Clear Local Notebook</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
-            activeOpacity={0.8}
-            onPress={handleClearLocalPrayerNotes}
-          >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Clear Local Prayer Notes</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
-            activeOpacity={0.8}
-            onPress={handleForceNoSubscription}
-          >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Force No Subscription</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
-            activeOpacity={0.8}
-            onPress={handleClearSubscriptionOverride}
-          >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Clear Subscription Override</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -534,6 +465,24 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 11,
     color: "#4b5563",
+  },
+  entitlementRow: {
+    marginTop: 8,
+    marginBottom: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  entitlementLabel: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 11,
+    marginBottom: 2,
+  },
+  entitlementValue: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 13,
+    fontWeight: "600",
   },
   sectionHeader: {
     fontFamily: fonts.headerFamily,
