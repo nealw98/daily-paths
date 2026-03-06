@@ -256,21 +256,24 @@ export const SubscriptionManagementModal: React.FC<Props> = ({
     setRestoring(false);
   }, [refresh, onClose]);
 
-  const handleManageSubscription = useCallback(async () => {
-    try {
-      await RevenueCatUI.presentCustomerCenter({
-        callbacks: {
-          onRestoreCompleted: () => {
-            refresh();
+  const handleManageSubscription = useCallback(() => {
+    // Close modal first — presentCustomerCenter fails when called from inside a Modal
+    onClose();
+    setTimeout(async () => {
+      try {
+        await RevenueCatUI.presentCustomerCenter({
+          callbacks: {
+            onRestoreCompleted: () => {
+              refresh();
+            },
           },
-        },
-      });
-      // Customer Center closed — refresh status in case user cancelled/changed plan
-      await refresh();
-    } catch {
-      // Customer Center failed to present — no action needed
-    }
-  }, [refresh]);
+        });
+        await refresh();
+      } catch {
+        // Customer Center failed to present — no action needed
+      }
+    }, 400);
+  }, [refresh, onClose]);
 
   const handleRetryLoad = useCallback(() => {
     setLoadError(false);
