@@ -197,13 +197,13 @@ export const SignInModal: React.FC<SignInModalProps> = ({
           >
             {/* Title */}
             <Text style={[styles.title, { color: colors.text }]}>
-              {mode === "signin" ? "Welcome Back" : "Create Account"}
+              {mode === "signin" ? "Sign In" : "Create Account"}
             </Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               {signedOut && mode === "signin"
                 ? "You've been signed out. Sign in to continue."
                 : mode === "signin"
-                  ? "Sign in to sync your data across devices"
+                  ? "Sign in to access your premium features and sync your data"
                   : "Create an account to get started"}
             </Text>
 

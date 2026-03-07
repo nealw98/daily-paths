@@ -236,7 +236,7 @@ export default function MoreTab() {
       setShowDeleteModal(false);
       Alert.alert(
         "Account Deletion Scheduled",
-        "Your account will be permanently deleted in 30 days. Sign back in before then to cancel.",
+        "Your account will be permanently deleted in 60 days. Sign back in before then to cancel.",
         [{
           text: "OK",
           onPress: async () => {
@@ -296,66 +296,38 @@ export default function MoreTab() {
           </TouchableOpacity>
         )}
 
-        <TouchableOpacity
-          style={[styles.subscriptionRow, { backgroundColor: colors.cloud, borderColor: colors.mist }]}
-          onPress={async () => {
-            try {
-              await RevenueCatUI.presentCustomerCenter({
-                callbacks: {
-                  onRestoreCompleted: () => refresh(),
-                },
-              });
-              await refresh();
-            } catch {
-              // Customer Center failed to present
-            }
-          }}
-          activeOpacity={0.8}
-        >
-          <View style={styles.subscriptionLeft}>
-            <Ionicons name="card-outline" size={22} color={colors.deepTeal} />
-            <Text style={[styles.subscriptionText, { color: colors.text }]}>Manage Subscription</Text>
+        {status.isLegacy ? (
+          <View style={[styles.subscriptionRow, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
+            <View style={styles.subscriptionLeft}>
+              <Ionicons name="star" size={22} color={colors.deepTeal} />
+              <Text style={[styles.subscriptionText, { color: colors.text }]}>Lifetime Access</Text>
+            </View>
           </View>
-          <Ionicons name="chevron-forward" size={20} color={colors.seafoam} />
-        </TouchableOpacity>
-
-        {isAuthenticated && (
-          <View style={[styles.card, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
-            {status.isSubscribed && !status.isLegacy ? (
-              <>
-                <Text style={[styles.deleteBlockedText, { color: colors.textSecondary }]}>
-                  To delete your account, please cancel your subscription first. Once your subscription has expired, you can delete your account.
-                </Text>
-                <TouchableOpacity
-                  style={[styles.primaryButton, { backgroundColor: colors.deepTeal, marginTop: 12 }]}
-                  onPress={async () => {
-                    try {
-                      await RevenueCatUI.presentCustomerCenter({
-                        callbacks: {
-                          onRestoreCompleted: () => refresh(),
-                        },
-                      });
-                      await refresh();
-                    } catch {
-                      // Customer Center failed to present
-                    }
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.primaryButtonText, { color: colors.textOnAccent }]}>Manage Subscription</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <TouchableOpacity
-                style={[styles.primaryButton, { backgroundColor: colors.danger }]}
-                onPress={() => setShowDeleteModal(true)}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.primaryButtonText, { color: "#FFFFFF" }]}>Delete Account</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+        ) : (
+          <TouchableOpacity
+            style={[styles.subscriptionRow, { backgroundColor: colors.cloud, borderColor: colors.mist }]}
+            onPress={async () => {
+              try {
+                await RevenueCatUI.presentCustomerCenter({
+                  callbacks: {
+                    onRestoreCompleted: () => refresh(),
+                  },
+                });
+                await refresh();
+              } catch {
+                // Customer Center failed to present
+              }
+            }}
+            activeOpacity={0.8}
+          >
+            <View style={styles.subscriptionLeft}>
+              <Ionicons name="card-outline" size={22} color={colors.deepTeal} />
+              <Text style={[styles.subscriptionText, { color: colors.text }]}>Manage Subscription</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.seafoam} />
+          </TouchableOpacity>
         )}
+
 
         {/* ── 2. Appearance ────────────────────────────────── */}
         <Text style={[styles.sectionLabel, { color: colors.deepTeal }]}>Appearance</Text>
@@ -635,19 +607,33 @@ export default function MoreTab() {
           <View style={styles.legalRow}>
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={() => Linking.openURL("https://dailypaths.org/privacy")}
-            >
-              <Text style={[styles.legalLink, { color: colors.deepTeal }]} allowFontScaling={false}>
-                Privacy Policy
-              </Text>
-            </TouchableOpacity>
-            <Text style={[styles.legalDot, { color: colors.textSecondary }]}>·</Text>
-            <TouchableOpacity
-              activeOpacity={0.7}
               onPress={() => Linking.openURL("https://dailypaths.org/support")}
             >
               <Text style={[styles.legalLink, { color: colors.deepTeal }]} allowFontScaling={false}>
                 Support
+              </Text>
+            </TouchableOpacity>
+            {isAuthenticated && (
+              <>
+                <Text style={[styles.legalDot, { color: colors.textSecondary }]}>·</Text>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => setShowDeleteModal(true)}
+                >
+                  <Text style={[styles.legalLink, { color: colors.textSecondary }]} allowFontScaling={false}>
+                    Delete Account
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+          <View style={styles.legalRow}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => Linking.openURL("https://dailypaths.org/privacy")}
+            >
+              <Text style={[styles.legalLink, { color: colors.deepTeal }]} allowFontScaling={false}>
+                Privacy Policy
               </Text>
             </TouchableOpacity>
             <Text style={[styles.legalDot, { color: colors.textSecondary }]}>·</Text>
@@ -678,7 +664,19 @@ export default function MoreTab() {
         visible={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         onConfirm={handleDeleteAccount}
-        isLegacy={status.isLegacy}
+        isActiveSubscriber={status.isSubscribed && !status.isLegacy}
+        onManageSubscription={async () => {
+          try {
+            await RevenueCatUI.presentCustomerCenter({
+              callbacks: {
+                onRestoreCompleted: () => refresh(),
+              },
+            });
+            await refresh();
+          } catch {
+            // Customer Center failed to present
+          }
+        }}
       />
 
       <Modal
@@ -968,22 +966,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
     fontWeight: "600",
-  },
-  primaryButton: {
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  primaryButtonText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  deleteBlockedText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 4,
   },
 
   /* ── Subscription Row ──────────────────────────── */
