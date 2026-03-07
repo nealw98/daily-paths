@@ -17,6 +17,7 @@ import { qaLog } from "../../utils/qaLog";
 
 interface PersonalNotesProps {
   userId: string | null;
+  onInputFocus?: () => void;
 }
 
 /**
@@ -26,7 +27,7 @@ interface PersonalNotesProps {
  * AsyncStorage via `useLocalPrayerNotes`.  When authenticated (`userId`
  * is present), notes are saved directly to Supabase.
  */
-export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId }) => {
+export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId, onInputFocus }) => {
   const { colors } = useTheme();
   const { settings } = useSettings();
   const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
@@ -144,10 +145,12 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId }) => {
             style={[styles.input, { color: colors.ink, borderColor: colors.border, backgroundColor: colors.background, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight }]}
             value={content}
             onChangeText={setContent}
+            onContentSizeChange={onInputFocus}
             placeholder="Write your personal prayers, intentions, or reflections..."
             placeholderTextColor={colors.textSecondary + "60"}
             multiline
             textAlignVertical="top"
+            onFocus={onInputFocus}
           />
           <View style={styles.buttonRow}>
             <TouchableOpacity

@@ -35,7 +35,7 @@ import RevenueCatUI from "react-native-purchases-ui";
 import { SignInModal } from "../../components/SignInModal";
 import { RateAppModal } from "../../components/RateAppModal";
 import { DeleteAccountModal } from "../../components/DeleteAccountModal";
-import { requestAccountDeletion } from "../../lib/accountDeletion";
+import { requestAccountDeletion, revokeLifetimeEntitlement } from "../../lib/accountDeletion";
 
 /** Default theme options (visible to all users) */
 const DEFAULT_THEME_OPTIONS: { id: string; displayName: string; icon?: string }[] = [
@@ -241,6 +241,11 @@ export default function MoreTab() {
 
   const handleDeleteAccount = async () => {
     try {
+      // Revoke lifetime entitlement immediately so they lose premium access
+      if (status.isLegacy) {
+        await revokeLifetimeEntitlement();
+      }
+
       await requestAccountDeletion();
       setShowDeleteModal(false);
       Alert.alert(

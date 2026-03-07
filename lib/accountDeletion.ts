@@ -1,6 +1,19 @@
 import { supabase } from "./supabase";
 import { qaLog } from "../utils/qaLog";
 
+export async function revokeLifetimeEntitlement(): Promise<void> {
+  qaLog("account", "Revoking lifetime entitlement");
+  const { data, error } = await supabase.functions.invoke("revoke-lifetime-entitlement");
+  if (error) {
+    qaLog("account", "Error revoking lifetime entitlement", { error: error.message });
+    throw error;
+  }
+  if (data?.error) {
+    throw new Error(data.error);
+  }
+  qaLog("account", "Lifetime entitlement revoked");
+}
+
 export async function requestAccountDeletion(): Promise<{ deletionScheduledFor: string }> {
   qaLog("account", "Requesting account deletion");
   const { data, error } = await supabase.rpc("request_account_deletion");

@@ -1,10 +1,12 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -29,6 +31,7 @@ export const PrayersScreen: React.FC<PrayersScreenProps> = ({
   const { trackPrayerViewed } = useAnalytics();
   const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
   const [expandedPrayer, setExpandedPrayer] = useState<string | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
 
   /** Render prayer text with bold phrases (e.g. "Just for today", "Just for tonight") */
   const renderPrayerText = (text: string, boldPhrases: string[]) => {
@@ -108,27 +111,42 @@ export const PrayersScreen: React.FC<PrayersScreenProps> = ({
         leftIcon={<LeafOnWater size={28} color={colors.textOnAccent} />}
       />
 
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        keyboardDismissMode="on-drag"
-        keyboardShouldPersistTaps="handled"
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={0}
       >
-        {/* Prayers List */}
-        {PRAYERS.map(renderPrayer)}
+        <ScrollView
+          ref={scrollRef}
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Prayers List */}
+          {PRAYERS.map(renderPrayer)}
 
-        {/* Personal Notes Section */}
-        <View style={styles.personalSection}>
-          <PersonalNotes userId={userId} />
-        </View>
-      </ScrollView>
+          {/* Personal Notes Section */}
+          <View style={styles.personalSection}>
+            <PersonalNotes
+              userId={userId}
+              onInputFocus={() => {
+                setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 300);
+              }}
+            />
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  flex: {
     flex: 1,
   },
   scrollView: {
