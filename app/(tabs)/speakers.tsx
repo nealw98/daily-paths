@@ -53,6 +53,18 @@ function SpeakersTabContent() {
     }
   }, [player.didJustFinish]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Re-fetch speakers on tab focus if the initial mount-time fetch returned empty.
+  // All tabs mount simultaneously on app launch, so the initial fetch can race with
+  // Supabase session restoration and return 0 rows.
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus" as any, () => {
+      if (speakers.length === 0 && !loading) {
+        refresh();
+      }
+    });
+    return unsubscribe;
+  }, [navigation, speakers.length, loading, refresh]);
+
   // Track cumulative time in the speakers tab for rate prompt
   const [tabFocused, setTabFocused] = useState(false);
   useEffect(() => {
