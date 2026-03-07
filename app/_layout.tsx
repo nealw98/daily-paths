@@ -21,7 +21,7 @@ import { SettingsProvider } from "../hooks/useSettings";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { SubscriptionProvider } from "../contexts/SubscriptionContext";
 import { usePostAuthMigration } from "../hooks/usePostAuthMigration";
-import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform, Alert } from "react-native";
+import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import * as Updates from "expo-updates";
 import { installGlobalErrorHandler } from "../utils/errorLogger";
@@ -203,7 +203,6 @@ export default function RootLayout() {
       <AuthProvider>
           <SubscriptionProvider>
             <PostAuthMigrationRunner>
-              <DeletionBanner />
               {updateReady && (
                 <View style={styles.updateBanner}>
                   <Text style={styles.updateText}>
@@ -251,54 +250,6 @@ export default function RootLayout() {
 function PostAuthMigrationRunner({ children }: { children: React.ReactNode }) {
   usePostAuthMigration();
   return <>{children}</>;
-}
-
-// ─── Deletion Banner ──────────────────────────────────────────────────────────
-// Shown when user signs in during the 30-day grace period after requesting
-// account deletion. Offers to cancel the deletion request.
-
-function DeletionBanner() {
-  const { deletionPending, deletionScheduledFor, cancelDeletion } = useAuth();
-  const [cancelling, setCancelling] = useState(false);
-
-  if (!deletionPending || !deletionScheduledFor) return null;
-
-  const daysLeft = Math.max(
-    0,
-    Math.ceil((new Date(deletionScheduledFor).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
-  );
-
-  const handleCancel = async () => {
-    setCancelling(true);
-    try {
-      await cancelDeletion();
-      Alert.alert("Deletion Cancelled", "Your account is no longer scheduled for deletion.");
-    } catch {
-      Alert.alert("Error", "Failed to cancel deletion. Please try again.");
-    } finally {
-      setCancelling(false);
-    }
-  };
-
-  return (
-    <View style={styles.deletionBanner}>
-      <Text style={styles.deletionBannerText}>
-        Your account is scheduled for deletion in {daysLeft} day{daysLeft !== 1 ? "s" : ""}.
-      </Text>
-      <View style={styles.deletionBannerActions}>
-        <TouchableOpacity
-          style={styles.deletionKeepButton}
-          onPress={handleCancel}
-          disabled={cancelling}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.deletionKeepButtonText}>
-            {cancelling ? "Cancelling..." : "Keep My Account"}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
 }
 
 // Static styles without theme colors (colors applied inline based on theme)
@@ -356,38 +307,5 @@ const styles = StyleSheet.create({
     color: "#e2e8f0",
     fontFamily: "Inter_400Regular",
     fontSize: 13,
-  },
-  deletionBanner: {
-    backgroundColor: "#fef2f2",
-    borderWidth: 1,
-    borderColor: "#fecaca",
-    borderRadius: 12,
-    padding: 14,
-    marginHorizontal: 12,
-    marginTop: 8,
-    marginBottom: 4,
-    gap: 10,
-  },
-  deletionBannerText: {
-    color: "#991b1b",
-    fontFamily: "Inter_400Regular",
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  deletionBannerActions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-  },
-  deletionKeepButton: {
-    backgroundColor: "#dc2626",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 999,
-  },
-  deletionKeepButtonText: {
-    color: "#fff",
-    fontFamily: "Inter_400Regular",
-    fontSize: 13,
-    fontWeight: "600",
   },
 });
