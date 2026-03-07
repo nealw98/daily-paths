@@ -6,6 +6,7 @@ import { useTheme } from "../../hooks/useTheme";
 import { useSpeakers, getSpeakerAudioUrl } from "../../hooks/useSpeakers";
 import { useAudioPlayer } from "../../hooks/useAudioPlayer";
 import { useAnalytics } from "../../utils/analytics";
+import { useFeatureTimeTracker } from "../../hooks/useFeatureTimeTracker";
 import { TealHeader } from "../../components/shared/TealHeader";
 import { Microphone } from "../../components/icons";
 import { SpeakersBrowse } from "../../components/speakers/SpeakersBrowse";
@@ -51,6 +52,19 @@ function SpeakersTabContent() {
       );
     }
   }, [player.didJustFinish]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Track cumulative time in the speakers tab for rate prompt
+  const [tabFocused, setTabFocused] = useState(false);
+  useEffect(() => {
+    const unFocus = navigation.addListener("focus" as any, () => {
+      setTabFocused(true);
+    });
+    const unBlur = navigation.addListener("blur" as any, () => {
+      setTabFocused(false);
+    });
+    return () => { unFocus(); unBlur(); };
+  }, [navigation]);
+  useFeatureTimeTracker("speaker", tabFocused);
 
   // Tab press resets to browse (audio keeps playing)
   useEffect(() => {

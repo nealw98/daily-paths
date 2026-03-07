@@ -11,6 +11,7 @@ import { fonts } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 import { useAnalytics } from '../utils/analytics';
 import {
+  requestReview,
   openAppStoreForRating,
   markRatePromptDismissed,
   markHasRated,
@@ -57,7 +58,18 @@ export const RateAppModal: React.FC<RateAppModalProps> = ({
   const handleRateApp = async () => {
     qaLog("rate", `User tapped Rate App in modal - trigger: ${trigger}`);
     trackRateModalOpenedStore(trigger);
-    await openAppStoreForRating();
+
+    if (trigger === 'settings_button') {
+      // Settings button: always open App Store directly (native dialog may be rate-limited)
+      await openAppStoreForRating();
+    } else {
+      // Automatic triggers: use native in-app review dialog for higher conversion
+      const shown = await requestReview();
+      if (!shown) {
+        // Fallback to App Store if native dialog unavailable
+        await openAppStoreForRating();
+      }
+    }
     onClose();
   };
 

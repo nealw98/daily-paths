@@ -27,8 +27,7 @@ import { DatePickerModal } from "../../components/DatePickerModal";
 import { BookmarkListModal } from "../../components/BookmarkListModal";
 import { DismissibleToast } from "../../components/DismissibleToast";
 import { BookmarkToast } from "../../components/BookmarkToast";
-import { RateAppModal } from "../../components/RateAppModal";
-import { markRatePromptShown, recordFirstUseIfNeeded } from "../../utils/rateShareTracking";
+import { markRatePromptShown, recordFirstUseIfNeeded, requestReview } from "../../utils/rateShareTracking";
 import { recordDailyActivity, recordReadingView } from "../../utils/deviceIdentity";
 import { qaLog } from "../../utils/qaLog";
 import { useAnalytics, NavigationMethod } from "../../utils/analytics";
@@ -74,7 +73,6 @@ export default function Index() {
   const [showBookmarkList, setShowBookmarkList] = useState(false);
   const [showInstruction, setShowInstruction] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [showRateModal, setShowRateModal] = useState(false);
   const [navigationMethod, setNavigationMethod] = useState<NavigationMethod>('app_open');
   const [showJournalPicker, setShowJournalPicker] = useState(false);
   const [journalEntryType, setJournalEntryType] = useState<EntryType | null>(null);
@@ -273,11 +271,11 @@ export default function Index() {
     }
     
     if (result.shouldShowRatePrompt) {
-      // Brief delay for the bookmark toast to appear first, then show rate modal
-      qaLog("rate", "Bookmark triggered rate prompt - will show rate modal");
+      // Brief delay for the bookmark toast to appear first, then show native review
+      qaLog("rate", "Bookmark triggered rate prompt - requesting native review");
       await markRatePromptShown();
-      setTimeout(() => {
-        setShowRateModal(true);
+      setTimeout(async () => {
+        await requestReview();
       }, 800);
     }
   };
@@ -506,12 +504,6 @@ export default function Index() {
         visible={!!toastMessage && !!reading}
         message={toastMessage ?? ""}
         onDismiss={() => setToastMessage(null)}
-      />
-
-      <RateAppModal
-        visible={showRateModal}
-        onClose={() => setShowRateModal(false)}
-        trigger="bookmark"
       />
 
       <SignInModal

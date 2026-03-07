@@ -7,6 +7,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useJournalStorage } from "../../hooks/useJournalStorage";
 import { useJournalStats } from "../../hooks/useJournalStats";
 import { useAnalytics } from "../../utils/analytics";
+import { useFeatureTimeTracker } from "../../hooks/useFeatureTimeTracker";
 import { JournalTimeline, type CategoryFilter } from "../../components/journal/JournalTimeline";
 import { JournalEntryEditor } from "../../components/journal/JournalEntryEditor";
 import { JournalEntryDetail } from "../../components/journal/JournalEntryDetail";
@@ -68,12 +69,20 @@ function JournalTabContent() {
   }, [categoryFilter, colors.textOnAccent]);
 
   // ─── Track notebook opened on tab focus ─────────────────────────
+  const [tabFocused, setTabFocused] = useState(false);
   useEffect(() => {
-    const unsubscribe = navigation.addListener("focus" as any, () => {
+    const unFocus = navigation.addListener("focus" as any, () => {
       trackNotebookOpened();
+      setTabFocused(true);
     });
-    return unsubscribe;
+    const unBlur = navigation.addListener("blur" as any, () => {
+      setTabFocused(false);
+    });
+    return () => { unFocus(); unBlur(); };
   }, [navigation, trackNotebookOpened]);
+
+  // Track cumulative time in the notebook tab for rate prompt
+  useFeatureTimeTracker("notebook", tabFocused);
 
   // ─── Tab press → always return to "all" timeline ─────────────────
   useEffect(() => {
