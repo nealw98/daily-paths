@@ -264,7 +264,8 @@ export default function MoreTab() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── 1. Account Banner ────────────────────────────── */}
+        {/* ── 1. Account ────────────────────────────────── */}
+        <Text style={[styles.sectionLabel, { color: colors.deepTeal, marginTop: 0 }]}>Account</Text>
         {isAuthenticated && user?.email ? (
           <View style={[styles.accountBanner, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
             <View style={[styles.avatar, { backgroundColor: colors.accent }]}>
@@ -293,6 +294,67 @@ export default function MoreTab() {
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.seafoam} />
           </TouchableOpacity>
+        )}
+
+        <TouchableOpacity
+          style={[styles.subscriptionRow, { backgroundColor: colors.cloud, borderColor: colors.mist }]}
+          onPress={async () => {
+            try {
+              await RevenueCatUI.presentCustomerCenter({
+                callbacks: {
+                  onRestoreCompleted: () => refresh(),
+                },
+              });
+              await refresh();
+            } catch {
+              // Customer Center failed to present
+            }
+          }}
+          activeOpacity={0.8}
+        >
+          <View style={styles.subscriptionLeft}>
+            <Ionicons name="card-outline" size={22} color={colors.deepTeal} />
+            <Text style={[styles.subscriptionText, { color: colors.text }]}>Manage Subscription</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.seafoam} />
+        </TouchableOpacity>
+
+        {isAuthenticated && (
+          <View style={[styles.card, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
+            {status.isSubscribed && !status.isLegacy ? (
+              <>
+                <Text style={[styles.deleteBlockedText, { color: colors.textSecondary }]}>
+                  To delete your account, please cancel your subscription first. Once your subscription has expired, you can delete your account.
+                </Text>
+                <TouchableOpacity
+                  style={[styles.primaryButton, { backgroundColor: colors.deepTeal, marginTop: 12 }]}
+                  onPress={async () => {
+                    try {
+                      await RevenueCatUI.presentCustomerCenter({
+                        callbacks: {
+                          onRestoreCompleted: () => refresh(),
+                        },
+                      });
+                      await refresh();
+                    } catch {
+                      // Customer Center failed to present
+                    }
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.primaryButtonText, { color: colors.textOnAccent }]}>Manage Subscription</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <TouchableOpacity
+                style={[styles.primaryButton, { backgroundColor: colors.danger }]}
+                onPress={() => setShowDeleteModal(true)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.primaryButtonText, { color: "#FFFFFF" }]}>Delete Account</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         )}
 
         {/* ── 2. Appearance ────────────────────────────────── */}
@@ -525,10 +587,18 @@ export default function MoreTab() {
           )}
         </View>
 
-        {/* ── 4. Help Others Find Us ──────────────────────── */}
-        <Text style={[styles.sectionLabel, { color: colors.deepTeal }]}>Help Others Find Us</Text>
+        {/* ── 4. Support & Share ─────────────────────────── */}
+        <Text style={[styles.sectionLabel, { color: colors.deepTeal }]}>Support & Share</Text>
         <View style={[styles.card, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
           <View style={styles.buttonRow}>
+            <TouchableOpacity
+              style={[styles.secondaryButton, { borderColor: colors.mist, backgroundColor: colors.pearl }]}
+              onPress={() => setShowFeedbackModal(true)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="chatbubble-ellipses" size={18} color={colors.deepTeal} />
+              <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Feedback</Text>
+            </TouchableOpacity>
             <TouchableOpacity
               style={[styles.secondaryButton, { borderColor: colors.mist, backgroundColor: colors.pearl }]}
               onPress={handleRateApp}
@@ -545,90 +615,11 @@ export default function MoreTab() {
             >
               <Ionicons name="share-social" size={18} color={colors.deepTeal} />
               <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
-                {isSharing ? "Sharing..." : "Share App"}
+                {isSharing ? "Sharing..." : "Share"}
               </Text>
             </TouchableOpacity>
           </View>
         </View>
-
-        {/* ── 5. Send Feedback ────────────────────────────── */}
-        <Text style={[styles.sectionLabel, { color: colors.deepTeal }]}>Send Feedback</Text>
-        <View style={[styles.card, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
-          <Text style={[styles.rowDescription, { color: colors.ink, marginBottom: 12 }]}>
-            Tell us what's working and what to improve
-          </Text>
-          <TouchableOpacity
-            style={[styles.primaryButton, { backgroundColor: colors.deepTeal }]}
-            onPress={() => setShowFeedbackModal(true)}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.primaryButtonText, { color: colors.textOnAccent }]}>Send Feedback</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* ── 6. Manage Subscription ──────────────────────── */}
-        <TouchableOpacity
-          style={[styles.subscriptionRow, { backgroundColor: colors.cloud, borderColor: colors.mist }]}
-          onPress={async () => {
-            try {
-              await RevenueCatUI.presentCustomerCenter({
-                callbacks: {
-                  onRestoreCompleted: () => refresh(),
-                },
-              });
-              await refresh();
-            } catch {
-              // Customer Center failed to present
-            }
-          }}
-          activeOpacity={0.8}
-        >
-          <View style={styles.subscriptionLeft}>
-            <Ionicons name="card-outline" size={22} color={colors.deepTeal} />
-            <Text style={[styles.subscriptionText, { color: colors.text }]}>Manage Subscription</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color={colors.seafoam} />
-        </TouchableOpacity>
-
-        {/* ── 7. Delete Account ─────────────────────────────── */}
-        {isAuthenticated && (
-          <View style={[styles.card, { backgroundColor: colors.cloud, borderColor: colors.mist, marginTop: 16 }]}>
-            <Text style={[styles.sectionLabel, { color: colors.ink }]}>Account</Text>
-            {status.isSubscribed && !status.isLegacy ? (
-              <>
-                <Text style={[styles.deleteBlockedText, { color: colors.textSecondary }]}>
-                  To delete your account, please cancel your subscription first. Once your subscription has expired, you can delete your account.
-                </Text>
-                <TouchableOpacity
-                  style={[styles.primaryButton, { backgroundColor: colors.deepTeal, marginTop: 12 }]}
-                  onPress={async () => {
-                    try {
-                      await RevenueCatUI.presentCustomerCenter({
-                        callbacks: {
-                          onRestoreCompleted: () => refresh(),
-                        },
-                      });
-                      await refresh();
-                    } catch {
-                      // Customer Center failed to present
-                    }
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.primaryButtonText, { color: colors.textOnAccent }]}>Manage Subscription</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <TouchableOpacity
-                style={[styles.primaryButton, { backgroundColor: colors.danger, marginTop: 4 }]}
-                onPress={() => setShowDeleteModal(true)}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.primaryButtonText, { color: "#FFFFFF" }]}>Delete Account</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
 
         {/* ── 8. About Footer ─────────────────────────────── */}
         <View style={[styles.aboutSection, { paddingBottom: 8 + insets.bottom }]}>
@@ -820,7 +811,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.headerFamilyItalic,
     fontSize: 18,
     marginBottom: 8,
-    marginTop: 4,
+    marginTop: 24,
     marginLeft: 4,
   },
 
@@ -997,8 +988,8 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    marginBottom: 24,
-    marginTop: 8,
+    marginBottom: 8,
+    marginTop: 0,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
