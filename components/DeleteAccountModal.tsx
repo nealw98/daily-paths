@@ -21,6 +21,7 @@ interface DeleteAccountModalProps {
   onConfirm: () => Promise<void>;
   onManageSubscription: () => void;
   isActiveSubscriber: boolean;
+  isLifetime?: boolean;
 }
 
 export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
@@ -29,6 +30,7 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
   onConfirm,
   onManageSubscription,
   isActiveSubscriber,
+  isLifetime = false,
 }) => {
   const { colors } = useTheme();
   const [confirmText, setConfirmText] = useState("");
@@ -124,6 +126,12 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
                     This will permanently delete all your data — journal entries, spot checks, nightly
                     reviews, preferences, and prayer notes.
                   </Text>
+
+                  {isLifetime && (
+                    <Text style={[styles.lifetimeWarning, { color: colors.danger }]}>
+                      Your lifetime access will be permanently revoked and cannot be restored.
+                    </Text>
+                  )}
 
                   <Text style={[styles.gracePeriod, { color: colors.textSecondary }]}>
                     You have 60 days to change your mind by signing back in. After 60 days, this cannot
@@ -237,6 +245,14 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     textAlign: "center",
+  },
+  lifetimeWarning: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: "center",
+    fontWeight: "600",
+    marginTop: 16,
   },
   gracePeriod: {
     fontFamily: fonts.bodyFamilyRegular,
