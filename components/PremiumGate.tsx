@@ -1,5 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
-import Constants from "expo-constants";
+import React, { useEffect, useState, useRef } from "react";
 import { router, useNavigation } from "expo-router";
 import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
 import { useSubscriptionContext } from "../contexts/SubscriptionContext";
@@ -27,9 +26,6 @@ export const PremiumGate: React.FC<PremiumGateProps> = ({ children }) => {
   const [purchaseCompleted, setPurchaseCompleted] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const presentingPaywall = useRef(false);
-
-  const isSimulator = !Constants.isDevice;
-  const devBypass = __DEV__ || isSimulator;
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
@@ -77,11 +73,15 @@ export const PremiumGate: React.FC<PremiumGateProps> = ({ children }) => {
       {(gate === "signin" || purchaseCompleted) && !dismissed && (
         <SignInModal
           visible
-          dismissable={devBypass}
+          dismissable
           initialMode={gate === "signin" ? "signin" : undefined}
           onClose={() => {
             setPurchaseCompleted(false);
             refreshSub();
+            if (gate === "signin") {
+              setDismissed(true);
+              setTimeout(() => router.navigate("/(tabs)/today"), 50);
+            }
           }}
         />
       )}
