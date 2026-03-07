@@ -596,7 +596,6 @@ export default function MoreTab() {
               onPress={() => setShowFeedbackModal(true)}
               activeOpacity={0.8}
             >
-              <Ionicons name="chatbubble-ellipses" size={18} color={colors.deepTeal} />
               <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Feedback</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -604,7 +603,6 @@ export default function MoreTab() {
               onPress={handleRateApp}
               activeOpacity={0.8}
             >
-              <Ionicons name="star" size={18} color={colors.deepTeal} />
               <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Rate App</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -613,7 +611,6 @@ export default function MoreTab() {
               disabled={isSharing}
               activeOpacity={0.8}
             >
-              <Ionicons name="share-social" size={18} color={colors.deepTeal} />
               <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
                 {isSharing ? "Sharing..." : "Share"}
               </Text>
@@ -621,12 +618,18 @@ export default function MoreTab() {
           </View>
         </View>
 
-        {/* ── 8. About Footer ─────────────────────────────── */}
-        <View style={[styles.aboutSection, { paddingBottom: 8 + insets.bottom }]}>
+        {/* ── About ────────────────────────────────────── */}
+        <View style={styles.aboutSection}>
           <Text style={[styles.aboutText, { color: colors.ink }]}>
             Daily Paths supports your recovery with 366 original readings based on Al-Anon's Steps, Traditions, and Concepts. It is not affiliated with Al-Anon, AA or any 12-step fellowship.
           </Text>
+        </View>
 
+        {/* Spacer pushes legal links to bottom */}
+        <View style={{ flex: 1 }} />
+
+        {/* ── Footer ─────────────────────────────────────── */}
+        <View style={[styles.footerSection, { paddingBottom: 8 + insets.bottom }]}>
           <View style={styles.legalRow}>
             <TouchableOpacity
               activeOpacity={0.7}
@@ -760,6 +763,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 40,
@@ -1011,14 +1015,19 @@ const styles = StyleSheet.create({
   aboutSection: {
     alignItems: "center",
     paddingHorizontal: 8,
-    paddingBottom: 8,
+    marginTop: 16,
+  },
+  footerSection: {
+    alignItems: "center",
+    paddingHorizontal: 8,
+    paddingTop: 24,
   },
   aboutText: {
     fontFamily: fonts.loraRegular,
     fontSize: 14,
     lineHeight: 22,
     textAlign: "center",
-    marginBottom: 16,
+    marginBottom: 24,
   },
   legalRow: {
     flexDirection: "row",
