@@ -141,7 +141,7 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId }) => {
         <>
           <TextInput
             ref={inputRef}
-            style={[styles.input, { color: colors.ink, borderColor: colors.border, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight }]}
+            style={[styles.input, { color: colors.ink, borderColor: colors.border, backgroundColor: colors.background, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight }]}
             value={content}
             onChangeText={setContent}
             placeholder="Write your personal prayers, intentions, or reflections..."
