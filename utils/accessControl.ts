@@ -67,6 +67,26 @@ export function shouldShowPaywall(
   return !canAccessUnlimitedFeatures(subscription);
 }
 
+// ─── Download access ─────────────────────────────────────────────────────────
+
+/**
+ * Check whether the user can download speaker recordings for offline use.
+ *
+ * Stricter than general premium access:
+ *   - Requires (subscriber OR legacy) AND authenticated
+ *   - Excludes free trial users (both local trial and RevenueCat trial)
+ *   - Excludes signed-out users regardless of entitlement
+ */
+export function canDownloadSpeakers(
+  subscription: SubscriptionStatus,
+  isAuthenticated: boolean,
+): boolean {
+  if (!isAuthenticated) return false;
+  if (!subscription.isSubscribed) return false;
+  if (subscription.isTrialing) return false;
+  return true;
+}
+
 // ─── Status messages ─────────────────────────────────────────────────────────
 
 /**

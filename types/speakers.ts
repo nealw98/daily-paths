@@ -13,4 +13,5 @@ export interface Speaker {
   audio_url: string;
   quote: string | null;
   created_at: string;
+  file_size_mb: number | null;
 }

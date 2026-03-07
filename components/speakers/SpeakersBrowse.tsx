@@ -25,6 +25,7 @@ interface SpeakersBrowseProps {
   error: string | null;
   onSelectSpeaker: (speaker: Speaker, autoPlay: boolean) => void;
   onRefresh: () => void;
+  downloadedIds: Set<string>;
 }
 
 // ─── Component ─────────────────────────────────────────────────────────────
@@ -35,6 +36,7 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
   error,
   onSelectSpeaker,
   onRefresh,
+  downloadedIds,
 }) => {
   const { colors } = useTheme();
   const [searchQuery, setSearchQuery] = useState("");
@@ -173,12 +175,17 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
             {speaker.title}
           </Text>
 
-          {/* Explicit badge */}
-          {speaker.explicit && (
-            <View style={[styles.explicitBadge, { backgroundColor: colors.danger + "15" }]}>
-              <Text style={[styles.explicitText, { color: colors.danger }]}>E</Text>
-            </View>
-          )}
+          {/* Badges row */}
+          <View style={styles.badgesRow}>
+            {speaker.explicit && (
+              <View style={[styles.explicitBadge, { backgroundColor: colors.danger + "15" }]}>
+                <Text style={[styles.explicitText, { color: colors.danger }]}>E</Text>
+              </View>
+            )}
+            {downloadedIds.has(speaker.id) && (
+              <Ionicons name="checkmark-circle" size={14} color={colors.accent} />
+            )}
+          </View>
         </View>
 
         {/* Play button */}
@@ -376,13 +383,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
-  // ─── Explicit Badge ────────────────────────────────────────────────────────
+  // ─── Badges Row ──────────────────────────────────────────────────────────
+  badgesRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 2,
+  },
   explicitBadge: {
-    alignSelf: "flex-start",
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
-    marginTop: 2,
   },
   explicitText: {
     fontFamily: fonts.bodyFamilyRegular,

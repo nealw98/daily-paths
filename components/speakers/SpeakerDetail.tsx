@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Pressable,
+  Alert,
   LayoutChangeEvent,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -15,6 +16,7 @@ import { useAnalytics } from "../../utils/analytics";
 import { fonts } from "../../constants/theme";
 import { EqualizerBars } from "./EqualizerBars";
 import { getSpeakerAudioUrl } from "../../hooks/useSpeakers";
+import { useSpeakerDownload, resolveAudioUri } from "../../hooks/useSpeakerDownload";
 import type { Speaker } from "../../types/speakers";
 import type { AudioPlayer } from "../../hooks/useAudioPlayer";
 
@@ -25,6 +27,7 @@ interface SpeakerDetailProps {
   autoPlay: boolean;
   onBack: () => void;
   player: AudioPlayer;
+  canDownload: boolean;
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -54,19 +57,23 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
   autoPlay,
   onBack,
   player,
+  canDownload,
 }) => {
   const { colors } = useTheme();
   const { trackSpeakerAudioPlayed, trackSpeakerAudioPaused } = useAnalytics();
   const [trackWidth, setTrackWidth] = useState(0);
   const hasLoadedRef = useRef(false);
 
-  // Load audio on mount (or when speaker changes)
+  const audioUrl = getSpeakerAudioUrl(speaker);
+  const download = useSpeakerDownload(speaker.id, audioUrl);
+
+  // Load audio on mount (or when speaker changes), preferring local file
   useEffect(() => {
-    const audioUrl = getSpeakerAudioUrl(speaker);
-    // Only load if this is a new speaker or first mount
     if (!hasLoadedRef.current) {
       hasLoadedRef.current = true;
-      player.load(audioUrl, autoPlay);
+      resolveAudioUri(speaker.id, audioUrl).then((uri) => {
+        player.load(uri, autoPlay);
+      });
     }
   }, [speaker.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -74,6 +81,27 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
   useEffect(() => {
     hasLoadedRef.current = false;
   }, [speaker.id]);
+
+  // ─── Download Actions ────────────────────────────────────────────────────
+
+  const handleDownloadPress = useCallback(() => {
+    if (download.downloadStatus === "not_downloaded") {
+      download.startDownload();
+    } else if (download.downloadStatus === "downloaded") {
+      Alert.alert(
+        "Remove Download",
+        "Remove this download from your device?",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: () => download.deleteDownload(),
+          },
+        ],
+      );
+    }
+  }, [download]);
 
   // ─── Progress Bar Seek ──────────────────────────────────────────────────
 
@@ -89,6 +117,67 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
   };
 
   const progress = player.durationMs > 0 ? player.positionMs / player.durationMs : 0;
+
+  // ─── Render: Download Button ─────────────────────────────────────────────
+
+  const renderDownloadButton = () => {
+    // Trial/free users: don't render anything
+    if (!canDownload) return null;
+
+    if (download.downloadStatus === "downloading") {
+      return (
+        <View style={[styles.downloadRow, { borderTopColor: colors.border }]}>
+          <View style={styles.downloadingContent}>
+            <ActivityIndicator size="small" color={colors.accent} />
+            <Text style={[styles.downloadingText, { color: colors.textSecondary }]}>
+              Downloading... {download.downloadProgress}%
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={download.cancelDownload}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text style={[styles.cancelText, { color: colors.danger }]}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    if (download.downloadStatus === "downloaded") {
+      return (
+        <TouchableOpacity
+          style={[styles.downloadRow, { borderTopColor: colors.border }]}
+          onPress={handleDownloadPress}
+          activeOpacity={0.6}
+        >
+          <View style={styles.downloadContent}>
+            <Ionicons name="checkmark-circle" size={20} color={colors.accent} />
+            <Text style={[styles.downloadedLabel, { color: colors.accent }]}>Downloaded</Text>
+          </View>
+        </TouchableOpacity>
+      );
+    }
+
+    // Not downloaded
+    const sizeLabel = speaker.file_size_mb
+      ? `~${Math.round(speaker.file_size_mb)} MB`
+      : "";
+
+    return (
+      <TouchableOpacity
+        style={[styles.downloadRow, { borderTopColor: colors.border }]}
+        onPress={handleDownloadPress}
+        activeOpacity={0.6}
+      >
+        <View style={styles.downloadContent}>
+          <Ionicons name="download-outline" size={20} color={colors.textSecondary} />
+          <Text style={[styles.downloadLabel, { color: colors.textSecondary }]}>
+            Download{sizeLabel ? ` ${sizeLabel}` : ""}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   // ─── Render ─────────────────────────────────────────────────────────────
 
@@ -294,6 +383,9 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
               );
             })}
           </View>
+
+          {/* Download button */}
+          {renderDownloadButton()}
         </View>
       </ScrollView>
     </View>
@@ -527,5 +619,43 @@ const styles = StyleSheet.create({
   speedLabel: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 13,
+  },
+
+  // ─── Download Button ────────────────────────────────────────────────────────
+  downloadRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    marginTop: 16,
+    paddingTop: 14,
+  },
+  downloadContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  downloadLabel: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 14,
+  },
+  downloadedLabel: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  downloadingContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  downloadingText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 14,
+  },
+  cancelText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 14,
+    fontWeight: "600",
   },
 });

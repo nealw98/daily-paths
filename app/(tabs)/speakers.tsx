@@ -7,6 +7,10 @@ import { useSpeakers, getSpeakerAudioUrl } from "../../hooks/useSpeakers";
 import { useAudioPlayer } from "../../hooks/useAudioPlayer";
 import { useAnalytics } from "../../utils/analytics";
 import { useFeatureTimeTracker } from "../../hooks/useFeatureTimeTracker";
+import { useSubscription } from "../../hooks/useSubscription";
+import { useAuth } from "../../contexts/AuthContext";
+import { useDownloadedSpeakerIds } from "../../hooks/useSpeakerDownload";
+import { canDownloadSpeakers } from "../../utils/accessControl";
 import { TealHeader } from "../../components/shared/TealHeader";
 import { Microphone } from "../../components/icons";
 import { SpeakersBrowse } from "../../components/speakers/SpeakersBrowse";
@@ -29,6 +33,14 @@ function SpeakersTabContent() {
   const navigation = useNavigation();
   const { speakers, loading, error, refresh } = useSpeakers();
   const { trackSpeakerAudioCompleted } = useAnalytics();
+  const { status: subscriptionStatus } = useSubscription();
+  const { isAuthenticated } = useAuth();
+
+  // Download access check
+  const canDownload = canDownloadSpeakers(subscriptionStatus, isAuthenticated);
+
+  // Track which speakers are downloaded (for browse screen badges)
+  const { downloadedIds, refresh: refreshDownloads } = useDownloadedSpeakerIds();
 
   // Audio player lives at the tab level so playback persists across views and tabs
   const player = useAudioPlayer();
@@ -61,9 +73,11 @@ function SpeakersTabContent() {
       if (speakers.length === 0 && !loading) {
         refresh();
       }
+      // Refresh download state when returning to the tab
+      refreshDownloads();
     });
     return unsubscribe;
-  }, [navigation, speakers.length, loading, refresh]);
+  }, [navigation, speakers.length, loading, refresh, refreshDownloads]);
 
   // Track cumulative time in the speakers tab for rate prompt
   const [tabFocused, setTabFocused] = useState(false);
@@ -102,7 +116,9 @@ function SpeakersTabContent() {
   const handleBack = useCallback(() => {
     setSelectedSpeaker(null);
     setView("browse");
-  }, []);
+    // Refresh download IDs when returning to browse so badge reflects any changes
+    refreshDownloads();
+  }, [refreshDownloads]);
 
   // ─── Detail View ──────────────────────────────────────────────────────
 
@@ -121,6 +137,7 @@ function SpeakersTabContent() {
           autoPlay={autoPlay}
           onBack={handleBack}
           player={player}
+          canDownload={canDownload}
         />
       </SafeAreaView>
     );
@@ -143,6 +160,7 @@ function SpeakersTabContent() {
         error={error}
         onSelectSpeaker={handleSelectSpeaker}
         onRefresh={refresh}
+        downloadedIds={downloadedIds}
       />
     </SafeAreaView>
   );
