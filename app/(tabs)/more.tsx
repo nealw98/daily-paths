@@ -367,6 +367,7 @@ export default function MoreTab() {
               onPress={handleDecrementTextSize}
               disabled={settings.textSize === textSizeStops[0]}
               activeOpacity={0.7}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
               <Text
                 style={[
@@ -406,6 +407,7 @@ export default function MoreTab() {
               onPress={handleIncrementTextSize}
               disabled={settings.textSize === textSizeStops[textSizeStops.length - 1]}
               activeOpacity={0.7}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
               <Text
                 style={[
