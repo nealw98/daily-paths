@@ -11,6 +11,7 @@ import {
   Modal,
   TextInput,
   KeyboardAvoidingView,
+  Keyboard,
   Alert,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -303,7 +304,13 @@ export default function MoreTab() {
                         try {
                           const result = await RevenueCatUI.presentPaywall();
                           await refresh();
-                        } catch {}
+                        } catch (err) {
+                          qaLog("paywall", "Settings subscribe paywall error", { error: String(err) });
+                          Alert.alert(
+                            "Unable to Load",
+                            "The subscription page couldn't be loaded. Please try again later.",
+                          );
+                        }
                       },
                     },
                   ],
@@ -727,6 +734,7 @@ export default function MoreTab() {
             <View
               style={[styles.feedbackModal, { backgroundColor: colors.pearl }]}
               onStartShouldSetResponder={() => true}
+              onResponderRelease={() => Keyboard.dismiss()}
             >
               <Text style={[styles.feedbackTitle, { color: colors.deepTeal }]}>We'd love your feedback</Text>
               <TextInput

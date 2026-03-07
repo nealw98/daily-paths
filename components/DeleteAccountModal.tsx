@@ -10,6 +10,7 @@ import {
   Platform,
   ActivityIndicator,
   ScrollView,
+  Keyboard,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { fonts } from "../constants/theme";
@@ -68,7 +69,11 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
         keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
         <View style={styles.keyboardAvoid}>
-          <View style={[styles.content, { backgroundColor: colors.background }]}>
+          <View
+            style={[styles.content, { backgroundColor: colors.background }]}
+            onStartShouldSetResponder={() => true}
+            onResponderRelease={() => Keyboard.dismiss()}
+          >
             {/* Header */}
             <View style={styles.header}>
               <TouchableOpacity onPress={handleClose} style={styles.closeButton} disabled={loading}>

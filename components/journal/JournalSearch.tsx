@@ -180,6 +180,8 @@ export const JournalSearch: React.FC<JournalSearchProps> = ({
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.resultsList}
         showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
           searched ? (
             <View style={styles.emptyContainer}>

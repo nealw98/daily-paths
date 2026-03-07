@@ -108,6 +108,7 @@ export const GratitudeScreen: React.FC<GratitudeScreenProps> = ({ onBack }) => {
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           contentContainerStyle={styles.scrollContent}
         >
           {/* Title */}

@@ -112,6 +112,8 @@ export const PrayersScreen: React.FC<PrayersScreenProps> = ({
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
       >
         {/* Prayers List */}
         {PRAYERS.map(renderPrayer)}

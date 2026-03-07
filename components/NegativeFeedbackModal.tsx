@@ -7,7 +7,7 @@ import {
   Modal,
   TextInput,
   ScrollView,
-  Animated,
+  Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { fonts } from '../constants/theme';
@@ -77,7 +77,11 @@ export const NegativeFeedbackModal: React.FC<NegativeFeedbackModalProps> = ({
         activeOpacity={1}
         onPress={handleClose}
       >
-        <View style={[styles.modalContainer, { backgroundColor: colors.cardBackground }]} onStartShouldSetResponder={() => true}>
+        <View
+          style={[styles.modalContainer, { backgroundColor: colors.cardBackground }]}
+          onStartShouldSetResponder={() => true}
+          onResponderRelease={() => Keyboard.dismiss()}
+        >
           <View style={styles.header}>
             <Text style={styles.title}>What could be improved?</Text>
             <TouchableOpacity onPress={handleClose} style={styles.closeIcon}>
@@ -88,6 +92,7 @@ export const NegativeFeedbackModal: React.FC<NegativeFeedbackModalProps> = ({
           <ScrollView
             style={styles.content}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
             <CheckboxOption
               label="Content is unclear"

@@ -11,6 +11,7 @@ import {
   ScrollView,
   Platform,
   KeyboardAvoidingView,
+  Keyboard,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
@@ -177,7 +178,11 @@ export const SignInModal: React.FC<SignInModalProps> = ({
         keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
       >
         <View style={styles.keyboardAvoid}>
-        <View style={[styles.content, { backgroundColor: colors.background }]}>
+        <View
+          style={[styles.content, { backgroundColor: colors.background }]}
+          onStartShouldSetResponder={() => true}
+          onResponderRelease={() => Keyboard.dismiss()}
+        >
           {/* Header */}
           <View style={styles.header}>
             {dismissable ? (
