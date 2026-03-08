@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
+import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { fonts } from "../../constants/theme";
 import { Microphone } from "../icons";
 import type { Speaker } from "../../types/speakers";
@@ -39,8 +40,13 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
   downloadedIds,
 }) => {
   const { colors } = useTheme();
+  const { settings } = useSettings();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("newest");
+
+  // Scale factor: medium bodyFontSize (18) is the baseline (1.0)
+  const textMetrics = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
+  const scale = textMetrics.bodyFontSize / 18;
 
   // ─── Filter & Sort ──────────────────────────────────────────────────────
 
@@ -81,9 +87,9 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
 
   const SearchBar = () => (
     <View style={[styles.searchContainer, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-      <Ionicons name="search" size={18} color={colors.textSecondary} style={styles.searchIcon} />
+      <Ionicons name="search" size={Math.round(18 * scale)} color={colors.textSecondary} style={styles.searchIcon} />
       <TextInput
-        style={[styles.searchInput, { color: colors.text, fontFamily: fonts.bodyFamilyRegular }]}
+        style={[styles.searchInput, { color: colors.text, fontFamily: fonts.bodyFamilyRegular, fontSize: Math.round(15 * scale) }]}
         placeholder="Search speakers..."
         placeholderTextColor={colors.textSecondary + "80"}
         value={searchQuery}
@@ -93,7 +99,7 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
       />
       {searchQuery.length > 0 && (
         <TouchableOpacity onPress={() => setSearchQuery("")} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
+          <Ionicons name="close-circle" size={Math.round(18 * scale)} color={colors.textSecondary} />
         </TouchableOpacity>
       )}
     </View>
@@ -126,6 +132,7 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
                     color: isActive ? colors.accent : colors.textSecondary,
                     fontFamily: isActive ? fonts.bodyFamilyRegular : fonts.bodyFamily,
                     fontWeight: isActive ? "700" : "400",
+                    fontSize: Math.round(14 * scale),
                   },
                 ]}
               >
@@ -158,20 +165,20 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
         <View style={styles.cardBody}>
           {/* Type label row */}
           <View style={styles.typeBadge}>
-            <Microphone size={12} color={colors.accent} strokeWidth={2} />
-            <Text style={[styles.typeLabel, { color: colors.accent }]}>AL-ANON SPEAKER</Text>
+            <Microphone size={Math.round(12 * scale)} color={colors.accent} strokeWidth={2} />
+            <Text style={[styles.typeLabel, { color: colors.accent, fontSize: Math.round(11 * scale) }]}>AL-ANON SPEAKER</Text>
           </View>
 
           {/* Speaker name */}
-          <Text style={[styles.speakerName, { color: colors.text }]}>{speaker.speaker}</Text>
+          <Text style={[styles.speakerName, { color: colors.text, fontSize: Math.round(16 * scale) }]}>{speaker.speaker}</Text>
 
           {/* Hometown */}
           {speaker.hometown && (
-            <Text style={[styles.hometown, { color: colors.textSecondary }]}>{speaker.hometown}</Text>
+            <Text style={[styles.hometown, { color: colors.textSecondary, fontSize: Math.round(12 * scale) }]}>{speaker.hometown}</Text>
           )}
 
           {/* Title */}
-          <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
+          <Text style={[styles.title, { color: colors.text, fontSize: Math.round(14 * scale), lineHeight: Math.round(20 * scale) }]} numberOfLines={2}>
             {speaker.title}
           </Text>
 
@@ -179,13 +186,13 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
           <View style={styles.badgesRow}>
             {speaker.explicit && (
               <View style={[styles.explicitBadge, { backgroundColor: colors.danger + "15" }]}>
-                <Text style={[styles.explicitText, { color: colors.danger }]}>E</Text>
+                <Text style={[styles.explicitText, { color: colors.danger, fontSize: Math.round(10 * scale) }]}>E</Text>
               </View>
             )}
             {downloadedIds.has(speaker.id) && (
               <View style={styles.downloadedBadge}>
-                <Ionicons name="checkmark-circle" size={12} color="#C49535" />
-                <Text style={styles.downloadedText}>Downloaded</Text>
+                <Ionicons name="checkmark-circle" size={Math.round(12 * scale)} color="#C49535" />
+                <Text style={[styles.downloadedText, { fontSize: Math.round(11 * scale) }]}>Downloaded</Text>
               </View>
             )}
           </View>
@@ -198,8 +205,8 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           activeOpacity={0.6}
         >
-          <View style={[styles.playCircle, { borderColor: colors.accent }]}>
-            <Ionicons name="play" size={20} color={colors.accent} style={styles.playIcon} />
+          <View style={[styles.playCircle, { borderColor: colors.accent, width: Math.round(44 * scale), height: Math.round(44 * scale), borderRadius: Math.round(22 * scale) }]}>
+            <Ionicons name="play" size={Math.round(20 * scale)} color={colors.accent} style={styles.playIcon} />
           </View>
         </TouchableOpacity>
       </View>
@@ -214,11 +221,11 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
     if (error) {
       return (
         <View style={styles.emptyContainer}>
-          <Ionicons name="cloud-offline-outline" size={48} color={colors.danger + "80"} />
-          <Text style={[styles.emptyTitle, { color: colors.text }]}>
+          <Ionicons name="cloud-offline-outline" size={Math.round(48 * scale)} color={colors.danger + "80"} />
+          <Text style={[styles.emptyTitle, { color: colors.text, fontSize: Math.round(18 * scale) }]}>
             Unable to load speakers
           </Text>
-          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+          <Text style={[styles.emptySubtitle, { color: colors.textSecondary, fontSize: Math.round(14 * scale), lineHeight: Math.round(20 * scale) }]}>
             Pull down to try again.
           </Text>
         </View>
@@ -227,11 +234,11 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
 
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons name="mic-off-outline" size={48} color={colors.textSecondary + "60"} />
-        <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>
+        <Ionicons name="mic-off-outline" size={Math.round(48 * scale)} color={colors.textSecondary + "60"} />
+        <Text style={[styles.emptyTitle, { color: colors.textSecondary, fontSize: Math.round(18 * scale) }]}>
           {searchQuery ? "No speakers found" : "No speakers yet"}
         </Text>
-        <Text style={[styles.emptySubtitle, { color: colors.textSecondary + "80" }]}>
+        <Text style={[styles.emptySubtitle, { color: colors.textSecondary + "80", fontSize: Math.round(14 * scale), lineHeight: Math.round(20 * scale) }]}>
           {searchQuery
             ? "Try adjusting your search terms."
             : "Speaker recordings will appear here."}
@@ -408,7 +415,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#C49535" + "18",
+    backgroundColor: "#C49535" + "28",
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 10,
