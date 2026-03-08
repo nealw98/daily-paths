@@ -9,7 +9,6 @@ import {
   isLegacyUser,
   resetPassword,
 } from "../lib/auth";
-import { checkDeletionStatus as fetchDeletionStatus, cancelAccountDeletion } from "../lib/accountDeletion";
 import { qaLog } from "../utils/qaLog";
 import type { User, Session } from "@supabase/supabase-js";
 
@@ -25,9 +24,6 @@ interface AuthContextValue {
   signInGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
-  deletionPending: boolean;
-  deletionScheduledFor: string | null;
-  cancelDeletion: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -37,8 +33,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLegacy, setIsLegacy] = useState(false);
-  const [deletionPending, setDeletionPending] = useState(false);
-  const [deletionScheduledFor, setDeletionScheduledFor] = useState<string | null>(null);
   const mounted = useRef(true);
   const signingOut = useRef(false);
 
@@ -65,14 +59,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Check legacy status (non-blocking)
           isLegacyUser(currentSession.user.id).then((legacy) => {
             if (mounted.current) setIsLegacy(legacy);
-          });
-
-          // Check deletion status (non-blocking)
-          fetchDeletionStatus().then((status) => {
-            if (mounted.current) {
-              setDeletionPending(status.pendingDeletion);
-              setDeletionScheduledFor(status.deletionScheduledFor);
-            }
           });
 
           // Validate with the server in the background — if the token is
@@ -112,18 +98,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (newSession?.user) {
         const legacy = await isLegacyUser(newSession.user.id);
         if (mounted.current) setIsLegacy(legacy);
-
-        // Check deletion status on sign-in (non-blocking)
-        fetchDeletionStatus().then((status) => {
-          if (mounted.current) {
-            setDeletionPending(status.pendingDeletion);
-            setDeletionScheduledFor(status.deletionScheduledFor);
-          }
-        });
       } else {
         setIsLegacy(false);
-        setDeletionPending(false);
-        setDeletionScheduledFor(null);
       }
     });
 
@@ -165,20 +141,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     setSession(null);
     setIsLegacy(false);
-    setDeletionPending(false);
-    setDeletionScheduledFor(null);
     // signingOut guard stays active until the user explicitly signs in again,
     // preventing stale token-refresh events from silently restoring the session.
   }, []);
 
   const forgotPassword = useCallback(async (email: string) => {
     await resetPassword(email);
-  }, []);
-
-  const cancelDeletion = useCallback(async () => {
-    await cancelAccountDeletion();
-    setDeletionPending(false);
-    setDeletionScheduledFor(null);
   }, []);
 
   const value: AuthContextValue = {
@@ -193,9 +161,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signInGoogle,
     signOut,
     forgotPassword,
-    deletionPending,
-    deletionScheduledFor,
-    cancelDeletion,
   };
 
   return React.createElement(AuthContext.Provider, { value }, children);

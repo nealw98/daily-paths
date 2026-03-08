@@ -20,18 +20,12 @@ interface DeleteAccountModalProps {
   visible: boolean;
   onClose: () => void;
   onConfirm: () => Promise<void>;
-  onManageSubscription: () => void;
-  isActiveSubscriber: boolean;
-  isLifetime?: boolean;
 }
 
 export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
   visible,
   onClose,
   onConfirm,
-  onManageSubscription,
-  isActiveSubscriber,
-  isLifetime = false,
 }) => {
   const { colors } = useTheme();
   const [confirmText, setConfirmText] = useState("");
@@ -95,107 +89,62 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
               {/* Title */}
               <Text style={[styles.title, { color: colors.danger }]}>Delete Account</Text>
 
-              {isActiveSubscriber ? (
-                <>
-                  <Text style={[styles.warning, { color: colors.text }]}>
-                    To delete your account, cancel your subscription first. Your account will be
-                    automatically deleted 60 days after your subscription ends.
-                  </Text>
+              <Text style={[styles.warning, { color: colors.text }]}>
+                This will permanently delete your account and all your data — journal entries, spot
+                checks, nightly reviews, preferences, and prayer notes.
+              </Text>
 
-                  <View style={styles.buttons}>
-                    <TouchableOpacity
-                      style={[styles.cancelButton, { backgroundColor: colors.mist }]}
-                      onPress={handleClose}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[styles.cancelButtonText, { color: colors.ink }]}>Close</Text>
-                    </TouchableOpacity>
+              {/* Confirmation input */}
+              <Text style={[styles.inputLabel, { color: colors.text }]}>
+                Type <Text style={styles.deleteWord}>DELETE</Text> to confirm
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    color: colors.text,
+                    borderColor: confirmText.length > 0 && !isConfirmed ? colors.danger : colors.border,
+                    backgroundColor: colors.cardBackground,
+                  },
+                ]}
+                value={confirmText}
+                onChangeText={setConfirmText}
+                placeholder="DELETE"
+                placeholderTextColor={colors.textSecondary}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                editable={!loading}
+              />
 
-                    <TouchableOpacity
-                      style={[styles.deleteButton, { backgroundColor: colors.deepTeal }]}
-                      onPress={() => {
-                        handleClose();
-                        onManageSubscription();
-                      }}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[styles.deleteButtonText, { color: "#fff" }]}>
-                        Manage Subscription
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </>
-              ) : (
-                <>
-                  <Text style={[styles.warning, { color: colors.text }]}>
-                    This will permanently delete all your data — journal entries, spot checks, nightly
-                    reviews, preferences, and prayer notes.
-                  </Text>
+              {/* Buttons */}
+              <View style={styles.buttons}>
+                <TouchableOpacity
+                  style={[styles.cancelButton, { backgroundColor: colors.mist }]}
+                  onPress={handleClose}
+                  disabled={loading}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.cancelButtonText, { color: colors.ink }]}>Cancel</Text>
+                </TouchableOpacity>
 
-                  {isLifetime && (
-                    <Text style={[styles.lifetimeWarning, { color: colors.danger }]}>
-                      Your lifetime access will be permanently revoked and cannot be restored.
+                <TouchableOpacity
+                  style={[
+                    styles.deleteButton,
+                    { backgroundColor: isConfirmed ? colors.danger : colors.mist, opacity: isConfirmed ? 1 : 0.5 },
+                  ]}
+                  onPress={handleConfirm}
+                  disabled={!isConfirmed || loading}
+                  activeOpacity={0.8}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={[styles.deleteButtonText, { color: isConfirmed ? "#fff" : colors.textSecondary }]}>
+                      Delete My Account
                     </Text>
                   )}
-
-                  <Text style={[styles.gracePeriod, { color: colors.textSecondary }]}>
-                    You have 60 days to change your mind by signing back in. After 60 days, this cannot
-                    be undone.
-                  </Text>
-
-                  {/* Confirmation input */}
-                  <Text style={[styles.inputLabel, { color: colors.text }]}>
-                    Type <Text style={styles.deleteWord}>DELETE</Text> to confirm
-                  </Text>
-                  <TextInput
-                    style={[
-                      styles.input,
-                      {
-                        color: colors.text,
-                        borderColor: confirmText.length > 0 && !isConfirmed ? colors.danger : colors.border,
-                        backgroundColor: colors.cardBackground,
-                      },
-                    ]}
-                    value={confirmText}
-                    onChangeText={setConfirmText}
-                    placeholder="DELETE"
-                    placeholderTextColor={colors.textSecondary}
-                    autoCapitalize="characters"
-                    autoCorrect={false}
-                    editable={!loading}
-                  />
-
-                  {/* Buttons */}
-                  <View style={styles.buttons}>
-                    <TouchableOpacity
-                      style={[styles.cancelButton, { backgroundColor: colors.mist }]}
-                      onPress={handleClose}
-                      disabled={loading}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[styles.cancelButtonText, { color: colors.ink }]}>Cancel</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={[
-                        styles.deleteButton,
-                        { backgroundColor: isConfirmed ? colors.danger : colors.mist, opacity: isConfirmed ? 1 : 0.5 },
-                      ]}
-                      onPress={handleConfirm}
-                      disabled={!isConfirmed || loading}
-                      activeOpacity={0.8}
-                    >
-                      {loading ? (
-                        <ActivityIndicator color="#fff" />
-                      ) : (
-                        <Text style={[styles.deleteButtonText, { color: isConfirmed ? "#fff" : colors.textSecondary }]}>
-                          Delete My Account
-                        </Text>
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                </>
-              )}
+                </TouchableOpacity>
+              </View>
             </ScrollView>
           </View>
         </View>
@@ -250,21 +199,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     textAlign: "center",
-  },
-  lifetimeWarning: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 15,
-    lineHeight: 22,
-    textAlign: "center",
-    fontWeight: "600",
-    marginTop: 16,
-  },
-  gracePeriod: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
-    lineHeight: 20,
-    textAlign: "center",
-    marginTop: 16,
     marginBottom: 24,
   },
   inputLabel: {

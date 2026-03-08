@@ -35,7 +35,7 @@ import RevenueCatUI from "react-native-purchases-ui";
 import { SignInModal } from "../../components/SignInModal";
 import { RateAppModal } from "../../components/RateAppModal";
 import { DeleteAccountModal } from "../../components/DeleteAccountModal";
-import { requestAccountDeletion, revokeLifetimeEntitlement } from "../../lib/accountDeletion";
+import { deleteAccountNow } from "../../lib/accountDeletion";
 
 /** Default theme options (visible to all users) */
 const DEFAULT_THEME_OPTIONS: { id: string; displayName: string; icon?: string }[] = [
@@ -95,7 +95,7 @@ export default function MoreTab() {
   const { settings, setTextSize, setThemeId, setColorScheme, setDailyReminderEnabled, setDailyReminderTime } =
     useSettings();
   const { submitting: submittingFeedback, submitFeedback } = useAppFeedback();
-  const { status, refresh } = useSubscription();
+  const { status, refresh, logout: logoutSubscription } = useSubscription();
   const { updateThemeMode } = useAnalytics();
   const router = useRouter();
 
@@ -241,16 +241,13 @@ export default function MoreTab() {
 
   const handleDeleteAccount = async () => {
     try {
-      // Revoke lifetime entitlement immediately so they lose premium access
-      if (status.isLegacy) {
-        await revokeLifetimeEntitlement();
-      }
+      await deleteAccountNow();
+      await logoutSubscription();
 
-      await requestAccountDeletion();
       setShowDeleteModal(false);
       Alert.alert(
-        "Account Deletion Scheduled",
-        "Your account will be permanently deleted in 60 days. Sign back in before then to cancel.",
+        "Account Deleted",
+        "Your account has been deleted. If you have an active subscription, remember to cancel it in your App Store or Google Play settings to avoid future charges.",
         [{
           text: "OK",
           onPress: async () => {
@@ -259,7 +256,7 @@ export default function MoreTab() {
         }],
       );
     } catch (err: any) {
-      Alert.alert("Error", err.message || "Failed to request account deletion. Please try again.");
+      Alert.alert("Error", err.message || "Failed to delete account. Please try again.");
     }
   };
 
@@ -654,7 +651,7 @@ export default function MoreTab() {
                 Support
               </Text>
             </TouchableOpacity>
-            {isAuthenticated && (
+            {isAuthenticated && (status.isSubscribed || status.isLegacy) && (
               <>
                 <Text style={[styles.legalDot, { color: colors.textSecondary }]}>·</Text>
                 <TouchableOpacity
@@ -705,20 +702,6 @@ export default function MoreTab() {
         visible={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         onConfirm={handleDeleteAccount}
-        isActiveSubscriber={status.isSubscribed && !status.isLegacy}
-        isLifetime={status.isLegacy}
-        onManageSubscription={async () => {
-          try {
-            await RevenueCatUI.presentCustomerCenter({
-              callbacks: {
-                onRestoreCompleted: () => refresh(),
-              },
-            });
-            await refresh();
-          } catch {
-            // Customer Center failed to present
-          }
-        }}
       />
 
       <Modal
