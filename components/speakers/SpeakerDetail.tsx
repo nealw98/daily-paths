@@ -118,26 +118,24 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
 
   const progress = player.durationMs > 0 ? player.positionMs / player.durationMs : 0;
 
-  // ─── Render: Download Button ─────────────────────────────────────────────
+  // ─── Render: Download Indicator (inline, top-right of player card) ───────
 
-  const renderDownloadButton = () => {
+  const renderDownloadIndicator = () => {
     // Trial/free users: don't render anything
     if (!canDownload) return null;
 
     if (download.downloadStatus === "downloading") {
       return (
-        <View style={[styles.downloadRow, { borderTopColor: colors.border }]}>
-          <View style={styles.downloadingContent}>
-            <ActivityIndicator size="small" color={colors.accent} />
-            <Text style={[styles.downloadingText, { color: colors.textSecondary }]}>
-              Downloading... {download.downloadProgress}%
-            </Text>
-          </View>
+        <View style={styles.dlInlineRow}>
+          <ActivityIndicator size="small" color={colors.accent} />
+          <Text style={[styles.dlInlineText, { color: colors.textSecondary }]}>
+            {download.downloadProgress}%
+          </Text>
           <TouchableOpacity
             onPress={download.cancelDownload}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Text style={[styles.cancelText, { color: colors.danger }]}>Cancel</Text>
+            <Ionicons name="close-circle" size={16} color={colors.danger} />
           </TouchableOpacity>
         </View>
       );
@@ -146,35 +144,35 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
     if (download.downloadStatus === "downloaded") {
       return (
         <TouchableOpacity
-          style={[styles.downloadRow, { borderTopColor: colors.border }]}
+          style={styles.dlInlineRow}
           onPress={handleDownloadPress}
           activeOpacity={0.6}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <View style={styles.downloadContent}>
-            <Ionicons name="checkmark-circle" size={20} color={colors.accent} />
-            <Text style={[styles.downloadedLabel, { color: colors.accent }]}>Downloaded</Text>
-          </View>
+          <Ionicons name="checkmark-circle" size={16} color={colors.accent} />
+          <Text style={[styles.dlInlineText, { color: colors.accent, fontWeight: "600" }]}>
+            Downloaded
+          </Text>
         </TouchableOpacity>
       );
     }
 
     // Not downloaded
     const sizeLabel = speaker.file_size_mb
-      ? `~${Math.round(speaker.file_size_mb)} MB`
+      ? ` ~${Math.round(speaker.file_size_mb)} MB`
       : "";
 
     return (
       <TouchableOpacity
-        style={[styles.downloadRow, { borderTopColor: colors.border }]}
+        style={styles.dlInlineRow}
         onPress={handleDownloadPress}
         activeOpacity={0.6}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        <View style={styles.downloadContent}>
-          <Ionicons name="download-outline" size={20} color={colors.textSecondary} />
-          <Text style={[styles.downloadLabel, { color: colors.textSecondary }]}>
-            Download{sizeLabel ? ` ${sizeLabel}` : ""}
-          </Text>
-        </View>
+        <Ionicons name="download-outline" size={16} color={colors.textSecondary} />
+        <Text style={[styles.dlInlineText, { color: colors.textSecondary }]}>
+          {sizeLabel.trim() || "Download"}
+        </Text>
       </TouchableOpacity>
     );
   };
@@ -240,12 +238,15 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
 
         {/* Player card */}
         <View style={[styles.playerCard, { backgroundColor: colors.cardBackground }]}>
-          {/* Now Playing indicator */}
+          {/* Now Playing + Download indicator */}
           <View style={styles.nowPlayingRow}>
-            <EqualizerBars isPlaying={player.isPlaying} color={colors.accent} />
-            <Text style={[styles.nowPlayingLabel, { color: colors.textSecondary }]}>
-              {player.isPlaying ? "Now Playing" : player.isLoaded ? "Paused" : ""}
-            </Text>
+            <View style={styles.nowPlayingLeft}>
+              <EqualizerBars isPlaying={player.isPlaying} color={colors.accent} />
+              <Text style={[styles.nowPlayingLabel, { color: colors.textSecondary }]}>
+                {player.isPlaying ? "Now Playing" : player.isLoaded ? "Paused" : ""}
+              </Text>
+            </View>
+            {renderDownloadIndicator()}
           </View>
 
           {/* Loading / Error states */}
@@ -384,8 +385,6 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
             })}
           </View>
 
-          {/* Download button */}
-          {renderDownloadButton()}
         </View>
       </ScrollView>
     </View>
@@ -506,9 +505,14 @@ const styles = StyleSheet.create({
   nowPlayingRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    justifyContent: "space-between",
     marginBottom: 16,
     minHeight: 20,
+  },
+  nowPlayingLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
   nowPlayingLabel: {
     fontFamily: fonts.bodyFamilyRegular,
@@ -621,41 +625,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
 
-  // ─── Download Button ────────────────────────────────────────────────────────
-  downloadRow: {
+  // ─── Download Indicator (inline, top-right) ──────────────────────────────────
+  dlInlineRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    borderTopWidth: StyleSheet.hairlineWidth,
-    marginTop: 16,
-    paddingTop: 14,
+    gap: 5,
   },
-  downloadContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  downloadLabel: {
+  dlInlineText: {
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
-  },
-  downloadedLabel: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  downloadingContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  downloadingText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
-  },
-  cancelText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: 12,
   },
 });
