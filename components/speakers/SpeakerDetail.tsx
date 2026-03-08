@@ -135,7 +135,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
             onPress={download.cancelDownload}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Ionicons name="close-circle" size={16} color={colors.danger} />
+            <Ionicons name="close-circle" size={18} color={colors.danger} />
           </TouchableOpacity>
         </View>
       );
@@ -149,7 +149,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
           activeOpacity={0.6}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons name="checkmark-circle" size={16} color={colors.accent} />
+          <Ionicons name="checkmark-circle" size={18} color={colors.accent} />
           <Text style={[styles.dlInlineText, { color: colors.accent, fontWeight: "600" }]}>
             Downloaded
           </Text>
@@ -159,19 +159,19 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
 
     // Not downloaded
     const sizeLabel = speaker.file_size_mb
-      ? ` ~${Math.round(speaker.file_size_mb)} MB`
-      : "";
+      ? `Download (~${Math.round(speaker.file_size_mb)} MB)`
+      : "Download";
 
     return (
       <TouchableOpacity
-        style={styles.dlInlineRow}
+        style={[styles.dlButton, { backgroundColor: colors.accent + "18", borderColor: colors.accent + "40" }]}
         onPress={handleDownloadPress}
         activeOpacity={0.6}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
       >
-        <Ionicons name="download-outline" size={16} color={colors.textSecondary} />
-        <Text style={[styles.dlInlineText, { color: colors.textSecondary }]}>
-          {sizeLabel.trim() || "Download"}
+        <Ionicons name="download-outline" size={18} color={colors.accent} />
+        <Text style={[styles.dlButtonText, { color: colors.accent }]}>
+          {sizeLabel}
         </Text>
       </TouchableOpacity>
     );
@@ -629,10 +629,24 @@ const styles = StyleSheet.create({
   dlInlineRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
+    gap: 6,
   },
   dlInlineText: {
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 12,
+    fontSize: 14,
+  },
+  dlButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  dlButtonText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 14,
+    fontWeight: "600",
   },
 });

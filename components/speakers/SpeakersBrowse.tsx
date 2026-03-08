@@ -183,7 +183,10 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
               </View>
             )}
             {downloadedIds.has(speaker.id) && (
-              <Ionicons name="checkmark-circle" size={14} color={colors.accent} />
+              <View style={styles.downloadedBadge}>
+                <Ionicons name="checkmark-circle" size={12} color="#C49535" />
+                <Text style={styles.downloadedText}>Downloaded</Text>
+              </View>
             )}
           </View>
         </View>
@@ -388,7 +391,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginTop: 2,
+    marginTop: 6,
   },
   explicitBadge: {
     paddingHorizontal: 6,
@@ -400,6 +403,22 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "800",
     letterSpacing: 0.5,
+  },
+  downloadedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#C49535" + "18",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  downloadedText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#C49535",
+    letterSpacing: 0.3,
   },
 
   // ─── Play Button ───────────────────────────────────────────────────────────
