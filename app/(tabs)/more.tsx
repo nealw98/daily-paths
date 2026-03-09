@@ -95,7 +95,7 @@ export default function MoreTab() {
   const { settings, setTextSize, setThemeId, setColorScheme, setDailyReminderEnabled, setDailyReminderTime } =
     useSettings();
   const { submitting: submittingFeedback, submitFeedback } = useAppFeedback();
-  const { status, refresh, logout: logoutSubscription } = useSubscription();
+  const { status, refresh, cleanupAfterDeletion } = useSubscription();
   const { updateThemeMode } = useAnalytics();
   const router = useRouter();
 
@@ -241,13 +241,19 @@ export default function MoreTab() {
 
   const handleDeleteAccount = async () => {
     try {
+      // Capture legacy status before cleanup resets it
+      const wasLegacy = status.isLegacy;
+
       await deleteAccountNow();
-      await logoutSubscription();
+      await cleanupAfterDeletion();
 
       setShowDeleteModal(false);
+      const message = wasLegacy
+        ? "Your account and lifetime access have been removed. To access premium features again, you'll need to subscribe."
+        : "Your account has been deleted. If you have an active subscription, remember to cancel it in your App Store or Google Play settings to avoid future charges.";
       Alert.alert(
         "Account Deleted",
-        "Your account has been deleted. If you have an active subscription, remember to cancel it in your App Store or Google Play settings to avoid future charges.",
+        message,
         [{
           text: "OK",
           onPress: async () => {

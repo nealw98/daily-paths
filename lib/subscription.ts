@@ -24,6 +24,7 @@ const REVENUECAT_IOS_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY || "";
 const REVENUECAT_ANDROID_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY || "";
 
 const SUBSCRIPTION_CACHE_KEY = "@daily_paths_subscription_status_v1";
+const LIFETIME_REVOKED_KEY = "@daily_paths_lifetime_revoked";
 
 export interface SubscriptionStatus {
   isSubscribed: boolean;
@@ -178,10 +179,19 @@ export async function checkReceiptForLegacyStatus(): Promise<boolean> {
   try {
     const customerInfo = await Purchases.restorePurchases();
 
-    // Already has the lifetime entitlement (previously granted)
+    // Already has the lifetime entitlement (previously granted / restored)
     if (customerInfo.entitlements.active[LIFETIME_ENTITLEMENT_ID]) {
       qaLog("subscription", "Lifetime entitlement already active (receipt check)");
       return true;
+    }
+
+    // If lifetime was explicitly revoked (account deletion), don't re-detect
+    // based on the permanent Apple receipt build number. The entitlement check
+    // above is still authoritative — if support re-grants it, that will work.
+    const revoked = await isLifetimeRevoked();
+    if (revoked) {
+      qaLog("subscription", "Lifetime was revoked — skipping receipt build-number check");
+      return false;
     }
 
     const originalVersion = customerInfo.originalApplicationVersion;
@@ -354,5 +364,48 @@ export async function getCachedSubscriptionStatus(): Promise<SubscriptionStatus 
     return JSON.parse(raw) as SubscriptionStatus;
   } catch {
     return null;
+  }
+}
+
+/**
+ * Clear the cached subscription status.
+ * Called during account deletion to prevent stale legacy/subscribed state.
+ */
+export async function clearSubscriptionCache(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(SUBSCRIPTION_CACHE_KEY);
+  } catch {
+    // Non-critical
+  }
+}
+
+// ─── Lifetime revocation tracking ────────────────────────────────────────────
+
+/**
+ * Mark the lifetime entitlement as explicitly revoked (e.g. account deletion).
+ *
+ * When set, `checkReceiptForLegacyStatus()` will still honour an active
+ * RevenueCat lifetime entitlement (in case support re-grants it) but will
+ * NOT fall back to the permanent Apple receipt `originalApplicationVersion`
+ * check. This prevents a deleted account from re-gaining lifetime access
+ * simply because the receipt is tied to the Apple ID.
+ */
+export async function markLifetimeRevoked(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(LIFETIME_REVOKED_KEY, "true");
+  } catch {
+    // Non-critical — worst case the receipt re-detects on next launch
+  }
+}
+
+/**
+ * Check whether the lifetime entitlement was explicitly revoked.
+ */
+export async function isLifetimeRevoked(): Promise<boolean> {
+  try {
+    const val = await AsyncStorage.getItem(LIFETIME_REVOKED_KEY);
+    return val === "true";
+  } catch {
+    return false;
   }
 }

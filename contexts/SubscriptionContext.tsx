@@ -17,7 +17,9 @@ import {
   restorePurchases,
   isRevenueCatInitialized,
   getCachedSubscriptionStatus,
+  clearSubscriptionCache,
   checkReceiptForLegacyStatus,
+  markLifetimeRevoked,
   type SubscriptionStatus,
 } from "../lib/subscription";
 import {
@@ -49,6 +51,7 @@ interface SubscriptionContextValue {
   restore: () => Promise<boolean>;
   refresh: () => Promise<void>;
   logout: () => Promise<void>;
+  cleanupAfterDeletion: () => Promise<void>;
 }
 
 const DEFAULT_STATUS: SubscriptionStatus = {
@@ -307,6 +310,33 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
     setStatus(DEFAULT_STATUS);
   }, []);
 
+  /**
+   * Full cleanup after account deletion. Unlike `logout` (which is for
+   * sign-out and preserves trial state), this:
+   *  1. Logs out RevenueCat and resets subscription status
+   *  2. Expires the local trial so `getRequiredGate` shows the paywall
+   *  3. Marks lifetime as revoked so the permanent Apple receipt doesn't
+   *     re-detect the user as legacy on the next launch
+   *  4. Clears the subscription cache to prevent stale state
+   */
+  const cleanupAfterDeletion = useCallback(async () => {
+    await logoutRevenueCat();
+    setStatus(DEFAULT_STATUS);
+
+    // Expire the local trial so the paywall appears immediately
+    await expireTrial();
+    const freshTrial = await getTrialStatus();
+    setTrial(freshTrial);
+
+    // Prevent the permanent Apple receipt from re-granting lifetime access
+    await markLifetimeRevoked();
+
+    // Clear cached subscription status
+    await clearSubscriptionCache();
+
+    qaLog("subscription", "Account deletion cleanup complete");
+  }, []);
+
   // ── Context value ──────────────────────────────────────────────────────
   const trialStatusValue = useMemo<TrialStatusWithMeta>(
     () => ({ ...trial, loading: trialLoading, refresh: refreshTrial }),
@@ -325,6 +355,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       restore,
       refresh,
       logout,
+      cleanupAfterDeletion,
     }),
     [
       status,
@@ -337,6 +368,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       restore,
       refresh,
       logout,
+      cleanupAfterDeletion,
     ],
   );
 

@@ -19,5 +19,6 @@ export function useSubscription(_userId?: string | null) {
     restore: ctx.restore,
     refresh: ctx.refresh,
     logout: ctx.logout,
+    cleanupAfterDeletion: ctx.cleanupAfterDeletion,
   };
 }
