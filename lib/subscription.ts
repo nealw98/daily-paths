@@ -155,6 +155,63 @@ export async function purchasePackage(
   }
 }
 
+// First version of the freemium release. Any originalApplicationVersion
+// below this is a legacy paid-app user.
+const FREEMIUM_VERSION = "2.5.0";
+
+/**
+ * Check the App Store receipt for legacy (paid-app) status.
+ *
+ * Calls restorePurchases() to sync the receipt, then inspects
+ * originalApplicationVersion. Returns true if the user originally
+ * purchased the app before the freemium switch, OR if the lifetime
+ * entitlement is already active in RevenueCat.
+ *
+ * Safe to call before authentication — only reads the device receipt.
+ * iOS-only; always returns false on Android.
+ */
+export async function checkReceiptForLegacyStatus(): Promise<boolean> {
+  if (Platform.OS !== "ios") return false;
+  if (!isInitialized) return false;
+
+  try {
+    const customerInfo = await Purchases.restorePurchases();
+
+    // Already has the lifetime entitlement (previously granted)
+    if (customerInfo.entitlements.active[LIFETIME_ENTITLEMENT_ID]) {
+      qaLog("subscription", "Lifetime entitlement already active (receipt check)");
+      return true;
+    }
+
+    const originalVersion = customerInfo.originalApplicationVersion;
+    if (originalVersion && isVersionBefore(originalVersion, FREEMIUM_VERSION)) {
+      qaLog("subscription", "Legacy user detected via receipt", { originalVersion });
+      return true;
+    }
+
+    return false;
+  } catch (err) {
+    qaLog("subscription", "Receipt legacy check failed", { error: String(err) });
+    return false;
+  }
+}
+
+/**
+ * Compare two semver-style version strings (e.g. "2.4.1" < "2.5.0").
+ * Returns true if `version` is strictly before `threshold`.
+ */
+function isVersionBefore(version: string, threshold: string): boolean {
+  const a = version.split(".").map(Number);
+  const b = threshold.split(".").map(Number);
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const av = a[i] || 0;
+    const bv = b[i] || 0;
+    if (av < bv) return true;
+    if (av > bv) return false;
+  }
+  return false; // equal
+}
+
 /**
  * Restore previous purchases.
  */

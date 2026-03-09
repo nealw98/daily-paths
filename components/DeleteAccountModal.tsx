@@ -18,12 +18,14 @@ import { useTheme } from "../hooks/useTheme";
 
 interface DeleteAccountModalProps {
   visible: boolean;
+  isLifetime?: boolean;
   onClose: () => void;
   onConfirm: () => Promise<void>;
 }
 
 export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
   visible,
+  isLifetime,
   onClose,
   onConfirm,
 }) => {
@@ -93,6 +95,12 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
                 This will permanently delete your account and all your data — journal entries, spot
                 checks, nightly reviews, preferences, and prayer notes.
               </Text>
+
+              {isLifetime && (
+                <Text style={[styles.lifetimeWarning, { color: colors.danger }]}>
+                  You will also forfeit your lifetime membership. This cannot be restored.
+                </Text>
+              )}
 
               {/* Confirmation input */}
               <Text style={[styles.inputLabel, { color: colors.text }]}>
@@ -200,6 +208,15 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     textAlign: "center",
     marginBottom: 24,
+  },
+  lifetimeWarning: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: "600",
+    textAlign: "center",
+    marginBottom: 24,
+    marginTop: -12,
   },
   inputLabel: {
     fontFamily: fonts.bodyFamilyRegular,

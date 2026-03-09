@@ -700,6 +700,7 @@ export default function MoreTab() {
       <SignInModal visible={showSignIn} onClose={() => setShowSignIn(false)} />
       <DeleteAccountModal
         visible={showDeleteModal}
+        isLifetime={status.isLegacy}
         onClose={() => setShowDeleteModal(false)}
         onConfirm={handleDeleteAccount}
       />

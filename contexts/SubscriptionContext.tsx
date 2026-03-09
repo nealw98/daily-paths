@@ -17,11 +17,13 @@ import {
   restorePurchases,
   isRevenueCatInitialized,
   getCachedSubscriptionStatus,
+  checkReceiptForLegacyStatus,
   type SubscriptionStatus,
 } from "../lib/subscription";
 import {
   ensureTrialStarted,
   getTrialStatus,
+  expireTrial,
   type TrialStatus,
 } from "../utils/trialTimer";
 import { getRequiredGate, type GateType } from "../utils/accessControl";
@@ -99,18 +101,21 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
     const init = async () => {
       // ── Phase 1: cached / local state (instant) ────────────────────────
 
-      // Trial status (AsyncStorage — fast)
-      await ensureTrialStarted();
-      const trialResult = await getTrialStatus();
-      if (cancelled) return;
-      setTrial(trialResult);
-      setTrialLoading(false);
-
       // Cached subscription status (AsyncStorage — fast)
       const cached = await getCachedSubscriptionStatus();
       if (cancelled) return;
       if (cached) {
         setStatus(cached);
+      }
+
+      // Trial status (AsyncStorage — fast)
+      // Don't start the trial yet — wait for receipt check in Phase 2.
+      const trialResult = await getTrialStatus();
+      if (cancelled) return;
+      setTrial(trialResult);
+      setTrialLoading(false);
+
+      if (cached) {
         setLoading(false);
       } else if (trialResult.isInTrial) {
         // No cache, but trial is active → gate = "none" from trial alone
@@ -145,6 +150,41 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
         await loginRevenueCat(userId);
       }
 
+      // ── Receipt-based legacy check (before starting trial) ─────────────
+      // On iOS, check the App Store receipt for users who purchased the
+      // original paid app. If detected, skip the trial entirely — they
+      // have lifetime access. This runs before ensureTrialStarted() so
+      // legacy users never see the trial countdown.
+      if (isRevenueCatInitialized()) {
+        try {
+          const isLegacyReceipt = await checkReceiptForLegacyStatus();
+          if (!cancelled && isLegacyReceipt) {
+            qaLog("SubscriptionContext", "Legacy user detected via receipt — skipping trial");
+            const fresh = await getSubscriptionStatus();
+            if (!cancelled) {
+              setStatus(fresh);
+              setLoading(false);
+
+              // Pre-fetch packages in background, then done — no trial needed
+              getOfferings()
+                .then((pkgs) => { if (!cancelled) setPackages(pkgs); })
+                .catch(() => {});
+              return;
+            }
+          }
+        } catch {
+          // Receipt check failed — fall through to normal flow
+        }
+      }
+
+      // No legacy receipt found — ensure the trial clock is running
+      await ensureTrialStarted();
+      const freshTrial = await getTrialStatus();
+      if (!cancelled) {
+        setTrial(freshTrial);
+        setTrialLoading(false);
+      }
+
       // Fetch fresh status from RC
       if (isRevenueCatInitialized()) {
         try {
@@ -159,15 +199,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
 
       // ── Background tasks (don't block gate/content) ────────────────────
       if (!isRevenueCatInitialized()) return;
-
-      // Restore purchases — may find existing App Store subscription
-      restorePurchases()
-        .then(async () => {
-          if (cancelled) return;
-          const restored = await getSubscriptionStatus();
-          if (!cancelled) setStatus(restored);
-        })
-        .catch(() => {});
 
       // Pre-fetch packages for the paywall
       getOfferings()
@@ -208,6 +239,17 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
         if (customerInfo) {
           const newStatus = await getSubscriptionStatus();
           setStatus(newStatus);
+
+          // Expire the local trial once the user subscribes so the
+          // subscription entitlement takes over immediately. This matters
+          // because subscribers get features (e.g. speaker downloads)
+          // that trial users don't.
+          if (newStatus.isSubscribed) {
+            await expireTrial();
+            const freshTrial = await getTrialStatus();
+            setTrial(freshTrial);
+          }
+
           return newStatus.isSubscribed;
         }
         return false;
