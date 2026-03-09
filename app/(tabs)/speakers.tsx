@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { View, StyleSheet } from "react-native";
+import { AppState, AppStateStatus, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "expo-router";
 import { useTheme } from "../../hooks/useTheme";
@@ -78,6 +78,18 @@ function SpeakersTabContent() {
     });
     return unsubscribe;
   }, [navigation, speakers.length, loading, refresh, refreshDownloads]);
+
+  // Re-fetch speakers when the app returns from background so the list doesn't go stale
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (nextAppState === "active") {
+        refresh();
+        refreshDownloads();
+      }
+    };
+    const subscription = AppState.addEventListener("change", handleAppStateChange);
+    return () => subscription?.remove();
+  }, [refresh, refreshDownloads]);
 
   // Track cumulative time in the speakers tab for rate prompt
   const [tabFocused, setTabFocused] = useState(false);
