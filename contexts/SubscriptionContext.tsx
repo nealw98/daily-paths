@@ -160,7 +160,22 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
           const isLegacyReceipt = await checkReceiptForLegacyStatus();
           if (!cancelled && isLegacyReceipt) {
             qaLog("SubscriptionContext", "Legacy user detected via receipt — skipping trial");
-            const fresh = await getSubscriptionStatus();
+            let fresh = await getSubscriptionStatus();
+
+            // On an anonymous RC user the lifetime entitlement (which is
+            // tied to the authenticated user ID) won't appear in
+            // getSubscriptionStatus().  Override with a synthetic legacy
+            // status so the UI shows "Lifetime Access" immediately.  The
+            // next effect run (after auth loads) will replace this with
+            // the canonical status from RevenueCat.
+            if (!fresh.isLegacy) {
+              fresh = {
+                ...fresh,
+                isSubscribed: true,
+                isLegacy: true,
+              };
+            }
+
             if (!cancelled) {
               setStatus(fresh);
               setLoading(false);

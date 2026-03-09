@@ -155,9 +155,10 @@ export async function purchasePackage(
   }
 }
 
-// First version of the freemium release. Any originalApplicationVersion
-// below this is a legacy paid-app user.
-const FREEMIUM_VERSION = "2.5.0";
+// First build number of the freemium release. Any originalApplicationVersion
+// (which is CFBundleVersion — a plain integer on iOS) below this threshold
+// means the user originally purchased the paid app.
+const FREEMIUM_BUILD_NUMBER = 27;
 
 /**
  * Check the App Store receipt for legacy (paid-app) status.
@@ -184,7 +185,7 @@ export async function checkReceiptForLegacyStatus(): Promise<boolean> {
     }
 
     const originalVersion = customerInfo.originalApplicationVersion;
-    if (originalVersion && isVersionBefore(originalVersion, FREEMIUM_VERSION)) {
+    if (originalVersion && isLegacyBuildNumber(originalVersion)) {
       qaLog("subscription", "Legacy user detected via receipt", { originalVersion });
       return true;
     }
@@ -197,19 +198,15 @@ export async function checkReceiptForLegacyStatus(): Promise<boolean> {
 }
 
 /**
- * Compare two semver-style version strings (e.g. "2.4.1" < "2.5.0").
- * Returns true if `version` is strictly before `threshold`.
+ * Check if an originalApplicationVersion (CFBundleVersion — a plain integer
+ * build number on iOS) indicates a legacy paid-app user.
+ *
+ * Returns true if the build number is strictly before the first freemium build.
  */
-function isVersionBefore(version: string, threshold: string): boolean {
-  const a = version.split(".").map(Number);
-  const b = threshold.split(".").map(Number);
-  for (let i = 0; i < Math.max(a.length, b.length); i++) {
-    const av = a[i] || 0;
-    const bv = b[i] || 0;
-    if (av < bv) return true;
-    if (av > bv) return false;
-  }
-  return false; // equal
+function isLegacyBuildNumber(originalVersion: string): boolean {
+  const buildNum = parseInt(originalVersion, 10);
+  if (isNaN(buildNum)) return false;
+  return buildNum < FREEMIUM_BUILD_NUMBER;
 }
 
 /**
