@@ -196,8 +196,26 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
             }
           }
         } catch {
-          // Receipt check failed — fall through to normal flow
+          // Receipt check failed — fall through below
         }
+      }
+
+      // If the receipt check didn't confirm legacy on THIS run (e.g.
+      // restorePurchases() failed after RC login switch) but the cache
+      // from a previous successful detection says legacy, trust the
+      // cache.  This prevents the non-legacy fallback path from
+      // overwriting status with isLegacy: false and making the delete
+      // button / "Lifetime Access" label flash then disappear.
+      if (cached?.isLegacy) {
+        qaLog("SubscriptionContext", "Receipt check inconclusive but cache is legacy — preserving");
+        if (!cancelled) {
+          setStatus(cached);
+          setLoading(false);
+          getOfferings()
+            .then((pkgs) => { if (!cancelled) setPackages(pkgs); })
+            .catch(() => {});
+        }
+        return;
       }
 
       // No legacy receipt found — ensure the trial clock is running
