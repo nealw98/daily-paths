@@ -241,8 +241,10 @@ export default function MoreTab() {
 
   const handleDeleteAccount = async () => {
     try {
-      // Capture legacy status before cleanup resets it
-      const wasLegacy = status.isLegacy;
+      // Capture legacy status before cleanup resets it.
+      // Check both subscription context (receipt-based) and auth context
+      // (database-based) so we show the right message even if one source failed.
+      const wasLegacy = status.isLegacy || isLegacy;
 
       await deleteAccountNow();
       await cleanupAfterDeletion();
@@ -251,8 +253,9 @@ export default function MoreTab() {
       const message = wasLegacy
         ? "Your account and lifetime access have been removed. To access premium features again, you'll need to subscribe."
         : "Your account has been deleted. If you have an active subscription, remember to cancel it in your App Store or Google Play settings to avoid future charges.";
-      // Delay alert until the Modal slide-out animation finishes, otherwise
-      // the native Modal layer intercepts touches and the OK button is untappable.
+      // Delay alert until the Modal slide-out animation fully completes,
+      // otherwise the native Modal layer intercepts touches and the OK
+      // button is untappable. 800ms accommodates the slide animation.
       setTimeout(() => {
         Alert.alert(
           "Account Deleted",
@@ -264,7 +267,7 @@ export default function MoreTab() {
             },
           }],
         );
-      }, 500);
+      }, 800);
     } catch (err: any) {
       Alert.alert("Error", err.message || "Failed to delete account. Please try again.");
     }
@@ -710,7 +713,7 @@ export default function MoreTab() {
       <SignInModal visible={showSignIn} onClose={() => setShowSignIn(false)} />
       <DeleteAccountModal
         visible={showDeleteModal}
-        isLifetime={status.isLegacy}
+        isLifetime={status.isLegacy || isLegacy}
         onClose={() => setShowDeleteModal(false)}
         onConfirm={handleDeleteAccount}
       />

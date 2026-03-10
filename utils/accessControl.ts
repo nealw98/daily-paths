@@ -16,19 +16,20 @@ export type GateType = "none" | "paywall" | "signin";
  * Determine which gate (if any) should block a premium tab.
  *
  * Priority:
- *  1. Local trial active             → no gate
- *  2. Entitlement + authenticated    → no gate
- *  3. Entitlement + NOT authenticated → sign-in gate
+ *  1. Entitlement + authenticated    → no gate
+ *  2. Entitlement + NOT authenticated → sign-in gate
+ *  3. Local trial active             → no gate
  *  4. No entitlement + trial expired → paywall gate
+ *
+ * Legacy / subscription checks come BEFORE the trial check so that a
+ * lifetime member who accidentally got a trial still lands on the
+ * correct "signin" gate instead of "none" (which skips sign-in).
  */
 export function getRequiredGate(
   subscription: SubscriptionStatus,
   trial: TrialStatus,
   isAuthenticated: boolean,
 ): GateType {
-  // During the local 7-day trial, everything is unlocked — no gate needed.
-  if (trial.isInTrial) return "none";
-
   // User has a subscription or legacy lifetime access AND is signed in.
   if ((subscription.isSubscribed || subscription.isLegacy) && isAuthenticated) {
     return "none";
@@ -39,6 +40,9 @@ export function getRequiredGate(
   if (subscription.isSubscribed || subscription.isLegacy) {
     return "signin";
   }
+
+  // During the local 7-day trial, everything is unlocked — no gate needed.
+  if (trial.isInTrial) return "none";
 
   // Trial expired and no entitlement — show the paywall.
   return "paywall";

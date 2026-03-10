@@ -27,6 +27,7 @@ import {
   ensureTrialStarted,
   getTrialStatus,
   expireTrial,
+  resetTrial,
   type TrialStatus,
 } from "../utils/trialTimer";
 import { getRequiredGate, type GateType } from "../utils/accessControl";
@@ -164,6 +165,16 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
           const isLegacyReceipt = await checkReceiptForLegacyStatus();
           if (!cancelled && isLegacyReceipt) {
             qaLog("SubscriptionContext", "Legacy user detected via receipt — skipping trial");
+
+            // Remove any accidentally-started trial so the gate logic
+            // doesn't treat this legacy user as a trial user.
+            await resetTrial();
+            const cleanTrial = await getTrialStatus();
+            if (!cancelled) {
+              setTrial(cleanTrial);
+              setTrialLoading(false);
+            }
+
             let fresh = await getSubscriptionStatus();
 
             // On an anonymous RC user the lifetime entitlement (which is
