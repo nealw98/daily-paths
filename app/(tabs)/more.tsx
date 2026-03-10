@@ -13,6 +13,7 @@ import {
   KeyboardAvoidingView,
   Keyboard,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -95,7 +96,7 @@ export default function MoreTab() {
   const { settings, setTextSize, setThemeId, setColorScheme, setDailyReminderEnabled, setDailyReminderTime } =
     useSettings();
   const { submitting: submittingFeedback, submitFeedback } = useAppFeedback();
-  const { status, refresh, cleanupAfterDeletion } = useSubscription();
+  const { status, loading: subLoading, refresh, cleanupAfterDeletion } = useSubscription();
   const { updateThemeMode } = useAnalytics();
   const router = useRouter();
 
@@ -348,7 +349,14 @@ export default function MoreTab() {
           </TouchableOpacity>
         )}
 
-        {status.isLegacy ? (
+        {subLoading ? (
+          <View style={[styles.subscriptionRow, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
+            <View style={styles.subscriptionLeft}>
+              <ActivityIndicator size="small" color={colors.deepTeal} />
+              <Text style={[styles.subscriptionText, { color: colors.text }]}>Checking Access...</Text>
+            </View>
+          </View>
+        ) : status.isLegacy ? (
           <View style={[styles.subscriptionRow, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
             <View style={styles.subscriptionLeft}>
               <Ionicons name="star" size={22} color={colors.deepTeal} />

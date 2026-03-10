@@ -22,7 +22,7 @@ interface PremiumGateProps {
 export const PremiumGate: React.FC<PremiumGateProps> = ({ children }) => {
   const navigation = useNavigation();
   const isFocused = useIsFocused();
-  const { gate, refresh: refreshSub } = useSubscriptionContext();
+  const { gate, loading, refresh: refreshSub } = useSubscriptionContext();
   const { trackPaywallShown, trackPaywallDismissed } = useAnalytics();
 
   const [dismissed, setDismissed] = useState(false);
@@ -38,7 +38,7 @@ export const PremiumGate: React.FC<PremiumGateProps> = ({ children }) => {
 
   // Present RevenueCat's native paywall when gate requires it
   useEffect(() => {
-    if (gate !== "paywall" || !isFocused || dismissed || presentingPaywall.current) return;
+    if (loading || gate !== "paywall" || !isFocused || dismissed || presentingPaywall.current) return;
 
     presentingPaywall.current = true;
     trackPaywallShown();
@@ -68,7 +68,7 @@ export const PremiumGate: React.FC<PremiumGateProps> = ({ children }) => {
         presentingPaywall.current = false;
       }
     })();
-  }, [gate, isFocused, dismissed, trackPaywallShown, trackPaywallDismissed, refreshSub]);
+  }, [loading, gate, isFocused, dismissed, trackPaywallShown, trackPaywallDismissed, refreshSub]);
 
   return (
     <>

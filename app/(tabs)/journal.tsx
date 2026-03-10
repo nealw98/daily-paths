@@ -149,6 +149,15 @@ function JournalTabContent() {
     setCategoryFilter(filter);
   }, []);
 
+  useEffect(() => {
+    if (showSignIn || !isAuthenticated || !pendingCreate) return;
+    const save = pendingCreate;
+    setPendingCreate(null);
+    createEntry(save.entryType, save.content, save.structuredContent).then(() => {
+      setView("timeline");
+    });
+  }, [showSignIn, isAuthenticated, pendingCreate, createEntry]);
+
   // ─── CRUD Operations ────────────────────────────────────
 
   const handleSaveNew = useCallback(

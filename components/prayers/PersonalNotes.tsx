@@ -155,6 +155,12 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId, onInputFoc
 
   const hasChanges = content !== savedContent;
 
+  useEffect(() => {
+    if (showSignIn || !isAuthenticated || !pendingSave) return;
+    setPendingSave(false);
+    handleSave();
+  }, [showSignIn, isAuthenticated, pendingSave, handleSave]);
+
   return (
     <View style={[styles.container, { backgroundColor: colors.cloud }]}>
       <View style={styles.header}>

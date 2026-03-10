@@ -116,6 +116,15 @@ export default function Index() {
     await createEntry(entryType, content, structuredContent);
     return true;
   };
+
+  useEffect(() => {
+    if (showSignIn || !isAuthed || !pendingSave) return;
+    const save = pendingSave;
+    setPendingSave(null);
+    trySaveEntry(save.entryType, save.content, save.structuredContent).then((saved) => {
+      if (saved) setJournalEntryType(null);
+    });
+  }, [showSignIn, isAuthed, pendingSave]);
   
   // Analytics
   const { trackAppOpened, startReadingView, trackReadingFavorited, trackReadingUnfavorited, updateThemeMode } = useAnalytics();
