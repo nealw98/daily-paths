@@ -251,16 +251,20 @@ export default function MoreTab() {
       const message = wasLegacy
         ? "Your account and lifetime access have been removed. To access premium features again, you'll need to subscribe."
         : "Your account has been deleted. If you have an active subscription, remember to cancel it in your App Store or Google Play settings to avoid future charges.";
-      Alert.alert(
-        "Account Deleted",
-        message,
-        [{
-          text: "OK",
-          onPress: async () => {
-            await signOut();
-          },
-        }],
-      );
+      // Delay alert until the Modal slide-out animation finishes, otherwise
+      // the native Modal layer intercepts touches and the OK button is untappable.
+      setTimeout(() => {
+        Alert.alert(
+          "Account Deleted",
+          message,
+          [{
+            text: "OK",
+            onPress: async () => {
+              await signOut();
+            },
+          }],
+        );
+      }, 500);
     } catch (err: any) {
       Alert.alert("Error", err.message || "Failed to delete account. Please try again.");
     }
