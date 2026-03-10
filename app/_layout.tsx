@@ -316,18 +316,18 @@ function TrialExpiryPresenter() {
 const LIFETIME_WELCOME_SEEN_KEY = "@daily_paths_lifetime_welcome_seen";
 
 function LifetimeWelcomePresenter() {
-  const { status } = useSubscriptionContext();
+  const { status, liveLegacyDetected } = useSubscriptionContext();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     (async () => {
-      if (!status.isLegacy) return;
+      if (!status.isLegacy && !liveLegacyDetected) return;
       const seen = await AsyncStorage.getItem(LIFETIME_WELCOME_SEEN_KEY);
       if (seen !== "true") {
         setVisible(true);
       }
     })();
-  }, [status.isLegacy]);
+  }, [status.isLegacy, liveLegacyDetected]);
 
   return (
     <LifetimeWelcomeModal

@@ -20,8 +20,8 @@ interface AuthContextValue {
   isLegacy: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
-  signInApple: () => Promise<void>;
-  signInGoogle: () => Promise<void>;
+  signInApple: () => Promise<unknown>;
+  signInGoogle: () => Promise<unknown>;
   signOut: () => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
 }
@@ -121,12 +121,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signInApple = useCallback(async () => {
     signingOut.current = false;
-    await signInWithApple();
+    return signInWithApple();
   }, []);
 
   const signInGoogle = useCallback(async () => {
     signingOut.current = false;
-    await signInWithGoogle();
+    return signInWithGoogle();
   }, []);
 
   const signOut = useCallback(async () => {

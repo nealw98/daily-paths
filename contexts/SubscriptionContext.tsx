@@ -45,6 +45,7 @@ interface TrialStatusWithMeta extends TrialStatus {
 
 interface SubscriptionContextValue {
   status: SubscriptionStatus;
+  liveLegacyDetected: boolean;
   trialStatus: TrialStatusWithMeta;
   packages: PurchasesPackage[];
   loading: boolean;
@@ -89,6 +90,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
   const userId = user?.id ?? null;
 
   const [status, setStatus] = useState<SubscriptionStatus>(DEFAULT_STATUS);
+  const [liveLegacyDetected, setLiveLegacyDetected] = useState(false);
   const [trial, setTrial] = useState<TrialStatus>(DEFAULT_TRIAL);
   const [trialLoading, setTrialLoading] = useState(true);
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
@@ -105,6 +107,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
     let cancelled = false;
 
     const init = async () => {
+      setLiveLegacyDetected(false);
       // ── Phase 1: cached / local state (instant) ────────────────────────
 
       // Cached subscription status (AsyncStorage — fast)
@@ -166,6 +169,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
           const isLegacyReceipt = await checkReceiptForLegacyStatus();
           if (!cancelled && isLegacyReceipt) {
             qaLog("SubscriptionContext", "Legacy user detected via receipt — skipping trial");
+            setLiveLegacyDetected(true);
 
             // Remove any accidentally-started trial so the gate logic
             // doesn't treat this legacy user as a trial user.
@@ -403,6 +407,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
   const value = useMemo<SubscriptionContextValue>(
     () => ({
       status,
+      liveLegacyDetected,
       trialStatus: trialStatusValue,
       packages,
       loading,
@@ -416,6 +421,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
     }),
     [
       status,
+      liveLegacyDetected,
       trialStatusValue,
       packages,
       loading,
