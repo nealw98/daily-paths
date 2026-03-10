@@ -17,6 +17,7 @@ import {
   restorePurchases,
   isRevenueCatInitialized,
   getCachedSubscriptionStatus,
+  cacheSubscriptionStatus,
   clearSubscriptionCache,
   checkReceiptForLegacyStatus,
   markLifetimeRevoked,
@@ -177,6 +178,10 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
                 isSubscribed: true,
                 isLegacy: true,
               };
+              // Cache the synthetic override so Phase 1 picks it up
+              // on subsequent effect runs (e.g. when auth resolves and
+              // userId changes, triggering a re-run).
+              await cacheSubscriptionStatus(fresh);
             }
 
             if (!cancelled) {
