@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Stack, useRouter } from "expo-router";
 import { useFonts } from "expo-font";
 import {
@@ -19,14 +19,19 @@ import {
 import { fallbackColors } from "../constants/theme";
 import { SettingsProvider } from "../hooks/useSettings";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
-import { SubscriptionProvider } from "../contexts/SubscriptionContext";
+import { SubscriptionProvider, useSubscriptionContext } from "../contexts/SubscriptionContext";
 import { usePostAuthMigration } from "../hooks/usePostAuthMigration";
-import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform } from "react-native";
+import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform, AppState, AppStateStatus } from "react-native";
 import * as Notifications from "expo-notifications";
 import * as Updates from "expo-updates";
 import { installGlobalErrorHandler } from "../utils/errorLogger";
 import { initMixpanel } from "../lib/mixpanel";
 import { qaLog } from "../utils/qaLog";
+import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
+import { TrialEndedModal } from "../components/TrialEndedModal";
+import { hasSeenTrialEndedModal, markTrialEndedModalSeen } from "../utils/trialTimer";
+import { LifetimeWelcomeModal } from "../components/LifetimeWelcomeModal";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 console.log("[STARTUP] _layout.tsx module loading...");
 console.log("[STARTUP] Platform:", Platform.OS, Platform.Version);
@@ -203,6 +208,8 @@ export default function RootLayout() {
       <AuthProvider>
           <SubscriptionProvider>
             <PostAuthMigrationRunner>
+              <TrialExpiryPresenter />
+              <LifetimeWelcomePresenter />
               {updateReady && (
                 <View style={styles.updateBanner}>
                   <Text style={styles.updateText}>
@@ -250,6 +257,87 @@ export default function RootLayout() {
 function PostAuthMigrationRunner({ children }: { children: React.ReactNode }) {
   usePostAuthMigration();
   return <>{children}</>;
+}
+
+function TrialExpiryPresenter() {
+  const { status, trialStatus, refresh } = useSubscriptionContext();
+  const [visible, setVisible] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+
+  const checkAndShow = async () => {
+    if (checking) return;
+    setChecking(true);
+    try {
+      if (status.isSubscribed || status.isLegacy || !trialStatus.trialExpired) return;
+      const seen = await hasSeenTrialEndedModal();
+      if (!seen) setVisible(true);
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  useEffect(() => {
+    checkAndShow();
+  }, [status.isSubscribed, status.isLegacy, trialStatus.trialExpired]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (appStateRef.current.match(/inactive|background/) && nextState === "active") {
+        checkAndShow();
+      }
+      appStateRef.current = nextState;
+    });
+    return () => subscription.remove();
+  }, [status.isSubscribed, status.isLegacy, trialStatus.trialExpired]);
+
+  return (
+    <TrialEndedModal
+      visible={visible}
+      onNotNow={async () => {
+        await markTrialEndedModalSeen();
+        setVisible(false);
+      }}
+      onSubscribeNow={async () => {
+        try {
+          const result = await RevenueCatUI.presentPaywall();
+          if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) {
+            await refresh();
+          }
+        } finally {
+          await markTrialEndedModalSeen();
+          setVisible(false);
+        }
+      }}
+    />
+  );
+}
+
+const LIFETIME_WELCOME_SEEN_KEY = "@daily_paths_lifetime_welcome_seen";
+
+function LifetimeWelcomePresenter() {
+  const { status } = useSubscriptionContext();
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      if (!status.isLegacy) return;
+      const seen = await AsyncStorage.getItem(LIFETIME_WELCOME_SEEN_KEY);
+      if (seen !== "true") {
+        setVisible(true);
+      }
+    })();
+  }, [status.isLegacy]);
+
+  return (
+    <LifetimeWelcomeModal
+      visible={visible}
+      onClose={async () => {
+        await AsyncStorage.setItem(LIFETIME_WELCOME_SEEN_KEY, "true");
+        setVisible(false);
+      }}
+    />
+  );
 }
 
 // Static styles without theme colors (colors applied inline based on theme)

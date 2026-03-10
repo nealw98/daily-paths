@@ -14,11 +14,15 @@ import { JournalEntryDetail } from "../../components/journal/JournalEntryDetail"
 import { JournalCategoryPicker } from "../../components/journal/JournalCategoryPicker";
 import { TealHeader } from "../../components/shared/TealHeader";
 import { PremiumGate } from "../../components/PremiumGate";
+import { SignInModal } from "../../components/SignInModal";
 import { fonts } from "../../constants/theme";
 import { getCategoryById, getCategoryLabel, type EntryType } from "../../constants/journalCategories";
 import { EntryTypeIcon } from "../../utils/entryTypeIcon";
 import { FourSquares } from "../../components/icons";
 import type { JournalEntry } from "../../hooks/useJournalEntries";
+import { useSubscription } from "../../hooks/useSubscription";
+import { useTrialStatus } from "../../hooks/useTrialStatus";
+import { getSaveRequirement } from "../../utils/accessControl";
 
 type JournalView = "timeline" | "editor" | "detail";
 
@@ -34,6 +38,8 @@ function JournalTabContent() {
   const { colors } = useTheme();
   const navigation = useNavigation();
   const { user, isAuthenticated } = useAuth();
+  const { status: subStatus } = useSubscription();
+  const trialStatus = useTrialStatus();
   const { trackNotebookOpened, trackEntryViewed } = useAnalytics();
   const {
     entries,
@@ -53,6 +59,12 @@ function JournalTabContent() {
   const [selectedEntryType, setSelectedEntryType] = useState<EntryType>("journal");
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
+  const [showSignIn, setShowSignIn] = useState(false);
+  const [pendingCreate, setPendingCreate] = useState<{
+    entryType: EntryType;
+    content: string | null;
+    structuredContent?: Record<string, any> | null;
+  } | null>(null);
 
   // Header title and icon reflect the active filter
   const headerTitle = categoryFilter === "all"
@@ -145,10 +157,24 @@ function JournalTabContent() {
       content: string | null,
       structuredContent?: Record<string, any> | null
     ) => {
+      const saveReq = getSaveRequirement(subStatus, trialStatus, isAuthenticated);
+      if (saveReq === "signin_required") {
+        setPendingCreate({ entryType, content, structuredContent });
+        Alert.alert(
+          "Sign In Required to Save",
+          "Saving requires an account. Sign in to save, or choose Not Now to keep editing.",
+          [
+            { text: "Not Now", style: "cancel" },
+            { text: "Sign In", onPress: () => setShowSignIn(true) },
+          ],
+        );
+        return;
+      }
+      if (saveReq === "blocked") return;
       await createEntry(entryType, content, structuredContent);
       setView("timeline");
     },
-    [createEntry]
+    [createEntry, subStatus, trialStatus, isAuthenticated]
   );
 
   const handleSaveEdit = useCallback(
@@ -210,11 +236,26 @@ function JournalTabContent() {
 
   if (view === "editor") {
     return (
-      <JournalEntryEditor
-        entryType={selectedEntryType}
-        onSave={handleSaveNew}
-        onCancel={handleBackToTimeline}
-      />
+      <>
+        <JournalEntryEditor
+          entryType={selectedEntryType}
+          onSave={handleSaveNew}
+          onCancel={handleBackToTimeline}
+        />
+        <SignInModal
+          visible={showSignIn}
+          dismissable
+          initialMode="signin"
+          onClose={async () => {
+            setShowSignIn(false);
+            if (!pendingCreate || !isAuthenticated) return;
+            const save = pendingCreate;
+            setPendingCreate(null);
+            await createEntry(save.entryType, save.content, save.structuredContent);
+            setView("timeline");
+          }}
+        />
+      </>
     );
   }
 
@@ -258,6 +299,19 @@ function JournalTabContent() {
         visible={showCategoryPicker}
         onSelect={handleCategorySelected}
         onClose={() => setShowCategoryPicker(false)}
+      />
+      <SignInModal
+        visible={showSignIn}
+        dismissable
+        initialMode="signin"
+        onClose={async () => {
+          setShowSignIn(false);
+          if (!pendingCreate || !isAuthenticated) return;
+          const save = pendingCreate;
+          setPendingCreate(null);
+          await createEntry(save.entryType, save.content, save.structuredContent);
+          setView("timeline");
+        }}
       />
     </SafeAreaView>
   );

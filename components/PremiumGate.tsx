@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useRef } from "react";
 import { router, useNavigation } from "expo-router";
 import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
+import { Alert } from "react-native";
+import { useIsFocused } from "@react-navigation/native";
 import { useSubscriptionContext } from "../contexts/SubscriptionContext";
-import { SignInModal } from "./SignInModal";
 import { useAnalytics } from "../utils/analytics";
 import { qaLog } from "../utils/qaLog";
 
@@ -10,7 +11,7 @@ import { qaLog } from "../utils/qaLog";
  * Per-tab access gate for premium features (Journal, Prayers, Speakers).
  *
  * Children always render immediately (hooks execute, content visible).
- * If the user lacks access, PaywallModal or SignInModal overlays on top.
+ * If the user lacks entitlement, the RevenueCat paywall overlays on top.
  * This matches the Today tab's instant-render behavior.
  */
 
@@ -20,10 +21,10 @@ interface PremiumGateProps {
 
 export const PremiumGate: React.FC<PremiumGateProps> = ({ children }) => {
   const navigation = useNavigation();
+  const isFocused = useIsFocused();
   const { gate, refresh: refreshSub } = useSubscriptionContext();
   const { trackPaywallShown, trackPaywallDismissed } = useAnalytics();
 
-  const [purchaseCompleted, setPurchaseCompleted] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const presentingPaywall = useRef(false);
 
@@ -37,7 +38,7 @@ export const PremiumGate: React.FC<PremiumGateProps> = ({ children }) => {
 
   // Present RevenueCat's native paywall when gate requires it
   useEffect(() => {
-    if (gate !== "paywall" || purchaseCompleted || dismissed || presentingPaywall.current) return;
+    if (gate !== "paywall" || !isFocused || dismissed || presentingPaywall.current) return;
 
     presentingPaywall.current = true;
     trackPaywallShown();
@@ -49,8 +50,7 @@ export const PremiumGate: React.FC<PremiumGateProps> = ({ children }) => {
         qaLog("paywall", "Paywall result", { result });
 
         if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) {
-          refreshSub();
-          setPurchaseCompleted(true);
+          await refreshSub();
         } else {
           trackPaywallDismissed();
           setDismissed(true);
@@ -58,33 +58,21 @@ export const PremiumGate: React.FC<PremiumGateProps> = ({ children }) => {
         }
       } catch (err) {
         qaLog("paywall", "Paywall error", { error: String(err) });
+        Alert.alert(
+          "Unable to Load Subscription",
+          "The subscription page couldn't be loaded. Please try again.",
+        );
         setDismissed(true);
         setTimeout(() => router.navigate("/(tabs)/today"), 50);
       } finally {
         presentingPaywall.current = false;
       }
     })();
-  }, [gate, purchaseCompleted, dismissed, trackPaywallShown, trackPaywallDismissed, refreshSub]);
+  }, [gate, isFocused, dismissed, trackPaywallShown, trackPaywallDismissed, refreshSub]);
 
   return (
     <>
       {children}
-
-      {(gate === "signin" || purchaseCompleted) && !dismissed && (
-        <SignInModal
-          visible
-          dismissable
-          initialMode={gate === "signin" ? "signin" : undefined}
-          onClose={() => {
-            setPurchaseCompleted(false);
-            refreshSub();
-            if (gate === "signin") {
-              setDismissed(true);
-              setTimeout(() => router.navigate("/(tabs)/today"), 50);
-            }
-          }}
-        />
-      )}
     </>
   );
 };

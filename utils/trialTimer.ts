@@ -13,6 +13,7 @@ import { ANALYTICS_EVENTS } from "./analytics";
 
 const TRIAL_START_KEY = "@daily_paths_trial_start";
 const TRIAL_ENDED_TRACKED_KEY = "@daily_paths_trial_ended_tracked";
+const TRIAL_ENDED_MODAL_SEEN_KEY = "@daily_paths_trial_ended_modal_seen";
 const TRIAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 export interface TrialStatus {
@@ -124,4 +125,21 @@ export async function expireTrial(): Promise<void> {
     Date.now() - TRIAL_DURATION_MS - 24 * 60 * 60 * 1000,
   );
   await AsyncStorage.setItem(TRIAL_START_KEY, expired.toISOString());
+}
+
+export async function hasSeenTrialEndedModal(): Promise<boolean> {
+  try {
+    const val = await AsyncStorage.getItem(TRIAL_ENDED_MODAL_SEEN_KEY);
+    return val === "true";
+  } catch {
+    return false;
+  }
+}
+
+export async function markTrialEndedModalSeen(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(TRIAL_ENDED_MODAL_SEEN_KEY, "true");
+  } catch {
+    // Non-critical
+  }
 }

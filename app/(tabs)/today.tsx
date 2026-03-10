@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   AppState,
   AppStateStatus,
+  Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -20,7 +21,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useJournalEntries } from "../../hooks/useJournalEntries";
 import { useTrialStatus } from "../../hooks/useTrialStatus";
 import { useSubscription } from "../../hooks/useSubscription";
-import { getRequiredGate } from "../../utils/accessControl";
+import { getRequiredGate, getSaveRequirement } from "../../utils/accessControl";
 import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
 import { SignInModal } from "../../components/SignInModal";
 import { DatePickerModal } from "../../components/DatePickerModal";
@@ -78,6 +79,11 @@ export default function Index() {
   const [journalEntryType, setJournalEntryType] = useState<EntryType | null>(null);
   const [presentingPaywall, setPresentingPaywall] = useState(false);
   const [showSignIn, setShowSignIn] = useState(false);
+  const [pendingSave, setPendingSave] = useState<{
+    entryType: EntryType;
+    content: string | null;
+    structuredContent?: Record<string, any> | null;
+  } | null>(null);
   console.log("[STARTUP-INDEX] State initialized");
 
   // Journal entry creation from Today page
@@ -87,6 +93,29 @@ export default function Index() {
   // Paywall gating for the journal FAB
   const trialStatus = useTrialStatus();
   const { status: subStatus, refresh: refreshSub } = useSubscription();
+
+  const trySaveEntry = async (
+    entryType: EntryType,
+    content: string | null,
+    structuredContent?: Record<string, any> | null,
+  ): Promise<boolean> => {
+    const saveReq = getSaveRequirement(subStatus, trialStatus, isAuthed);
+    if (saveReq === "signin_required") {
+      setPendingSave({ entryType, content, structuredContent });
+      Alert.alert(
+        "Sign In Required to Save",
+        "Saving requires an account. Sign in to save, or choose Not Now to keep editing.",
+        [
+          { text: "Not Now", style: "cancel" },
+          { text: "Sign In", onPress: () => setShowSignIn(true) },
+        ],
+      );
+      return false;
+    }
+    if (saveReq === "blocked") return false;
+    await createEntry(entryType, content, structuredContent);
+    return true;
+  };
   
   // Analytics
   const { trackAppOpened, startReadingView, trackReadingFavorited, trackReadingUnfavorited, updateThemeMode } = useAnalytics();
@@ -421,14 +450,32 @@ export default function Index() {
   // If user picked a journal type, show the editor full-screen
   if (journalEntryType) {
     return (
-      <JournalEntryEditor
-        entryType={journalEntryType}
-        onSave={async (entryType, content, structuredContent) => {
-          await createEntry(entryType, content, structuredContent);
-          setJournalEntryType(null);
-        }}
-        onCancel={() => setJournalEntryType(null)}
-      />
+      <>
+        <JournalEntryEditor
+          entryType={journalEntryType}
+          onSave={async (entryType, content, structuredContent) => {
+            const saved = await trySaveEntry(entryType, content, structuredContent);
+            if (saved) setJournalEntryType(null);
+          }}
+          onCancel={() => setJournalEntryType(null)}
+        />
+        <SignInModal
+          visible={showSignIn}
+          dismissable
+          initialMode="signin"
+          onClose={() => {
+            setShowSignIn(false);
+            refreshSub();
+            if (pendingSave && isAuthed) {
+              const save = pendingSave;
+              setPendingSave(null);
+              trySaveEntry(save.entryType, save.content, save.structuredContent).then((saved) => {
+                if (saved) setJournalEntryType(null);
+              });
+            }
+          }}
+        />
+      </>
     );
   }
 
@@ -454,12 +501,14 @@ export default function Index() {
                 }
               } catch (err) {
                 qaLog("paywall", "FAB paywall error", { error: String(err) });
+                Alert.alert(
+                  "Unable to Load Subscription",
+                  "The subscription page couldn't be loaded. Please try again.",
+                );
               } finally {
                 setPresentingPaywall(false);
               }
               return;
-            } else if (gate === "signin") {
-              setShowSignIn(true);
             } else {
               setShowJournalPicker(true);
             }
@@ -513,6 +562,13 @@ export default function Index() {
         onClose={() => {
           setShowSignIn(false);
           refreshSub();
+          if (pendingSave && isAuthed) {
+            const save = pendingSave;
+            setPendingSave(null);
+            trySaveEntry(save.entryType, save.content, save.structuredContent).then((saved) => {
+              if (saved) setJournalEntryType(null);
+            });
+          }
         }}
       />
     </>

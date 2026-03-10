@@ -120,14 +120,15 @@ export default function MoreTab() {
 
   // Revert to default theme and hide premium colors when subscription lapses
   useEffect(() => {
-    if (!status.isSubscribed) {
+    const hasPaidEntitlement = status.isSubscribed || status.isLegacy;
+    if (!hasPaidEntitlement) {
       setShowExtendedThemes(false);
       if (EXTENDED_THEME_OPTIONS.some((t) => t.id === settings.themeId)) {
         setThemeId("ocean-light");
         updateThemeMode("light");
       }
     }
-  }, [status.isSubscribed]);
+  }, [status.isSubscribed, status.isLegacy, settings.themeId]);
 
   const expoConfig: any = Constants.expoConfig ?? {};
   const appVersion =
@@ -247,7 +248,7 @@ export default function MoreTab() {
       const wasLegacy = status.isLegacy || isLegacy;
 
       await deleteAccountNow();
-      await cleanupAfterDeletion();
+      await cleanupAfterDeletion({ revokeLifetime: wasLegacy });
 
       setShowDeleteModal(false);
       const message = wasLegacy
@@ -365,8 +366,12 @@ export default function MoreTab() {
                   },
                 });
                 await refresh();
-              } catch {
-                // Customer Center failed to present
+              } catch (err) {
+                qaLog("subscription", "Customer Center failed to open", { error: String(err) });
+                Alert.alert(
+                  "Unable to Open Subscription Management",
+                  "Please try again in a moment.",
+                );
               }
             }}
             activeOpacity={0.8}
@@ -450,7 +455,16 @@ export default function MoreTab() {
           {/* Theme row */}
           <TouchableOpacity
             activeOpacity={0.7}
-            onLongPress={() => setShowExtendedThemes(true)}
+            onLongPress={() => {
+              if (status.isSubscribed || status.isLegacy) {
+                setShowExtendedThemes(true);
+                return;
+              }
+              Alert.alert(
+                "Premium Themes",
+                "Premium color themes are available to active subscribers and lifetime users.",
+              );
+            }}
             delayLongPress={600}
           >
             <Text style={[styles.cardLabel, { color: colors.deepTeal }]}>Theme</Text>

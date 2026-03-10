@@ -96,6 +96,13 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
                 checks, nightly reviews, preferences, and prayer notes.
               </Text>
 
+              {!isLifetime && (
+                <Text style={[styles.warning, { color: colors.textSecondary }]}>
+                  Your App Store/Google Play subscription will continue charging until you cancel it
+                  in the store.
+                </Text>
+              )}
+
               {isLifetime && (
                 <Text style={[styles.lifetimeWarning, { color: colors.danger }]}>
                   You will also forfeit your lifetime membership. This cannot be restored.

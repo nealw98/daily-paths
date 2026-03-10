@@ -1,5 +1,7 @@
 import { useJournalEntries } from "./useJournalEntries";
 import { useLocalJournalEntries } from "./useLocalJournalEntries";
+import { useSubscriptionContext } from "../contexts/SubscriptionContext";
+import { getSaveRequirement } from "../utils/accessControl";
 
 /**
  * Unified journal storage hook that delegates to either Supabase or
@@ -17,10 +19,23 @@ export function useJournalStorage(
   // Always call both hooks unconditionally
   const supabaseHook = useJournalEntries(userId);
   const localHook = useLocalJournalEntries();
+  const { status, trialStatus } = useSubscriptionContext();
+  const saveRequirement = getSaveRequirement(status, trialStatus, isAuthenticated);
 
-  // Authenticated users get cloud storage; trial users get local storage
-  if (isAuthenticated && userId) {
+  if (saveRequirement === "cloud" && isAuthenticated && userId) {
     return supabaseHook;
   }
-  return localHook;
+  if (saveRequirement === "local") return localHook;
+
+  // Entitled-but-signed-out users should not see or write local data.
+  return {
+    entries: [],
+    loading: false,
+    error: null,
+    createEntry: async () => null,
+    updateEntry: async () => null,
+    deleteEntry: async () => false,
+    searchEntries: async () => [],
+    refreshEntries: async () => {},
+  };
 }

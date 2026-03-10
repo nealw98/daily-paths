@@ -8,6 +8,7 @@ import {
   StyleSheet,
   FlatList,
   RefreshControl,
+  ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -446,19 +447,30 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
 
   const ListEmpty = () => (
     <View style={styles.emptyContainer}>
-      <Ionicons
-        name="create-outline"
-        size={48}
-        color={colors.textSecondary + "60"}
-      />
-      <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>
-        No entries yet
-      </Text>
-      <Text
-        style={[styles.emptySubtitle, { color: colors.textSecondary + "80" }]}
-      >
-        Start writing to capture your thoughts and reflections.
-      </Text>
+      {loading ? (
+        <>
+          <ActivityIndicator size="small" color={colors.accent} />
+          <Text style={[styles.emptySubtitle, { color: colors.textSecondary + "80", marginTop: 12 }]}>
+            Loading entries...
+          </Text>
+        </>
+      ) : (
+        <>
+          <Ionicons
+            name="create-outline"
+            size={48}
+            color={colors.textSecondary + "60"}
+          />
+          <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>
+            No entries yet
+          </Text>
+          <Text
+            style={[styles.emptySubtitle, { color: colors.textSecondary + "80" }]}
+          >
+            Start writing to capture your thoughts and reflections.
+          </Text>
+        </>
+      )}
     </View>
   );
 
@@ -471,7 +483,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         ListHeaderComponent={ListHeader}
-        ListEmptyComponent={!loading ? ListEmpty : null}
+        ListEmptyComponent={ListEmpty}
         contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl

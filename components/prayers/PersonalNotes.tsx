@@ -14,6 +14,11 @@ import { useLocalPrayerNotes } from "../../hooks/useLocalPrayerNotes";
 import { fonts } from "../../constants/theme";
 import { supabase } from "../../lib/supabase";
 import { qaLog } from "../../utils/qaLog";
+import { useSubscription } from "../../hooks/useSubscription";
+import { useTrialStatus } from "../../hooks/useTrialStatus";
+import { getSaveRequirement } from "../../utils/accessControl";
+import { useAuth } from "../../contexts/AuthContext";
+import { SignInModal } from "../SignInModal";
 
 interface PersonalNotesProps {
   userId: string | null;
@@ -31,6 +36,10 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId, onInputFoc
   const { colors } = useTheme();
   const { settings } = useSettings();
   const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
+  const { status: subStatus } = useSubscription();
+  const trialStatus = useTrialStatus();
+  const { isAuthenticated } = useAuth();
+  const saveReq = getSaveRequirement(subStatus, trialStatus, isAuthenticated);
 
   // Local storage hook — always called (Rules of Hooks)
   const localNotes = useLocalPrayerNotes();
@@ -40,6 +49,8 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId, onInputFoc
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showSignIn, setShowSignIn] = useState(false);
+  const [pendingSave, setPendingSave] = useState(false);
   const inputRef = useRef<TextInput>(null);
 
   // ── Load notes from appropriate source ─────────────────────────────
@@ -65,21 +76,40 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId, onInputFoc
         }
       };
       loadFromSupabase();
-    } else {
+    } else if (saveReq === "local") {
       // Trial / anonymous: load from local storage
       if (!localNotes.loading) {
         setContent(localNotes.content);
         setSavedContent(localNotes.content);
         setLoading(false);
       }
+    } else {
+      // Entitled but signed out: no saved data is visible without an account.
+      setContent("");
+      setSavedContent("");
+      setLoading(false);
     }
-  }, [userId, localNotes.loading, localNotes.content]);
+  }, [userId, localNotes.loading, localNotes.content, saveReq]);
 
   // ── Save to appropriate storage ────────────────────────────────────
   const handleSave = useCallback(async () => {
     setSaving(true);
     try {
-      if (userId) {
+      if (saveReq === "signin_required") {
+        setPendingSave(true);
+        Alert.alert(
+          "Sign In Required to Save",
+          "Saving requires an account. Sign in to save your prayer notes, or choose Not Now to keep editing.",
+          [
+            { text: "Not Now", style: "cancel" },
+            { text: "Sign In", onPress: () => setShowSignIn(true) },
+          ],
+        );
+        return;
+      }
+      if (saveReq === "blocked") return;
+
+      if (saveReq === "cloud" && userId) {
         // Authenticated: save to Supabase
         const { error } = await supabase.from("prayer_notes").upsert(
           {
@@ -94,7 +124,7 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId, onInputFoc
           qaLog("prayers", "Error saving prayer notes", { error: error.message });
           return;
         }
-      } else {
+      } else if (saveReq === "local") {
         // Trial / anonymous: save to AsyncStorage
         const success = await localNotes.saveContent(content);
         if (!success) {
@@ -111,7 +141,7 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId, onInputFoc
     } finally {
       setSaving(false);
     }
-  }, [userId, content, localNotes]);
+  }, [userId, content, localNotes, subStatus, trialStatus, isAuthenticated]);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -138,7 +168,11 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId, onInputFoc
         )}
       </View>
 
-      {isEditing ? (
+      {loading && (
+        <Text style={[styles.placeholder, { color: colors.textSecondary }]}>Loading notes...</Text>
+      )}
+
+      {!loading && isEditing ? (
         <>
           <TextInput
             ref={inputRef}
@@ -180,7 +214,7 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId, onInputFoc
             </TouchableOpacity>
           </View>
         </>
-      ) : (
+      ) : !loading ? (
         <TouchableOpacity onPress={handleEdit} activeOpacity={0.7}>
           {content.trim() ? (
             <Text style={[styles.noteContent, { color: colors.ink, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight }]}>
@@ -192,7 +226,19 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId, onInputFoc
             </Text>
           )}
         </TouchableOpacity>
-      )}
+      ) : null}
+      <SignInModal
+        visible={showSignIn}
+        dismissable
+        initialMode="signin"
+        onClose={() => {
+          setShowSignIn(false);
+          if (pendingSave && isAuthenticated) {
+            setPendingSave(false);
+            handleSave();
+          }
+        }}
+      />
     </View>
   );
 };

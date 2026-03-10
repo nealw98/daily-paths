@@ -28,6 +28,7 @@ import {
   getTrialStatus,
   expireTrial,
   resetTrial,
+  markTrialEndedModalSeen,
   type TrialStatus,
 } from "../utils/trialTimer";
 import { getRequiredGate, type GateType } from "../utils/accessControl";
@@ -53,7 +54,7 @@ interface SubscriptionContextValue {
   restore: () => Promise<boolean>;
   refresh: () => Promise<void>;
   logout: () => Promise<void>;
-  cleanupAfterDeletion: () => Promise<void>;
+  cleanupAfterDeletion: (options?: { revokeLifetime?: boolean }) => Promise<void>;
 }
 
 const DEFAULT_STATUS: SubscriptionStatus = {
@@ -333,6 +334,18 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
   const refresh = useCallback(async () => {
     try {
       const newStatus = await getSubscriptionStatus();
+      // If RC doesn't report legacy but the cache (from receipt-based
+      // detection in the init effect) does, preserve the cached legacy
+      // override.  This prevents callers (PremiumGate onClose,
+      // usePostAuthMigration) from overwriting synthetic legacy status
+      // after a user-identity switch in RevenueCat.
+      if (!newStatus.isLegacy) {
+        const cached = await getCachedSubscriptionStatus();
+        if (cached?.isLegacy) {
+          qaLog("subscription", "Refresh: preserving cached legacy status");
+          return;
+        }
+      }
       setStatus(newStatus);
     } catch (err) {
       qaLog("subscription", "Refresh error", { error: String(err) });
@@ -353,22 +366,32 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
    *     re-detect the user as legacy on the next launch
    *  4. Clears the subscription cache to prevent stale state
    */
-  const cleanupAfterDeletion = useCallback(async () => {
+  const cleanupAfterDeletion = useCallback(async (options?: { revokeLifetime?: boolean }) => {
+    const revokeLifetime = options?.revokeLifetime === true;
+
+    // Clear app-user identity in RC after account deletion.
     await logoutRevenueCat();
-    setStatus(DEFAULT_STATUS);
 
-    // Expire the local trial so the paywall appears immediately
-    await expireTrial();
-    const freshTrial = await getTrialStatus();
-    setTrial(freshTrial);
+    if (revokeLifetime) {
+      setStatus(DEFAULT_STATUS);
+      await expireTrial();
+      await markTrialEndedModalSeen();
+      const freshTrial = await getTrialStatus();
+      setTrial(freshTrial);
+      await markLifetimeRevoked();
+      await clearSubscriptionCache();
+      qaLog("subscription", "Account deletion cleanup complete (lifetime revoked)");
+      return;
+    }
 
-    // Prevent the permanent Apple receipt from re-granting lifetime access
-    await markLifetimeRevoked();
-
-    // Clear cached subscription status
-    await clearSubscriptionCache();
-
-    qaLog("subscription", "Account deletion cleanup complete");
+    // For active subscribers, preserve entitlement state after account deletion.
+    // They should retain premium content access but be required to sign in to save.
+    const fresh = await getSubscriptionStatus();
+    setStatus(fresh);
+    qaLog("subscription", "Account deletion cleanup complete (subscription preserved)", {
+      isSubscribed: fresh.isSubscribed,
+      isLegacy: fresh.isLegacy,
+    });
   }, []);
 
   // ── Context value ──────────────────────────────────────────────────────

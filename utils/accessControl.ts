@@ -10,7 +10,7 @@ import type { TrialStatus } from "./trialTimer";
 
 // ─── Gate type ───────────────────────────────────────────────────────────────
 
-export type GateType = "none" | "paywall" | "signin";
+export type GateType = "none" | "paywall";
 
 /**
  * Determine which gate (if any) should block a premium tab.
@@ -28,47 +28,40 @@ export type GateType = "none" | "paywall" | "signin";
 export function getRequiredGate(
   subscription: SubscriptionStatus,
   trial: TrialStatus,
-  isAuthenticated: boolean,
+  _isAuthenticated: boolean,
 ): GateType {
-  // User has a subscription or legacy lifetime access AND is signed in.
-  if ((subscription.isSubscribed || subscription.isLegacy) && isAuthenticated) {
-    return "none";
-  }
+  // Content access is entitlement-driven and independent from auth state.
+  // Account/sign-in is only required when attempting to save.
+  if (subscription.isSubscribed || subscription.isLegacy) return "none";
 
-  // Device has an entitlement (paid or legacy) but the user isn't signed in.
-  // They need to sign in so we can load their cloud data.
-  if (subscription.isSubscribed || subscription.isLegacy) {
-    return "signin";
-  }
-
-  // During the local 7-day trial, everything is unlocked — no gate needed.
+  // During the local 7-day trial, premium content is unlocked.
   if (trial.isInTrial) return "none";
 
   // Trial expired and no entitlement — show the paywall.
   return "paywall";
 }
 
-// ─── Legacy helpers (kept for backward compat during transition) ─────────────
+export type SaveRequirement = "local" | "cloud" | "signin_required" | "blocked";
 
 /**
- * Check whether the user has an active entitlement (subscription or legacy).
- * Does NOT consider the local trial — use `getRequiredGate` for full logic.
+ * Determine where save operations should write for the current state.
+ *
+ * Rules:
+ * - Trial + signed-out -> local storage
+ * - Entitled + signed-in -> cloud storage
+ * - Entitled + signed-out -> sign-in required (save prompt flow)
+ * - No entitlement -> blocked before save
  */
-export function canAccessUnlimitedFeatures(
+export function getSaveRequirement(
   subscription: SubscriptionStatus,
-): boolean {
-  if (subscription.isLegacy) return true;
-  if (subscription.isSubscribed) return true;
-  return false;
-}
-
-/**
- * Inverse of `canAccessUnlimitedFeatures`.
- */
-export function shouldShowPaywall(
-  subscription: SubscriptionStatus,
-): boolean {
-  return !canAccessUnlimitedFeatures(subscription);
+  trial: TrialStatus,
+  isAuthenticated: boolean,
+): SaveRequirement {
+  if (subscription.isSubscribed || subscription.isLegacy) {
+    return isAuthenticated ? "cloud" : "signin_required";
+  }
+  if (trial.isInTrial) return "local";
+  return "blocked";
 }
 
 // ─── Download access ─────────────────────────────────────────────────────────
@@ -91,25 +84,3 @@ export function canDownloadSpeakers(
   return true;
 }
 
-// ─── Status messages ─────────────────────────────────────────────────────────
-
-/**
- * User-friendly description of the current access level.
- */
-export function getAccessStatusMessage(
-  subscription: SubscriptionStatus,
-  trial?: TrialStatus,
-): string {
-  if (subscription.isLegacy) {
-    return "Lifetime Access";
-  }
-  if (subscription.isSubscribed) {
-    return "Premium Subscriber";
-  }
-  if (trial?.isInTrial) {
-    const d = trial.daysRemaining;
-    if (d <= 1) return "Free access expires today";
-    return `${d} days of free access remaining`;
-  }
-  return "Free";
-}
