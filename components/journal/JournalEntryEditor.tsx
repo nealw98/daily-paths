@@ -126,6 +126,20 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
   // ─── Save Handler ──────────────────────────────────────
 
   const handleSave = async () => {
+    const withTimeout = async <T,>(promise: Promise<T>, ms: number): Promise<T> => {
+      let timer: ReturnType<typeof setTimeout> | null = null;
+      try {
+        return await Promise.race([
+          promise,
+          new Promise<T>((_, reject) => {
+            timer = setTimeout(() => reject(new Error("Save timed out")), ms);
+          }),
+        ]);
+      } finally {
+        if (timer) clearTimeout(timer);
+      }
+    };
+
     if (!hasContent) {
       Alert.alert(
         "Nothing to save",
@@ -140,7 +154,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
     try {
       switch (editorType) {
         case "text": {
-          await onSave(entryType, content.trim(), null);
+          await withTimeout(onSave(entryType, content.trim(), null), 15000);
           break;
         }
         case "items": {
@@ -148,7 +162,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
             .map((i) => i.trim())
             .filter(Boolean);
           const searchableContent = filledItems.join(" • ");
-          await onSave(entryType, searchableContent, { items: filledItems });
+          await withTimeout(onSave(entryType, searchableContent, { items: filledItems }), 15000);
           break;
         }
         case "guided": {
@@ -158,12 +172,12 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
           }
           // Build searchable content from non-empty responses
           const searchableContent = Object.values(filledResponses).join("\n\n");
-          await onSave(entryType, searchableContent, filledResponses);
+          await withTimeout(onSave(entryType, searchableContent, filledResponses), 15000);
           break;
         }
       }
     } catch (err) {
-      Alert.alert("Error", "Failed to save your entry. Please try again.");
+      Alert.alert("Error", "Saving took too long or failed. Please try again.");
     } finally {
       setSaving(false);
     }

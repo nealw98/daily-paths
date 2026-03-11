@@ -390,15 +390,14 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
 
-    // For active subscribers, preserve entitlement state after account deletion.
-    // They should retain premium content access but be required to sign in to save.
-    const fresh = await getSubscriptionStatus();
-    setStatus(fresh);
+    // For active subscribers, preserve the in-memory entitlement state after
+    // account deletion. Avoid an immediate RC network fetch here; if that call
+    // stalls, the delete modal can appear to hang.
     qaLog("subscription", "Account deletion cleanup complete (subscription preserved)", {
-      isSubscribed: fresh.isSubscribed,
-      isLegacy: fresh.isLegacy,
+      isSubscribed: status.isSubscribed,
+      isLegacy: status.isLegacy,
     });
-  }, []);
+  }, [status.isSubscribed, status.isLegacy]);
 
   // ── Context value ──────────────────────────────────────────────────────
   const trialStatusValue = useMemo<TrialStatusWithMeta>(

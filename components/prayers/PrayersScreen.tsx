@@ -44,7 +44,7 @@ export const PrayersScreen: React.FC<PrayersScreenProps> = ({
       const isBold = boldPhrases.some(p => p.toLowerCase() === part.toLowerCase());
       if (isBold) {
         return (
-          <Text key={i} style={{ fontFamily: fonts.loraBold, fontWeight: "700" }}>
+          <Text key={i} style={{ fontFamily: "Inter_700Bold", fontWeight: "700" }}>
             {part}
           </Text>
         );
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   prayerText: {
-    fontFamily: fonts.loraRegular,
+    fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
     lineHeight: 26,
   },

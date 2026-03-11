@@ -43,6 +43,16 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
   const { settings } = useSettings();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("newest");
+  const [refreshing, setRefreshing] = useState(false);
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.resolve(onRefresh());
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
 
   // Scale factor: medium bodyFontSize (18) is the baseline (1.0)
   const textMetrics = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
@@ -271,8 +281,8 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
         keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
-            refreshing={loading}
-            onRefresh={onRefresh}
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
             tintColor={colors.accent}
           />
         }

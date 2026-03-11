@@ -93,6 +93,20 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId, onInputFoc
 
   // ── Save to appropriate storage ────────────────────────────────────
   const handleSave = useCallback(async () => {
+    const withTimeout = async <T,>(promise: Promise<T>, ms: number): Promise<T> => {
+      let timer: ReturnType<typeof setTimeout> | null = null;
+      try {
+        return await Promise.race([
+          promise,
+          new Promise<T>((_, reject) => {
+            timer = setTimeout(() => reject(new Error("Save timed out")), ms);
+          }),
+        ]);
+      } finally {
+        if (timer) clearTimeout(timer);
+      }
+    };
+
     setSaving(true);
     try {
       if (saveReq === "signin_required") {
@@ -111,12 +125,15 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId, onInputFoc
 
       if (saveReq === "cloud" && userId) {
         // Authenticated: save to Supabase
-        const { error } = await supabase.from("prayer_notes").upsert(
-          {
-            user_id: userId,
-            content: content.trim(),
-          },
-          { onConflict: "user_id" }
+        const { error } = await withTimeout(
+          supabase.from("prayer_notes").upsert(
+            {
+              user_id: userId,
+              content: content.trim(),
+            },
+            { onConflict: "user_id" }
+          ),
+          15000,
         );
 
         if (error) {
@@ -126,7 +143,7 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId, onInputFoc
         }
       } else if (saveReq === "local") {
         // Trial / anonymous: save to AsyncStorage
-        const success = await localNotes.saveContent(content);
+        const success = await withTimeout(localNotes.saveContent(content), 10000);
         if (!success) {
           Alert.alert("Error", "Failed to save your notes.");
           return;
@@ -137,11 +154,11 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId, onInputFoc
       setIsEditing(false);
       qaLog("prayers", "Prayer notes saved", { storage: userId ? "supabase" : "local" });
     } catch (err) {
-      Alert.alert("Error", "Something went wrong.");
+      Alert.alert("Error", "Saving took too long or failed. Please try again.");
     } finally {
       setSaving(false);
     }
-  }, [userId, content, localNotes, subStatus, trialStatus, isAuthenticated]);
+  }, [userId, content, localNotes, saveReq]);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -273,7 +290,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   input: {
-    fontFamily: fonts.loraRegular,
+    fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
     lineHeight: 24,
     minHeight: 120,
@@ -283,12 +300,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   noteContent: {
-    fontFamily: fonts.loraRegular,
+    fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
     lineHeight: 24,
   },
   placeholder: {
-    fontFamily: fonts.loraItalic,
+    fontFamily: fonts.bodyFamilyRegular,
     fontSize: 15,
     lineHeight: 22,
   },
