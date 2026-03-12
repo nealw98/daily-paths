@@ -10,15 +10,12 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
-import { useLocalPrayerNotes } from "../../hooks/useLocalPrayerNotes";
 import { fonts } from "../../constants/theme";
 import { supabase } from "../../lib/supabase";
 import { qaLog } from "../../utils/qaLog";
-import { useSubscription } from "../../hooks/useSubscription";
-import { useTrialStatus } from "../../hooks/useTrialStatus";
-import { getSaveRequirement } from "../../utils/accessControl";
 import { useAuth } from "../../contexts/AuthContext";
 import { SignInModal } from "../SignInModal";
+import { requiresSignInForCloudWrite } from "../../utils/accessControl";
 
 interface PersonalNotesProps {
   userId: string | null;
@@ -26,23 +23,15 @@ interface PersonalNotesProps {
 }
 
 /**
- * Personal prayer notes component with dual storage support.
- *
- * When `userId` is null (during the free trial), notes are saved to
- * AsyncStorage via `useLocalPrayerNotes`.  When authenticated (`userId`
- * is present), notes are saved directly to Supabase.
+ * Personal prayer notes component backed by Supabase.
+ * Read/write requires account auth; signed-out users can still access the
+ * premium screen but must sign in to load/save cloud notes.
  */
 export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId, onInputFocus }) => {
   const { colors } = useTheme();
   const { settings } = useSettings();
   const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
-  const { status: subStatus } = useSubscription();
-  const trialStatus = useTrialStatus();
   const { isAuthenticated } = useAuth();
-  const saveReq = getSaveRequirement(subStatus, trialStatus, isAuthenticated);
-
-  // Local storage hook — always called (Rules of Hooks)
-  const localNotes = useLocalPrayerNotes();
 
   const [content, setContent] = useState("");
   const [savedContent, setSavedContent] = useState("");
@@ -76,24 +65,17 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId, onInputFoc
         }
       };
       loadFromSupabase();
-    } else if (saveReq === "local") {
-      // Trial / anonymous: load from local storage
-      if (!localNotes.loading) {
-        setContent(localNotes.content);
-        setSavedContent(localNotes.content);
-        setLoading(false);
-      }
     } else {
-      // Entitled but signed out: no saved data is visible without an account.
+      // Signed out: cloud notes are unavailable.
       setContent("");
       setSavedContent("");
       setLoading(false);
     }
-  }, [userId, localNotes.loading, localNotes.content, saveReq]);
+  }, [userId]);
 
   // ── Save to appropriate storage ────────────────────────────────────
   const handleSave = useCallback(async () => {
-    const withTimeout = async <T,>(promise: Promise<T>, ms: number): Promise<T> => {
+    const withTimeout = async <T,>(promise: PromiseLike<T>, ms: number): Promise<T> => {
       let timer: ReturnType<typeof setTimeout> | null = null;
       try {
         return await Promise.race([
@@ -109,7 +91,7 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId, onInputFoc
 
     setSaving(true);
     try {
-      if (saveReq === "signin_required") {
+      if (requiresSignInForCloudWrite(isAuthenticated, userId)) {
         setPendingSave(true);
         Alert.alert(
           "Sign In Required to Save",
@@ -121,44 +103,35 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId, onInputFoc
         );
         return;
       }
-      if (saveReq === "blocked") return;
+      if (!userId) return;
 
-      if (saveReq === "cloud" && userId) {
-        // Authenticated: save to Supabase
-        const { error } = await withTimeout(
-          supabase.from("prayer_notes").upsert(
-            {
-              user_id: userId,
-              content: content.trim(),
-            },
-            { onConflict: "user_id" }
-          ),
-          15000,
-        );
+      const response = await withTimeout(
+        supabase.from("prayer_notes").upsert(
+          {
+            user_id: userId,
+            content: content.trim(),
+          },
+          { onConflict: "user_id" }
+        ).then((result) => result),
+        15000,
+      );
+      const { error } = response;
 
-        if (error) {
-          Alert.alert("Error", "Failed to save your notes.");
-          qaLog("prayers", "Error saving prayer notes", { error: error.message });
-          return;
-        }
-      } else if (saveReq === "local") {
-        // Trial / anonymous: save to AsyncStorage
-        const success = await withTimeout(localNotes.saveContent(content), 10000);
-        if (!success) {
-          Alert.alert("Error", "Failed to save your notes.");
-          return;
-        }
+      if (error) {
+        Alert.alert("Error", "Failed to save your notes.");
+        qaLog("prayers", "Error saving prayer notes", { error: error.message });
+        return;
       }
 
       setSavedContent(content);
       setIsEditing(false);
-      qaLog("prayers", "Prayer notes saved", { storage: userId ? "supabase" : "local" });
+      qaLog("prayers", "Prayer notes saved", { storage: "supabase" });
     } catch (err) {
       Alert.alert("Error", "Saving took too long or failed. Please try again.");
     } finally {
       setSaving(false);
     }
-  }, [userId, content, localNotes, saveReq]);
+  }, [userId, content, isAuthenticated]);
 
   const handleEdit = () => {
     setIsEditing(true);

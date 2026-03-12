@@ -308,34 +308,7 @@ export default function MoreTab() {
         ) : (
           <TouchableOpacity
             style={[styles.accountBanner, { backgroundColor: colors.cloud, borderColor: colors.mist }]}
-            onPress={() => {
-              if (!status.isSubscribed && !status.isLegacy) {
-                Alert.alert(
-                  "Subscription Required",
-                  "Sign in is available for subscribers to sync data across devices.",
-                  [
-                    { text: "Not Now", style: "cancel" },
-                    {
-                      text: "Subscribe",
-                      onPress: async () => {
-                        try {
-                          const result = await RevenueCatUI.presentPaywall();
-                          await refresh();
-                        } catch (err) {
-                          qaLog("paywall", "Settings subscribe paywall error", { error: String(err) });
-                          Alert.alert(
-                            "Unable to Load",
-                            "The subscription page couldn't be loaded. Please try again later.",
-                          );
-                        }
-                      },
-                    },
-                  ],
-                );
-              } else {
-                setShowSignIn(true);
-              }
-            }}
+            onPress={() => setShowSignIn(true)}
             activeOpacity={0.8}
           >
             <View style={[styles.avatar, { backgroundColor: colors.accent }]}>
@@ -686,7 +659,7 @@ export default function MoreTab() {
                 Support
               </Text>
             </TouchableOpacity>
-            {isAuthenticated && (status.isSubscribed || status.isLegacy) && (
+            {isAuthenticated && (
               <>
                 <Text style={[styles.legalDot, { color: colors.textSecondary }]}>·</Text>
                 <TouchableOpacity

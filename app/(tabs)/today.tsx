@@ -21,7 +21,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useJournalEntries } from "../../hooks/useJournalEntries";
 import { useTrialStatus } from "../../hooks/useTrialStatus";
 import { useSubscription } from "../../hooks/useSubscription";
-import { getRequiredGate, getSaveRequirement } from "../../utils/accessControl";
+import { getRequiredGate, requiresSignInForCloudWrite } from "../../utils/accessControl";
 import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
 import { SignInModal } from "../../components/SignInModal";
 import { DatePickerModal } from "../../components/DatePickerModal";
@@ -99,8 +99,7 @@ export default function Index() {
     content: string | null,
     structuredContent?: Record<string, any> | null,
   ): Promise<boolean> => {
-    const saveReq = getSaveRequirement(subStatus, trialStatus, isAuthed);
-    if (saveReq === "signin_required") {
+    if (requiresSignInForCloudWrite(isAuthed, user?.id)) {
       setPendingSave({ entryType, content, structuredContent });
       Alert.alert(
         "Sign In Required to Save",
@@ -112,7 +111,6 @@ export default function Index() {
       );
       return false;
     }
-    if (saveReq === "blocked") return false;
     await createEntry(entryType, content, structuredContent);
     return true;
   };
@@ -497,7 +495,7 @@ export default function Index() {
         <TouchableOpacity
           style={styles.fabTouchable}
           onPress={async () => {
-            const gate = getRequiredGate(subStatus, trialStatus, isAuthed);
+            const gate = getRequiredGate(subStatus, trialStatus);
             if (gate === "paywall") {
               if (presentingPaywall) return;
               setPresentingPaywall(true);

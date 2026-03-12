@@ -8,7 +8,7 @@ import { useAudioPlayer } from "../../hooks/useAudioPlayer";
 import { useAnalytics } from "../../utils/analytics";
 import { useFeatureTimeTracker } from "../../hooks/useFeatureTimeTracker";
 import { useSubscription } from "../../hooks/useSubscription";
-import { useAuth } from "../../contexts/AuthContext";
+import { useTrialStatus } from "../../hooks/useTrialStatus";
 import { useDownloadedSpeakerIds } from "../../hooks/useSpeakerDownload";
 import { canDownloadSpeakers } from "../../utils/accessControl";
 import { TealHeader } from "../../components/shared/TealHeader";
@@ -34,10 +34,10 @@ function SpeakersTabContent() {
   const { speakers, loading, error, refresh } = useSpeakers();
   const { trackSpeakerAudioCompleted } = useAnalytics();
   const { status: subscriptionStatus } = useSubscription();
-  const { isAuthenticated } = useAuth();
+  const trialStatus = useTrialStatus();
 
-  // Download access check
-  const canDownload = canDownloadSpeakers(subscriptionStatus, isAuthenticated);
+  // Download access is entitlement-driven.
+  const canDownload = canDownloadSpeakers(subscriptionStatus, trialStatus);
 
   // Track which speakers are downloaded (for browse screen badges)
   const { downloadedIds, refresh: refreshDownloads } = useDownloadedSpeakerIds();

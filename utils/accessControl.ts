@@ -13,6 +13,17 @@ import type { TrialStatus } from "./trialTimer";
 export type GateType = "none" | "paywall";
 
 /**
+ * Premium entitlement is independent from account authentication.
+ * Users are entitled when subscribed/lifetime, or while the local trial is active.
+ */
+export function hasPremiumEntitlement(
+  subscription: SubscriptionStatus,
+  trial: TrialStatus,
+): boolean {
+  return subscription.isSubscribed || subscription.isLegacy || trial.isInTrial;
+}
+
+/**
  * Determine which gate (if any) should block a premium tab.
  *
  * Priority:
@@ -28,59 +39,41 @@ export type GateType = "none" | "paywall";
 export function getRequiredGate(
   subscription: SubscriptionStatus,
   trial: TrialStatus,
-  _isAuthenticated: boolean,
 ): GateType {
-  // Content access is entitlement-driven and independent from auth state.
-  // Account/sign-in is only required when attempting to save.
-  if (subscription.isSubscribed || subscription.isLegacy) return "none";
-
-  // During the local 7-day trial, premium content is unlocked.
-  if (trial.isInTrial) return "none";
-
-  // Trial expired and no entitlement — show the paywall.
-  return "paywall";
+  return hasPremiumEntitlement(subscription, trial) ? "none" : "paywall";
 }
 
-export type SaveRequirement = "local" | "cloud" | "signin_required" | "blocked";
-
 /**
- * Determine where save operations should write for the current state.
- *
- * Rules:
- * - Trial + signed-out -> local storage
- * - Entitled + signed-in -> cloud storage
- * - Entitled + signed-out -> sign-in required (save prompt flow)
- * - No entitlement -> blocked before save
+ * Supabase cloud authorization is separate from entitlement.
+ * If account auth is missing, cloud read/write/delete must be blocked.
  */
-export function getSaveRequirement(
-  subscription: SubscriptionStatus,
-  trial: TrialStatus,
+export function canAccessCloudData(
   isAuthenticated: boolean,
-): SaveRequirement {
-  if (subscription.isSubscribed || subscription.isLegacy) {
-    return isAuthenticated ? "cloud" : "signin_required";
-  }
-  if (trial.isInTrial) return "local";
-  return "blocked";
+  userId?: string | null,
+): boolean {
+  return isAuthenticated && !!userId;
 }
 
-// ─── Download access ─────────────────────────────────────────────────────────
+/**
+ * Whether UI should show the standard sign-in prompt before attempting
+ * a cloud write/delete action.
+ */
+export function requiresSignInForCloudWrite(
+  isAuthenticated: boolean,
+  userId?: string | null,
+): boolean {
+  return !canAccessCloudData(isAuthenticated, userId);
+}
 
 /**
- * Check whether the user can download speaker recordings for offline use.
+ * Determine whether speaker downloads are allowed.
  *
- * Stricter than general premium access:
- *   - Requires (subscriber OR legacy) AND authenticated
- *   - Excludes free trial users (both local trial and RevenueCat trial)
- *   - Excludes signed-out users regardless of entitlement
+ * Download availability is entitlement-driven (same as premium access),
+ * not account-driven.
  */
 export function canDownloadSpeakers(
   subscription: SubscriptionStatus,
-  isAuthenticated: boolean,
+  trial: TrialStatus,
 ): boolean {
-  if (!isAuthenticated) return false;
-  if (!subscription.isSubscribed) return false;
-  if (subscription.isTrialing) return false;
-  return true;
+  return hasPremiumEntitlement(subscription, trial);
 }
-

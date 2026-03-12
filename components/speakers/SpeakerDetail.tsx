@@ -127,7 +127,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
   // ─── Render: Download Indicator (inline, top-right of player card) ───────
 
   const renderDownloadIndicator = () => {
-    // Trial/free users: don't render anything
+    // Users without premium entitlement don't see download controls.
     if (!canDownload) return null;
 
     if (download.downloadStatus === "downloading") {

@@ -20,9 +20,7 @@ import { getCategoryById, getCategoryLabel, type EntryType } from "../../constan
 import { EntryTypeIcon } from "../../utils/entryTypeIcon";
 import { FourSquares } from "../../components/icons";
 import type { JournalEntry } from "../../hooks/useJournalEntries";
-import { useSubscription } from "../../hooks/useSubscription";
-import { useTrialStatus } from "../../hooks/useTrialStatus";
-import { getSaveRequirement } from "../../utils/accessControl";
+import { requiresSignInForCloudWrite } from "../../utils/accessControl";
 
 type JournalView = "timeline" | "editor" | "detail";
 
@@ -38,8 +36,6 @@ function JournalTabContent() {
   const { colors } = useTheme();
   const navigation = useNavigation();
   const { user, isAuthenticated } = useAuth();
-  const { status: subStatus } = useSubscription();
-  const trialStatus = useTrialStatus();
   const { trackNotebookOpened, trackEntryViewed } = useAnalytics();
   const {
     entries,
@@ -166,8 +162,7 @@ function JournalTabContent() {
       content: string | null,
       structuredContent?: Record<string, any> | null
     ) => {
-      const saveReq = getSaveRequirement(subStatus, trialStatus, isAuthenticated);
-      if (saveReq === "signin_required") {
+      if (requiresSignInForCloudWrite(isAuthenticated, user?.id)) {
         setPendingCreate({ entryType, content, structuredContent });
         Alert.alert(
           "Sign In Required to Save",
@@ -179,11 +174,10 @@ function JournalTabContent() {
         );
         return;
       }
-      if (saveReq === "blocked") return;
       await createEntry(entryType, content, structuredContent);
       setView("timeline");
     },
-    [createEntry, subStatus, trialStatus, isAuthenticated]
+    [createEntry, isAuthenticated, user?.id]
   );
 
   const handleSaveEdit = useCallback(

@@ -86,7 +86,7 @@ const SubscriptionContext = createContext<SubscriptionContextValue | undefined>(
 export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const userId = user?.id ?? null;
 
   const [status, setStatus] = useState<SubscriptionStatus>(DEFAULT_STATUS);
@@ -284,8 +284,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
     if (!isRevenueCatInitialized()) {
       return trial.isInTrial ? "none" : "paywall";
     }
-    return getRequiredGate(status, trial, isAuthenticated);
-  }, [status, trial, isAuthenticated]);
+    return getRequiredGate(status, trial);
+  }, [status, trial]);
 
   // ── Actions ────────────────────────────────────────────────────────────
   const purchase = useCallback(
