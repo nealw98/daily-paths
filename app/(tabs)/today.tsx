@@ -84,6 +84,7 @@ export default function Index() {
     content: string | null;
     structuredContent?: Record<string, any> | null;
   } | null>(null);
+  const handledJumpTokenRef = useRef<string | null>(null);
   console.log("[STARTUP-INDEX] State initialized");
 
   // Journal entry creation from Today page
@@ -162,11 +163,17 @@ export default function Index() {
 
   // Handle navigation params (e.g., from notification tap) to jump to today.
   useEffect(() => {
-    if (params?.jump === "today") {
-      setCurrentDate(new Date());
-      // Clear params to avoid repeated resets.
-      router.setParams({ jump: undefined, ts: undefined });
-    }
+    if (params?.jump !== "today") return;
+
+    const token = params?.ts ?? "__no_ts__";
+    if (handledJumpTokenRef.current === token) return;
+    handledJumpTokenRef.current = token;
+
+    setCurrentDate(new Date());
+
+    // Best-effort clear. Even if router params don't clear immediately,
+    // handledJumpTokenRef prevents repeat resets that break date navigation.
+    router.setParams({ jump: undefined, ts: undefined });
   }, [params?.jump, params?.ts, router]);
 
   // Surface non-blocking errors only when we still have content onscreen.
@@ -224,8 +231,20 @@ export default function Index() {
 
   // Foreground = new session: when app returns to active, start a new reading view session for current reading
   useEffect(() => {
+    const isSameLocalDay = (a: Date, b: Date) =>
+      a.getFullYear() === b.getFullYear() &&
+      a.getMonth() === b.getMonth() &&
+      a.getDate() === b.getDate();
+
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
       if (nextAppState === 'active') {
+        const now = new Date();
+        const selectedDate = currentDateRef.current;
+        if (!isSameLocalDay(selectedDate, now)) {
+          setCurrentDate(now);
+          setNavigationMethod("app_open");
+        }
+
         const r = readingRef.current;
         if (r?.id) {
           startReadingView(
@@ -470,9 +489,9 @@ export default function Index() {
           visible={showSignIn}
           dismissable
           initialMode="signin"
-          onClose={() => {
+          onClose={async () => {
             setShowSignIn(false);
-            refreshSub();
+            await refreshSub();
             if (pendingSave && isAuthed) {
               const save = pendingSave;
               setPendingSave(null);
@@ -504,7 +523,9 @@ export default function Index() {
                 const result = await RevenueCatUI.presentPaywall();
                 qaLog("paywall", "FAB paywall result", { result });
                 if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) {
-                  refreshSub();
+                  await refreshSub();
+                  await new Promise((resolve) => setTimeout(resolve, 350));
+                  await refreshSub();
                 }
               } catch (err) {
                 qaLog("paywall", "FAB paywall error", { error: String(err) });
@@ -566,9 +587,9 @@ export default function Index() {
         visible={showSignIn}
         dismissable
         initialMode="signin"
-        onClose={() => {
+        onClose={async () => {
           setShowSignIn(false);
-          refreshSub();
+          await refreshSub();
           if (pendingSave && isAuthed) {
             const save = pendingSave;
             setPendingSave(null);

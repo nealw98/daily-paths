@@ -7,6 +7,7 @@ import type { EntryType } from "../constants/journalCategories";
 
 export type { EntryType };
 const SAVE_REQUEST_TIMEOUT_MS = 6000;
+const FETCH_REQUEST_TIMEOUT_MS = 8000;
 
 export interface JournalEntry {
   id: string;
@@ -31,7 +32,11 @@ export function useJournalEntries(userId: string | null | undefined) {
   const entriesRef = useRef<JournalEntry[]>([]);
 
   const runWithTimeout = useCallback(
-    async <T,>(runner: (signal: AbortSignal) => Promise<T>, timeoutMs = SAVE_REQUEST_TIMEOUT_MS): Promise<T> => {
+    async <T,>(
+      runner: (signal: AbortSignal) => Promise<T>,
+      timeoutMs = SAVE_REQUEST_TIMEOUT_MS,
+      timeoutLabel = "Request timed out",
+    ): Promise<T> => {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeoutMs);
       try {
@@ -39,7 +44,7 @@ export function useJournalEntries(userId: string | null | undefined) {
       } catch (err) {
         const msg = String(err);
         if (msg.toLowerCase().includes("abort")) {
-          throw new Error("Save timed out");
+          throw new Error(timeoutLabel);
         }
         throw err;
       } finally {
@@ -57,22 +62,63 @@ export function useJournalEntries(userId: string | null | undefined) {
       return;
     }
 
+    const isLikelySessionError = (message: string) =>
+      /jwt|token|session|auth/i.test(message);
+
+    const fetchOnce = async (): Promise<JournalEntry[]> => {
+      const { data, error: fetchError } = await runWithTimeout(
+        (signal) =>
+          supabase
+            .from("journal_entries")
+            .select("*")
+            .eq("user_id", userId)
+            .order("created_at", { ascending: false })
+            .abortSignal(signal)
+            .then((result) => result),
+        FETCH_REQUEST_TIMEOUT_MS,
+        "Fetch timed out",
+      );
+
+      if (fetchError) {
+        throw new Error(fetchError.message);
+      }
+
+      return (data || []) as JournalEntry[];
+    };
+
     try {
       setLoading(true);
       setError(null);
 
-      const { data, error: fetchError } = await supabase
-        .from("journal_entries")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
+      const startedAt = Date.now();
+      let data: JournalEntry[] = [];
 
-      if (fetchError) {
-        qaLog("journal", "Error fetching entries", {
-          error: fetchError.message,
+      try {
+        data = await fetchOnce();
+      } catch (firstErr) {
+        const message = String(firstErr);
+        qaLog("journal", "First fetch entries attempt failed", {
+          userId,
+          elapsedMs: Date.now() - startedAt,
+          error: message,
         });
-        setError(fetchError.message);
-        return;
+
+        if (!isLikelySessionError(message)) {
+          throw firstErr;
+        }
+
+        const { error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) {
+          qaLog("journal", "Session refresh before fetch retry failed", {
+            error: refreshError.message,
+          });
+          throw firstErr;
+        }
+
+        qaLog("journal", "Retrying fetch entries after session refresh", {
+          userId,
+        });
+        data = await fetchOnce();
       }
 
       if (mounted.current) {
@@ -82,6 +128,11 @@ export function useJournalEntries(userId: string | null | undefined) {
           entry_type: entry.entry_type || entry.category || "journal",
         }));
         setEntries(normalized);
+        qaLog("journal", "Entries fetched", {
+          userId,
+          count: normalized.length,
+          elapsedMs: Date.now() - startedAt,
+        });
       }
     } catch (err) {
       qaLog("journal", "Exception fetching entries", { error: String(err) });
@@ -89,7 +140,7 @@ export function useJournalEntries(userId: string | null | undefined) {
     } finally {
       if (mounted.current) setLoading(false);
     }
-  }, [userId]);
+  }, [userId, runWithTimeout]);
 
   useEffect(() => {
     mounted.current = true;

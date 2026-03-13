@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { router, useNavigation } from "expo-router";
 import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
 import { Alert } from "react-native";
@@ -27,6 +27,11 @@ export const PremiumGate: React.FC<PremiumGateProps> = ({ children }) => {
 
   const [dismissed, setDismissed] = useState(false);
   const presentingPaywall = useRef(false);
+  const refreshAfterPurchase = useCallback(async () => {
+    await refreshSub();
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    await refreshSub();
+  }, [refreshSub]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
@@ -50,7 +55,7 @@ export const PremiumGate: React.FC<PremiumGateProps> = ({ children }) => {
         qaLog("paywall", "Paywall result", { result });
 
         if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) {
-          await refreshSub();
+          await refreshAfterPurchase();
         } else {
           trackPaywallDismissed();
           setDismissed(true);
@@ -68,7 +73,7 @@ export const PremiumGate: React.FC<PremiumGateProps> = ({ children }) => {
         presentingPaywall.current = false;
       }
     })();
-  }, [loading, gate, isFocused, dismissed, trackPaywallShown, trackPaywallDismissed, refreshSub]);
+  }, [loading, gate, isFocused, dismissed, trackPaywallShown, trackPaywallDismissed, refreshSub, refreshAfterPurchase]);
 
   return (
     <>

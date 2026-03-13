@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import {
   View,
@@ -211,6 +211,18 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
   const { colors } = useTheme();
   const { settings } = useSettings();
   const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
+  const [slowLoading, setSlowLoading] = useState(false);
+
+  useEffect(() => {
+    if (!loading) {
+      setSlowLoading(false);
+      return;
+    }
+    const timer = setTimeout(() => {
+      setSlowLoading(true);
+    }, 8000);
+    return () => clearTimeout(timer);
+  }, [loading]);
 
   // Filter entries by category
   const filteredEntries = useMemo(() => {
@@ -448,12 +460,35 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
   const ListEmpty = () => (
     <View style={styles.emptyContainer}>
       {loading ? (
-        <>
-          <ActivityIndicator size="small" color={colors.accent} />
-          <Text style={[styles.emptySubtitle, { color: colors.textSecondary + "80", marginTop: 12 }]}>
-            Loading entries...
-          </Text>
-        </>
+        slowLoading ? (
+          <>
+            <Ionicons
+              name="cloud-offline-outline"
+              size={44}
+              color={colors.textSecondary + "70"}
+            />
+            <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>
+              Still loading entries
+            </Text>
+            <Text style={[styles.emptySubtitle, { color: colors.textSecondary + "80" }]}>
+              This is taking longer than expected.
+            </Text>
+            <TouchableOpacity
+              style={[styles.retryButton, { borderColor: colors.accent }]}
+              onPress={onRefresh}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.retryText, { color: colors.accent }]}>Retry</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <ActivityIndicator size="small" color={colors.accent} />
+            <Text style={[styles.emptySubtitle, { color: colors.textSecondary + "80", marginTop: 12 }]}>
+              Loading entries...
+            </Text>
+          </>
+        )
       ) : (
         <>
           <Ionicons
@@ -692,5 +727,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     lineHeight: 20,
+  },
+  retryButton: {
+    marginTop: 14,
+    borderWidth: 1.5,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  retryText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 14,
+    fontWeight: "600",
   },
 });

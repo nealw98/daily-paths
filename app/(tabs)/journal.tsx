@@ -21,6 +21,7 @@ import { EntryTypeIcon } from "../../utils/entryTypeIcon";
 import { FourSquares } from "../../components/icons";
 import type { JournalEntry } from "../../hooks/useJournalEntries";
 import { requiresSignInForCloudWrite } from "../../utils/accessControl";
+import { useSubscriptionContext } from "../../contexts/SubscriptionContext";
 
 type JournalView = "timeline" | "editor" | "detail";
 
@@ -36,6 +37,7 @@ function JournalTabContent() {
   const { colors } = useTheme();
   const navigation = useNavigation();
   const { user, isAuthenticated } = useAuth();
+  const { gate } = useSubscriptionContext();
   const { trackNotebookOpened, trackEntryViewed } = useAnalytics();
   const {
     entries,
@@ -61,6 +63,7 @@ function JournalTabContent() {
     content: string | null;
     structuredContent?: Record<string, any> | null;
   } | null>(null);
+  const prevGateRef = useRef<"none" | "paywall" | null>(null);
 
   // Header title and icon reflect the active filter
   const headerTitle = categoryFilter === "all"
@@ -144,6 +147,13 @@ function JournalTabContent() {
   const handleFilterChange = useCallback((filter: CategoryFilter) => {
     setCategoryFilter(filter);
   }, []);
+
+  useEffect(() => {
+    if (prevGateRef.current === "paywall" && gate === "none" && isAuthenticated) {
+      refreshEntries();
+    }
+    prevGateRef.current = gate;
+  }, [gate, isAuthenticated, refreshEntries]);
 
   useEffect(() => {
     if (showSignIn || !isAuthenticated || !pendingCreate) return;
