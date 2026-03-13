@@ -126,20 +126,6 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
   // ─── Save Handler ──────────────────────────────────────
 
   const handleSave = async () => {
-    const withTimeout = async <T,>(promise: Promise<T>, ms: number): Promise<T> => {
-      let timer: ReturnType<typeof setTimeout> | null = null;
-      try {
-        return await Promise.race([
-          promise,
-          new Promise<T>((_, reject) => {
-            timer = setTimeout(() => reject(new Error("Save timed out")), ms);
-          }),
-        ]);
-      } finally {
-        if (timer) clearTimeout(timer);
-      }
-    };
-
     if (!hasContent) {
       Alert.alert(
         "Nothing to save",
@@ -154,7 +140,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
     try {
       switch (editorType) {
         case "text": {
-          await withTimeout(onSave(entryType, content.trim(), null), 15000);
+          await onSave(entryType, content.trim(), null);
           break;
         }
         case "items": {
@@ -162,7 +148,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
             .map((i) => i.trim())
             .filter(Boolean);
           const searchableContent = filledItems.join(" • ");
-          await withTimeout(onSave(entryType, searchableContent, { items: filledItems }), 15000);
+          await onSave(entryType, searchableContent, { items: filledItems });
           break;
         }
         case "guided": {
@@ -172,12 +158,15 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
           }
           // Build searchable content from non-empty responses
           const searchableContent = Object.values(filledResponses).join("\n\n");
-          await withTimeout(onSave(entryType, searchableContent, filledResponses), 15000);
+          await onSave(entryType, searchableContent, filledResponses);
           break;
         }
       }
     } catch (err) {
-      Alert.alert("Error", "Saving took too long or failed. Please try again.");
+      const message = String(err).toLowerCase().includes("timed out")
+        ? "Saving is taking too long. Please try again."
+        : "Failed to save your entry. Please try again.";
+      Alert.alert("Error", message);
     } finally {
       setSaving(false);
     }

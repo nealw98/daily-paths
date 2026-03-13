@@ -6,6 +6,7 @@ import { ANALYTICS_EVENTS } from "../utils/analytics";
 import type { EntryType } from "../constants/journalCategories";
 
 export type { EntryType };
+const SAVE_REQUEST_TIMEOUT_MS = 6000;
 
 export interface JournalEntry {
   id: string;
@@ -28,6 +29,25 @@ export function useJournalEntries(userId: string | null | undefined) {
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(true);
   const entriesRef = useRef<JournalEntry[]>([]);
+
+  const runWithTimeout = useCallback(
+    async <T,>(runner: (signal: AbortSignal) => Promise<T>, timeoutMs = SAVE_REQUEST_TIMEOUT_MS): Promise<T> => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        return await runner(controller.signal);
+      } catch (err) {
+        const msg = String(err);
+        if (msg.toLowerCase().includes("abort")) {
+          throw new Error("Save timed out");
+        }
+        throw err;
+      } finally {
+        clearTimeout(timer);
+      }
+    },
+    [],
+  );
 
   // Fetch all entries for the current user
   const fetchEntries = useCallback(async () => {
@@ -123,7 +143,10 @@ export function useJournalEntries(userId: string | null | undefined) {
       // Must have either content or structured_content
       if (!content?.trim() && !structuredContent) return null;
 
-      try {
+      const isLikelySessionError = (message: string) =>
+        /jwt|token|session|auth/i.test(message);
+
+      const insertOnce = async (): Promise<JournalEntry | null> => {
         const insertData: Record<string, unknown> = {
           user_id: userId,
           entry_type: entryType,
@@ -133,17 +156,55 @@ export function useJournalEntries(userId: string | null | undefined) {
           insertData.structured_content = structuredContent;
         }
 
-        const { data, error: insertError } = await supabase
-          .from("journal_entries")
-          .insert(insertData)
-          .select()
-          .single();
+        const { data, error: insertError } = await runWithTimeout((signal) =>
+          supabase
+            .from("journal_entries")
+            .insert(insertData)
+            .select()
+            .single()
+            .abortSignal(signal)
+            .then((result) => result),
+        );
 
         if (insertError) {
-          qaLog("journal", "Error creating entry", {
-            error: insertError.message,
-          });
           throw new Error(insertError.message);
+        }
+        return data;
+      };
+
+      try {
+        const startedAt = Date.now();
+        let data: JournalEntry | null = null;
+        try {
+          data = await insertOnce();
+        } catch (firstErr) {
+          const message = String(firstErr);
+          qaLog("journal", "First create entry attempt failed", {
+            userId,
+            entryType,
+            elapsedMs: Date.now() - startedAt,
+            error: message,
+          });
+
+          if (!isLikelySessionError(message)) {
+            throw firstErr;
+          }
+
+          // On mobile, a stale token can fail writes after a long wait.
+          // Refresh once and retry before surfacing the error.
+          const { error: refreshError } = await supabase.auth.refreshSession();
+          if (refreshError) {
+            qaLog("journal", "Session refresh before retry failed", {
+              error: refreshError.message,
+            });
+            throw firstErr;
+          }
+
+          qaLog("journal", "Retrying create entry after session refresh", {
+            userId,
+            entryType,
+          });
+          data = await insertOnce();
         }
 
         if (data) {
@@ -151,6 +212,7 @@ export function useJournalEntries(userId: string | null | undefined) {
           qaLog("journal", "Entry created", {
             id: data.id,
             type: entryType,
+            elapsedMs: Date.now() - startedAt,
           });
 
           const eventName = entryEventName(entryType, 'created');
@@ -169,7 +231,7 @@ export function useJournalEntries(userId: string | null | undefined) {
         throw err;
       }
     },
-    [userId]
+    [userId, runWithTimeout]
   );
 
   // Update an existing journal entry
@@ -189,13 +251,17 @@ export function useJournalEntries(userId: string | null | undefined) {
           updateData.structured_content = structuredContent;
         }
 
-        const { data, error: updateError } = await supabase
-          .from("journal_entries")
-          .update(updateData)
-          .eq("id", entryId)
-          .eq("user_id", userId)
-          .select()
-          .single();
+        const { data, error: updateError } = await runWithTimeout((signal) =>
+          supabase
+            .from("journal_entries")
+            .update(updateData)
+            .eq("id", entryId)
+            .eq("user_id", userId)
+            .select()
+            .single()
+            .abortSignal(signal)
+            .then((result) => result),
+        );
 
         if (updateError) {
           qaLog("journal", "Error updating entry", {
@@ -226,7 +292,7 @@ export function useJournalEntries(userId: string | null | undefined) {
         throw err;
       }
     },
-    [userId]
+    [userId, runWithTimeout]
   );
 
   // Delete a journal entry

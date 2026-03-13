@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Constants from "expo-constants";
 import { Ionicons } from "@expo/vector-icons";
@@ -99,6 +100,7 @@ export default function MoreTab() {
   const { status, loading: subLoading, refresh, cleanupAfterDeletion } = useSubscription();
   const { updateThemeMode } = useAnalytics();
   const router = useRouter();
+  const scrollRef = useRef<ScrollView>(null);
 
   const [showSignIn, setShowSignIn] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -110,6 +112,12 @@ export default function MoreTab() {
   const [isSharing, setIsSharing] = useState(false);
   const [showExtendedThemes, setShowExtendedThemes] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+    }, []),
+  );
 
   // Auto-close sign-in modal after successful authentication
   useEffect(() => {
@@ -286,6 +294,7 @@ export default function MoreTab() {
       />
 
       <ScrollView
+        ref={scrollRef}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -492,7 +501,7 @@ export default function MoreTab() {
           {showExtendedThemes && (
             <>
               <View style={[styles.cardDivider, { backgroundColor: colors.mist }]} />
-              <Text style={[styles.cardLabel, { color: colors.deepTeal }]}>Premium Colors — Thank You for Subscribing!</Text>
+              <Text style={[styles.cardLabel, { color: colors.deepTeal }]}>Color Themes</Text>
               <View style={styles.themeOptions}>
                 {EXTENDED_THEME_OPTIONS.map((option) => {
                   const isSelected =

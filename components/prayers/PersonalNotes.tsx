@@ -16,6 +16,7 @@ import { qaLog } from "../../utils/qaLog";
 import { useAuth } from "../../contexts/AuthContext";
 import { SignInModal } from "../SignInModal";
 import { requiresSignInForCloudWrite } from "../../utils/accessControl";
+const SAVE_REQUEST_TIMEOUT_MS = 6000;
 
 interface PersonalNotesProps {
   userId: string | null;
@@ -75,20 +76,6 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId, onInputFoc
 
   // ── Save to appropriate storage ────────────────────────────────────
   const handleSave = useCallback(async () => {
-    const withTimeout = async <T,>(promise: PromiseLike<T>, ms: number): Promise<T> => {
-      let timer: ReturnType<typeof setTimeout> | null = null;
-      try {
-        return await Promise.race([
-          promise,
-          new Promise<T>((_, reject) => {
-            timer = setTimeout(() => reject(new Error("Save timed out")), ms);
-          }),
-        ]);
-      } finally {
-        if (timer) clearTimeout(timer);
-      }
-    };
-
     setSaving(true);
     try {
       if (requiresSignInForCloudWrite(isAuthenticated, userId)) {
@@ -105,17 +92,32 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId, onInputFoc
       }
       if (!userId) return;
 
-      const response = await withTimeout(
-        supabase.from("prayer_notes").upsert(
-          {
-            user_id: userId,
-            content: content.trim(),
-          },
-          { onConflict: "user_id" }
-        ).then((result) => result),
-        15000,
-      );
-      const { error } = response;
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), SAVE_REQUEST_TIMEOUT_MS);
+      let error: { message: string } | null = null;
+      try {
+        const result = await supabase
+          .from("prayer_notes")
+          .upsert(
+            {
+              user_id: userId,
+              content: content.trim(),
+            },
+            { onConflict: "user_id" }
+          )
+          .abortSignal(controller.signal)
+          .then((res) => res);
+        error = result.error;
+      } catch (err) {
+        const msg = String(err).toLowerCase();
+        if (msg.includes("abort")) {
+          Alert.alert("Save Timed Out", "Saving is taking too long. Please try again.");
+          return;
+        }
+        throw err;
+      } finally {
+        clearTimeout(timer);
+      }
 
       if (error) {
         Alert.alert("Error", "Failed to save your notes.");
@@ -127,7 +129,7 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId, onInputFoc
       setIsEditing(false);
       qaLog("prayers", "Prayer notes saved", { storage: "supabase" });
     } catch (err) {
-      Alert.alert("Error", "Saving took too long or failed. Please try again.");
+      Alert.alert("Error", "Failed to save your notes. Please try again.");
     } finally {
       setSaving(false);
     }
