@@ -151,6 +151,7 @@ export default function MoreTab() {
     () => parseTimeToDate(settings.dailyReminderTime),
     [settings.dailyReminderTime]
   );
+  const hasPaidEntitlement = status.isSubscribed || status.isLegacy;
 
   const handleTextSizePress = async (size: TextSize) => {
     if (settings.textSize === size) return;
@@ -179,6 +180,23 @@ export default function MoreTab() {
       setThemeId(optionId);
       updateThemeMode(DARK_THEME_IDS.has(optionId) ? "dark" : "light");
     }
+  };
+
+  const handleColorThemesToggle = (enabled: boolean) => {
+    if (enabled && !hasPaidEntitlement) {
+      Alert.alert(
+        "Premium Themes",
+        "Premium color themes are available to active subscribers and lifetime users.",
+      );
+      return;
+    }
+
+    if (!enabled && EXTENDED_THEME_OPTIONS.some((t) => t.id === settings.themeId)) {
+      setThemeId("ocean-light");
+      updateThemeMode("light");
+    }
+
+    setShowExtendedThemes(enabled);
   };
 
   const handleReminderToggle = async (enabled: boolean) => {
@@ -480,22 +498,18 @@ export default function MoreTab() {
           <View style={[styles.cardDivider, { backgroundColor: colors.mist }]} />
 
           {/* Theme row */}
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onLongPress={() => {
-              if (status.isSubscribed || status.isLegacy) {
-                setShowExtendedThemes(true);
-                return;
-              }
-              Alert.alert(
-                "Premium Themes",
-                "Premium color themes are available to active subscribers and lifetime users.",
-              );
-            }}
-            delayLongPress={600}
-          >
-            <Text style={[styles.cardLabel, { color: colors.deepTeal }]}>Theme</Text>
-          </TouchableOpacity>
+          <View style={styles.themeHeaderRow}>
+            <Text style={[styles.cardLabel, { color: colors.deepTeal, marginBottom: 0 }]}>Themes</Text>
+            <View style={styles.themeToggleRow}>
+              <Text style={[styles.cardLabel, { color: colors.deepTeal, marginBottom: 0 }]}>Premium Colors</Text>
+              <Switch
+                value={showExtendedThemes}
+                onValueChange={handleColorThemesToggle}
+                trackColor={{ false: colors.mist, true: colors.deepTeal }}
+                thumbColor={showExtendedThemes ? colors.pearl : colors.mist}
+              />
+            </View>
+          </View>
           <View style={styles.themeOptions}>
             {DEFAULT_THEME_OPTIONS.map((option) => {
               const isSelected =
@@ -929,6 +943,17 @@ const styles = StyleSheet.create({
     alignContent: "flex-start",
     gap: 10,
     marginBottom: 4,
+  },
+  themeHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  themeToggleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   themeOption: {
     flexBasis: "29%",
