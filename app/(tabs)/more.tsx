@@ -14,6 +14,7 @@ import {
   Keyboard,
   Alert,
   ActivityIndicator,
+  AppState,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
@@ -110,6 +111,7 @@ export default function MoreTab() {
   const [feedbackText, setFeedbackText] = useState("");
   const [feedbackContact, setFeedbackContact] = useState("");
   const [isSharing, setIsSharing] = useState(false);
+  const [openingCustomerCenter, setOpeningCustomerCenter] = useState(false);
   const [showExtendedThemes, setShowExtendedThemes] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -348,7 +350,14 @@ export default function MoreTab() {
         ) : (
           <TouchableOpacity
             style={[styles.subscriptionRow, { backgroundColor: colors.cloud, borderColor: colors.mist }]}
+            disabled={openingCustomerCenter}
             onPress={async () => {
+              if (openingCustomerCenter) return;
+              setOpeningCustomerCenter(true);
+              let sawBackground = false;
+              const appStateSub = AppState.addEventListener("change", (nextState) => {
+                if (nextState !== "active") sawBackground = true;
+              });
               try {
                 await RevenueCatUI.presentCustomerCenter({
                   callbacks: {
@@ -357,20 +366,48 @@ export default function MoreTab() {
                 });
                 await refresh();
               } catch (err) {
+                const errorText = String(err).toLowerCase();
+                const isBenignAndroidReturn =
+                  Platform.OS === "android" &&
+                  (sawBackground ||
+                    errorText.includes("cancel") ||
+                    errorText.includes("dismiss") ||
+                    errorText.includes("background") ||
+                    errorText.includes("activity") ||
+                    errorText.includes("aborted"));
+
+                if (isBenignAndroidReturn) {
+                  qaLog("subscription", "Customer Center returned with benign Android flow error", {
+                    error: String(err),
+                    sawBackground,
+                  });
+                  await refresh();
+                  return;
+                }
+
                 qaLog("subscription", "Customer Center failed to open", { error: String(err) });
                 Alert.alert(
                   "Unable to Open Subscription Management",
                   "Please try again in a moment.",
                 );
+              } finally {
+                appStateSub.remove();
+                setOpeningCustomerCenter(false);
               }
             }}
-            activeOpacity={0.8}
+            activeOpacity={openingCustomerCenter ? 1 : 0.8}
           >
             <View style={styles.subscriptionLeft}>
               <Ionicons name="card-outline" size={22} color={colors.deepTeal} />
-              <Text style={[styles.subscriptionText, { color: colors.text }]}>Manage Subscription</Text>
+              <Text style={[styles.subscriptionText, { color: colors.text }]}>
+                {openingCustomerCenter ? "Opening..." : "Manage Subscription"}
+              </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.seafoam} />
+            {openingCustomerCenter ? (
+              <ActivityIndicator size="small" color={colors.deepTeal} />
+            ) : (
+              <Ionicons name="chevron-forward" size={20} color={colors.seafoam} />
+            )}
           </TouchableOpacity>
         )}
 
