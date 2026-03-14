@@ -18,14 +18,12 @@ import { useTheme } from "../hooks/useTheme";
 
 interface DeleteAccountModalProps {
   visible: boolean;
-  isLifetime?: boolean;
   onClose: () => void;
   onConfirm: () => Promise<void>;
 }
 
 export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
   visible,
-  isLifetime,
   onClose,
   onConfirm,
 }) => {
@@ -96,18 +94,10 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
                 checks, nightly reviews, preferences, and prayer notes.
               </Text>
 
-              {!isLifetime && (
-                <Text style={[styles.warning, { color: colors.textSecondary }]}>
-                  Your App Store/Google Play subscription will continue charging until you cancel it
-                  in the store.
-                </Text>
-              )}
-
-              {isLifetime && (
-                <Text style={[styles.lifetimeWarning, { color: colors.danger }]}>
-                  You will also forfeit your lifetime membership. This cannot be restored.
-                </Text>
-              )}
+              <Text style={[styles.warning, { color: colors.textSecondary }]}>
+                If you also have a subscription through the App Store or Google Play, billing will
+                continue until you cancel it in the store.
+              </Text>
 
               {/* Confirmation input */}
               <Text style={[styles.inputLabel, { color: colors.text }]}>
@@ -215,15 +205,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     textAlign: "center",
     marginBottom: 24,
-  },
-  lifetimeWarning: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 15,
-    lineHeight: 22,
-    fontWeight: "600",
-    textAlign: "center",
-    marginBottom: 24,
-    marginTop: -12,
   },
   inputLabel: {
     fontFamily: fonts.bodyFamilyRegular,

@@ -184,14 +184,6 @@ export default function MoreTab() {
   };
 
   const handleColorThemesToggle = (enabled: boolean) => {
-    if (enabled && !hasPaidEntitlement) {
-      Alert.alert(
-        "Premium Themes",
-        "Premium color themes are available to active subscribers and lifetime users.",
-      );
-      return;
-    }
-
     if (!enabled && EXTENDED_THEME_OPTIONS.some((t) => t.id === settings.themeId)) {
       setThemeId("ocean-light");
       updateThemeMode("light");
@@ -290,25 +282,19 @@ export default function MoreTab() {
 
   const handleDeleteAccount = async () => {
     try {
-      // Capture legacy status before cleanup resets it.
-      // Check both subscription context (receipt-based) and auth context
-      // (database-based) so we show the right message even if one source failed.
       const wasLegacy = status.isLegacy || isLegacy;
 
       await deleteAccountNow();
       await cleanupAfterDeletion({ revokeLifetime: wasLegacy });
 
       setShowDeleteModal(false);
-      const message = wasLegacy
-        ? "Your account and lifetime access have been removed. To access premium features again, you'll need to subscribe."
-        : "Your account has been deleted. If you have an active subscription, remember to cancel it in your App Store or Google Play settings to avoid future charges.";
       // Delay alert until the Modal slide-out animation fully completes,
       // otherwise the native Modal layer intercepts touches and the OK
       // button is untappable. 800ms accommodates the slide animation.
       setTimeout(() => {
         Alert.alert(
           "Account Deleted",
-          message,
+          "Your account has been deleted.",
           [{
             text: "OK",
             onPress: async () => {
@@ -521,15 +507,17 @@ export default function MoreTab() {
           {/* Theme row */}
           <View style={styles.themeHeaderRow}>
             <Text style={[styles.cardLabel, { color: colors.deepTeal, marginBottom: 0 }]}>Themes</Text>
-            <View style={styles.themeToggleRow}>
-              <Text style={[styles.cardLabel, { color: colors.deepTeal, marginBottom: 0 }]}>Premium Colors</Text>
-              <Switch
-                value={showExtendedThemes}
-                onValueChange={handleColorThemesToggle}
-                trackColor={{ false: colors.mist, true: colors.deepTeal }}
-                thumbColor={showExtendedThemes ? colors.pearl : colors.mist}
-              />
-            </View>
+            {!subLoading && hasPaidEntitlement && (
+              <View style={styles.themeToggleRow}>
+                <Text style={[styles.cardLabel, { color: colors.deepTeal, marginBottom: 0 }]}>Premium Colors</Text>
+                <Switch
+                  value={showExtendedThemes}
+                  onValueChange={handleColorThemesToggle}
+                  trackColor={{ false: colors.mist, true: colors.deepTeal }}
+                  thumbColor={showExtendedThemes ? colors.pearl : colors.mist}
+                />
+              </View>
+            )}
           </View>
           <View style={styles.themeOptions}>
             {DEFAULT_THEME_OPTIONS.map((option) => {
@@ -789,7 +777,6 @@ export default function MoreTab() {
       <SignInModal visible={showSignIn} onClose={() => setShowSignIn(false)} />
       <DeleteAccountModal
         visible={showDeleteModal}
-        isLifetime={status.isLegacy || isLegacy}
         onClose={() => setShowDeleteModal(false)}
         onConfirm={handleDeleteAccount}
       />
