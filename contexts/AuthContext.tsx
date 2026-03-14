@@ -27,6 +27,7 @@ interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+const SIGN_OUT_TIMEOUT_MS = 5000;
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -90,7 +91,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       qaLog("auth", `Auth state changed: ${event}`, { userId: newSession?.user?.id });
 
       if (!mounted.current) return;
-      if (signingOut.current && newSession?.user) return; // Don't let listener restore user during sign-out
+      if (signingOut.current && newSession?.user) {
+        qaLog("auth", "Ignoring auth event during sign-out guard", {
+          event,
+          userId: newSession.user.id,
+        });
+        return; // Don't let listener restore user during sign-out
+      }
 
       setSession(newSession);
       setUser(newSession?.user ?? null);
@@ -130,9 +137,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signOut = useCallback(async () => {
+    const startedAt = Date.now();
+    qaLog("auth", "AuthContext signOut requested");
     signingOut.current = true;
     try {
-      await authSignOut();
+      qaLog("auth", "AuthContext signOut delegating to authSignOut", {
+        timeoutMs: SIGN_OUT_TIMEOUT_MS,
+      });
+      await Promise.race([
+        authSignOut(),
+        new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error("Sign out timed out")), SIGN_OUT_TIMEOUT_MS);
+        }),
+      ]);
+      qaLog("auth", "AuthContext signOut upstream call completed", {
+        elapsedMs: Date.now() - startedAt,
+      });
     } catch (err) {
       qaLog("auth", "Sign out error, clearing local state anyway", { error: String(err) });
     }
@@ -141,6 +161,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     setSession(null);
     setIsLegacy(false);
+    qaLog("auth", "AuthContext signOut local state cleared", {
+      elapsedMs: Date.now() - startedAt,
+    });
     // signingOut guard stays active until the user explicitly signs in again,
     // preventing stale token-refresh events from silently restoring the session.
   }, []);

@@ -111,6 +111,7 @@ export default function MoreTab() {
   const [feedbackText, setFeedbackText] = useState("");
   const [feedbackContact, setFeedbackContact] = useState("");
   const [isSharing, setIsSharing] = useState(false);
+  const [signingOutAccount, setSigningOutAccount] = useState(false);
   const [openingCustomerCenter, setOpeningCustomerCenter] = useState(false);
   const [showExtendedThemes, setShowExtendedThemes] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -253,16 +254,34 @@ export default function MoreTab() {
   };
 
   const handleSignOut = () => {
+    qaLog("auth", "Settings sign-out prompt opened", {
+      platform: Platform.OS,
+      hasUser: !!user?.id,
+    });
     Alert.alert(
       "Sign Out",
       "You'll need to sign back in to use the app. Your data won't be lost.",
       [
-        { text: "Cancel", style: "cancel" },
+        {
+          text: "Cancel",
+          style: "cancel",
+          onPress: () => qaLog("auth", "Settings sign-out cancelled"),
+        },
         {
           text: "Sign Out",
           style: "destructive",
           onPress: async () => {
-            await signOut();
+            if (signingOutAccount) return;
+            qaLog("auth", "Settings sign-out confirmed");
+            setSigningOutAccount(true);
+            try {
+              await signOut();
+              qaLog("auth", "Settings sign-out completed");
+            } catch (err) {
+              qaLog("auth", "Settings sign-out threw", { error: String(err) });
+            } finally {
+              setSigningOutAccount(false);
+            }
           },
         },
       ],
@@ -330,8 +349,10 @@ export default function MoreTab() {
               <Text style={[styles.accountEmail, { color: colors.text }]}>{user.email}</Text>
               <Text style={[styles.accountStatus, { color: colors.textSecondary }]}>Signed in</Text>
             </View>
-            <TouchableOpacity onPress={handleSignOut} activeOpacity={0.7}>
-              <Text style={[styles.signOutLink, { color: colors.danger }]}>Sign Out</Text>
+            <TouchableOpacity onPress={handleSignOut} activeOpacity={0.7} disabled={signingOutAccount}>
+              <Text style={[styles.signOutLink, { color: colors.danger }]}>
+                {signingOutAccount ? "Signing Out..." : "Sign Out"}
+              </Text>
             </TouchableOpacity>
           </View>
         ) : (

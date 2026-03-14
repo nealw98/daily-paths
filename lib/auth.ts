@@ -205,18 +205,32 @@ export async function signInWithGoogle() {
 // ─── Sign Out ───────────────────────────────────────────────────────────────
 
 export async function signOut() {
-  qaLog("auth", "Signing out");
+  const startedAt = Date.now();
+  qaLog("auth", "Sign out start", { platform: Platform.OS });
   try {
+    qaLog("auth", "Sign out: GoogleSignin.signOut start");
     await GoogleSignin.signOut();
+    qaLog("auth", "Sign out: GoogleSignin.signOut success", {
+      elapsedMs: Date.now() - startedAt,
+    });
   } catch (e) {
-    qaLog("auth", "GoogleSignin.signOut non-fatal", { error: String(e) });
+    qaLog("auth", "Sign out: GoogleSignin.signOut non-fatal", {
+      error: String(e),
+      elapsedMs: Date.now() - startedAt,
+    });
   }
+  qaLog("auth", "Sign out: supabase.auth.signOut start", {
+    elapsedMs: Date.now() - startedAt,
+  });
   const { error } = await supabase.auth.signOut();
   if (error) {
-    qaLog("auth", "Sign out failed", { error: error.message });
+    qaLog("auth", "Sign out: supabase.auth.signOut failed", {
+      error: error.message,
+      elapsedMs: Date.now() - startedAt,
+    });
     throw error;
   }
-  qaLog("auth", "Sign out successful");
+  qaLog("auth", "Sign out complete", { elapsedMs: Date.now() - startedAt });
 }
 
 // ─── Session Management ─────────────────────────────────────────────────────
