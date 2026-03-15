@@ -56,6 +56,7 @@ export const supabase = createSafeClient();
 AppState.addEventListener("change", (state) => {
   if (state === "active") {
     supabase.auth.startAutoRefresh();
+    supabase.auth.refreshSession();
   } else {
     supabase.auth.stopAutoRefresh();
   }

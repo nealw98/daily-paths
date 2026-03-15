@@ -16,7 +16,12 @@ import { qaLog } from "../../utils/qaLog";
 import { useAuth } from "../../contexts/AuthContext";
 import { SignInModal } from "../SignInModal";
 import { requiresSignInForCloudWrite } from "../../utils/accessControl";
+
 const SAVE_REQUEST_TIMEOUT_MS = 6000;
+const FETCH_REQUEST_TIMEOUT_MS = 8000;
+
+const isLikelySessionError = (message: string) =>
+  /jwt|token|session|auth/i.test(message);
 
 interface PersonalNotesProps {
   userId: string | null;
@@ -46,22 +51,92 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId, onInputFoc
   // ── Load notes from appropriate source ─────────────────────────────
   useEffect(() => {
     if (userId) {
-      // Authenticated: load from Supabase
+      const fetchOnce = async (signal: AbortSignal) => {
+        const { data, error: fetchError } = await supabase
+          .from("prayer_notes")
+          .select("content")
+          .eq("user_id", userId)
+          .single()
+          .abortSignal(signal)
+          .then((res) => res);
+
+        if (fetchError) {
+          // PGRST116 = no rows found — not an error, just empty notes
+          if (fetchError.code === "PGRST116") return null;
+          throw new Error(fetchError.message);
+        }
+        return data;
+      };
+
       const loadFromSupabase = async () => {
+        const startedAt = Date.now();
+        const controller = new AbortController();
+        const timeoutError = new Error("Fetch timed out");
+        const timer = setTimeout(() => {
+          controller.abort();
+        }, FETCH_REQUEST_TIMEOUT_MS);
+
         try {
-          const { data } = await supabase
-            .from("prayer_notes")
-            .select("content")
-            .eq("user_id", userId)
-            .single();
+          let data: { content: string } | null = null;
+
+          try {
+            data = await Promise.race([
+              fetchOnce(controller.signal),
+              new Promise<never>((_, reject) => {
+                setTimeout(() => reject(timeoutError), FETCH_REQUEST_TIMEOUT_MS);
+              }),
+            ]);
+          } catch (firstErr) {
+            const message = String(firstErr);
+            qaLog("prayers", "First load attempt failed", {
+              userId,
+              elapsedMs: Date.now() - startedAt,
+              error: message,
+            });
+
+            if (firstErr === timeoutError || message.toLowerCase().includes("abort")) {
+              throw new Error("Loading your prayer notes is taking too long. Please try again.");
+            }
+
+            if (!isLikelySessionError(message)) {
+              throw firstErr;
+            }
+
+            const { error: refreshError } = await supabase.auth.refreshSession();
+            if (refreshError) {
+              qaLog("prayers", "Session refresh before load retry failed", {
+                error: refreshError.message,
+              });
+              throw firstErr;
+            }
+
+            qaLog("prayers", "Retrying load after session refresh", { userId });
+            const retryController = new AbortController();
+            const retryTimer = setTimeout(() => retryController.abort(), FETCH_REQUEST_TIMEOUT_MS);
+            try {
+              data = await fetchOnce(retryController.signal);
+            } finally {
+              clearTimeout(retryTimer);
+            }
+          }
 
           if (data) {
             setContent(data.content);
             setSavedContent(data.content);
           }
+          qaLog("prayers", "Prayer notes loaded", {
+            userId,
+            hasContent: !!data,
+            elapsedMs: Date.now() - startedAt,
+          });
         } catch (err) {
-          qaLog("prayers", "Error loading prayer notes", { error: String(err) });
+          const errorText = String(err);
+          qaLog("prayers", "Error loading prayer notes", { error: errorText });
+          Alert.alert("Error", errorText.includes("taking too long")
+            ? errorText
+            : "Failed to load your prayer notes. Please try again.");
         } finally {
+          clearTimeout(timer);
           setLoading(false);
         }
       };
@@ -92,11 +167,8 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId, onInputFoc
       }
       if (!userId) return;
 
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), SAVE_REQUEST_TIMEOUT_MS);
-      let error: { message: string } | null = null;
-      try {
-        const result = await supabase
+      const saveOnce = async (signal: AbortSignal) => {
+        const { error: upsertError } = await supabase
           .from("prayer_notes")
           .upsert(
             {
@@ -105,29 +177,78 @@ export const PersonalNotes: React.FC<PersonalNotesProps> = ({ userId, onInputFoc
             },
             { onConflict: "user_id" }
           )
-          .abortSignal(controller.signal)
+          .abortSignal(signal)
           .then((res) => res);
-        error = result.error;
-      } catch (err) {
-        const msg = String(err).toLowerCase();
-        if (msg.includes("abort")) {
-          Alert.alert("Save Timed Out", "Saving is taking too long. Please try again.");
-          return;
+
+        if (upsertError) {
+          throw new Error(upsertError.message);
         }
-        throw err;
+      };
+
+      const startedAt = Date.now();
+      const controller = new AbortController();
+      const timeoutError = new Error("Save timed out");
+      const timer = setTimeout(() => {
+        controller.abort();
+      }, SAVE_REQUEST_TIMEOUT_MS);
+
+      try {
+        try {
+          await Promise.race([
+            saveOnce(controller.signal),
+            new Promise<never>((_, reject) => {
+              setTimeout(() => reject(timeoutError), SAVE_REQUEST_TIMEOUT_MS);
+            }),
+          ]);
+        } catch (firstErr) {
+          const message = String(firstErr);
+
+          if (firstErr === timeoutError || message.toLowerCase().includes("abort")) {
+            Alert.alert("Save Timed Out", "Saving is taking too long. Please try again.");
+            return;
+          }
+
+          if (!isLikelySessionError(message)) {
+            throw firstErr;
+          }
+
+          qaLog("prayers", "First save attempt failed (session)", {
+            userId,
+            elapsedMs: Date.now() - startedAt,
+            error: message,
+          });
+
+          const { error: refreshError } = await supabase.auth.refreshSession();
+          if (refreshError) {
+            qaLog("prayers", "Session refresh before save retry failed", {
+              error: refreshError.message,
+            });
+            throw firstErr;
+          }
+
+          qaLog("prayers", "Retrying save after session refresh", { userId });
+          const retryController = new AbortController();
+          const retryTimer = setTimeout(() => retryController.abort(), SAVE_REQUEST_TIMEOUT_MS);
+          try {
+            await saveOnce(retryController.signal);
+          } finally {
+            clearTimeout(retryTimer);
+          }
+        }
+
+        setSavedContent(content);
+        setIsEditing(false);
+        qaLog("prayers", "Prayer notes saved", {
+          storage: "supabase",
+          elapsedMs: Date.now() - startedAt,
+        });
+      } catch (saveErr) {
+        const errorText = String(saveErr);
+        Alert.alert("Error", "Failed to save your notes. Please try again.");
+        qaLog("prayers", "Error saving prayer notes", { error: errorText });
       } finally {
         clearTimeout(timer);
       }
-
-      if (error) {
-        Alert.alert("Error", "Failed to save your notes.");
-        qaLog("prayers", "Error saving prayer notes", { error: error.message });
-        return;
-      }
-
-      setSavedContent(content);
-      setIsEditing(false);
-      qaLog("prayers", "Prayer notes saved", { storage: "supabase" });
     } catch (err) {
       Alert.alert("Error", "Failed to save your notes. Please try again.");
     } finally {
