@@ -23,6 +23,6 @@ export function useJournalStorage(
     updateEntry: async () => null,
     deleteEntry: async () => false,
     searchEntries: async () => [],
-    refreshEntries: async () => {},
+    refreshEntries: async (_source?: "auto" | "manual" | "retry") => {},
   };
 }

@@ -8,6 +8,8 @@ import type { EntryType } from "../constants/journalCategories";
 export type { EntryType };
 const SAVE_REQUEST_TIMEOUT_MS = 6000;
 const FETCH_REQUEST_TIMEOUT_MS = 8000;
+type FailureReason = "timeout" | "session" | "network" | "unknown";
+export type JournalRefreshSource = "auto" | "manual" | "retry";
 
 export interface JournalEntry {
   id: string;
@@ -30,6 +32,19 @@ export function useJournalEntries(userId: string | null | undefined) {
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(true);
   const entriesRef = useRef<JournalEntry[]>([]);
+  const activeFetchRequestId = useRef(0);
+
+  const classifyFailureReason = useCallback((errorText: string): FailureReason => {
+    const msg = errorText.toLowerCase();
+    if (/timed out|timeout|abort/.test(msg)) return "timeout";
+    if (/jwt|token|session|auth/.test(msg)) return "session";
+    if (/network|offline|internet|connection|fetch failed/.test(msg)) return "network";
+    return "unknown";
+  }, []);
+
+  const isLikelySessionError = useCallback((message: string) => {
+    return /jwt|token|session|auth/i.test(message);
+  }, []);
 
   const runWithTimeout = useCallback(
     async <T,>(
@@ -38,32 +53,36 @@ export function useJournalEntries(userId: string | null | undefined) {
       timeoutLabel = "Request timed out",
     ): Promise<T> => {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      let timeoutTimer: ReturnType<typeof setTimeout> | undefined;
+      const timeoutError = new Error(timeoutLabel);
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutTimer = setTimeout(() => {
+          controller.abort();
+          reject(timeoutError);
+        }, timeoutMs);
+      });
       try {
-        return await runner(controller.signal);
+        return await Promise.race([runner(controller.signal), timeoutPromise]);
       } catch (err) {
-        const msg = String(err);
-        if (msg.toLowerCase().includes("abort")) {
+        const msg = String(err).toLowerCase();
+        if (err === timeoutError || msg.includes("abort")) {
           throw new Error(timeoutLabel);
         }
         throw err;
       } finally {
-        clearTimeout(timer);
+        if (timeoutTimer) clearTimeout(timeoutTimer);
       }
     },
     [],
   );
 
   // Fetch all entries for the current user
-  const fetchEntries = useCallback(async () => {
+  const fetchEntries = useCallback(async (source: JournalRefreshSource = "manual") => {
     if (!userId) {
       setEntries([]);
       setLoading(false);
       return;
     }
-
-    const isLikelySessionError = (message: string) =>
-      /jwt|token|session|auth/i.test(message);
 
     const fetchOnce = async (): Promise<JournalEntry[]> => {
       const { data, error: fetchError } = await runWithTimeout(
@@ -86,7 +105,9 @@ export function useJournalEntries(userId: string | null | undefined) {
       return (data || []) as JournalEntry[];
     };
 
+    const requestId = ++activeFetchRequestId.current;
     try {
+      qaLog("journal", "Fetch entries started", { userId, source, requestId });
       setLoading(true);
       setError(null);
 
@@ -117,11 +138,13 @@ export function useJournalEntries(userId: string | null | undefined) {
 
         qaLog("journal", "Retrying fetch entries after session refresh", {
           userId,
+          source,
+          requestId,
         });
         data = await fetchOnce();
       }
 
-      if (mounted.current) {
+      if (mounted.current && requestId === activeFetchRequestId.current) {
         // Normalize legacy entries: if entry_type is missing, derive from category or default to 'journal'
         const normalized = (data || []).map((entry: any) => ({
           ...entry,
@@ -130,21 +153,30 @@ export function useJournalEntries(userId: string | null | undefined) {
         setEntries(normalized);
         qaLog("journal", "Entries fetched", {
           userId,
+          source,
+          requestId,
           count: normalized.length,
           elapsedMs: Date.now() - startedAt,
         });
       }
     } catch (err) {
-      qaLog("journal", "Exception fetching entries", { error: String(err) });
-      if (mounted.current) setError(String(err));
+      const errorText = String(err);
+      qaLog("journal", "Fetch entries failed", {
+        userId,
+        source,
+        requestId,
+        reason: classifyFailureReason(errorText),
+        error: errorText,
+      });
+      if (mounted.current && requestId === activeFetchRequestId.current) setError(errorText);
     } finally {
-      if (mounted.current) setLoading(false);
+      if (mounted.current && requestId === activeFetchRequestId.current) setLoading(false);
     }
-  }, [userId, runWithTimeout]);
+  }, [userId, runWithTimeout, isLikelySessionError, classifyFailureReason]);
 
   useEffect(() => {
     mounted.current = true;
-    fetchEntries();
+    fetchEntries("auto");
     return () => {
       mounted.current = false;
     };
@@ -194,9 +226,6 @@ export function useJournalEntries(userId: string | null | undefined) {
       // Must have either content or structured_content
       if (!content?.trim() && !structuredContent) return null;
 
-      const isLikelySessionError = (message: string) =>
-        /jwt|token|session|auth/i.test(message);
-
       const insertOnce = async (): Promise<JournalEntry | null> => {
         const insertData: Record<string, unknown> = {
           user_id: userId,
@@ -225,6 +254,7 @@ export function useJournalEntries(userId: string | null | undefined) {
 
       try {
         const startedAt = Date.now();
+        qaLog("journal", "Create entry started", { userId, entryType });
         let data: JournalEntry | null = null;
         try {
           data = await insertOnce();
@@ -278,11 +308,17 @@ export function useJournalEntries(userId: string | null | undefined) {
 
         return data;
       } catch (err) {
-        qaLog("journal", "Exception creating entry", { error: String(err) });
+        const errorText = String(err);
+        qaLog("journal", "Create entry failed", {
+          userId,
+          entryType,
+          reason: classifyFailureReason(errorText),
+          error: errorText,
+        });
         throw err;
       }
     },
-    [userId, runWithTimeout]
+    [userId, runWithTimeout, classifyFailureReason]
   );
 
   // Update an existing journal entry
@@ -294,7 +330,7 @@ export function useJournalEntries(userId: string | null | undefined) {
     ): Promise<JournalEntry | null> => {
       if (!userId) return null;
 
-      try {
+      const updateOnce = async (): Promise<JournalEntry | null> => {
         const updateData: Record<string, unknown> = {
           content: content?.trim() || null,
         };
@@ -315,10 +351,43 @@ export function useJournalEntries(userId: string | null | undefined) {
         );
 
         if (updateError) {
-          qaLog("journal", "Error updating entry", {
-            error: updateError.message,
-          });
           throw new Error(updateError.message);
+        }
+        return data;
+      };
+
+      try {
+        qaLog("journal", "Update entry started", { userId, entryId });
+        let data: JournalEntry | null = null;
+        try {
+          data = await updateOnce();
+        } catch (firstErr) {
+          const message = String(firstErr);
+          qaLog("journal", "First update entry attempt failed", {
+            userId,
+            entryId,
+            reason: classifyFailureReason(message),
+            error: message,
+          });
+
+          if (!isLikelySessionError(message)) {
+            throw firstErr;
+          }
+
+          const { error: refreshError } = await supabase.auth.refreshSession();
+          if (refreshError) {
+            qaLog("journal", "Session refresh before update retry failed", {
+              entryId,
+              error: refreshError.message,
+            });
+            throw firstErr;
+          }
+
+          qaLog("journal", "Retrying update entry after session refresh", {
+            userId,
+            entryId,
+          });
+          data = await updateOnce();
         }
 
         if (data) {
@@ -339,11 +408,17 @@ export function useJournalEntries(userId: string | null | undefined) {
 
         return data;
       } catch (err) {
-        qaLog("journal", "Exception updating entry", { error: String(err) });
+        const errorText = String(err);
+        qaLog("journal", "Update entry failed", {
+          userId,
+          entryId,
+          reason: classifyFailureReason(errorText),
+          error: errorText,
+        });
         throw err;
       }
     },
-    [userId, runWithTimeout]
+    [userId, runWithTimeout, isLikelySessionError, classifyFailureReason]
   );
 
   // Delete a journal entry
@@ -354,7 +429,7 @@ export function useJournalEntries(userId: string | null | undefined) {
       // Capture entry_type before deletion for analytics
       const entryToDelete = entriesRef.current.find((e) => e.id === entryId);
 
-      try {
+      const deleteOnce = async (): Promise<void> => {
         const { error: deleteError } = await runWithTimeout((signal) =>
           supabase
             .from("journal_entries")
@@ -365,10 +440,41 @@ export function useJournalEntries(userId: string | null | undefined) {
         );
 
         if (deleteError) {
-          qaLog("journal", "Error deleting entry", {
-            error: deleteError.message,
-          });
           throw new Error(deleteError.message);
+        }
+      };
+
+      try {
+        qaLog("journal", "Delete entry started", { userId, entryId });
+        try {
+          await deleteOnce();
+        } catch (firstErr) {
+          const message = String(firstErr);
+          qaLog("journal", "First delete entry attempt failed", {
+            userId,
+            entryId,
+            reason: classifyFailureReason(message),
+            error: message,
+          });
+
+          if (!isLikelySessionError(message)) {
+            throw firstErr;
+          }
+
+          const { error: refreshError } = await supabase.auth.refreshSession();
+          if (refreshError) {
+            qaLog("journal", "Session refresh before delete retry failed", {
+              entryId,
+              error: refreshError.message,
+            });
+            throw firstErr;
+          }
+
+          qaLog("journal", "Retrying delete entry after session refresh", {
+            userId,
+            entryId,
+          });
+          await deleteOnce();
         }
 
         setEntries((prev) => prev.filter((entry) => entry.id !== entryId));
@@ -385,11 +491,17 @@ export function useJournalEntries(userId: string | null | undefined) {
 
         return true;
       } catch (err) {
-        qaLog("journal", "Exception deleting entry", { error: String(err) });
+        const errorText = String(err);
+        qaLog("journal", "Delete entry failed", {
+          userId,
+          entryId,
+          reason: classifyFailureReason(errorText),
+          error: errorText,
+        });
         throw err;
       }
     },
-    [userId, runWithTimeout]
+    [userId, runWithTimeout, isLikelySessionError, classifyFailureReason]
   );
 
   // Search entries by content (searches the text content field, which all types populate)

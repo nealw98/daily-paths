@@ -141,7 +141,7 @@ function JournalTabContent() {
     setSelectedEntry(null);
     setView("timeline");
     // Refresh when returning to timeline so it picks up cross-device changes
-    refreshEntries();
+    void refreshEntries("manual");
   }, [refreshEntries]);
 
   const handleFilterChange = useCallback((filter: CategoryFilter) => {
@@ -159,10 +159,18 @@ function JournalTabContent() {
     if (showSignIn || !isAuthenticated || !pendingCreate) return;
     const save = pendingCreate;
     setPendingCreate(null);
-    createEntry(save.entryType, save.content, save.structuredContent).then(() => {
-      setView("timeline");
-    });
+    createEntry(save.entryType, save.content, save.structuredContent)
+      .then(() => {
+        setView("timeline");
+      })
+      .catch(() => {
+        Alert.alert("Error", "Failed to save your entry. Please try again.");
+      });
   }, [showSignIn, isAuthenticated, pendingCreate, createEntry]);
+
+  const handleRefreshTimeline = useCallback(() => {
+    void refreshEntries("retry");
+  }, [refreshEntries]);
 
   // ─── CRUD Operations ────────────────────────────────────
 
@@ -264,8 +272,12 @@ function JournalTabContent() {
             if (!pendingCreate || !isAuthenticated) return;
             const save = pendingCreate;
             setPendingCreate(null);
-            await createEntry(save.entryType, save.content, save.structuredContent);
-            setView("timeline");
+            try {
+              await createEntry(save.entryType, save.content, save.structuredContent);
+              setView("timeline");
+            } catch {
+              Alert.alert("Error", "Failed to save your entry. Please try again.");
+            }
           }}
         />
       </>
@@ -306,7 +318,7 @@ function JournalTabContent() {
         onNewEntry={handleNewEntry}
         onSelectEntry={handleSelectEntry}
         onDeleteEntry={handleDeleteFromTimeline}
-        onRefresh={refreshEntries}
+        onRefresh={handleRefreshTimeline}
       />
       <JournalCategoryPicker
         visible={showCategoryPicker}
@@ -322,8 +334,12 @@ function JournalTabContent() {
           if (!pendingCreate || !isAuthenticated) return;
           const save = pendingCreate;
           setPendingCreate(null);
-          await createEntry(save.entryType, save.content, save.structuredContent);
-          setView("timeline");
+          try {
+            await createEntry(save.entryType, save.content, save.structuredContent);
+            setView("timeline");
+          } catch {
+            Alert.alert("Error", "Failed to save your entry. Please try again.");
+          }
         }}
       />
     </SafeAreaView>
