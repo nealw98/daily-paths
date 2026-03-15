@@ -94,7 +94,7 @@ function formatTimeStorage(date: Date): string {
 export default function MoreTab() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const { user, isAuthenticated, signOut, isLegacy } = useAuth();
+  const { user, isAuthenticated, signOut } = useAuth();
   const { settings, setTextSize, setThemeId, setColorScheme, setDailyReminderEnabled, setDailyReminderTime } =
     useSettings();
   const { submitting: submittingFeedback, submitFeedback } = useAppFeedback();
@@ -282,10 +282,8 @@ export default function MoreTab() {
 
   const handleDeleteAccount = async () => {
     try {
-      const wasLegacy = status.isLegacy || isLegacy;
-
       await deleteAccountNow();
-      await cleanupAfterDeletion({ revokeLifetime: wasLegacy });
+      await cleanupAfterDeletion();
 
       setShowDeleteModal(false);
       // Delay alert until the Modal slide-out animation fully completes,

@@ -18,9 +18,7 @@ import {
   isRevenueCatInitialized,
   getCachedSubscriptionStatus,
   cacheSubscriptionStatus,
-  clearSubscriptionCache,
   checkReceiptForLegacyStatus,
-  markLifetimeRevoked,
   type SubscriptionStatus,
 } from "../lib/subscription";
 import {
@@ -28,7 +26,6 @@ import {
   getTrialStatus,
   expireTrial,
   resetTrial,
-  markTrialEndedModalSeen,
   type TrialStatus,
 } from "../utils/trialTimer";
 import { getRequiredGate, type GateType } from "../utils/accessControl";
@@ -55,7 +52,7 @@ interface SubscriptionContextValue {
   restore: () => Promise<boolean>;
   refresh: () => Promise<void>;
   logout: () => Promise<void>;
-  cleanupAfterDeletion: (options?: { revokeLifetime?: boolean }) => Promise<void>;
+  cleanupAfterDeletion: () => Promise<void>;
 }
 
 const DEFAULT_STATUS: SubscriptionStatus = {
@@ -361,39 +358,9 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
     setStatus(DEFAULT_STATUS);
   }, []);
 
-  /**
-   * Full cleanup after account deletion. Unlike `logout` (which is for
-   * sign-out and preserves trial state), this:
-   *  1. For lifetime users, logs out RevenueCat and resets subscription status
-   *  2. Expires the local trial so `getRequiredGate` shows the paywall
-   *  3. Marks lifetime as revoked so the permanent Apple receipt doesn't
-   *     re-detect the user as legacy on the next launch
-   *  4. Clears the subscription cache to prevent stale state
-   *  5. For active non-lifetime subscribers, preserves current entitlement
-   *     state so premium access continues without requiring restore
-   */
-  const cleanupAfterDeletion = useCallback(async (options?: { revokeLifetime?: boolean }) => {
-    const revokeLifetime = options?.revokeLifetime === true;
-
-    if (revokeLifetime) {
-      // Lifetime deletion is destructive by design: remove entitlement and
-      // prevent receipt-based legacy re-grant.
-      await logoutRevenueCat();
-      setStatus(DEFAULT_STATUS);
-      await expireTrial();
-      await markTrialEndedModalSeen();
-      const freshTrial = await getTrialStatus();
-      setTrial(freshTrial);
-      await markLifetimeRevoked();
-      await clearSubscriptionCache();
-      qaLog("subscription", "Account deletion cleanup complete (lifetime revoked)");
-      return;
-    }
-
-    // For active subscribers, preserve the in-memory entitlement state after
-    // account deletion. Avoid an immediate RC network fetch here; if that call
-    // stalls, the delete modal can appear to hang.
-    qaLog("subscription", "Account deletion cleanup complete (subscription preserved)", {
+  const cleanupAfterDeletion = useCallback(async () => {
+    // Account deletion removes account/data only; entitlements are managed by RevenueCat.
+    qaLog("subscription", "Account deletion cleanup complete (entitlements unchanged)", {
       isSubscribed: status.isSubscribed,
       isLegacy: status.isLegacy,
     });

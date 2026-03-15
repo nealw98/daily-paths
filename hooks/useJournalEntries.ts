@@ -355,11 +355,14 @@ export function useJournalEntries(userId: string | null | undefined) {
       const entryToDelete = entriesRef.current.find((e) => e.id === entryId);
 
       try {
-        const { error: deleteError } = await supabase
-          .from("journal_entries")
-          .delete()
-          .eq("id", entryId)
-          .eq("user_id", userId);
+        const { error: deleteError } = await runWithTimeout((signal) =>
+          supabase
+            .from("journal_entries")
+            .delete()
+            .eq("id", entryId)
+            .eq("user_id", userId)
+            .abortSignal(signal),
+        );
 
         if (deleteError) {
           qaLog("journal", "Error deleting entry", {
@@ -386,7 +389,7 @@ export function useJournalEntries(userId: string | null | undefined) {
         throw err;
       }
     },
-    [userId]
+    [userId, runWithTimeout]
   );
 
   // Search entries by content (searches the text content field, which all types populate)

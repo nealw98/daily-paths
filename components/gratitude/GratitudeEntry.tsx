@@ -5,6 +5,7 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
@@ -46,6 +47,12 @@ export const GratitudeEntry: React.FC<GratitudeEntryProps> = ({
   };
 
   const hasItems = items.length > 0;
+  const handleSave = async () => {
+    const ok = await onSave(items);
+    if (!ok) {
+      Alert.alert("Error", "Failed to save your gratitude entry. Please try again.");
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -130,7 +137,7 @@ export const GratitudeEntry: React.FC<GratitudeEntryProps> = ({
             styles.saveButton,
             { backgroundColor: colors.buttonPrimary },
           ]}
-          onPress={() => onSave(items)}
+          onPress={handleSave}
           disabled={saving}
         >
           <Ionicons

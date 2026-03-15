@@ -4,6 +4,9 @@ import { qaLog } from "../utils/qaLog";
 import { trackEvent } from "../utils/trackEvent";
 import { ANALYTICS_EVENTS } from "../utils/analytics";
 
+const SAVE_REQUEST_TIMEOUT_MS = 6000;
+const FETCH_REQUEST_TIMEOUT_MS = 8000;
+
 export interface GratitudeEntry {
   id: string;
   user_id: string;
@@ -30,6 +33,28 @@ export function useGratitude(userId: string | null | undefined) {
   const [todayQuote, setTodayQuote] = useState<GratitudeQuote | null>(null);
   const [loading, setLoading] = useState(true);
   const mounted = useRef(true);
+  const runWithTimeout = useCallback(
+    async <T,>(
+      runner: (signal: AbortSignal) => Promise<T>,
+      timeoutMs = SAVE_REQUEST_TIMEOUT_MS,
+      timeoutLabel = "Request timed out",
+    ): Promise<T> => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        return await runner(controller.signal);
+      } catch (err) {
+        const msg = String(err);
+        if (msg.toLowerCase().includes("abort")) {
+          throw new Error(timeoutLabel);
+        }
+        throw err;
+      } finally {
+        clearTimeout(timer);
+      }
+    },
+    [],
+  );
 
   const todayStr = new Date().toISOString().split("T")[0];
 
@@ -81,12 +106,18 @@ export function useGratitude(userId: string | null | undefined) {
       setLoading(true);
 
       // Fetch today's entry
-      const { data: todayData } = await supabase
-        .from("gratitude_entries")
-        .select("*")
-        .eq("user_id", userId)
-        .eq("date", todayStr)
-        .single();
+      const { data: todayData } = await runWithTimeout(
+        (signal) =>
+          supabase
+            .from("gratitude_entries")
+            .select("*")
+            .eq("user_id", userId)
+            .eq("date", todayStr)
+            .single()
+            .abortSignal(signal),
+        FETCH_REQUEST_TIMEOUT_MS,
+        "Fetch timed out",
+      );
 
       if (mounted.current && todayData) {
         setTodayEntry({
@@ -98,12 +129,18 @@ export function useGratitude(userId: string | null | undefined) {
       }
 
       // Fetch history (last 30 entries)
-      const { data: historyData } = await supabase
-        .from("gratitude_entries")
-        .select("*")
-        .eq("user_id", userId)
-        .order("date", { ascending: false })
-        .limit(30);
+      const { data: historyData } = await runWithTimeout(
+        (signal) =>
+          supabase
+            .from("gratitude_entries")
+            .select("*")
+            .eq("user_id", userId)
+            .order("date", { ascending: false })
+            .limit(30)
+            .abortSignal(signal),
+        FETCH_REQUEST_TIMEOUT_MS,
+        "Fetch timed out",
+      );
 
       if (mounted.current) {
         setHistory(
@@ -118,7 +155,7 @@ export function useGratitude(userId: string | null | undefined) {
     } finally {
       if (mounted.current) setLoading(false);
     }
-  }, [userId, todayStr]);
+  }, [userId, todayStr, runWithTimeout]);
 
   useEffect(() => {
     mounted.current = true;
@@ -137,18 +174,24 @@ export function useGratitude(userId: string | null | undefined) {
       if (filteredItems.length === 0) return false;
 
       try {
-        const { data, error } = await supabase
-          .from("gratitude_entries")
-          .upsert(
-            {
-              user_id: userId,
-              date: todayStr,
-              items: filteredItems,
-            },
-            { onConflict: "user_id,date" }
-          )
-          .select()
-          .single();
+        const { data, error } = await runWithTimeout(
+          (signal) =>
+            supabase
+              .from("gratitude_entries")
+              .upsert(
+                {
+                  user_id: userId,
+                  date: todayStr,
+                  items: filteredItems,
+                },
+                { onConflict: "user_id,date" }
+              )
+              .select()
+              .single()
+              .abortSignal(signal),
+          SAVE_REQUEST_TIMEOUT_MS,
+          "Save timed out",
+        );
 
         if (error) {
           qaLog("gratitude", "Error saving entry", { error: error.message });
@@ -192,7 +235,7 @@ export function useGratitude(userId: string | null | undefined) {
         return false;
       }
     },
-    [userId, todayStr]
+    [userId, todayStr, todayEntry, runWithTimeout]
   );
 
   return {

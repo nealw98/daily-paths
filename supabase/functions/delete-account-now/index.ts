@@ -5,19 +5,12 @@ import { corsHeaders } from "../_shared/cors.ts";
  * Edge Function: delete-account-now
  *
  * Immediately deletes the authenticated user's account:
- *  1. Revokes any RevenueCat promotional entitlements (lifetime access)
- *  2. Deletes all user data from Supabase tables
- *  3. Deletes the auth user
+ *  1. Deletes all user data from Supabase tables
+ *  2. Deletes the auth user
  *
  * RevenueCat owns access. Supabase owns data.
- * Entitlement revocation is the meaningful act; Supabase deletion is cleanup.
- *
- * Note: Subscription entitlements tied to App Store receipts cannot be revoked
- * server-side — the user must cancel in App Store / Google Play settings.
+ * User-initiated account deletion is data/account removal only.
  */
-
-const REVENUECAT_API_URL = "https://api.revenuecat.com/v1";
-const LIFETIME_ENTITLEMENT_ID = "lifetime";
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -50,29 +43,7 @@ Deno.serve(async (req: Request) => {
 
     const userId = user.id;
 
-    // ── 1. Revoke RevenueCat lifetime promotional entitlement ────────
-    const revenueCatSecret = Deno.env.get("REVENUECAT_SECRET_KEY");
-    if (revenueCatSecret) {
-      try {
-        const rcUrl = `${REVENUECAT_API_URL}/subscribers/${userId}/entitlements/${LIFETIME_ENTITLEMENT_ID}/revoke_promotionals`;
-        const rcResponse = await fetch(rcUrl, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${revenueCatSecret}`,
-            "Content-Type": "application/json",
-          },
-        });
-        if (!rcResponse.ok) {
-          // Log but don't fail — user may not have a lifetime entitlement
-          const rcError = await rcResponse.text();
-          console.warn("RevenueCat revoke (non-fatal):", rcResponse.status, rcError);
-        }
-      } catch (rcErr) {
-        console.warn("RevenueCat revoke error (non-fatal):", rcErr);
-      }
-    }
-
-    // ── 2. Delete user data (service role bypasses RLS) ──────────────
+    // ── 1. Delete user data (service role bypasses RLS) ──────────────
     const serviceClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -112,7 +83,7 @@ Deno.serve(async (req: Request) => {
       .eq("id", userId);
     if (e5) console.error("user_profiles:", e5.message);
 
-    // ── 3. Delete auth user ─────────────────────────────────────────
+    // ── 2. Delete auth user ─────────────────────────────────────────
     const { error: deleteAuthError } = await serviceClient.auth.admin.deleteUser(userId);
     if (deleteAuthError) {
       console.error("auth.deleteUser:", deleteAuthError.message);
