@@ -7,6 +7,7 @@ import React, {
   useMemo,
   useRef,
 } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   initializeRevenueCat,
   getSubscriptionStatus,
@@ -118,6 +119,27 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!rcInitialized.current) {
         await initializeRevenueCat();
         rcInitialized.current = true;
+      }
+
+      // ── One-time migration: restore purchases after auth removal ───────
+      // Previously the app identified users to RevenueCat via their Supabase
+      // user ID. Now users are anonymous. On the first launch after the
+      // update, call restorePurchases() so RevenueCat reads the App Store
+      // receipt and re-attaches entitlements to the new anonymous user.
+      if (isRevenueCatInitialized()) {
+        const MIGRATION_KEY = "@daily_paths_rc_restore_migration_v1";
+        try {
+          const migrated = await AsyncStorage.getItem(MIGRATION_KEY);
+          if (!migrated) {
+            qaLog("subscription", "Running one-time purchase restore migration");
+            await restorePurchases();
+            await AsyncStorage.setItem(MIGRATION_KEY, "done");
+            qaLog("subscription", "Purchase restore migration complete");
+          }
+        } catch (err) {
+          qaLog("subscription", "Purchase restore migration failed", { error: String(err) });
+          // Non-fatal — user can still tap Restore Purchases manually
+        }
       }
 
       // Ensure the trial clock is running

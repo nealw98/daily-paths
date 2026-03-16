@@ -69,32 +69,6 @@ export async function initializeRevenueCat(userId?: string): Promise<void> {
   }
 }
 
-/**
- * Log in a user to RevenueCat (call after auth).
- */
-export async function loginRevenueCat(userId: string): Promise<void> {
-  try {
-    const { customerInfo } = await Purchases.logIn(userId);
-    qaLog("subscription", "RevenueCat user logged in", {
-      userId,
-      entitlements: Object.keys(customerInfo.entitlements.active),
-    });
-  } catch (err) {
-    qaLog("subscription", "RevenueCat login error", { error: String(err) });
-  }
-}
-
-/**
- * Log out from RevenueCat.
- */
-export async function logoutRevenueCat(): Promise<void> {
-  try {
-    await Purchases.logOut();
-    qaLog("subscription", "RevenueCat user logged out");
-  } catch (err) {
-    qaLog("subscription", "RevenueCat logout error", { error: String(err) });
-  }
-}
 
 /**
  * Get available subscription packages.
@@ -303,15 +277,4 @@ export async function getCachedSubscriptionStatus(): Promise<SubscriptionStatus 
   }
 }
 
-/**
- * Clear the cached subscription status.
- * Called during account deletion to prevent stale legacy/subscribed state.
- */
-export async function clearSubscriptionCache(): Promise<void> {
-  try {
-    await AsyncStorage.removeItem(SUBSCRIPTION_CACHE_KEY);
-  } catch {
-    // Non-critical
-  }
-}
 
