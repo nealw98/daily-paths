@@ -305,23 +305,6 @@ async function createUserProfile(userId: string) {
   }
 }
 
-// ─── Legacy User Check ─────────────────────────────────────────────────────
-
-export async function isLegacyUser(userId: string): Promise<boolean> {
-  try {
-    const { data, error } = await supabase
-      .from("user_profiles")
-      .select("legacy_user")
-      .eq("id", userId)
-      .single();
-
-    if (error || !data) return false;
-    return data.legacy_user === true;
-  } catch {
-    return false;
-  }
-}
-
 // ─── Password Reset ─────────────────────────────────────────────────────────
 
 export async function resetPassword(email: string) {

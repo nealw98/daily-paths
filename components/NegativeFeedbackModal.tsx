@@ -10,7 +10,7 @@ import {
   Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { fonts } from '../constants/theme';
+import { fonts, type ColorPalette } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 
 interface NegativeFeedbackModalProps {
@@ -155,7 +155,7 @@ interface CheckboxOptionProps {
   label: string;
   checked: boolean;
   onToggle: () => void;
-  colors: Record<string, string>;
+  colors: ColorPalette;
 }
 
 const CheckboxOption: React.FC<CheckboxOptionProps> = ({

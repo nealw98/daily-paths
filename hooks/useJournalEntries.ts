@@ -86,14 +86,14 @@ export function useJournalEntries(userId: string | null | undefined) {
 
     const fetchOnce = async (): Promise<JournalEntry[]> => {
       const { data, error: fetchError } = await runWithTimeout(
-        (signal) =>
-          supabase
-            .from("journal_entries")
-            .select("*")
-            .eq("user_id", userId)
-            .order("created_at", { ascending: false })
-            .abortSignal(signal)
-            .then((result) => result),
+        () =>
+          Promise.resolve(
+            supabase
+              .from("journal_entries")
+              .select("*")
+              .eq("user_id", userId)
+              .order("created_at", { ascending: false })
+          ) as Promise<any>,
         FETCH_REQUEST_TIMEOUT_MS,
         "Fetch timed out",
       );
@@ -236,14 +236,14 @@ export function useJournalEntries(userId: string | null | undefined) {
           insertData.structured_content = structuredContent;
         }
 
-        const { data, error: insertError } = await runWithTimeout((signal) =>
-          supabase
-            .from("journal_entries")
-            .insert(insertData)
-            .select()
-            .single()
-            .abortSignal(signal)
-            .then((result) => result),
+        const { data, error: insertError } = await runWithTimeout(() =>
+          Promise.resolve(
+            supabase
+              .from("journal_entries")
+              .insert(insertData)
+              .select()
+              .single()
+          ) as Promise<any>,
         );
 
         if (insertError) {
@@ -338,16 +338,16 @@ export function useJournalEntries(userId: string | null | undefined) {
           updateData.structured_content = structuredContent;
         }
 
-        const { data, error: updateError } = await runWithTimeout((signal) =>
-          supabase
-            .from("journal_entries")
-            .update(updateData)
-            .eq("id", entryId)
-            .eq("user_id", userId)
-            .select()
-            .single()
-            .abortSignal(signal)
-            .then((result) => result),
+        const { data, error: updateError } = await runWithTimeout(() =>
+          Promise.resolve(
+            supabase
+              .from("journal_entries")
+              .update(updateData)
+              .eq("id", entryId)
+              .eq("user_id", userId)
+              .select()
+              .single()
+          ) as Promise<any>,
         );
 
         if (updateError) {
@@ -430,13 +430,14 @@ export function useJournalEntries(userId: string | null | undefined) {
       const entryToDelete = entriesRef.current.find((e) => e.id === entryId);
 
       const deleteOnce = async (): Promise<void> => {
-        const { error: deleteError } = await runWithTimeout((signal) =>
-          supabase
-            .from("journal_entries")
-            .delete()
-            .eq("id", entryId)
-            .eq("user_id", userId)
-            .abortSignal(signal),
+        const { error: deleteError } = await runWithTimeout(() =>
+          Promise.resolve(
+            supabase
+              .from("journal_entries")
+              .delete()
+              .eq("id", entryId)
+              .eq("user_id", userId)
+          ) as Promise<any>,
         );
 
         if (deleteError) {

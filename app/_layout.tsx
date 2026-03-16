@@ -252,7 +252,7 @@ export default function RootLayout() {
 
 
 // ─── Post-Auth Migration Runner ───────────────────────────────────────────────
-// Thin wrapper that runs post-sign-in tasks (trial migration, legacy detection).
+// Thin wrapper that runs post-sign-in tasks (trial data migration).
 
 function PostAuthMigrationRunner({ children }: { children: React.ReactNode }) {
   usePostAuthMigration();
@@ -316,18 +316,18 @@ function TrialExpiryPresenter() {
 const LIFETIME_WELCOME_SEEN_KEY = "@daily_paths_lifetime_welcome_seen";
 
 function LifetimeWelcomePresenter() {
-  const { status, liveLegacyDetected } = useSubscriptionContext();
+  const { status } = useSubscriptionContext();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     (async () => {
-      if (!status.isLegacy && !liveLegacyDetected) return;
+      if (!status.isLegacy) return;
       const seen = await AsyncStorage.getItem(LIFETIME_WELCOME_SEEN_KEY);
       if (seen !== "true") {
         setVisible(true);
       }
     })();
-  }, [status.isLegacy, liveLegacyDetected]);
+  }, [status.isLegacy]);
 
   return (
     <LifetimeWelcomeModal

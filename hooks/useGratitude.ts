@@ -107,14 +107,15 @@ export function useGratitude(userId: string | null | undefined) {
 
       // Fetch today's entry
       const { data: todayData } = await runWithTimeout(
-        (signal) =>
-          supabase
-            .from("gratitude_entries")
-            .select("*")
-            .eq("user_id", userId)
-            .eq("date", todayStr)
-            .single()
-            .abortSignal(signal),
+        () =>
+          Promise.resolve(
+            supabase
+              .from("gratitude_entries")
+              .select("*")
+              .eq("user_id", userId)
+              .eq("date", todayStr)
+              .single()
+          ),
         FETCH_REQUEST_TIMEOUT_MS,
         "Fetch timed out",
       );
@@ -130,21 +131,22 @@ export function useGratitude(userId: string | null | undefined) {
 
       // Fetch history (last 30 entries)
       const { data: historyData } = await runWithTimeout(
-        (signal) =>
-          supabase
-            .from("gratitude_entries")
-            .select("*")
-            .eq("user_id", userId)
-            .order("date", { ascending: false })
-            .limit(30)
-            .abortSignal(signal),
+        () =>
+          Promise.resolve(
+            supabase
+              .from("gratitude_entries")
+              .select("*")
+              .eq("user_id", userId)
+              .order("date", { ascending: false })
+              .limit(30)
+          ),
         FETCH_REQUEST_TIMEOUT_MS,
         "Fetch timed out",
       );
 
       if (mounted.current) {
         setHistory(
-          (historyData || []).map((entry) => ({
+          (historyData || []).map((entry: any) => ({
             ...entry,
             items: Array.isArray(entry.items) ? entry.items : [],
           }))
@@ -175,20 +177,21 @@ export function useGratitude(userId: string | null | undefined) {
 
       try {
         const { data, error } = await runWithTimeout(
-          (signal) =>
-            supabase
-              .from("gratitude_entries")
-              .upsert(
-                {
-                  user_id: userId,
-                  date: todayStr,
-                  items: filteredItems,
-                },
-                { onConflict: "user_id,date" }
-              )
-              .select()
-              .single()
-              .abortSignal(signal),
+          () =>
+            Promise.resolve(
+              supabase
+                .from("gratitude_entries")
+                .upsert(
+                  {
+                    user_id: userId,
+                    date: todayStr,
+                    items: filteredItems,
+                  },
+                  { onConflict: "user_id,date" }
+                )
+                .select()
+                .single()
+            ),
           SAVE_REQUEST_TIMEOUT_MS,
           "Save timed out",
         );

@@ -5,8 +5,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  KeyboardAvoidingView,
-  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -15,17 +13,10 @@ import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { useAnalytics } from "../../utils/analytics";
 import { fonts } from "../../constants/theme";
 import { PRAYERS, type Prayer } from "../../constants/prayers";
-import { PersonalNotes } from "./PersonalNotes";
 import { TealHeader } from "../shared/TealHeader";
 import { LeafOnWater } from "../icons";
 
-interface PrayersScreenProps {
-  userId: string | null;
-}
-
-export const PrayersScreen: React.FC<PrayersScreenProps> = ({
-  userId,
-}) => {
+export const PrayersScreen: React.FC = () => {
   const { colors } = useTheme();
   const { settings } = useSettings();
   const { trackPrayerViewed } = useAnalytics();
@@ -111,42 +102,23 @@ export const PrayersScreen: React.FC<PrayersScreenProps> = ({
         leftIcon={<LeafOnWater size={28} color={colors.textOnAccent} />}
       />
 
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={0}
+      <ScrollView
+        ref={scrollRef}
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
       >
-        <ScrollView
-          ref={scrollRef}
-          style={styles.scrollView}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-          keyboardDismissMode="on-drag"
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Prayers List */}
-          {PRAYERS.map(renderPrayer)}
+        {/* Prayers List */}
+        {PRAYERS.map(renderPrayer)}
 
-          {/* Personal Notes Section */}
-          <View style={styles.personalSection}>
-            <PersonalNotes
-              userId={userId}
-              onInputFocus={() => {
-                setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 300);
-              }}
-            />
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        {/* TODO: Personal prayer notes will be rebuilt as part of the Notebook feature */}
+      </ScrollView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-  },
-  flex: {
     flex: 1,
   },
   scrollView: {
@@ -187,8 +159,5 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     marginTop: 14,
     textAlign: "right",
-  },
-  personalSection: {
-    marginTop: 24,
   },
 });

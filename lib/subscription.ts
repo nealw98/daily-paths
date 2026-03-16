@@ -24,7 +24,6 @@ const REVENUECAT_IOS_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY || "";
 const REVENUECAT_ANDROID_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY || "";
 
 const SUBSCRIPTION_CACHE_KEY = "@daily_paths_subscription_status_v1";
-const LIFETIME_REVOKED_KEY = "@daily_paths_lifetime_revoked";
 
 export interface SubscriptionStatus {
   isSubscribed: boolean;
@@ -156,69 +155,6 @@ export async function purchasePackage(
   }
 }
 
-// First build number of the freemium release. Any originalApplicationVersion
-// (which is CFBundleVersion — a plain integer on iOS) below this threshold
-// means the user originally purchased the paid app.
-const FREEMIUM_BUILD_NUMBER = 27;
-
-/**
- * Check the App Store receipt for legacy (paid-app) status.
- *
- * Calls restorePurchases() to sync the receipt, then inspects
- * originalApplicationVersion. Returns true if the user originally
- * purchased the app before the freemium switch, OR if the lifetime
- * entitlement is already active in RevenueCat.
- *
- * Safe to call before authentication — only reads the device receipt.
- * iOS-only; always returns false on Android.
- */
-export async function checkReceiptForLegacyStatus(): Promise<boolean> {
-  if (Platform.OS !== "ios") return false;
-  if (!isInitialized) return false;
-
-  try {
-    const customerInfo = await Purchases.restorePurchases();
-
-    // Already has the lifetime entitlement (previously granted / restored)
-    if (customerInfo.entitlements.active[LIFETIME_ENTITLEMENT_ID]) {
-      qaLog("subscription", "Lifetime entitlement already active (receipt check)");
-      return true;
-    }
-
-    // If lifetime was explicitly revoked (account deletion), don't re-detect
-    // based on the permanent Apple receipt build number. The entitlement check
-    // above is still authoritative — if support re-grants it, that will work.
-    const revoked = await isLifetimeRevoked();
-    if (revoked) {
-      qaLog("subscription", "Lifetime was revoked — skipping receipt build-number check");
-      return false;
-    }
-
-    const originalVersion = customerInfo.originalApplicationVersion;
-    if (originalVersion && isLegacyBuildNumber(originalVersion)) {
-      qaLog("subscription", "Legacy user detected via receipt", { originalVersion });
-      return true;
-    }
-
-    return false;
-  } catch (err) {
-    qaLog("subscription", "Receipt legacy check failed", { error: String(err) });
-    return false;
-  }
-}
-
-/**
- * Check if an originalApplicationVersion (CFBundleVersion — a plain integer
- * build number on iOS) indicates a legacy paid-app user.
- *
- * Returns true if the build number is strictly before the first freemium build.
- */
-function isLegacyBuildNumber(originalVersion: string): boolean {
-  const buildNum = parseInt(originalVersion, 10);
-  if (isNaN(buildNum)) return false;
-  return buildNum < FREEMIUM_BUILD_NUMBER;
-}
-
 /**
  * Restore previous purchases.
  */
@@ -265,7 +201,7 @@ export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
 
     let result: SubscriptionStatus;
 
-    // Lifetime entitlement (legacy users granted via Edge Function)
+    // Lifetime entitlement — RevenueCat is the sole source of truth
     if (lifetimeEntitlement) {
       result = {
         isSubscribed: true,
@@ -379,33 +315,3 @@ export async function clearSubscriptionCache(): Promise<void> {
   }
 }
 
-// ─── Lifetime revocation tracking ────────────────────────────────────────────
-
-/**
- * Mark the lifetime entitlement as explicitly revoked (e.g. account deletion).
- *
- * When set, `checkReceiptForLegacyStatus()` will still honour an active
- * RevenueCat lifetime entitlement (in case support re-grants it) but will
- * NOT fall back to the permanent Apple receipt `originalApplicationVersion`
- * check. This prevents a deleted account from re-gaining lifetime access
- * simply because the receipt is tied to the Apple ID.
- */
-export async function markLifetimeRevoked(): Promise<void> {
-  try {
-    await AsyncStorage.setItem(LIFETIME_REVOKED_KEY, "true");
-  } catch {
-    // Non-critical — worst case the receipt re-detects on next launch
-  }
-}
-
-/**
- * Check whether the lifetime entitlement was explicitly revoked.
- */
-export async function isLifetimeRevoked(): Promise<boolean> {
-  try {
-    const val = await AsyncStorage.getItem(LIFETIME_REVOKED_KEY);
-    return val === "true";
-  } catch {
-    return false;
-  }
-}

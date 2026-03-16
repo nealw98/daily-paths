@@ -175,9 +175,9 @@ export async function recordDailyActivity(): Promise<void> {
     );
 
     if (error) {
-      qaLog('device', 'Error recording daily activity', { 
-        error: error.message,
-        code: (error as any).code 
+      qaLog('device', 'Error recording daily activity', {
+        error: error!.message,
+        code: (error as any).code
       });
     } else {
       // Mark as recorded locally

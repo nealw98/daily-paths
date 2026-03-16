@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.nealwagner.dailypaths",
-      "buildNumber": "28",
+      "buildNumber": "29",
       "appStoreUrl": "https://apps.apple.com/app/id6755981862",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -29,7 +29,7 @@
         "backgroundColor": "#F7FAFA"
       },
       "package": "com.nealw98.dailypaths",
-      "versionCode": 28,
+      "versionCode": 29,
       "predictiveBackGestureEnabled": false,
       "playStoreUrl": "https://play.google.com/store/apps/details?id=com.nealw98.dailypaths"
     },

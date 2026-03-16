@@ -17,15 +17,12 @@ import {
   restorePurchases,
   isRevenueCatInitialized,
   getCachedSubscriptionStatus,
-  cacheSubscriptionStatus,
-  checkReceiptForLegacyStatus,
   type SubscriptionStatus,
 } from "../lib/subscription";
 import {
   ensureTrialStarted,
   getTrialStatus,
   expireTrial,
-  resetTrial,
   type TrialStatus,
 } from "../utils/trialTimer";
 import { getRequiredGate, type GateType } from "../utils/accessControl";
@@ -42,7 +39,6 @@ interface TrialStatusWithMeta extends TrialStatus {
 
 interface SubscriptionContextValue {
   status: SubscriptionStatus;
-  liveLegacyDetected: boolean;
   trialStatus: TrialStatusWithMeta;
   packages: PurchasesPackage[];
   loading: boolean;
@@ -87,7 +83,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
   const userId = user?.id ?? null;
 
   const [status, setStatus] = useState<SubscriptionStatus>(DEFAULT_STATUS);
-  const [liveLegacyDetected, setLiveLegacyDetected] = useState(false);
   const [trial, setTrial] = useState<TrialStatus>(DEFAULT_TRIAL);
   const [trialLoading, setTrialLoading] = useState(true);
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
@@ -104,7 +99,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
     let cancelled = false;
 
     const init = async () => {
-      setLiveLegacyDetected(false);
       // ── Phase 1: cached / local state (instant) ────────────────────────
 
       // Cached subscription status (AsyncStorage — fast)
@@ -115,7 +109,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       // Trial status (AsyncStorage — fast)
-      // Don't start the trial yet — wait for receipt check in Phase 2.
       const trialResult = await getTrialStatus();
       if (cancelled) return;
       setTrial(trialResult);
@@ -156,82 +149,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
         await loginRevenueCat(userId);
       }
 
-      // ── Receipt-based legacy check (before starting trial) ─────────────
-      // On iOS, check the App Store receipt for users who purchased the
-      // original paid app. If detected, skip the trial entirely — they
-      // have lifetime access. This runs before ensureTrialStarted() so
-      // legacy users never see the trial countdown.
-      if (isRevenueCatInitialized()) {
-        try {
-          const isLegacyReceipt = await checkReceiptForLegacyStatus();
-          if (!cancelled && isLegacyReceipt) {
-            qaLog("SubscriptionContext", "Legacy user detected via receipt — skipping trial");
-            setLiveLegacyDetected(true);
-
-            // Remove any accidentally-started trial so the gate logic
-            // doesn't treat this legacy user as a trial user.
-            await resetTrial();
-            const cleanTrial = await getTrialStatus();
-            if (!cancelled) {
-              setTrial(cleanTrial);
-              setTrialLoading(false);
-            }
-
-            let fresh = await getSubscriptionStatus();
-
-            // On an anonymous RC user the lifetime entitlement (which is
-            // tied to the authenticated user ID) won't appear in
-            // getSubscriptionStatus().  Override with a synthetic legacy
-            // status so the UI shows "Lifetime Access" immediately.  The
-            // next effect run (after auth loads) will replace this with
-            // the canonical status from RevenueCat.
-            if (!fresh.isLegacy) {
-              fresh = {
-                ...fresh,
-                isSubscribed: true,
-                isLegacy: true,
-              };
-              // Cache the synthetic override so Phase 1 picks it up
-              // on subsequent effect runs (e.g. when auth resolves and
-              // userId changes, triggering a re-run).
-              await cacheSubscriptionStatus(fresh);
-            }
-
-            if (!cancelled) {
-              setStatus(fresh);
-              setLoading(false);
-
-              // Pre-fetch packages in background, then done — no trial needed
-              getOfferings()
-                .then((pkgs) => { if (!cancelled) setPackages(pkgs); })
-                .catch(() => {});
-              return;
-            }
-          }
-        } catch {
-          // Receipt check failed — fall through below
-        }
-      }
-
-      // If the receipt check didn't confirm legacy on THIS run (e.g.
-      // restorePurchases() failed after RC login switch) but the cache
-      // from a previous successful detection says legacy, trust the
-      // cache.  This prevents the non-legacy fallback path from
-      // overwriting status with isLegacy: false and making the delete
-      // button / "Lifetime Access" label flash then disappear.
-      if (cached?.isLegacy) {
-        qaLog("SubscriptionContext", "Receipt check inconclusive but cache is legacy — preserving");
-        if (!cancelled) {
-          setStatus(cached);
-          setLoading(false);
-          getOfferings()
-            .then((pkgs) => { if (!cancelled) setPackages(pkgs); })
-            .catch(() => {});
-        }
-        return;
-      }
-
-      // No legacy receipt found — ensure the trial clock is running
+      // Ensure the trial clock is running
       await ensureTrialStarted();
       const freshTrial = await getTrialStatus();
       if (!cancelled) {
@@ -239,7 +157,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
         setTrialLoading(false);
       }
 
-      // Fetch fresh status from RC
+      // Fetch fresh status from RC — RevenueCat is the sole source of
+      // truth for all entitlements including lifetime.
       if (isRevenueCatInitialized()) {
         try {
           const fresh = await getSubscriptionStatus();
@@ -335,18 +254,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
   const refresh = useCallback(async () => {
     try {
       const newStatus = await getSubscriptionStatus();
-      // If RC doesn't report legacy but the cache (from receipt-based
-      // detection in the init effect) does, preserve the cached legacy
-      // override.  This prevents callers (PremiumGate onClose,
-      // usePostAuthMigration) from overwriting synthetic legacy status
-      // after a user-identity switch in RevenueCat.
-      if (!newStatus.isLegacy) {
-        const cached = await getCachedSubscriptionStatus();
-        if (cached?.isLegacy) {
-          qaLog("subscription", "Refresh: preserving cached legacy status");
-          return;
-        }
-      }
       setStatus(newStatus);
     } catch (err) {
       qaLog("subscription", "Refresh error", { error: String(err) });
@@ -375,7 +282,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
   const value = useMemo<SubscriptionContextValue>(
     () => ({
       status,
-      liveLegacyDetected,
       trialStatus: trialStatusValue,
       packages,
       loading,
@@ -389,7 +295,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
     }),
     [
       status,
-      liveLegacyDetected,
       trialStatusValue,
       packages,
       loading,

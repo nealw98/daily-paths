@@ -17,7 +17,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import Constants from "expo-constants";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { fonts, lightColors } from "../constants/theme";
+import { fonts, fallbackColors as lightColors } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSettings, TextSize } from "../hooks/useSettings";

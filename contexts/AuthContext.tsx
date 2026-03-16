@@ -6,7 +6,6 @@ import {
   signInWithApple,
   signInWithGoogle,
   signOut as authSignOut,
-  isLegacyUser,
   resetPassword,
 } from "../lib/auth";
 import { qaLog } from "../utils/qaLog";
@@ -17,7 +16,6 @@ interface AuthContextValue {
   session: Session | null;
   loading: boolean;
   isAuthenticated: boolean;
-  isLegacy: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signInApple: () => Promise<unknown>;
@@ -33,7 +31,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isLegacy, setIsLegacy] = useState(false);
   const mounted = useRef(true);
   const signingOut = useRef(false);
 
@@ -56,11 +53,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(currentSession.user);
           setSession(currentSession);
           setLoading(false);
-
-          // Check legacy status (non-blocking)
-          isLegacyUser(currentSession.user.id).then((legacy) => {
-            if (mounted.current) setIsLegacy(legacy);
-          });
 
           // Validate with the server in the background — if the token is
           // truly expired, onAuthStateChange will fire SIGNED_OUT and clear state.
@@ -101,13 +93,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setSession(newSession);
       setUser(newSession?.user ?? null);
-
-      if (newSession?.user) {
-        const legacy = await isLegacyUser(newSession.user.id);
-        if (mounted.current) setIsLegacy(legacy);
-      } else {
-        setIsLegacy(false);
-      }
     });
 
     return () => {
@@ -160,7 +145,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // onAuthStateChange doesn't fire (e.g. expired/stale session)
     setUser(null);
     setSession(null);
-    setIsLegacy(false);
     qaLog("auth", "AuthContext signOut local state cleared", {
       elapsedMs: Date.now() - startedAt,
     });
@@ -177,7 +161,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     session,
     loading,
     isAuthenticated: !!user,
-    isLegacy,
     signIn,
     signUp,
     signInApple,
