@@ -1,21 +1,19 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
 
+/**
+ * RevenueCat webhook handler.
+ *
+ * With Supabase auth and user-specific tables removed, this function simply
+ * logs expiry events to `subscription_expiry_events` for audit / analytics.
+ * No user data deletion is performed — all user data is now local-only.
+ */
+
 const EXPIRY_EVENT_TYPES = new Set([
   "EXPIRATION",
   "SUBSCRIPTION_EXPIRED",
   "NON_RENEWING_PURCHASE_EXPIRED",
 ]);
-
-async function deleteUserDataAndAuth(serviceClient: ReturnType<typeof createClient>, userId: string) {
-  await serviceClient.from("journal_entries").delete().eq("user_id", userId);
-  await serviceClient.from("gratitude_entries").delete().eq("user_id", userId);
-  await serviceClient.from("prayer_notes").delete().eq("user_id", userId);
-  await serviceClient.from("user_preferences").delete().eq("user_id", userId);
-  await serviceClient.from("user_profiles").delete().eq("id", userId);
-  const { error: authError } = await serviceClient.auth.admin.deleteUser(userId);
-  if (authError) throw authError;
-}
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -44,49 +42,34 @@ Deno.serve(async (req: Request) => {
     const body = await req.json();
     const event = body?.event ?? body;
     const eventType = String(event?.type ?? "");
-    const userId = String(event?.app_user_id ?? "");
+    const appUserId = String(event?.app_user_id ?? "");
     const eventId = String(event?.id ?? crypto.randomUUID());
 
-    if (!eventType || !userId) {
+    if (!eventType || !appUserId) {
       return new Response(JSON.stringify({ error: "Missing required event payload" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const serviceClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
-
-    // Queue every expiry-like event for fallback reconciliation.
+    // Log expiry events for audit / analytics
     if (EXPIRY_EVENT_TYPES.has(eventType)) {
+      const serviceClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      );
+
       await serviceClient.from("subscription_expiry_events").upsert(
         {
           event_id: eventId,
-          user_id: userId,
+          user_id: appUserId,
           event_type: eventType,
           payload: event,
-          status: "pending",
+          status: "processed",
+          processed_at: new Date().toISOString(),
         },
         { onConflict: "event_id" },
       );
-
-      try {
-        await deleteUserDataAndAuth(serviceClient, userId);
-        await serviceClient
-          .from("subscription_expiry_events")
-          .update({ status: "processed", processed_at: new Date().toISOString(), error: null })
-          .eq("event_id", eventId);
-      } catch (err) {
-        await serviceClient
-          .from("subscription_expiry_events")
-          .update({
-            status: "pending",
-            error: err instanceof Error ? err.message : String(err),
-          })
-          .eq("event_id", eventId);
-      }
     }
 
     return new Response(JSON.stringify({ success: true }), {

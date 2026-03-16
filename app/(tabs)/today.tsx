@@ -17,13 +17,11 @@ import { ReadingScreen } from "../../components/ReadingScreen";
 import { JournalCategoryPicker } from "../../components/journal/JournalCategoryPicker";
 import { JournalEntryEditor } from "../../components/journal/JournalEntryEditor";
 import type { EntryType } from "../../constants/journalCategories";
-import { useAuth } from "../../contexts/AuthContext";
-import { useJournalEntries } from "../../hooks/useJournalEntries";
+import { useJournalStorage } from "../../hooks/useJournalStorage";
 import { useTrialStatus } from "../../hooks/useTrialStatus";
 import { useSubscription } from "../../hooks/useSubscription";
-import { getRequiredGate, requiresSignInForCloudWrite } from "../../utils/accessControl";
+import { getRequiredGate } from "../../utils/accessControl";
 import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
-import { SignInModal } from "../../components/SignInModal";
 import { DatePickerModal } from "../../components/DatePickerModal";
 import { BookmarkListModal } from "../../components/BookmarkListModal";
 import { DismissibleToast } from "../../components/DismissibleToast";
@@ -78,52 +76,15 @@ export default function Index() {
   const [showJournalPicker, setShowJournalPicker] = useState(false);
   const [journalEntryType, setJournalEntryType] = useState<EntryType | null>(null);
   const [presentingPaywall, setPresentingPaywall] = useState(false);
-  const [showSignIn, setShowSignIn] = useState(false);
-  const [pendingSave, setPendingSave] = useState<{
-    entryType: EntryType;
-    content: string | null;
-    structuredContent?: Record<string, any> | null;
-  } | null>(null);
   const handledJumpTokenRef = useRef<string | null>(null);
   console.log("[STARTUP-INDEX] State initialized");
 
-  // Journal entry creation from Today page
-  const { user, isAuthenticated: isAuthed } = useAuth();
-  const { createEntry } = useJournalEntries(user?.id);
+  // Journal entry creation from Today page (local AsyncStorage)
+  const { createEntry } = useJournalStorage();
 
   // Paywall gating for the journal FAB
   const trialStatus = useTrialStatus();
   const { status: subStatus, refresh: refreshSub } = useSubscription();
-
-  const trySaveEntry = async (
-    entryType: EntryType,
-    content: string | null,
-    structuredContent?: Record<string, any> | null,
-  ): Promise<boolean> => {
-    if (requiresSignInForCloudWrite(isAuthed, user?.id)) {
-      setPendingSave({ entryType, content, structuredContent });
-      Alert.alert(
-        "Sign In Required to Save",
-        "Saving requires an account. Sign in to save, or choose Not Now to keep editing.",
-        [
-          { text: "Not Now", style: "cancel" },
-          { text: "Sign In", onPress: () => setShowSignIn(true) },
-        ],
-      );
-      return false;
-    }
-    await createEntry(entryType, content, structuredContent);
-    return true;
-  };
-
-  useEffect(() => {
-    if (showSignIn || !isAuthed || !pendingSave) return;
-    const save = pendingSave;
-    setPendingSave(null);
-    trySaveEntry(save.entryType, save.content, save.structuredContent).then((saved) => {
-      if (saved) setJournalEntryType(null);
-    });
-  }, [showSignIn, isAuthed, pendingSave]);
   
   // Analytics
   const { trackAppOpened, startReadingView, trackReadingFavorited, trackReadingUnfavorited, updateThemeMode } = useAnalytics();
@@ -476,32 +437,14 @@ export default function Index() {
   // If user picked a journal type, show the editor full-screen
   if (journalEntryType) {
     return (
-      <>
-        <JournalEntryEditor
-          entryType={journalEntryType}
-          onSave={async (entryType, content, structuredContent) => {
-            const saved = await trySaveEntry(entryType, content, structuredContent);
-            if (saved) setJournalEntryType(null);
-          }}
-          onCancel={() => setJournalEntryType(null)}
-        />
-        <SignInModal
-          visible={showSignIn}
-          dismissable
-          initialMode="signin"
-          onClose={async () => {
-            setShowSignIn(false);
-            await refreshSub();
-            if (pendingSave && isAuthed) {
-              const save = pendingSave;
-              setPendingSave(null);
-              trySaveEntry(save.entryType, save.content, save.structuredContent).then((saved) => {
-                if (saved) setJournalEntryType(null);
-              });
-            }
-          }}
-        />
-      </>
+      <JournalEntryEditor
+        entryType={journalEntryType}
+        onSave={async (entryType, content, structuredContent) => {
+          await createEntry(entryType, content, structuredContent);
+          setJournalEntryType(null);
+        }}
+        onCancel={() => setJournalEntryType(null)}
+      />
     );
   }
 
@@ -581,23 +524,6 @@ export default function Index() {
         visible={!!toastMessage && !!reading}
         message={toastMessage ?? ""}
         onDismiss={() => setToastMessage(null)}
-      />
-
-      <SignInModal
-        visible={showSignIn}
-        dismissable
-        initialMode="signin"
-        onClose={async () => {
-          setShowSignIn(false);
-          await refreshSub();
-          if (pendingSave && isAuthed) {
-            const save = pendingSave;
-            setPendingSave(null);
-            trySaveEntry(save.entryType, save.content, save.structuredContent).then((saved) => {
-              if (saved) setJournalEntryType(null);
-            });
-          }
-        }}
       />
     </>
   );

@@ -1,7 +1,5 @@
 import "react-native-url-polyfill/auto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { AppState } from "react-native";
 import { qaLog } from "../utils/qaLog";
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || "";
@@ -39,25 +37,7 @@ function createSafeClient(): SupabaseClient {
     keyDefined: !!supabaseAnonKey,
   });
 
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      storage: AsyncStorage,
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: false,
-    },
-  });
+  return createClient(supabaseUrl, supabaseAnonKey);
 }
 
 export const supabase = createSafeClient();
-
-// Tell Supabase to stop/start auto-refresh when the app backgrounds/foregrounds.
-// Without this, token refresh can stall and leave auth in a broken state on resume.
-AppState.addEventListener("change", (state) => {
-  if (state === "active") {
-    supabase.auth.startAutoRefresh();
-    supabase.auth.refreshSession();
-  } else {
-    supabase.auth.stopAutoRefresh();
-  }
-});

@@ -14,7 +14,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { fonts } from "../../constants/theme";
-import type { JournalEntry } from "../../hooks/useJournalEntries";
+import type { JournalEntry } from "../../hooks/useJournalStorage";
 import type { EntryType } from "../../constants/journalCategories";
 import type { JournalStats } from "../../hooks/useJournalStats";
 import {
@@ -42,6 +42,7 @@ interface JournalTimelineProps {
   entries: JournalEntry[];
   stats: JournalStats;
   loading: boolean;
+  error?: string | null;
   categoryFilter: CategoryFilter;
   onFilterChange: (filter: CategoryFilter) => void;
   onNewEntry: () => void;
@@ -201,6 +202,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
   entries,
   stats,
   loading,
+  error,
   categoryFilter,
   onFilterChange,
   onNewEntry,
@@ -459,7 +461,28 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
 
   const ListEmpty = () => (
     <View style={styles.emptyContainer}>
-      {loading ? (
+      {error ? (
+        <>
+          <Ionicons
+            name="alert-circle-outline"
+            size={44}
+            color={colors.textSecondary + "70"}
+          />
+          <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>
+            Unable to load entries
+          </Text>
+          <Text style={[styles.emptySubtitle, { color: colors.textSecondary + "80" }]}>
+            Your entries may still be on this device. Try again to reload them.
+          </Text>
+          <TouchableOpacity
+            style={[styles.retryButton, { borderColor: colors.accent }]}
+            onPress={onRefresh}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.retryText, { color: colors.accent }]}>Retry</Text>
+          </TouchableOpacity>
+        </>
+      ) : loading ? (
         slowLoading ? (
           <>
             <Ionicons

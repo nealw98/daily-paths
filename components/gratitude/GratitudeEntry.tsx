@@ -153,7 +153,7 @@ export const GratitudeEntry: React.FC<GratitudeEntryProps> = ({
 
       {/* Footer note */}
       <Text style={[styles.footerNote, { color: colors.textSecondary }]}>
-        Your gratitude lists are saved to your account and synced across devices.
+        Your gratitude lists are saved on this device.
       </Text>
     </View>
   );

@@ -1,18 +1,29 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { JournalEntry, EntryType } from "./useJournalEntries";
 import { qaLog } from "../utils/qaLog";
 import { trackEvent } from "../utils/trackEvent";
 import { ANALYTICS_EVENTS } from "../utils/analytics";
+import type { EntryType } from "../constants/journalCategories";
+
+export type { EntryType };
 
 /**
- * AsyncStorage-backed journal entries hook for the 7-day free trial period.
- *
- * Mirrors the interface of `useJournalEntries` so the rest of the app can
- * swap between local and cloud storage transparently via `useJournalStorage`.
+ * AsyncStorage-backed journal entries — the sole storage layer for notebook data.
+ * All entries are stored locally and eligible for iCloud/Google Drive backup.
  */
 
 const STORAGE_KEY = "@daily_paths_local_journal";
+
+export interface JournalEntry {
+  id: string;
+  user_id: string;
+  entry_type: EntryType;
+  content: string | null;
+  structured_content: Record<string, any> | null;
+  created_at: string;
+  updated_at: string;
+  category?: string | null;
+}
 
 // Simple ID generator (no crypto dependency needed for local-only IDs)
 function localId(): string {
@@ -111,7 +122,7 @@ export function useLocalJournalEntries() {
         const updated = [entry, ...current];
         await writeEntries(updated);
         setEntries(updated);
-        qaLog("journal", "Local entry created", { id: entry.id, type: entryType });
+        qaLog("journal", "Entry created", { id: entry.id, type: entryType });
 
         const eventName = entryEventName(entryType, 'created');
         if (eventName) {
@@ -124,7 +135,7 @@ export function useLocalJournalEntries() {
 
         return entry;
       } catch (err) {
-        qaLog("journal", "Error creating local entry", { error: String(err) });
+        qaLog("journal", "Error creating entry", { error: String(err) });
         throw err;
       }
     },
@@ -152,7 +163,7 @@ export function useLocalJournalEntries() {
         current[idx] = updated;
         await writeEntries(current);
         setEntries([...current]);
-        qaLog("journal", "Local entry updated", { id: entryId });
+        qaLog("journal", "Entry updated", { id: entryId });
 
         const entryType = updated.entry_type || 'journal';
         const eventName = entryEventName(entryType, 'edited');
@@ -165,7 +176,7 @@ export function useLocalJournalEntries() {
 
         return updated;
       } catch (err) {
-        qaLog("journal", "Error updating local entry", { error: String(err) });
+        qaLog("journal", "Error updating entry", { error: String(err) });
         throw err;
       }
     },
@@ -181,7 +192,7 @@ export function useLocalJournalEntries() {
       const filtered = current.filter((e) => e.id !== entryId);
       await writeEntries(filtered);
       setEntries(filtered);
-      qaLog("journal", "Local entry deleted", { id: entryId });
+      qaLog("journal", "Entry deleted", { id: entryId });
 
       const entryType = entryToDelete?.entry_type || 'journal';
       const eventName = entryEventName(entryType, 'deleted');
@@ -194,7 +205,7 @@ export function useLocalJournalEntries() {
 
       return true;
     } catch (err) {
-      qaLog("journal", "Error deleting local entry", { error: String(err) });
+      qaLog("journal", "Error deleting entry", { error: String(err) });
       throw err;
     }
   }, []);
@@ -204,17 +215,20 @@ export function useLocalJournalEntries() {
     async (query: string): Promise<JournalEntry[]> => {
       if (!query.trim()) return entries;
       const lower = query.trim().toLowerCase();
-      return entries.filter(
-        (e) => e.content?.toLowerCase().includes(lower),
-      );
+      return entries.filter((e) => {
+        if (e.content?.toLowerCase().includes(lower)) return true;
+        if (e.structured_content) {
+          const values = Object.values(e.structured_content);
+          for (const val of values) {
+            if (typeof val === "string" && val.toLowerCase().includes(lower)) return true;
+            if (Array.isArray(val) && val.some((item) => typeof item === "string" && item.toLowerCase().includes(lower))) return true;
+          }
+        }
+        return false;
+      });
     },
     [entries],
   );
-
-  // ── Raw access for migration ─────────────────────────────────────────
-  const getAllRaw = useCallback(async (): Promise<JournalEntry[]> => {
-    return readEntries();
-  }, []);
 
   return {
     entries,
@@ -225,6 +239,5 @@ export function useLocalJournalEntries() {
     deleteEntry,
     searchEntries,
     refreshEntries: fetchEntries,
-    getAllRaw,
   };
 }

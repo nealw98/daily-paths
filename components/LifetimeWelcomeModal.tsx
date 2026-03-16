@@ -19,8 +19,8 @@ export const LifetimeWelcomeModal: React.FC<LifetimeWelcomeModalProps> = ({
         <View style={[styles.card, { backgroundColor: colors.background }]}>
           <Text style={[styles.title, { color: colors.text }]}>Welcome, Early Adopter</Text>
           <Text style={[styles.message, { color: colors.textSecondary }]}>
-            Thank you for supporting Daily Paths early. You have lifetime premium access.
-            When you are ready to save and sync your data, sign in from Settings.
+            Thank you for supporting Daily Paths early. You have lifetime premium access
+            — no subscription needed, ever.
           </Text>
           <TouchableOpacity
             style={[styles.button, { backgroundColor: colors.buttonPrimary }]}

@@ -12,7 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { fonts } from "../../constants/theme";
-import type { JournalEntry } from "../../hooks/useJournalEntries";
+import type { JournalEntry } from "../../hooks/useJournalStorage";
 import {
   getCategoryLabel,
   getCategoryColor,

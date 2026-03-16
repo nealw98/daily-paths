@@ -23,7 +23,6 @@ import Constants from "expo-constants";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTheme } from "../../hooks/useTheme";
-import { useAuth } from "../../contexts/AuthContext";
 import { useSettings, TextSize } from "../../hooks/useSettings";
 import { useAppFeedback } from "../../hooks/useAppFeedback";
 import { useAnalytics } from "../../utils/analytics";
@@ -35,10 +34,7 @@ import { TealHeader } from "../../components/shared/TealHeader";
 import { Nautilus } from "../../components/icons";
 import { useSubscription } from "../../hooks/useSubscription";
 import RevenueCatUI from "react-native-purchases-ui";
-import { SignInModal } from "../../components/SignInModal";
 import { RateAppModal } from "../../components/RateAppModal";
-import { DeleteAccountModal } from "../../components/DeleteAccountModal";
-import { deleteAccountNow } from "../../lib/accountDeletion";
 
 /** Default theme options (visible to all users) */
 const DEFAULT_THEME_OPTIONS: { id: string; displayName: string; icon?: string }[] = [
@@ -94,16 +90,14 @@ function formatTimeStorage(date: Date): string {
 export default function MoreTab() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const { user, isAuthenticated, signOut } = useAuth();
   const { settings, setTextSize, setThemeId, setColorScheme, setDailyReminderEnabled, setDailyReminderTime } =
     useSettings();
   const { submitting: submittingFeedback, submitFeedback } = useAppFeedback();
-  const { status, loading: subLoading, refresh, cleanupAfterDeletion } = useSubscription();
+  const { status, loading: subLoading, refresh } = useSubscription();
   const { updateThemeMode } = useAnalytics();
   const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
 
-  const [showSignIn, setShowSignIn] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [tempReminderDate, setTempReminderDate] = useState<Date | null>(null);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
@@ -111,24 +105,14 @@ export default function MoreTab() {
   const [feedbackText, setFeedbackText] = useState("");
   const [feedbackContact, setFeedbackContact] = useState("");
   const [isSharing, setIsSharing] = useState(false);
-  const [signingOutAccount, setSigningOutAccount] = useState(false);
   const [openingCustomerCenter, setOpeningCustomerCenter] = useState(false);
   const [showExtendedThemes, setShowExtendedThemes] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
       scrollRef.current?.scrollTo({ y: 0, animated: false });
     }, []),
   );
-
-  // Auto-close sign-in modal after successful authentication
-  useEffect(() => {
-    if (isAuthenticated && showSignIn) {
-      setShowSignIn(false);
-      refresh();
-    }
-  }, [isAuthenticated]);
 
   // Revert to default theme and hide premium colors when subscription lapses
   useEffect(() => {
@@ -245,67 +229,6 @@ export default function MoreTab() {
     }
   };
 
-  const handleSignOut = () => {
-    qaLog("auth", "Settings sign-out prompt opened", {
-      platform: Platform.OS,
-      hasUser: !!user?.id,
-    });
-    Alert.alert(
-      "Sign Out",
-      "You'll need to sign back in to use the app. Your data won't be lost.",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-          onPress: () => qaLog("auth", "Settings sign-out cancelled"),
-        },
-        {
-          text: "Sign Out",
-          style: "destructive",
-          onPress: async () => {
-            if (signingOutAccount) return;
-            qaLog("auth", "Settings sign-out confirmed");
-            setSigningOutAccount(true);
-            try {
-              await signOut();
-              qaLog("auth", "Settings sign-out completed");
-            } catch (err) {
-              qaLog("auth", "Settings sign-out threw", { error: String(err) });
-            } finally {
-              setSigningOutAccount(false);
-            }
-          },
-        },
-      ],
-    );
-  };
-
-  const handleDeleteAccount = async () => {
-    try {
-      await deleteAccountNow();
-      await cleanupAfterDeletion();
-
-      setShowDeleteModal(false);
-      // Delay alert until the Modal slide-out animation fully completes,
-      // otherwise the native Modal layer intercepts touches and the OK
-      // button is untappable. 800ms accommodates the slide animation.
-      setTimeout(() => {
-        Alert.alert(
-          "Account Deleted",
-          "Your account has been deleted.",
-          [{
-            text: "OK",
-            onPress: async () => {
-              await signOut();
-            },
-          }],
-        );
-      }, 800);
-    } catch (err: any) {
-      Alert.alert("Error", err.message || "Failed to delete account. Please try again.");
-    }
-  };
-
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.pearl }]}
@@ -322,40 +245,8 @@ export default function MoreTab() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── 1. Account ────────────────────────────────── */}
-        <Text style={[styles.sectionLabel, { color: colors.deepTeal, marginTop: 0 }]}>Account</Text>
-        {isAuthenticated && user?.email ? (
-          <View style={[styles.accountBanner, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
-            <View style={[styles.avatar, { backgroundColor: colors.accent }]}>
-              <Ionicons name="person" size={20} color={colors.textOnAccent} />
-            </View>
-            <View style={styles.accountInfo}>
-              <Text style={[styles.accountEmail, { color: colors.text }]}>{user.email}</Text>
-              <Text style={[styles.accountStatus, { color: colors.textSecondary }]}>Signed in</Text>
-            </View>
-            <TouchableOpacity onPress={handleSignOut} activeOpacity={0.7} disabled={signingOutAccount}>
-              <Text style={[styles.signOutLink, { color: colors.danger }]}>
-                {signingOutAccount ? "Signing Out..." : "Sign Out"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <TouchableOpacity
-            style={[styles.accountBanner, { backgroundColor: colors.cloud, borderColor: colors.mist }]}
-            onPress={() => setShowSignIn(true)}
-            activeOpacity={0.8}
-          >
-            <View style={[styles.avatar, { backgroundColor: colors.accent }]}>
-              <Ionicons name="person-outline" size={20} color={colors.textOnAccent} />
-            </View>
-            <View style={styles.accountInfo}>
-              <Text style={[styles.accountEmail, { color: colors.text }]}>Sign In</Text>
-              <Text style={[styles.accountStatus, { color: colors.textSecondary }]}>Sync your data across devices</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.seafoam} />
-          </TouchableOpacity>
-        )}
-
+        {/* ── 1. Subscription ────────────────────────────────── */}
+        <Text style={[styles.sectionLabel, { color: colors.deepTeal, marginTop: 0 }]}>Subscription</Text>
         {subLoading ? (
           <View style={[styles.subscriptionRow, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
             <View style={styles.subscriptionLeft}>
@@ -726,19 +617,6 @@ export default function MoreTab() {
                 Support
               </Text>
             </TouchableOpacity>
-            {isAuthenticated && (
-              <>
-                <Text style={[styles.legalDot, { color: colors.textSecondary }]}>·</Text>
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => setShowDeleteModal(true)}
-                >
-                  <Text style={[styles.legalLink, { color: colors.textSecondary }]} allowFontScaling={false}>
-                    Delete Account
-                  </Text>
-                </TouchableOpacity>
-              </>
-            )}
           </View>
           <View style={styles.legalRow}>
             <TouchableOpacity
@@ -772,13 +650,6 @@ export default function MoreTab() {
       </ScrollView>
 
       {/* ── Modals ──────────────────────────────────────── */}
-      <SignInModal visible={showSignIn} onClose={() => setShowSignIn(false)} />
-      <DeleteAccountModal
-        visible={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        onConfirm={handleDeleteAccount}
-      />
-
       <Modal
         visible={showFeedbackModal}
         transparent
@@ -868,47 +739,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 40,
-  },
-
-  /* ── Account Banner ────────────────────────────── */
-  accountBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  accountInfo: {
-    flex: 1,
-    marginLeft: 14,
-  },
-  accountEmail: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  accountStatus: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: 13,
-    marginTop: 2,
-  },
-  signOutLink: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
-    fontWeight: "500",
   },
 
   /* ── Section Labels ────────────────────────────── */

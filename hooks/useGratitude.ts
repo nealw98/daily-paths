@@ -1,15 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "../lib/supabase";
 import { qaLog } from "../utils/qaLog";
 import { trackEvent } from "../utils/trackEvent";
 import { ANALYTICS_EVENTS } from "../utils/analytics";
 
-const SAVE_REQUEST_TIMEOUT_MS = 6000;
-const FETCH_REQUEST_TIMEOUT_MS = 8000;
+const STORAGE_KEY = "@daily_paths_gratitude_entries";
 
 export interface GratitudeEntry {
   id: string;
-  user_id: string;
   date: string; // YYYY-MM-DD
   items: string[]; // Array of gratitude items
   created_at: string;
@@ -22,39 +21,38 @@ export interface GratitudeQuote {
   author: string | null;
 }
 
+// ── Local storage helpers ───────────────────────────────────────────────────
+
+function localId(): string {
+  return `grat_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+async function readAllEntries(): Promise<GratitudeEntry[]> {
+  try {
+    const raw = await AsyncStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+async function writeAllEntries(entries: GratitudeEntry[]): Promise<void> {
+  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+}
+
+// ── Hook ────────────────────────────────────────────────────────────────────
+
 /**
- * Hook for managing gratitude entries and daily quotes.
- * The daily quote is always fetched (public table).
- * Entries require a userId.
+ * Hook for managing gratitude entries (AsyncStorage) and daily quotes (Supabase).
+ * The daily quote is fetched from the public `gratitude_quotes` table.
+ * Entries are stored locally in AsyncStorage.
  */
-export function useGratitude(userId: string | null | undefined) {
+export function useGratitude() {
   const [todayEntry, setTodayEntry] = useState<GratitudeEntry | null>(null);
   const [history, setHistory] = useState<GratitudeEntry[]>([]);
   const [todayQuote, setTodayQuote] = useState<GratitudeQuote | null>(null);
   const [loading, setLoading] = useState(true);
   const mounted = useRef(true);
-  const runWithTimeout = useCallback(
-    async <T,>(
-      runner: (signal: AbortSignal) => Promise<T>,
-      timeoutMs = SAVE_REQUEST_TIMEOUT_MS,
-      timeoutLabel = "Request timed out",
-    ): Promise<T> => {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), timeoutMs);
-      try {
-        return await runner(controller.signal);
-      } catch (err) {
-        const msg = String(err);
-        if (msg.toLowerCase().includes("abort")) {
-          throw new Error(timeoutLabel);
-        }
-        throw err;
-      } finally {
-        clearTimeout(timer);
-      }
-    },
-    [],
-  );
 
   const todayStr = new Date().toISOString().split("T")[0];
 
@@ -93,71 +91,25 @@ export function useGratitude(userId: string | null | undefined) {
     fetchQuote();
   }, []);
 
-  // Fetch user entries (requires auth)
+  // Fetch entries from AsyncStorage
   const fetchEntries = useCallback(async () => {
-    if (!userId) {
-      setTodayEntry(null);
-      setHistory([]);
-      setLoading(false);
-      return;
-    }
-
     try {
       setLoading(true);
-
-      // Fetch today's entry
-      const { data: todayData } = await runWithTimeout(
-        () =>
-          Promise.resolve(
-            supabase
-              .from("gratitude_entries")
-              .select("*")
-              .eq("user_id", userId)
-              .eq("date", todayStr)
-              .single()
-          ),
-        FETCH_REQUEST_TIMEOUT_MS,
-        "Fetch timed out",
-      );
-
-      if (mounted.current && todayData) {
-        setTodayEntry({
-          ...todayData,
-          items: Array.isArray(todayData.items) ? todayData.items : [],
-        });
-      } else if (mounted.current) {
-        setTodayEntry(null);
-      }
-
-      // Fetch history (last 30 entries)
-      const { data: historyData } = await runWithTimeout(
-        () =>
-          Promise.resolve(
-            supabase
-              .from("gratitude_entries")
-              .select("*")
-              .eq("user_id", userId)
-              .order("date", { ascending: false })
-              .limit(30)
-          ),
-        FETCH_REQUEST_TIMEOUT_MS,
-        "Fetch timed out",
-      );
+      const all = await readAllEntries();
 
       if (mounted.current) {
-        setHistory(
-          (historyData || []).map((entry: any) => ({
-            ...entry,
-            items: Array.isArray(entry.items) ? entry.items : [],
-          }))
-        );
+        // Sort by date descending
+        const sorted = all.sort((a, b) => b.date.localeCompare(a.date));
+        setHistory(sorted.slice(0, 30));
+        const today = sorted.find((e) => e.date === todayStr) ?? null;
+        setTodayEntry(today);
       }
     } catch (err) {
       qaLog("gratitude", "Error fetching entries", { error: String(err) });
     } finally {
       if (mounted.current) setLoading(false);
     }
-  }, [userId, todayStr, runWithTimeout]);
+  }, [todayStr]);
 
   useEffect(() => {
     mounted.current = true;
@@ -170,59 +122,38 @@ export function useGratitude(userId: string | null | undefined) {
   // Save today's gratitude items
   const saveTodayItems = useCallback(
     async (items: string[]): Promise<boolean> => {
-      if (!userId) return false;
-
       const filteredItems = items.filter((item) => item.trim().length > 0);
       if (filteredItems.length === 0) return false;
 
       try {
-        const { data, error } = await runWithTimeout(
-          () =>
-            Promise.resolve(
-              supabase
-                .from("gratitude_entries")
-                .upsert(
-                  {
-                    user_id: userId,
-                    date: todayStr,
-                    items: filteredItems,
-                  },
-                  { onConflict: "user_id,date" }
-                )
-                .select()
-                .single()
-            ),
-          SAVE_REQUEST_TIMEOUT_MS,
-          "Save timed out",
-        );
+        const all = await readAllEntries();
+        const existingIdx = all.findIndex((e) => e.date === todayStr);
 
-        if (error) {
-          qaLog("gratitude", "Error saving entry", { error: error.message });
-          return false;
-        }
+        const isEdit = existingIdx >= 0;
+        let entry: GratitudeEntry;
 
-        if (data) {
-          const entry = {
-            ...data,
-            items: Array.isArray(data.items) ? data.items : [],
+        if (isEdit) {
+          entry = { ...all[existingIdx], items: filteredItems };
+          all[existingIdx] = entry;
+        } else {
+          entry = {
+            id: localId(),
+            date: todayStr,
+            items: filteredItems,
+            created_at: new Date().toISOString(),
           };
-          setTodayEntry(entry);
-          // Update history
-          setHistory((prev) => {
-            const existing = prev.findIndex((e) => e.date === todayStr);
-            if (existing >= 0) {
-              const updated = [...prev];
-              updated[existing] = entry;
-              return updated;
-            }
-            return [entry, ...prev];
-          });
+          all.unshift(entry);
         }
+
+        await writeAllEntries(all);
+        setTodayEntry(entry);
+
+        // Update history
+        const sorted = all.sort((a, b) => b.date.localeCompare(a.date));
+        setHistory(sorted.slice(0, 30));
 
         qaLog("gratitude", "Entry saved", { date: todayStr, itemCount: filteredItems.length });
 
-        // Track create vs edit based on whether an entry existed before save
-        const isEdit = !!todayEntry;
         trackEvent(
           isEdit ? ANALYTICS_EVENTS.GRATITUDE_ENTRY_EDITED : ANALYTICS_EVENTS.GRATITUDE_ENTRY_CREATED,
           {
@@ -238,7 +169,7 @@ export function useGratitude(userId: string | null | undefined) {
         return false;
       }
     },
-    [userId, todayStr, todayEntry, runWithTimeout]
+    [todayStr, todayEntry]
   );
 
   return {

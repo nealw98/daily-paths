@@ -16,7 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../../hooks/useTheme";
 import { fonts } from "../../constants/theme";
-import type { JournalEntry } from "../../hooks/useJournalEntries";
+import type { JournalEntry } from "../../hooks/useJournalStorage";
 import {
   getCategoryById,
   getCategoryLabel,

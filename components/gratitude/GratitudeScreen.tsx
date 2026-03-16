@@ -13,7 +13,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { fonts } from "../../constants/theme";
-import { useAuth } from "../../contexts/AuthContext";
 import { useGratitude } from "../../hooks/useGratitude";
 import { GratitudeQuote } from "./GratitudeQuote";
 import { GratitudeEntry } from "./GratitudeEntry";
@@ -27,9 +26,8 @@ type GratitudeView = "today" | "history";
 
 export const GratitudeScreen: React.FC<GratitudeScreenProps> = ({ onBack }) => {
   const { colors } = useTheme();
-  const { user } = useAuth();
   const { todayEntry, history, todayQuote, loading, saveTodayItems } =
-    useGratitude(user?.id);
+    useGratitude();
   const [view, setView] = useState<GratitudeView>("today");
   const [saving, setSaving] = useState(false);
 

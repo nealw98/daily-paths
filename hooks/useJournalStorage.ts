@@ -1,28 +1,6 @@
-import { useJournalEntries } from "./useJournalEntries";
-import { canAccessCloudData } from "../utils/accessControl";
-
 /**
- * Unified journal storage hook for cloud-backed notebook data.
- * Cloud operations are auth-scoped and independent from premium entitlement.
+ * Unified journal storage hook — delegates to local AsyncStorage.
+ * This module exists so consumers can import from a stable path.
  */
-export function useJournalStorage(
-  userId: string | null | undefined,
-  isAuthenticated: boolean,
-) {
-  const supabaseHook = useJournalEntries(userId);
-
-  if (canAccessCloudData(isAuthenticated, userId)) {
-    return supabaseHook;
-  }
-  
-  return {
-    entries: [],
-    loading: false,
-    error: null,
-    createEntry: async () => null,
-    updateEntry: async () => null,
-    deleteEntry: async () => false,
-    searchEntries: async () => [],
-    refreshEntries: async (_source?: "auto" | "manual" | "retry") => {},
-  };
-}
+export { useLocalJournalEntries as useJournalStorage } from "./useLocalJournalEntries";
+export type { JournalEntry, EntryType } from "./useLocalJournalEntries";

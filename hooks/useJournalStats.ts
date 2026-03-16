@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { JournalEntry } from "./useJournalEntries";
+import type { JournalEntry } from "./useJournalStorage";
 
 export interface JournalStats {
   total: number;

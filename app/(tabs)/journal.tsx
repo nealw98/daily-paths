@@ -3,8 +3,7 @@ import { View, Text, StyleSheet, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "expo-router";
 import { useTheme } from "../../hooks/useTheme";
-import { useAuth } from "../../contexts/AuthContext";
-import { useJournalStorage } from "../../hooks/useJournalStorage";
+import { useJournalStorage, type JournalEntry, type EntryType } from "../../hooks/useJournalStorage";
 import { useJournalStats } from "../../hooks/useJournalStats";
 import { useAnalytics } from "../../utils/analytics";
 import { useFeatureTimeTracker } from "../../hooks/useFeatureTimeTracker";
@@ -14,14 +13,10 @@ import { JournalEntryDetail } from "../../components/journal/JournalEntryDetail"
 import { JournalCategoryPicker } from "../../components/journal/JournalCategoryPicker";
 import { TealHeader } from "../../components/shared/TealHeader";
 import { PremiumGate } from "../../components/PremiumGate";
-import { SignInModal } from "../../components/SignInModal";
 import { fonts } from "../../constants/theme";
-import { getCategoryById, getCategoryLabel, type EntryType } from "../../constants/journalCategories";
+import { getCategoryById, getCategoryLabel } from "../../constants/journalCategories";
 import { EntryTypeIcon } from "../../utils/entryTypeIcon";
 import { FourSquares } from "../../components/icons";
-import type { JournalEntry } from "../../hooks/useJournalEntries";
-import { requiresSignInForCloudWrite } from "../../utils/accessControl";
-import { useSubscriptionContext } from "../../contexts/SubscriptionContext";
 
 type JournalView = "timeline" | "editor" | "detail";
 
@@ -36,17 +31,16 @@ export default function JournalTab() {
 function JournalTabContent() {
   const { colors } = useTheme();
   const navigation = useNavigation();
-  const { user, isAuthenticated } = useAuth();
-  const { gate } = useSubscriptionContext();
   const { trackNotebookOpened, trackEntryViewed } = useAnalytics();
   const {
     entries,
     loading,
+    error,
     createEntry,
     updateEntry,
     deleteEntry,
     refreshEntries,
-  } = useJournalStorage(user?.id, isAuthenticated);
+  } = useJournalStorage();
   const stats = useJournalStats(entries);
 
   const [view, setView] = useState<JournalView>("timeline");
@@ -57,13 +51,6 @@ function JournalTabContent() {
   const [selectedEntryType, setSelectedEntryType] = useState<EntryType>("journal");
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
-  const [showSignIn, setShowSignIn] = useState(false);
-  const [pendingCreate, setPendingCreate] = useState<{
-    entryType: EntryType;
-    content: string | null;
-    structuredContent?: Record<string, any> | null;
-  } | null>(null);
-  const prevGateRef = useRef<"none" | "paywall" | null>(null);
 
   // Header title and icon reflect the active filter
   const headerTitle = categoryFilter === "all"
@@ -140,36 +127,15 @@ function JournalTabContent() {
   const handleBackToTimeline = useCallback(() => {
     setSelectedEntry(null);
     setView("timeline");
-    // Refresh when returning to timeline so it picks up cross-device changes
-    void refreshEntries("manual");
+    void refreshEntries();
   }, [refreshEntries]);
 
   const handleFilterChange = useCallback((filter: CategoryFilter) => {
     setCategoryFilter(filter);
   }, []);
 
-  useEffect(() => {
-    if (prevGateRef.current === "paywall" && gate === "none" && isAuthenticated) {
-      refreshEntries();
-    }
-    prevGateRef.current = gate;
-  }, [gate, isAuthenticated, refreshEntries]);
-
-  useEffect(() => {
-    if (showSignIn || !isAuthenticated || !pendingCreate) return;
-    const save = pendingCreate;
-    setPendingCreate(null);
-    createEntry(save.entryType, save.content, save.structuredContent)
-      .then(() => {
-        setView("timeline");
-      })
-      .catch(() => {
-        Alert.alert("Error", "Failed to save your entry. Please try again.");
-      });
-  }, [showSignIn, isAuthenticated, pendingCreate, createEntry]);
-
   const handleRefreshTimeline = useCallback(() => {
-    void refreshEntries("retry");
+    void refreshEntries();
   }, [refreshEntries]);
 
   // ─── CRUD Operations ────────────────────────────────────
@@ -180,22 +146,10 @@ function JournalTabContent() {
       content: string | null,
       structuredContent?: Record<string, any> | null
     ) => {
-      if (requiresSignInForCloudWrite(isAuthenticated, user?.id)) {
-        setPendingCreate({ entryType, content, structuredContent });
-        Alert.alert(
-          "Sign In Required to Save",
-          "Saving requires an account. Sign in to save, or choose Not Now to keep editing.",
-          [
-            { text: "Not Now", style: "cancel" },
-            { text: "Sign In", onPress: () => setShowSignIn(true) },
-          ],
-        );
-        return;
-      }
       await createEntry(entryType, content, structuredContent);
       setView("timeline");
     },
-    [createEntry, isAuthenticated, user?.id]
+    [createEntry]
   );
 
   const handleSaveEdit = useCallback(
@@ -257,30 +211,11 @@ function JournalTabContent() {
 
   if (view === "editor") {
     return (
-      <>
-        <JournalEntryEditor
-          entryType={selectedEntryType}
-          onSave={handleSaveNew}
-          onCancel={handleBackToTimeline}
-        />
-        <SignInModal
-          visible={showSignIn}
-          dismissable
-          initialMode="signin"
-          onClose={async () => {
-            setShowSignIn(false);
-            if (!pendingCreate || !isAuthenticated) return;
-            const save = pendingCreate;
-            setPendingCreate(null);
-            try {
-              await createEntry(save.entryType, save.content, save.structuredContent);
-              setView("timeline");
-            } catch {
-              Alert.alert("Error", "Failed to save your entry. Please try again.");
-            }
-          }}
-        />
-      </>
+      <JournalEntryEditor
+        entryType={selectedEntryType}
+        onSave={handleSaveNew}
+        onCancel={handleBackToTimeline}
+      />
     );
   }
 
@@ -313,6 +248,7 @@ function JournalTabContent() {
         entries={entries}
         stats={stats}
         loading={loading}
+        error={error}
         categoryFilter={categoryFilter}
         onFilterChange={handleFilterChange}
         onNewEntry={handleNewEntry}
@@ -324,23 +260,6 @@ function JournalTabContent() {
         visible={showCategoryPicker}
         onSelect={handleCategorySelected}
         onClose={() => setShowCategoryPicker(false)}
-      />
-      <SignInModal
-        visible={showSignIn}
-        dismissable
-        initialMode="signin"
-        onClose={async () => {
-          setShowSignIn(false);
-          if (!pendingCreate || !isAuthenticated) return;
-          const save = pendingCreate;
-          setPendingCreate(null);
-          try {
-            await createEntry(save.entryType, save.content, save.structuredContent);
-            setView("timeline");
-          } catch {
-            Alert.alert("Error", "Failed to save your entry. Please try again.");
-          }
-        }}
       />
     </SafeAreaView>
   );

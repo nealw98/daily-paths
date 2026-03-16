@@ -5,10 +5,8 @@ import type { PurchasesPackage } from "react-native-purchases";
 /**
  * Hook for managing subscription state and actions.
  * Thin wrapper over SubscriptionContext — all state is shared app-wide.
- *
- * @param _userId - Ignored. Kept for backward compatibility during migration.
  */
-export function useSubscription(_userId?: string | null) {
+export function useSubscription() {
   const ctx = useSubscriptionContext();
   return {
     status: ctx.status,
@@ -18,7 +16,5 @@ export function useSubscription(_userId?: string | null) {
     purchase: ctx.purchase,
     restore: ctx.restore,
     refresh: ctx.refresh,
-    logout: ctx.logout,
-    cleanupAfterDeletion: ctx.cleanupAfterDeletion,
   };
 }

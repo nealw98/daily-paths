@@ -18,9 +18,7 @@ import {
 } from "@expo-google-fonts/lora";
 import { fallbackColors } from "../constants/theme";
 import { SettingsProvider } from "../hooks/useSettings";
-import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { SubscriptionProvider, useSubscriptionContext } from "../contexts/SubscriptionContext";
-import { usePostAuthMigration } from "../hooks/usePostAuthMigration";
 import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform, AppState, AppStateStatus } from "react-native";
 import * as Notifications from "expo-notifications";
 import * as Updates from "expo-updates";
@@ -205,9 +203,7 @@ export default function RootLayout() {
 
   return (
     <SettingsProvider>
-      <AuthProvider>
           <SubscriptionProvider>
-            <PostAuthMigrationRunner>
               <TrialExpiryPresenter />
               <LifetimeWelcomePresenter />
               {updateReady && (
@@ -243,21 +239,11 @@ export default function RootLayout() {
                   contentStyle: { backgroundColor: colors.pearl },
                 }}
               />
-            </PostAuthMigrationRunner>
           </SubscriptionProvider>
-      </AuthProvider>
     </SettingsProvider>
   );
 }
 
-
-// ─── Post-Auth Migration Runner ───────────────────────────────────────────────
-// Thin wrapper that runs post-sign-in tasks (trial data migration).
-
-function PostAuthMigrationRunner({ children }: { children: React.ReactNode }) {
-  usePostAuthMigration();
-  return <>{children}</>;
-}
 
 function TrialExpiryPresenter() {
   const { status, trialStatus, refresh } = useSubscriptionContext();

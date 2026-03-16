@@ -9,8 +9,6 @@ import React, {
 } from "react";
 import {
   initializeRevenueCat,
-  loginRevenueCat,
-  logoutRevenueCat,
   getSubscriptionStatus,
   getOfferings,
   purchasePackage,
@@ -26,7 +24,6 @@ import {
   type TrialStatus,
 } from "../utils/trialTimer";
 import { getRequiredGate, type GateType } from "../utils/accessControl";
-import { useAuth } from "./AuthContext";
 import { qaLog } from "../utils/qaLog";
 import type { PurchasesPackage } from "react-native-purchases";
 
@@ -47,8 +44,6 @@ interface SubscriptionContextValue {
   purchase: (pkg: PurchasesPackage) => Promise<boolean>;
   restore: () => Promise<boolean>;
   refresh: () => Promise<void>;
-  logout: () => Promise<void>;
-  cleanupAfterDeletion: () => Promise<void>;
 }
 
 const DEFAULT_STATUS: SubscriptionStatus = {
@@ -79,9 +74,6 @@ const SubscriptionContext = createContext<SubscriptionContextValue | undefined>(
 export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const { user } = useAuth();
-  const userId = user?.id ?? null;
-
   const [status, setStatus] = useState<SubscriptionStatus>(DEFAULT_STATUS);
   const [trial, setTrial] = useState<TrialStatus>(DEFAULT_TRIAL);
   const [trialLoading, setTrialLoading] = useState(true);
@@ -90,7 +82,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
   const [purchasing, setPurchasing] = useState(false);
 
   const mounted = useRef(true);
-  const prevUserId = useRef<string | null>(userId);
   const rcInitialized = useRef(false);
 
   // ── Main init effect ─────────────────────────────────────────────────────
@@ -123,30 +114,10 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
 
       // ── Phase 2: RevenueCat (background) ───────────────────────────────
 
-      // If userId went from a value to null (sign-out), preserve device
-      // entitlements — don't call logoutRevenueCat.
-      if (prevUserId.current && !userId && isRevenueCatInitialized()) {
-        prevUserId.current = userId;
-        try {
-          const fresh = await getSubscriptionStatus();
-          if (!cancelled) setStatus(fresh);
-        } catch {
-          // cached status already set above
-        }
-        if (!cancelled) setLoading(false);
-        return;
-      }
-      prevUserId.current = userId;
-
       // Initialize RC (module-level guard prevents double-init)
       if (!rcInitialized.current) {
-        await initializeRevenueCat(userId || undefined);
+        await initializeRevenueCat();
         rcInitialized.current = true;
-      }
-
-      // Login RC if user is authenticated
-      if (userId && isRevenueCatInitialized()) {
-        await loginRevenueCat(userId);
       }
 
       // Ensure the trial clock is running
@@ -187,7 +158,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       cancelled = true;
       mounted.current = false;
     };
-  }, [userId]);
+  }, []);
 
   // ── Trial refresh ──────────────────────────────────────────────────────
   const refreshTrial = useCallback(async () => {
@@ -260,19 +231,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, []);
 
-  const logout = useCallback(async () => {
-    await logoutRevenueCat();
-    setStatus(DEFAULT_STATUS);
-  }, []);
-
-  const cleanupAfterDeletion = useCallback(async () => {
-    // Account deletion removes account/data only; entitlements are managed by RevenueCat.
-    qaLog("subscription", "Account deletion cleanup complete (entitlements unchanged)", {
-      isSubscribed: status.isSubscribed,
-      isLegacy: status.isLegacy,
-    });
-  }, [status.isSubscribed, status.isLegacy]);
-
   // ── Context value ──────────────────────────────────────────────────────
   const trialStatusValue = useMemo<TrialStatusWithMeta>(
     () => ({ ...trial, loading: trialLoading, refresh: refreshTrial }),
@@ -290,8 +248,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       purchase,
       restore,
       refresh,
-      logout,
-      cleanupAfterDeletion,
     }),
     [
       status,
@@ -303,8 +259,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       purchase,
       restore,
       refresh,
-      logout,
-      cleanupAfterDeletion,
     ],
   );
 
