@@ -369,6 +369,40 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.segmentedContainer}
       >
+        {/* All icon — first position */}
+        <TouchableOpacity
+          style={[
+            styles.filterIconWrapper,
+          ]}
+          onPress={() => onFilterChange("all")}
+          activeOpacity={0.7}
+        >
+          <View
+            style={[
+              styles.filterIcon,
+              { width: hitTarget, height: hitTarget, borderRadius: Math.round(hitTarget * 0.3) },
+              categoryFilter === "all"
+                ? { backgroundColor: colors.accent + "14", borderColor: colors.accent + "35", borderWidth: 1.5 }
+                : { borderColor: "transparent", borderWidth: 1.5 },
+            ]}
+          >
+            <FourSquares
+              size={iconSize}
+              color={colors.accent}
+              strokeWidth={categoryFilter === "all" ? 2.6 : 2.2}
+            />
+          </View>
+          <Text
+            style={[
+              styles.filterLabel,
+              { color: colors.accent },
+            ]}
+            numberOfLines={1}
+          >
+            All
+          </Text>
+        </TouchableOpacity>
+
         {/* Category icon buttons */}
         {JOURNAL_CATEGORIES.map((cat) => {
           const isActive = categoryFilter === cat.id;
@@ -411,39 +445,6 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
           );
         })}
 
-        {/* All icon — last position */}
-        <TouchableOpacity
-          style={[
-            styles.filterIconWrapper,
-          ]}
-          onPress={() => onFilterChange("all")}
-          activeOpacity={0.7}
-        >
-          <View
-            style={[
-              styles.filterIcon,
-              { width: hitTarget, height: hitTarget, borderRadius: Math.round(hitTarget * 0.3) },
-              categoryFilter === "all"
-                ? { backgroundColor: colors.accent + "14", borderColor: colors.accent + "35", borderWidth: 1.5 }
-                : { borderColor: "transparent", borderWidth: 1.5 },
-            ]}
-          >
-            <FourSquares
-              size={iconSize}
-              color={colors.accent}
-              strokeWidth={categoryFilter === "all" ? 2.6 : 2.2}
-            />
-          </View>
-          <Text
-            style={[
-              styles.filterLabel,
-              { color: colors.accent },
-            ]}
-            numberOfLines={1}
-          >
-            All
-          </Text>
-        </TouchableOpacity>
       </ScrollView>
     </View>
   );

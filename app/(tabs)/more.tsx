@@ -172,11 +172,6 @@ export default function MoreTab() {
   };
 
   const handleColorThemesToggle = (enabled: boolean) => {
-    if (!enabled && EXTENDED_THEME_OPTIONS.some((t) => t.id === settings.themeId)) {
-      setThemeId("ocean-light");
-      updateThemeMode("light");
-    }
-
     setShowExtendedThemes(enabled);
   };
 

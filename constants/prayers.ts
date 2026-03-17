@@ -25,8 +25,8 @@ export const PRAYERS: Prayer[] = [
   {
     id: "st-francis",
     title: "Prayer of St. Francis",
-    text: "Make me an instrument of your peace.\nWhere there is hatred, let me bring love.\nWhere there is offense, let me bring pardon.\nWhere there is discord, let me bring union.\nWhere there is error, let me bring truth.\nWhere there is doubt, let me bring faith.\nWhere there is despair, let me bring hope.\nWhere there is darkness, let me bring your light.\nWhere there is sadness, let me bring joy.\n\nLet me not seek so much to be consoled as to console, to be understood as to understand, to be loved as to love.\n\nFor it is in giving that we receive, it is in pardoning that we are pardoned, and it is in surrendering that we find new life.",
-    source: "Adapted from St. Francis of Assisi",
+    text: "Lord, make me a channel of Your peace\nthat where there is hatred, I may bring love\nthat where there is wrong, I may bring the spirit of forgiveness\nthat where there is discord, I may bring harmony\nthat where there is error, I may bring truth\nthat where there is doubt, I may bring faith\nthat where there is despair, I may bring hope\nthat where there are shadows, I may bring light\nthat where there is sadness, I may bring joy.\n\nLord, grant that I may seek rather to comfort than to be comforted\nto understand, than to be understood\nto love, than to be loved.\nFor it is by self-forgetting that one finds\nIt is by forgiving that one is forgiven\nIt is by dying that one awakens to eternal life.\n\nAmen.",
+    source: "St. Francis of Assisi",
   },
   {
     id: "third-step",
