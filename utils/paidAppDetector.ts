@@ -26,6 +26,85 @@ export interface LifetimeAccessStatus {
     | "default";
 }
 
+export interface NativeAppTransactionInfo {
+  originalAppVersion: string | null;
+  originalPurchaseDate: string | null;
+  available: boolean;
+  verified: boolean;
+  reason: string | null;
+  error?: boolean;
+}
+
+export interface LifetimeAccessDiagnostics {
+  source: "override" | "cache" | "native" | "default";
+  firstFreeBuildNumber: number | null;
+  override: boolean | null;
+  cachedStatus: LifetimeAccessStatus | null;
+  nativeInfo: NativeAppTransactionInfo | null;
+  nativeError: string | null;
+  effectiveStatus: LifetimeAccessStatus;
+}
+
+function buildStatusFromNativeInfo(
+  info: NativeAppTransactionInfo,
+): LifetimeAccessStatus {
+  if (!info.available) {
+    // Android or iOS < 16: no lifetime access from app purchase
+    return {
+      hasLifetimeAccess: false,
+      originalAppVersion: null,
+      originalPurchaseDate: null,
+      detectionMethod: "unavailable",
+    };
+  }
+
+  if (info.error) {
+    // iOS 16+ but AppTransaction threw an error — transient OS issue.
+    // Grant lifetime access so legitimate paid users aren't locked out.
+    return {
+      hasLifetimeAccess: true,
+      originalAppVersion: null,
+      originalPurchaseDate: null,
+      detectionMethod: "storekit2-error",
+    };
+  }
+
+  if (!info.verified) {
+    // Unverified receipt — likely tampered (jailbreak / piracy).
+    // No lifetime access.
+    return {
+      hasLifetimeAccess: false,
+      originalAppVersion: null,
+      originalPurchaseDate: null,
+      detectionMethod: "storekit2",
+    };
+  }
+
+  // Verified receipt — check version against threshold.
+  return {
+    hasLifetimeAccess: isLifetimeVersion(info.originalAppVersion),
+    originalAppVersion: info.originalAppVersion,
+    originalPurchaseDate: info.originalPurchaseDate,
+    detectionMethod: "storekit2",
+  };
+}
+
+async function getNativeTransactionInfo(): Promise<{
+  info: NativeAppTransactionInfo | null;
+  error: string | null;
+}> {
+  try {
+    const { getAppTransactionInfo } = require("../modules/paid-app-detector");
+    const info = await getAppTransactionInfo();
+    return { info, error: null };
+  } catch (err) {
+    return {
+      info: null,
+      error: String(err),
+    };
+  }
+}
+
 /**
  * Determine whether the current user paid for the app download (lifetime access).
  *
@@ -37,20 +116,30 @@ export async function detectLifetimeAccess(): Promise<LifetimeAccessStatus> {
   // 0. Dev/QA override takes priority
   const override = await getLifetimeOverride();
   if (override !== null) {
-    qaLog("lifetime-access", `Using dev override: ${override}`);
-    return {
+    const status = {
       hasLifetimeAccess: override,
       originalAppVersion: null,
       originalPurchaseDate: null,
       detectionMethod: "cache",
     };
+    qaLog("lifetime-access", `Using dev override: ${override}`);
+    qaLog("lifetime-access", "Effective lifetime access resolved", {
+      source: "override",
+      ...status,
+    });
+    return status;
   }
 
   // 1. Try cache first for instant access
   const cached = await getCachedStatus();
   if (cached) {
     qaLog("lifetime-access", "Using cached status", cached);
-    return { ...cached, detectionMethod: "cache" };
+    const status = { ...cached, detectionMethod: "cache" as const };
+    qaLog("lifetime-access", "Effective lifetime access resolved", {
+      source: "cache",
+      ...status,
+    });
+    return status;
   }
 
   // 2. Call native module
@@ -59,59 +148,106 @@ export async function detectLifetimeAccess(): Promise<LifetimeAccessStatus> {
     const info = await getAppTransactionInfo();
 
     qaLog("lifetime-access", "Native module result", info);
-
-    let status: LifetimeAccessStatus;
-
-    if (!info.available) {
-      // Android or iOS < 16: no lifetime access from app purchase
-      status = {
-        hasLifetimeAccess: false,
-        originalAppVersion: null,
-        originalPurchaseDate: null,
-        detectionMethod: "unavailable",
-      };
-    } else if (info.error) {
-      // iOS 16+ but AppTransaction threw an error — transient OS issue.
-      // Grant lifetime access so legitimate paid users aren't locked out.
-      status = {
-        hasLifetimeAccess: true,
-        originalAppVersion: null,
-        originalPurchaseDate: null,
-        detectionMethod: "storekit2-error",
-      };
-    } else if (!info.verified) {
-      // Unverified receipt — likely tampered (jailbreak / piracy).
-      // No lifetime access.
-      status = {
-        hasLifetimeAccess: false,
-        originalAppVersion: null,
-        originalPurchaseDate: null,
-        detectionMethod: "storekit2",
-      };
-    } else {
-      // Verified receipt — check version against threshold.
-      status = {
-        hasLifetimeAccess: isLifetimeVersion(info.originalAppVersion),
-        originalAppVersion: info.originalAppVersion,
-        originalPurchaseDate: info.originalPurchaseDate,
-        detectionMethod: "storekit2",
-      };
-    }
+    const status = buildStatusFromNativeInfo(info);
 
     await cacheStatus(status);
+    qaLog("lifetime-access", "Effective lifetime access resolved", {
+      source: "native",
+      ...status,
+      nativeAvailable: info.available,
+      nativeVerified: info.verified,
+      nativeReason: info.reason,
+      nativeError: !!info.error,
+    });
     return status;
   } catch (err) {
     qaLog("lifetime-access", "Native module failed", {
       error: String(err),
     });
     // Module not available (e.g. Expo Go) — no lifetime access
-    return {
+    const status = {
       hasLifetimeAccess: false,
       originalAppVersion: null,
       originalPurchaseDate: null,
       detectionMethod: "default",
     };
+    qaLog("lifetime-access", "Effective lifetime access resolved", {
+      source: "default",
+      ...status,
+      nativeError: String(err),
+    });
+    return status;
   }
+}
+
+export async function clearLifetimeAccessCache(): Promise<void> {
+  await AsyncStorage.removeItem(CACHE_KEY);
+  qaLog("lifetime-access", "Lifetime access cache cleared");
+}
+
+export async function getLifetimeAccessDiagnostics(): Promise<LifetimeAccessDiagnostics> {
+  const override = await getLifetimeOverride();
+  const cachedStatus = await getCachedStatus();
+  const { info: nativeInfo, error: nativeError } = await getNativeTransactionInfo();
+
+  if (override !== null) {
+    return {
+      source: "override",
+      firstFreeBuildNumber: FIRST_FREE_BUILD_NUMBER,
+      override,
+      cachedStatus,
+      nativeInfo,
+      nativeError,
+      effectiveStatus: {
+        hasLifetimeAccess: override,
+        originalAppVersion: null,
+        originalPurchaseDate: null,
+        detectionMethod: "cache",
+      },
+    };
+  }
+
+  if (cachedStatus) {
+    return {
+      source: "cache",
+      firstFreeBuildNumber: FIRST_FREE_BUILD_NUMBER,
+      override,
+      cachedStatus,
+      nativeInfo,
+      nativeError,
+      effectiveStatus: {
+        ...cachedStatus,
+        detectionMethod: "cache",
+      },
+    };
+  }
+
+  if (nativeInfo) {
+    return {
+      source: "native",
+      firstFreeBuildNumber: FIRST_FREE_BUILD_NUMBER,
+      override,
+      cachedStatus,
+      nativeInfo,
+      nativeError,
+      effectiveStatus: buildStatusFromNativeInfo(nativeInfo),
+    };
+  }
+
+  return {
+    source: "default",
+    firstFreeBuildNumber: FIRST_FREE_BUILD_NUMBER,
+    override,
+    cachedStatus,
+    nativeInfo,
+    nativeError,
+    effectiveStatus: {
+      hasLifetimeAccess: false,
+      originalAppVersion: null,
+      originalPurchaseDate: null,
+      detectionMethod: "default",
+    },
+  };
 }
 
 /**
