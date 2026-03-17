@@ -33,6 +33,7 @@ import { fonts } from "../../constants/theme";
 import { TealHeader } from "../../components/shared/TealHeader";
 import { Nautilus } from "../../components/icons";
 import { useSubscription } from "../../hooks/useSubscription";
+import { useSubscriptionContext } from "../../contexts/SubscriptionContext";
 import RevenueCatUI from "react-native-purchases-ui";
 import { RateAppModal } from "../../components/RateAppModal";
 
@@ -94,6 +95,7 @@ export default function MoreTab() {
     useSettings();
   const { submitting: submittingFeedback, submitFeedback } = useAppFeedback();
   const { status, hasLifetimeAccess, loading: subLoading, refresh } = useSubscription();
+  const { trialStatus } = useSubscriptionContext();
   const { updateThemeMode } = useAnalytics();
   const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
@@ -254,14 +256,7 @@ export default function MoreTab() {
               <Text style={[styles.subscriptionText, { color: colors.text }]}>Checking Access...</Text>
             </View>
           </View>
-        ) : status.isLegacy ? (
-          <View style={[styles.subscriptionRow, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
-            <View style={styles.subscriptionLeft}>
-              <Ionicons name="star" size={22} color={colors.deepTeal} />
-              <Text style={[styles.subscriptionText, { color: colors.text }]}>Lifetime Access</Text>
-            </View>
-          </View>
-        ) : (
+        ) : status.isSubscribed ? (
           <TouchableOpacity
             style={[styles.subscriptionRow, { backgroundColor: colors.cloud, borderColor: colors.mist }]}
             disabled={openingCustomerCenter}
@@ -306,6 +301,62 @@ export default function MoreTab() {
                 );
               } finally {
                 appStateSub.remove();
+                setOpeningCustomerCenter(false);
+              }
+            }}
+            activeOpacity={openingCustomerCenter ? 1 : 0.8}
+          >
+            <View style={styles.subscriptionLeft}>
+              <Ionicons name="card-outline" size={22} color={colors.deepTeal} />
+              <Text style={[styles.subscriptionText, { color: colors.text }]}>
+                {openingCustomerCenter ? "Opening..." : "Manage Subscription"}
+              </Text>
+            </View>
+            {openingCustomerCenter ? (
+              <ActivityIndicator size="small" color={colors.deepTeal} />
+            ) : (
+              <Ionicons name="chevron-forward" size={20} color={colors.seafoam} />
+            )}
+          </TouchableOpacity>
+        ) : hasLifetimeAccess || status.isLegacy ? (
+          <View style={[styles.subscriptionRow, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
+            <View style={styles.subscriptionLeft}>
+              <Ionicons name="star" size={22} color={colors.deepTeal} />
+              <Text style={[styles.subscriptionText, { color: colors.text }]}>Lifetime Access</Text>
+            </View>
+          </View>
+        ) : trialStatus.isInTrial ? (
+          <View style={[styles.subscriptionRow, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
+            <View style={styles.subscriptionLeft}>
+              <Ionicons name="time-outline" size={22} color={colors.deepTeal} />
+              <Text style={[styles.subscriptionText, { color: colors.text }]}>
+                {trialStatus.daysRemaining === 0
+                  ? "Free Trial \u2014 expires today"
+                  : `Free Trial \u2014 ${trialStatus.daysRemaining} day${trialStatus.daysRemaining === 1 ? "" : "s"} left`}
+              </Text>
+            </View>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={[styles.subscriptionRow, { backgroundColor: colors.cloud, borderColor: colors.mist }]}
+            disabled={openingCustomerCenter}
+            onPress={async () => {
+              if (openingCustomerCenter) return;
+              setOpeningCustomerCenter(true);
+              try {
+                await RevenueCatUI.presentCustomerCenter({
+                  callbacks: {
+                    onRestoreCompleted: () => refresh(),
+                  },
+                });
+                await refresh();
+              } catch (err) {
+                qaLog("subscription", "Customer Center failed to open", { error: String(err) });
+                Alert.alert(
+                  "Unable to Open Subscription Management",
+                  "Please try again in a moment.",
+                );
+              } finally {
                 setOpeningCustomerCenter(false);
               }
             }}
