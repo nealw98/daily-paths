@@ -246,7 +246,7 @@ export default function MoreTab() {
         showsVerticalScrollIndicator={false}
       >
         {/* ── 1. Subscription ────────────────────────────────── */}
-        <Text style={[styles.sectionLabel, { color: colors.deepTeal, marginTop: 0 }]}>Subscription</Text>
+        <Text allowFontScaling={false} style={[styles.sectionLabel, { color: colors.deepTeal, marginTop: 0, fontSize: 24 }]}>Subscription</Text>
         {subLoading ? (
           <View style={[styles.subscriptionRow, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
             <View style={styles.subscriptionLeft}>
@@ -371,7 +371,7 @@ export default function MoreTab() {
         {/* ── 2. Appearance ────────────────────────────────── */}
         <TouchableOpacity activeOpacity={0.7} onPress={() => setAppearanceExpanded(!appearanceExpanded)}>
           <View style={styles.sectionHeaderRow}>
-            <Text style={[styles.sectionLabel, { color: colors.deepTeal, marginBottom: 0 }]}>Appearance</Text>
+            <Text allowFontScaling={false} style={[styles.sectionLabel, { color: colors.deepTeal, marginBottom: 0, marginTop: 0, marginLeft: 0, fontSize: 24 }]}>Appearance</Text>
             <Ionicons
               name={appearanceExpanded ? "chevron-up" : "chevron-down"}
               size={20}
@@ -538,7 +538,7 @@ export default function MoreTab() {
         )}
 
         {/* ── 3. Daily Notification ────────────────────────── */}
-        <Text style={[styles.sectionLabel, { color: colors.deepTeal }]}>Daily Notification</Text>
+        <Text allowFontScaling={false} style={[styles.sectionLabel, { color: colors.deepTeal, fontSize: 24 }]}>Daily Notification</Text>
         <View style={[styles.card, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
           <View style={styles.row}>
             <View style={styles.rowTextWrap}>
@@ -619,7 +619,7 @@ export default function MoreTab() {
         </View>
 
         {/* ── 4. Support & Share ─────────────────────────── */}
-        <Text style={[styles.sectionLabel, { color: colors.deepTeal }]}>Support & Share</Text>
+        <Text style={[styles.sectionLabel, { color: colors.deepTeal, fontSize: 24 }]}>Support & Share</Text>
         <View style={[styles.card, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
           <View style={styles.buttonRow}>
             <TouchableOpacity
@@ -826,7 +826,7 @@ const styles = StyleSheet.create({
   },
   cardLabel: {
     fontFamily: fonts.headerFamilyItalic,
-    fontSize: 22,
+    fontSize: 24,
     marginBottom: 10,
   },
   cardDivider: {
