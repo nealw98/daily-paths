@@ -411,17 +411,17 @@ const peachBlossomSemantic: SemanticPalette = {
 // ─── Morning Light (pastel yellow #FFF2C6/#FFF8DE — sunny, warm, gentle) ─
 // Amber Brown #6B5030, Warm Caramel #9A7650, Honey #C4A060, Soft Yellow #FFFDCE, Pastel Yellow #FFF2C6, Light Yellow #FFF8DE, Yellow White #FFFEF5
 const morningLightSemantic: SemanticPalette = {
-  heroGradientStart: "#FFF2C6",  // Warm pastel yellow
-  heroGradientEnd: "#FFF8DE",   // Lighter pastel yellow (soft gradient)
+  heroGradientStart: "#F6D27A",  // Warm golden sunrise
+  heroGradientEnd: "#FFF1C9",   // Pale morning cream
   background: "#FFFEF5",         // Yellow White (barely there warmth)
-  backgroundSecondary: "#FFF8DE", // Light Yellow
+  backgroundSecondary: "#FFFBEA", // Lighter morning wash
   text: "#5C4020",               // Amber Brown (warm, high contrast on yellow)
   textSecondary: "#9A7650",      // Warm Caramel (harmonizes with yellow)
   accent: "#9A7650",             // Warm Caramel
   highlight: "#FFFDCE",          // Soft Yellow (gentle glow)
   modalBackground: "#FFFEF5",   // Yellow White
   modalBorder: "#FFF2C6",       // Pastel Yellow
-  cardBackground: "#FFF8DE",    // Light Yellow
+  cardBackground: "#FFFBEA",    // Slightly lighter than before for more contrast with header
   buttonPrimary: "#7A5C38",     // Rich amber (visible, warm)
   buttonSecondary: "#C4A060",   // Honey
   textOnAccent: "#5C4020",      // Amber Brown — dark text on pastel yellow header
