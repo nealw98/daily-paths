@@ -24,6 +24,7 @@ import {
   expireTrial,
   type TrialStatus,
 } from "../utils/trialTimer";
+import { detectLifetimeAccess } from "../utils/paidAppDetector";
 import { getRequiredGate, type GateType } from "../utils/accessControl";
 import { qaLog } from "../utils/qaLog";
 import Purchases, { type PurchasesPackage } from "react-native-purchases";
@@ -38,6 +39,7 @@ interface TrialStatusWithMeta extends TrialStatus {
 interface SubscriptionContextValue {
   status: SubscriptionStatus;
   trialStatus: TrialStatusWithMeta;
+  hasLifetimeAccess: boolean;
   packages: PurchasesPackage[];
   loading: boolean;
   purchasing: boolean;
@@ -45,6 +47,7 @@ interface SubscriptionContextValue {
   purchase: (pkg: PurchasesPackage) => Promise<boolean>;
   restore: () => Promise<boolean>;
   refresh: () => Promise<void>;
+  refreshLifetimeAccess: () => Promise<void>;
 }
 
 const DEFAULT_STATUS: SubscriptionStatus = {
@@ -78,6 +81,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
   const [status, setStatus] = useState<SubscriptionStatus>(DEFAULT_STATUS);
   const [trial, setTrial] = useState<TrialStatus>(DEFAULT_TRIAL);
   const [trialLoading, setTrialLoading] = useState(true);
+  const [hasLifetimeAccess, setHasLifetimeAccess] = useState(false);
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
@@ -93,6 +97,12 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
     const init = async () => {
       // ── Phase 1: cached / local state (instant) ────────────────────────
 
+      // Lifetime access detection (App Store receipt check)
+      const lifetimeStatus = await detectLifetimeAccess();
+      if (cancelled) return;
+      setHasLifetimeAccess(lifetimeStatus.hasLifetimeAccess);
+      qaLog("subscription", "Lifetime access status", lifetimeStatus);
+
       // Cached subscription status (AsyncStorage — fast)
       const cached = await getCachedSubscriptionStatus();
       if (cancelled) return;
@@ -101,15 +111,22 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       // Trial status (AsyncStorage — fast)
-      const trialResult = await getTrialStatus();
-      if (cancelled) return;
-      setTrial(trialResult);
-      setTrialLoading(false);
+      // Only relevant for non-lifetime users.
+      if (!lifetimeStatus.hasLifetimeAccess) {
+        const trialResult = await getTrialStatus();
+        if (cancelled) return;
+        setTrial(trialResult);
+        setTrialLoading(false);
 
-      if (cached) {
-        setLoading(false);
-      } else if (trialResult.isInTrial) {
-        // No cache, but trial is active → gate = "none" from trial alone
+        if (cached) {
+          setLoading(false);
+        } else if (trialResult.isInTrial) {
+          // No cache, but trial is active → gate = "none" from trial alone
+          setLoading(false);
+        }
+      } else {
+        // Lifetime user — no trial needed, not loading
+        setTrialLoading(false);
         setLoading(false);
       }
 
@@ -189,16 +206,18 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
         qaLog("subscription", "RevenueCat NOT initialized — skipping migration");
       }
 
-      // Ensure the trial clock is running
-      await ensureTrialStarted();
-      const freshTrial = await getTrialStatus();
-      if (!cancelled) {
-        setTrial(freshTrial);
-        setTrialLoading(false);
+      // Start the trial clock only for non-lifetime users
+      if (!lifetimeStatus.hasLifetimeAccess) {
+        await ensureTrialStarted();
+        const freshTrial = await getTrialStatus();
+        if (!cancelled) {
+          setTrial(freshTrial);
+          setTrialLoading(false);
+        }
       }
 
       // Fetch fresh status from RC — RevenueCat is the sole source of
-      // truth for all entitlements including lifetime.
+      // truth for all entitlements including legacy grants.
       if (isRevenueCatInitialized()) {
         try {
           const fresh = await getSubscriptionStatus();
@@ -241,13 +260,21 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
     setTrial(s);
   }, []);
 
+  // ── Lifetime access refresh (for QA override toggle) ──────────────────
+  const refreshLifetimeAccess = useCallback(async () => {
+    const result = await detectLifetimeAccess();
+    setHasLifetimeAccess(result.hasLifetimeAccess);
+    qaLog("subscription", "Lifetime access refreshed", result);
+  }, []);
+
   // ── Gate computation ───────────────────────────────────────────────────
   const gate = useMemo<GateType>(() => {
+    if (hasLifetimeAccess) return "none";
     if (!isRevenueCatInitialized()) {
       return trial.isInTrial ? "none" : "paywall";
     }
-    return getRequiredGate(status, trial);
-  }, [status, trial]);
+    return getRequiredGate(status, trial, hasLifetimeAccess);
+  }, [status, trial, hasLifetimeAccess]);
 
   // ── Actions ────────────────────────────────────────────────────────────
   const purchase = useCallback(
@@ -316,6 +343,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
     () => ({
       status,
       trialStatus: trialStatusValue,
+      hasLifetimeAccess,
       packages,
       loading,
       purchasing,
@@ -323,10 +351,12 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       purchase,
       restore,
       refresh,
+      refreshLifetimeAccess,
     }),
     [
       status,
       trialStatusValue,
+      hasLifetimeAccess,
       packages,
       loading,
       purchasing,
@@ -334,6 +364,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       purchase,
       restore,
       refresh,
+      refreshLifetimeAccess,
     ],
   );
 

@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "modules": ["PaidAppDetectorModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.paidappdetector.PaidAppDetectorModule"]
+  }
+}

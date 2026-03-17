@@ -33,11 +33,11 @@ function SpeakersTabContent() {
   const navigation = useNavigation();
   const { speakers, loading, error, refresh } = useSpeakers();
   const { trackSpeakerAudioCompleted } = useAnalytics();
-  const { status: subscriptionStatus } = useSubscription();
+  const { status: subscriptionStatus, hasLifetimeAccess } = useSubscription();
   const trialStatus = useTrialStatus();
 
   // Download access is entitlement-driven.
-  const canDownload = canDownloadSpeakers(subscriptionStatus, trialStatus);
+  const canDownload = canDownloadSpeakers(subscriptionStatus, trialStatus, hasLifetimeAccess);
 
   // Track which speakers are downloaded (for browse screen badges)
   const { downloadedIds, refresh: refreshDownloads } = useDownloadedSpeakerIds();

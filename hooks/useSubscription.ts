@@ -10,6 +10,7 @@ export function useSubscription() {
   const ctx = useSubscriptionContext();
   return {
     status: ctx.status,
+    hasLifetimeAccess: ctx.hasLifetimeAccess,
     packages: ctx.packages,
     loading: ctx.loading,
     purchasing: ctx.purchasing,

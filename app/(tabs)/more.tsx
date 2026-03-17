@@ -93,7 +93,7 @@ export default function MoreTab() {
   const { settings, setTextSize, setThemeId, setColorScheme, setDailyReminderEnabled, setDailyReminderTime } =
     useSettings();
   const { submitting: submittingFeedback, submitFeedback } = useAppFeedback();
-  const { status, loading: subLoading, refresh } = useSubscription();
+  const { status, hasLifetimeAccess, loading: subLoading, refresh } = useSubscription();
   const { updateThemeMode } = useAnalytics();
   const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
@@ -114,9 +114,9 @@ export default function MoreTab() {
     }, []),
   );
 
-  // Revert to default theme and hide premium colors when subscription lapses
+  // Revert to default theme and hide premium colors when entitlement lapses
   useEffect(() => {
-    const hasPaidEntitlement = status.isSubscribed || status.isLegacy;
+    const hasPaidEntitlement = hasLifetimeAccess || status.isSubscribed || status.isLegacy;
     if (!hasPaidEntitlement) {
       setShowExtendedThemes(false);
       if (EXTENDED_THEME_OPTIONS.some((t) => t.id === settings.themeId)) {
@@ -124,7 +124,7 @@ export default function MoreTab() {
         updateThemeMode("light");
       }
     }
-  }, [status.isSubscribed, status.isLegacy, settings.themeId]);
+  }, [hasLifetimeAccess, status.isSubscribed, status.isLegacy, settings.themeId]);
 
   const expoConfig: any = Constants.expoConfig ?? {};
   const appVersion =
@@ -136,7 +136,7 @@ export default function MoreTab() {
     () => parseTimeToDate(settings.dailyReminderTime),
     [settings.dailyReminderTime]
   );
-  const hasPaidEntitlement = status.isSubscribed || status.isLegacy;
+  const hasPaidEntitlement = hasLifetimeAccess || status.isSubscribed || status.isLegacy;
 
   const handleTextSizePress = async (size: TextSize) => {
     if (settings.textSize === size) return;

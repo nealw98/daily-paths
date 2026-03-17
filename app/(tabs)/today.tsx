@@ -84,7 +84,7 @@ export default function Index() {
 
   // Paywall gating for the journal FAB
   const trialStatus = useTrialStatus();
-  const { status: subStatus, refresh: refreshSub } = useSubscription();
+  const { status: subStatus, hasLifetimeAccess, refresh: refreshSub } = useSubscription();
   
   // Analytics
   const { trackAppOpened, startReadingView, trackReadingFavorited, trackReadingUnfavorited, updateThemeMode } = useAnalytics();
@@ -457,7 +457,7 @@ export default function Index() {
         <TouchableOpacity
           style={styles.fabTouchable}
           onPress={async () => {
-            const gate = getRequiredGate(subStatus, trialStatus);
+            const gate = getRequiredGate(subStatus, trialStatus, hasLifetimeAccess);
             if (gate === "paywall") {
               if (presentingPaywall) return;
               setPresentingPaywall(true);

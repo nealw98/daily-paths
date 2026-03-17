@@ -4,22 +4,17 @@ import type { TrialStatus } from "./trialTimer";
 /**
  * Access control helpers for Daily Paths.
  *
- * The app is a PAID download on the App Store. Every user who has the app
- * already paid for it. All features are unlocked — no paywall, no trial
- * gate, no subscription required.
+ * Premium access is granted through one of four mutually exclusive states
+ * (checked in priority order):
  *
- * RevenueCat subscriptions and the trial system remain wired up for a
- * potential future freemium transition, but they are never the sole gate.
- * The paid-app check (`IS_PAID_APP`) always grants full access.
+ * 1. Lifetime access  — user paid for the app download (detected via
+ *    StoreKit 2 AppTransaction on iOS 16+)
+ * 2. Legacy grant      — lifetime entitlement granted manually in RevenueCat
+ * 3. Subscription      — active RevenueCat subscription
+ * 4. Free trial        — 7-day local trial (unpaid users only)
  *
- * When/if the app transitions to freemium, set IS_PAID_APP to false and
- * add StoreKit 2 AppTransaction detection to identify legacy paid users.
+ * If none apply, the user sees a paywall.
  */
-
-// ─── Paid-app flag ───────────────────────────────────────────────────────────
-// The app is currently sold as a paid download. Every user is entitled.
-// Flip this to `false` only when the app goes free on the App Store.
-const IS_PAID_APP = true;
 
 // ─── Gate type ───────────────────────────────────────────────────────────────
 
@@ -27,14 +22,17 @@ export type GateType = "none" | "paywall";
 
 /**
  * Premium entitlement check.
- * If the app is paid, everyone is entitled — period.
- * Otherwise falls back to subscription / legacy / trial checks.
+ *
+ * @param subscription  RevenueCat subscription status
+ * @param trial         Local 7-day trial status
+ * @param hasLifetimeAccess  Whether the user paid for the app download
  */
 export function hasPremiumEntitlement(
   subscription: SubscriptionStatus,
   trial: TrialStatus,
+  hasLifetimeAccess: boolean,
 ): boolean {
-  if (IS_PAID_APP) return true;
+  if (hasLifetimeAccess) return true;
   return subscription.isSubscribed || subscription.isLegacy || trial.isInTrial;
 }
 
@@ -44,8 +42,11 @@ export function hasPremiumEntitlement(
 export function getRequiredGate(
   subscription: SubscriptionStatus,
   trial: TrialStatus,
+  hasLifetimeAccess: boolean,
 ): GateType {
-  return hasPremiumEntitlement(subscription, trial) ? "none" : "paywall";
+  return hasPremiumEntitlement(subscription, trial, hasLifetimeAccess)
+    ? "none"
+    : "paywall";
 }
 
 /**
@@ -54,6 +55,7 @@ export function getRequiredGate(
 export function canDownloadSpeakers(
   subscription: SubscriptionStatus,
   trial: TrialStatus,
+  hasLifetimeAccess: boolean,
 ): boolean {
-  return hasPremiumEntitlement(subscription, trial);
+  return hasPremiumEntitlement(subscription, trial, hasLifetimeAccess);
 }

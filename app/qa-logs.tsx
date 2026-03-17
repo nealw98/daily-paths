@@ -20,6 +20,7 @@ import { clearQaLogs, useQaLogs, qaLog } from "../utils/qaLog";
 import { resetRateShareTracking } from "../utils/rateShareTracking";
 import { isDeveloperDevice, setDeveloperDevice, getOrCreateDeviceId } from "../utils/deviceIdentity";
 import { getTrialStatus, resetTrial, expireTrial } from "../utils/trialTimer";
+import { setLifetimeOverride, getLifetimeOverride } from "../utils/paidAppDetector";
 import { useSubscriptionContext } from "../contexts/SubscriptionContext";
 import { useSubscription } from "../hooks/useSubscription";
 
@@ -31,21 +32,24 @@ export default function QaLogsScreen() {
   const insets = useSafeAreaInsets();
   const logs = useQaLogs();
   const router = useRouter();
-  const { trialStatus } = useSubscriptionContext();
-  const { status: subStatus } = useSubscription();
+  const { trialStatus, refreshLifetimeAccess } = useSubscriptionContext();
+  const { status: subStatus, hasLifetimeAccess } = useSubscription();
   const [updating, setUpdating] = React.useState(false);
   const [updateStatus, setUpdateStatus] = React.useState<string | null>(null);
   const [copyStatus, setCopyStatus] = React.useState<string | null>(null);
   const [isDeveloper, setIsDeveloper] = React.useState(false);
   const [deviceId, setDeviceId] = React.useState<string | null>(null);
+  const [lifetimeOverride, setLifetimeOverrideState] = React.useState<boolean | null>(null);
 
-  // Load developer mode and device ID on mount
+  // Load developer mode, device ID, and lifetime override on mount
   React.useEffect(() => {
     const loadDeviceInfo = async () => {
       const devMode = await isDeveloperDevice();
       setIsDeveloper(devMode);
       const id = await getOrCreateDeviceId();
       setDeviceId(id);
+      const override = await getLifetimeOverride();
+      setLifetimeOverrideState(override);
     };
     loadDeviceInfo();
   }, []);
@@ -189,18 +193,29 @@ export default function QaLogsScreen() {
     }
   };
 
-  const entitlementLabel = React.useMemo(() => {
-    if (subStatus.isLegacy) return "Lifetime Access";
-    if (subStatus.isSubscribed) {
-      const pid = subStatus.productIdentifier ?? "unknown";
-      const renew = subStatus.willRenew ? "renews" : "expires";
-      const exp = subStatus.expirationDate
-        ? new Date(subStatus.expirationDate).toLocaleDateString()
-        : "—";
-      return `${pid} (${renew} ${exp})`;
+  const handleToggleLifetimeOverride = async () => {
+    if (lifetimeOverride === true) {
+      // Currently forced on → turn off
+      await setLifetimeOverride(false);
+      setLifetimeOverrideState(false);
+    } else if (lifetimeOverride === false) {
+      // Currently forced off → clear override (use receipt detection)
+      await setLifetimeOverride(null);
+      setLifetimeOverrideState(null);
+    } else {
+      // No override → force on
+      await setLifetimeOverride(true);
+      setLifetimeOverrideState(true);
     }
-    return "None";
-  }, [subStatus]);
+    await refreshLifetimeAccess();
+  };
+
+  const lifetimeOverrideLabel =
+    lifetimeOverride === true
+      ? "Forced ON"
+      : lifetimeOverride === false
+        ? "Forced OFF"
+        : "Auto (receipt)";
 
   return (
     <View
@@ -292,13 +307,67 @@ export default function QaLogsScreen() {
           )}
         </View>
 
+        <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>Access States</Text>
+
+        <View style={[styles.stateBox, { backgroundColor: "#fff", borderColor: colors.mist }]}>
+          <View style={styles.stateRow}>
+            <Text style={[styles.stateIndicator, { color: hasLifetimeAccess ? "#16a34a" : colors.textSecondary }]}>
+              {hasLifetimeAccess ? "\u2713" : "\u2717"}
+            </Text>
+            <Text style={[styles.stateLabel, { color: hasLifetimeAccess ? colors.ink : colors.textSecondary }]}>
+              Lifetime Access (paid download)
+            </Text>
+          </View>
+          <View style={styles.stateRow}>
+            <Text style={[styles.stateIndicator, { color: subStatus.isLegacy ? "#16a34a" : colors.textSecondary }]}>
+              {subStatus.isLegacy ? "\u2713" : "\u2717"}
+            </Text>
+            <Text style={[styles.stateLabel, { color: subStatus.isLegacy ? colors.ink : colors.textSecondary }]}>
+              Legacy Grant (RevenueCat)
+            </Text>
+          </View>
+          <View style={styles.stateRow}>
+            <Text style={[styles.stateIndicator, { color: subStatus.isSubscribed ? "#16a34a" : colors.textSecondary }]}>
+              {subStatus.isSubscribed ? "\u2713" : "\u2717"}
+            </Text>
+            <Text style={[styles.stateLabel, { color: subStatus.isSubscribed ? colors.ink : colors.textSecondary }]}>
+              Subscription{subStatus.isSubscribed
+                ? ` — ${subStatus.productIdentifier ?? "unknown"} (${subStatus.willRenew ? "renews" : "expires"} ${subStatus.expirationDate ? new Date(subStatus.expirationDate).toLocaleDateString() : "\u2014"})`
+                : ""}
+            </Text>
+          </View>
+          <View style={styles.stateRow}>
+            <Text style={[styles.stateIndicator, { color: trialStatus.isInTrial ? "#16a34a" : colors.textSecondary }]}>
+              {trialStatus.isInTrial ? "\u2713" : "\u2717"}
+            </Text>
+            <Text style={[styles.stateLabel, { color: trialStatus.isInTrial ? colors.ink : colors.textSecondary }]}>
+              7-Day Trial{trialStatus.isInTrial
+                ? ` (${trialStatus.daysRemaining}d remaining)`
+                : trialStatus.trialExpired
+                  ? " (expired)"
+                  : trialStatus.neverStarted
+                    ? " (not started)"
+                    : ""}
+            </Text>
+          </View>
+        </View>
+
         <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>Freemium Testing</Text>
 
-        <View style={[styles.entitlementRow, { backgroundColor: "#fff", borderColor: colors.mist }]}>
-          <Text style={[styles.entitlementLabel, { color: colors.ink }]}>Active Entitlement</Text>
-          <Text style={[styles.entitlementValue, { color: subStatus.isSubscribed ? colors.deepTeal : colors.textSecondary }]}>
-            {entitlementLabel}
-          </Text>
+        <View style={[styles.developerRow, { borderColor: colors.mist }]}>
+          <View style={{ flex: 1, marginRight: 8 }}>
+            <Text style={[styles.developerLabel, { color: colors.ink }]}>Lifetime Access Override</Text>
+            <Text style={[styles.meta, { marginTop: 2 }]}>{lifetimeOverrideLabel}</Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleToggleLifetimeOverride}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              {lifetimeOverride === true ? "Force OFF" : lifetimeOverride === false ? "Clear" : "Force ON"}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.actionsRow}>
@@ -466,23 +535,29 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#4b5563",
   },
-  entitlementRow: {
+  stateBox: {
     marginTop: 8,
     marginBottom: 4,
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
     borderWidth: 1,
+    gap: 6,
   },
-  entitlementLabel: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 11,
-    marginBottom: 2,
+  stateRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
   },
-  entitlementValue: {
+  stateIndicator: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: "700",
+    width: 20,
+  },
+  stateLabel: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 13,
+    flex: 1,
   },
   sectionHeader: {
     fontFamily: fonts.headerFamily,

@@ -246,7 +246,7 @@ export default function RootLayout() {
 
 
 function TrialExpiryPresenter() {
-  const { status, trialStatus, refresh } = useSubscriptionContext();
+  const { status, trialStatus, hasLifetimeAccess, refresh } = useSubscriptionContext();
   const [visible, setVisible] = useState(false);
   const [checking, setChecking] = useState(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
@@ -255,7 +255,7 @@ function TrialExpiryPresenter() {
     if (checking) return;
     setChecking(true);
     try {
-      if (status.isSubscribed || status.isLegacy || !trialStatus.trialExpired) return;
+      if (hasLifetimeAccess || status.isSubscribed || status.isLegacy || !trialStatus.trialExpired) return;
       const seen = await hasSeenTrialEndedModal();
       if (!seen) setVisible(true);
     } finally {
@@ -265,7 +265,7 @@ function TrialExpiryPresenter() {
 
   useEffect(() => {
     checkAndShow();
-  }, [status.isSubscribed, status.isLegacy, trialStatus.trialExpired]);
+  }, [hasLifetimeAccess, status.isSubscribed, status.isLegacy, trialStatus.trialExpired]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextState) => {
@@ -275,7 +275,7 @@ function TrialExpiryPresenter() {
       appStateRef.current = nextState;
     });
     return () => subscription.remove();
-  }, [status.isSubscribed, status.isLegacy, trialStatus.trialExpired]);
+  }, [hasLifetimeAccess, status.isSubscribed, status.isLegacy, trialStatus.trialExpired]);
 
   return (
     <TrialEndedModal
@@ -302,18 +302,18 @@ function TrialExpiryPresenter() {
 const LIFETIME_WELCOME_SEEN_KEY = "@daily_paths_lifetime_welcome_seen";
 
 function LifetimeWelcomePresenter() {
-  const { status } = useSubscriptionContext();
+  const { status, hasLifetimeAccess } = useSubscriptionContext();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     (async () => {
-      if (!status.isLegacy) return;
+      if (!hasLifetimeAccess && !status.isLegacy) return;
       const seen = await AsyncStorage.getItem(LIFETIME_WELCOME_SEEN_KEY);
       if (seen !== "true") {
         setVisible(true);
       }
     })();
-  }, [status.isLegacy]);
+  }, [hasLifetimeAccess, status.isLegacy]);
 
   return (
     <LifetimeWelcomeModal
