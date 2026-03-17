@@ -9,6 +9,7 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "paid-app-detector": "file:modules/paid-app-detector",
     "@expo-google-fonts/cormorant-garamond": "^0.4.1",
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo-google-fonts/lora": "^0.4.2",
