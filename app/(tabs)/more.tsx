@@ -116,10 +116,12 @@ export default function MoreTab() {
     }, []),
   );
 
-  // Revert to default theme and hide premium colors when entitlement lapses
+  // Show premium colors by default for paid users; revert when entitlement lapses
   useEffect(() => {
     const hasPaidEntitlement = hasLifetimeAccess || status.isSubscribed || status.isLegacy;
-    if (!hasPaidEntitlement) {
+    if (hasPaidEntitlement) {
+      setShowExtendedThemes(true);
+    } else {
       setShowExtendedThemes(false);
       if (EXTENDED_THEME_OPTIONS.some((t) => t.id === settings.themeId)) {
         setThemeId("ocean-light");
@@ -326,7 +328,18 @@ export default function MoreTab() {
             </View>
           </View>
         ) : trialStatus.isInTrial ? (
-          <View style={[styles.subscriptionRow, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
+          <TouchableOpacity
+            style={[styles.subscriptionRow, { backgroundColor: colors.cloud, borderColor: colors.mist }]}
+            onPress={async () => {
+              try {
+                const result = await RevenueCatUI.presentPaywall();
+                if (result === "PURCHASED") await refresh();
+              } catch (err) {
+                qaLog("subscription", "Paywall failed to open from trial row", { error: String(err) });
+              }
+            }}
+            activeOpacity={0.8}
+          >
             <View style={styles.subscriptionLeft}>
               <Ionicons name="time-outline" size={22} color={colors.deepTeal} />
               <Text style={[styles.subscriptionText, { color: colors.text }]}>
@@ -335,44 +348,26 @@ export default function MoreTab() {
                   : `Free Trial \u2014 ${trialStatus.daysRemaining} day${trialStatus.daysRemaining === 1 ? "" : "s"} left`}
               </Text>
             </View>
-          </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.seafoam} />
+          </TouchableOpacity>
         ) : (
           <TouchableOpacity
             style={[styles.subscriptionRow, { backgroundColor: colors.cloud, borderColor: colors.mist }]}
-            disabled={openingCustomerCenter}
             onPress={async () => {
-              if (openingCustomerCenter) return;
-              setOpeningCustomerCenter(true);
               try {
-                await RevenueCatUI.presentCustomerCenter({
-                  callbacks: {
-                    onRestoreCompleted: () => refresh(),
-                  },
-                });
-                await refresh();
+                const result = await RevenueCatUI.presentPaywall();
+                if (result === "PURCHASED") await refresh();
               } catch (err) {
-                qaLog("subscription", "Customer Center failed to open", { error: String(err) });
-                Alert.alert(
-                  "Unable to Open Subscription Management",
-                  "Please try again in a moment.",
-                );
-              } finally {
-                setOpeningCustomerCenter(false);
+                qaLog("subscription", "Paywall failed to open from subscribe row", { error: String(err) });
               }
             }}
-            activeOpacity={openingCustomerCenter ? 1 : 0.8}
+            activeOpacity={0.8}
           >
             <View style={styles.subscriptionLeft}>
               <Ionicons name="card-outline" size={22} color={colors.deepTeal} />
-              <Text style={[styles.subscriptionText, { color: colors.text }]}>
-                {openingCustomerCenter ? "Opening..." : "Manage Subscription"}
-              </Text>
+              <Text style={[styles.subscriptionText, { color: colors.text }]}>Subscribe Now</Text>
             </View>
-            {openingCustomerCenter ? (
-              <ActivityIndicator size="small" color={colors.deepTeal} />
-            ) : (
-              <Ionicons name="chevron-forward" size={20} color={colors.seafoam} />
-            )}
+            <Ionicons name="chevron-forward" size={20} color={colors.seafoam} />
           </TouchableOpacity>
         )}
 
