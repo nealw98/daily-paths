@@ -820,9 +820,10 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   cardLabel: {
-    fontFamily: fonts.headerFamilyItalic,
-    fontSize: 18,
-    lineHeight: 24,
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 16,
+    lineHeight: 20,
+    fontWeight: "600",
     marginBottom: 8,
   },
   cardDivider: {
