@@ -108,6 +108,7 @@ export default function MoreTab() {
   const [feedbackContact, setFeedbackContact] = useState("");
   const [isSharing, setIsSharing] = useState(false);
   const [openingCustomerCenter, setOpeningCustomerCenter] = useState(false);
+  const [textSizeExpanded, setTextSizeExpanded] = useState(false);
   const [defaultThemesExpanded, setDefaultThemesExpanded] = useState(true);
   const [premiumThemesExpanded, setPremiumThemesExpanded] = useState(false);
 
@@ -366,65 +367,80 @@ export default function MoreTab() {
         <Text allowFontScaling={false} style={[styles.sectionLabel, { color: colors.deepTeal }]}>Appearance</Text>
         <View style={[styles.card, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
           {/* Text size row */}
-          <Text style={[styles.cardLabel, { color: colors.deepTeal }]}>Text Size</Text>
-          <View style={styles.sliderRow}>
-            <TouchableOpacity
-              onPress={handleDecrementTextSize}
-              disabled={settings.textSize === textSizeStops[0]}
-              activeOpacity={0.7}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            >
-              <Text
-                style={[
-                  styles.sliderEdgeLabel,
-                  { color: colors.deepTeal, fontSize: 14 },
-                  settings.textSize === textSizeStops[0] && { opacity: 0.3 },
-                ]}
+          <TouchableOpacity
+            style={styles.themeSectionHeader}
+            activeOpacity={0.7}
+            onPress={() => setTextSizeExpanded((current) => !current)}
+          >
+            <Text style={[styles.cardLabel, { color: colors.deepTeal, marginBottom: 0 }]}>
+              Text Size
+            </Text>
+            <Ionicons
+              name={textSizeExpanded ? "chevron-up" : "chevron-down"}
+              size={18}
+              color={colors.deepTeal}
+            />
+          </TouchableOpacity>
+          {textSizeExpanded && (
+            <View style={styles.sliderRow}>
+              <TouchableOpacity
+                onPress={handleDecrementTextSize}
+                disabled={settings.textSize === textSizeStops[0]}
+                activeOpacity={0.7}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               >
-                A
-              </Text>
-            </TouchableOpacity>
-            <View style={styles.sliderTrack}>
-              {textSizeStops.map((size, index) => {
-                const selectedIndex = textSizeStops.indexOf(settings.textSize);
-                const isActive = index <= selectedIndex;
-                const isSelected = size === settings.textSize;
-                return (
-                  <TouchableOpacity
-                    key={size}
-                    style={styles.sliderStopTouch}
-                    activeOpacity={0.8}
-                    onPress={() => handleTextSizePress(size)}
-                  >
-                    <View
-                      style={[
-                        styles.sliderStop,
-                        { borderColor: colors.border, backgroundColor: colors.pearl },
-                        isActive && { borderColor: colors.seafoam, backgroundColor: colors.seafoam },
-                        isSelected && { borderColor: colors.deepTeal, backgroundColor: colors.deepTeal },
-                      ]}
-                    />
-                  </TouchableOpacity>
-                );
-              })}
+                <Text
+                  style={[
+                    styles.sliderEdgeLabel,
+                    { color: colors.deepTeal, fontSize: 14 },
+                    settings.textSize === textSizeStops[0] && { opacity: 0.3 },
+                  ]}
+                >
+                  A
+                </Text>
+              </TouchableOpacity>
+              <View style={styles.sliderTrack}>
+                {textSizeStops.map((size, index) => {
+                  const selectedIndex = textSizeStops.indexOf(settings.textSize);
+                  const isActive = index <= selectedIndex;
+                  const isSelected = size === settings.textSize;
+                  return (
+                    <TouchableOpacity
+                      key={size}
+                      style={styles.sliderStopTouch}
+                      activeOpacity={0.8}
+                      onPress={() => handleTextSizePress(size)}
+                    >
+                      <View
+                        style={[
+                          styles.sliderStop,
+                          { borderColor: colors.border, backgroundColor: colors.pearl },
+                          isActive && { borderColor: colors.seafoam, backgroundColor: colors.seafoam },
+                          isSelected && { borderColor: colors.deepTeal, backgroundColor: colors.deepTeal },
+                        ]}
+                      />
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              <TouchableOpacity
+                onPress={handleIncrementTextSize}
+                disabled={settings.textSize === textSizeStops[textSizeStops.length - 1]}
+                activeOpacity={0.7}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              >
+                <Text
+                  style={[
+                    styles.sliderEdgeLabel,
+                    { color: colors.deepTeal, fontSize: 22 },
+                    settings.textSize === textSizeStops[textSizeStops.length - 1] && { opacity: 0.3 },
+                  ]}
+                >
+                  A
+                </Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              onPress={handleIncrementTextSize}
-              disabled={settings.textSize === textSizeStops[textSizeStops.length - 1]}
-              activeOpacity={0.7}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            >
-              <Text
-                style={[
-                  styles.sliderEdgeLabel,
-                  { color: colors.deepTeal, fontSize: 22 },
-                  settings.textSize === textSizeStops[textSizeStops.length - 1] && { opacity: 0.3 },
-                ]}
-              >
-                A
-              </Text>
-            </TouchableOpacity>
-          </View>
+          )}
 
           {/* Divider */}
           <View style={[styles.cardDivider, { backgroundColor: colors.mist }]} />
