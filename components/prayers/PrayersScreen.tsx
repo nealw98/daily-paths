@@ -2,15 +2,18 @@ import React, { useState, useMemo, useRef } from "react";
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { useAnalytics } from "../../utils/analytics";
+import { usePersonalPrayers, type PersonalPrayer } from "../../hooks/usePersonalPrayers";
 import { fonts } from "../../constants/theme";
 import { PRAYERS, type Prayer } from "../../constants/prayers";
 import { TealHeader } from "../shared/TealHeader";
@@ -21,7 +24,14 @@ export const PrayersScreen: React.FC = () => {
   const { settings } = useSettings();
   const { trackPrayerViewed } = useAnalytics();
   const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
+  const { prayers: personalPrayers, addPrayer, updatePrayer, deletePrayer } = usePersonalPrayers();
   const [expandedPrayer, setExpandedPrayer] = useState<string | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [newText, setNewText] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editText, setEditText] = useState("");
   const scrollRef = useRef<ScrollView>(null);
 
   /** Render prayer text with bold phrases (e.g. "Just for today", "Just for tonight") */
@@ -91,6 +101,131 @@ export const PrayersScreen: React.FC = () => {
     );
   };
 
+  const handleStartEdit = (prayer: PersonalPrayer) => {
+    setEditingId(prayer.id);
+    setEditTitle(prayer.title);
+    setEditText(prayer.text);
+    setExpandedPrayer(prayer.id);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingId || !editTitle.trim() || !editText.trim()) return;
+    await updatePrayer(editingId, editTitle, editText);
+    setEditingId(null);
+    setEditTitle("");
+    setEditText("");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditTitle("");
+    setEditText("");
+  };
+
+  const handleDelete = (prayer: PersonalPrayer) => {
+    Alert.alert("Delete Prayer?", `Remove "${prayer.title}"? This cannot be undone.`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          await deletePrayer(prayer.id);
+          if (expandedPrayer === prayer.id) setExpandedPrayer(null);
+          if (editingId === prayer.id) handleCancelEdit();
+        },
+      },
+    ]);
+  };
+
+  const handleSaveNew = async () => {
+    if (!newTitle.trim() || !newText.trim()) return;
+    await addPrayer(newTitle, newText);
+    setNewTitle("");
+    setNewText("");
+  };
+
+  const renderPersonalPrayer = (prayer: PersonalPrayer) => {
+    const isExpanded = expandedPrayer === prayer.id;
+    const isEditing = editingId === prayer.id;
+
+    return (
+      <View key={prayer.id} style={styles.prayerSection}>
+        <TouchableOpacity
+          style={styles.prayerHeader}
+          onPress={() => {
+            if (isEditing) handleCancelEdit();
+            setExpandedPrayer(isExpanded ? null : prayer.id);
+          }}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.prayerTitle, { color: colors.ocean, fontSize: typography.bodyFontSize + 2 }]}>
+            {prayer.title.toUpperCase()}
+          </Text>
+          <Ionicons
+            name={isExpanded ? "chevron-up" : "chevron-down"}
+            size={18}
+            color={colors.textSecondary}
+          />
+        </TouchableOpacity>
+
+        {isExpanded && !isEditing && (
+          <View style={styles.prayerBody}>
+            <Text style={[styles.prayerText, { color: colors.ink, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.625 }]}>
+              {prayer.text}
+            </Text>
+            <View style={styles.personalActions}>
+              <TouchableOpacity
+                onPress={() => handleStartEdit(prayer)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.editLink, { color: colors.seafoam }]}>Edit</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {isEditing && (
+          <View style={styles.formContainer}>
+            <TextInput
+              style={[styles.titleInput, { color: colors.ink, borderColor: colors.mist, backgroundColor: colors.cloud, fontSize: typography.bodyFontSize }]}
+              value={editTitle}
+              onChangeText={setEditTitle}
+              placeholder="Prayer title"
+              placeholderTextColor={colors.textSecondary}
+            />
+            <TextInput
+              style={[styles.bodyInput, { color: colors.ink, borderColor: colors.mist, backgroundColor: colors.cloud, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.625 }]}
+              value={editText}
+              onChangeText={setEditText}
+              placeholder="Prayer text"
+              placeholderTextColor={colors.textSecondary}
+              multiline
+              textAlignVertical="top"
+            />
+            <View style={styles.formActions}>
+              <TouchableOpacity
+                style={[styles.formButton, { backgroundColor: colors.mist }]}
+                onPress={() => handleDelete(prayer)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.formButtonText, { color: "#b91c1c" }]}>Delete</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.formButton, { backgroundColor: colors.deepTeal }, (!editTitle.trim() || !editText.trim()) && { opacity: 0.5 }]}
+                onPress={handleSaveEdit}
+                disabled={!editTitle.trim() || !editText.trim()}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.formButtonText, { color: colors.textOnAccent }]}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.pearl }]}
@@ -108,10 +243,69 @@ export const PrayersScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Prayers List */}
+        {/* Built-in Prayers */}
         {PRAYERS.map(renderPrayer)}
 
-        {/* TODO: Personal prayer notes will be rebuilt as part of the Notebook feature */}
+        {/* Personal Prayers */}
+        {personalPrayers.map(renderPersonalPrayer)}
+
+        {/* Add New Prayer */}
+        <View style={styles.prayerSection}>
+          <TouchableOpacity
+            style={styles.prayerHeader}
+            onPress={() => {
+              setShowAddForm(!showAddForm);
+              if (showAddForm) {
+                setNewTitle("");
+                setNewText("");
+              }
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={styles.addPrayerLeft}>
+              <Ionicons name="add" size={20} color={colors.ocean} style={{ marginRight: 6 }} />
+              <Text style={[styles.prayerTitle, { color: colors.ocean, fontSize: typography.bodyFontSize + 2 }]}>
+                ADD PRAYER
+              </Text>
+            </View>
+            <Ionicons
+              name={showAddForm ? "chevron-up" : "chevron-down"}
+              size={18}
+              color={colors.textSecondary}
+            />
+          </TouchableOpacity>
+
+          {showAddForm && (
+            <View style={styles.formContainer}>
+              <TextInput
+                style={[styles.titleInput, { color: colors.ink, borderColor: colors.mist, backgroundColor: colors.cloud, fontSize: typography.bodyFontSize }]}
+                value={newTitle}
+                onChangeText={setNewTitle}
+                placeholder="Prayer title"
+                placeholderTextColor={colors.textSecondary}
+              />
+              <TextInput
+                style={[styles.bodyInput, { color: colors.ink, borderColor: colors.mist, backgroundColor: colors.cloud, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.625 }]}
+                value={newText}
+                onChangeText={setNewText}
+                placeholder="Prayer text"
+                placeholderTextColor={colors.textSecondary}
+                multiline
+                textAlignVertical="top"
+              />
+              <View style={styles.formActions}>
+                <TouchableOpacity
+                  style={[styles.formButton, { backgroundColor: colors.deepTeal }, (!newTitle.trim() || !newText.trim()) && { opacity: 0.5 }]}
+                  onPress={handleSaveNew}
+                  disabled={!newTitle.trim() || !newText.trim()}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.formButtonText, { color: colors.textOnAccent }]}>Save</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -159,5 +353,54 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     marginTop: 14,
     textAlign: "right",
+  },
+  personalActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 14,
+  },
+  editLink: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  addPrayerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  formContainer: {
+    paddingBottom: 16,
+    gap: 12,
+  },
+  titleInput: {
+    fontFamily: fonts.bodyFamilyRegular,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  bodyInput: {
+    fontFamily: fonts.bodyFamilyRegular,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    minHeight: 120,
+  },
+  formActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 12,
+  },
+  formButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  formButtonText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontWeight: "600",
+    fontSize: 15,
   },
 });

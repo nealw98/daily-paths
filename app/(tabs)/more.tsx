@@ -26,7 +26,7 @@ import { useTheme } from "../../hooks/useTheme";
 import { useSettings, TextSize } from "../../hooks/useSettings";
 import { useAppFeedback } from "../../hooks/useAppFeedback";
 import { useAnalytics } from "../../utils/analytics";
-import { shareApp } from "../../utils/rateShareTracking";
+import { shareApp, openAppStoreForRating } from "../../utils/rateShareTracking";
 import { scheduleWeekOfNotifications } from "../../utils/notificationSync";
 import { qaLog } from "../../utils/qaLog";
 import { fonts } from "../../constants/theme";
@@ -109,6 +109,7 @@ export default function MoreTab() {
   const [isSharing, setIsSharing] = useState(false);
   const [openingCustomerCenter, setOpeningCustomerCenter] = useState(false);
   const [showExtendedThemes, setShowExtendedThemes] = useState(false);
+  const [appearanceExpanded, setAppearanceExpanded] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -182,9 +183,9 @@ export default function MoreTab() {
     }
   };
 
-  const handleRateApp = () => {
-    qaLog("rate", "Rate App button pressed - showing rate modal");
-    setShowRateModal(true);
+  const handleRateApp = async () => {
+    qaLog("rate", "Rate App button pressed - opening App Store directly");
+    await openAppStoreForRating();
   };
 
   const handleShareApp = async () => {
@@ -319,7 +320,7 @@ export default function MoreTab() {
           <View style={[styles.subscriptionRow, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
             <View style={styles.subscriptionLeft}>
               <Ionicons name="star" size={22} color={colors.deepTeal} />
-              <Text style={[styles.subscriptionText, { color: colors.text }]}>Lifetime Access</Text>
+              <Text style={[styles.subscriptionText, { color: colors.deepTeal }]}>Lifetime Access</Text>
             </View>
           </View>
         ) : trialStatus.isInTrial ? (
@@ -368,7 +369,17 @@ export default function MoreTab() {
 
 
         {/* ── 2. Appearance ────────────────────────────────── */}
-        <Text style={[styles.sectionLabel, { color: colors.deepTeal }]}>Appearance</Text>
+        <TouchableOpacity activeOpacity={0.7} onPress={() => setAppearanceExpanded(!appearanceExpanded)}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={[styles.sectionLabel, { color: colors.deepTeal, marginBottom: 0 }]}>Appearance</Text>
+            <Ionicons
+              name={appearanceExpanded ? "chevron-up" : "chevron-down"}
+              size={20}
+              color={colors.deepTeal}
+            />
+          </View>
+        </TouchableOpacity>
+        {appearanceExpanded && (
         <View style={[styles.card, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
           {/* Text size row */}
           <Text style={[styles.cardLabel, { color: colors.deepTeal }]}>Text Size</Text>
@@ -436,7 +447,7 @@ export default function MoreTab() {
 
           {/* Theme row */}
           <View style={styles.themeHeaderRow}>
-            <Text style={[styles.cardLabel, { color: colors.deepTeal, marginBottom: 0 }]}>Themes</Text>
+            <Text style={[styles.cardLabel, { color: colors.deepTeal, marginBottom: 0 }]}>Default Themes</Text>
             {!subLoading && hasPaidEntitlement && (
               <View style={styles.themeToggleRow}>
                 <Text style={[styles.cardLabel, { color: colors.deepTeal, marginBottom: 0 }]}>Premium Colors</Text>
@@ -524,13 +535,14 @@ export default function MoreTab() {
             </>
           )}
         </View>
+        )}
 
         {/* ── 3. Daily Notification ────────────────────────── */}
         <Text style={[styles.sectionLabel, { color: colors.deepTeal }]}>Daily Notification</Text>
         <View style={[styles.card, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
           <View style={styles.row}>
             <View style={styles.rowTextWrap}>
-              <Text style={[styles.rowTitle, { color: colors.ink }]}>Thought for the Day</Text>
+              <Text style={[styles.rowTitle, { color: colors.deepTeal }]}>Thought for the Day</Text>
               <Text style={[styles.rowDescription, { color: colors.textSecondary }]}>
                 Receive today's reading as a notification
               </Text>
@@ -783,9 +795,18 @@ const styles = StyleSheet.create({
   },
 
   /* ── Section Labels ────────────────────────────── */
+  sectionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 24,
+    marginBottom: 8,
+    marginLeft: 4,
+    marginRight: 4,
+  },
   sectionLabel: {
     fontFamily: fonts.headerFamilyItalic,
-    fontSize: 18,
+    fontSize: 22,
     marginBottom: 8,
     marginTop: 24,
     marginLeft: 4,
@@ -805,7 +826,7 @@ const styles = StyleSheet.create({
   },
   cardLabel: {
     fontFamily: fonts.headerFamilyItalic,
-    fontSize: 18,
+    fontSize: 22,
     marginBottom: 10,
   },
   cardDivider: {

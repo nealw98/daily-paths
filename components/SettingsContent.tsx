@@ -22,7 +22,7 @@ import { useTheme } from "../hooks/useTheme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSettings, TextSize } from "../hooks/useSettings";
 import { useAppFeedback } from "../hooks/useAppFeedback";
-import { shareApp } from "../utils/rateShareTracking";
+import { shareApp, openAppStoreForRating } from "../utils/rateShareTracking";
 import { qaLog } from "../utils/qaLog";
 import { RateAppModal } from "./RateAppModal";
 
@@ -143,9 +143,9 @@ export const SettingsContent: React.FC<{
     await setDailyReminderEnabled(enabled);
   };
 
-  const handleRateApp = () => {
-    qaLog("rate", "Rate App button pressed - showing rate modal");
-    setShowRateModal(true);
+  const handleRateApp = async () => {
+    qaLog("rate", "Rate App button pressed - opening App Store directly");
+    await openAppStoreForRating();
   };
 
   const handleShareApp = async () => {
