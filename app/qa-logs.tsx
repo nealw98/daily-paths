@@ -20,7 +20,13 @@ import { clearQaLogs, useQaLogs, qaLog } from "../utils/qaLog";
 import { resetRateShareTracking } from "../utils/rateShareTracking";
 import { isDeveloperDevice, setDeveloperDevice, getOrCreateDeviceId } from "../utils/deviceIdentity";
 import { getTrialStatus, resetTrial, expireTrial } from "../utils/trialTimer";
-import { setLifetimeOverride, getLifetimeOverride } from "../utils/paidAppDetector";
+import {
+  setLifetimeOverride,
+  getLifetimeOverride,
+  clearLifetimeAccessCache,
+  getLifetimeAccessDiagnostics,
+  type LifetimeAccessDiagnostics,
+} from "../utils/paidAppDetector";
 import { useSubscriptionContext } from "../contexts/SubscriptionContext";
 import { useSubscription } from "../hooks/useSubscription";
 
@@ -40,6 +46,14 @@ export default function QaLogsScreen() {
   const [isDeveloper, setIsDeveloper] = React.useState(false);
   const [deviceId, setDeviceId] = React.useState<string | null>(null);
   const [lifetimeOverride, setLifetimeOverrideState] = React.useState<boolean | null>(null);
+  const [lifetimeDiagnostics, setLifetimeDiagnostics] =
+    React.useState<LifetimeAccessDiagnostics | null>(null);
+  const [refreshingLifetime, setRefreshingLifetime] = React.useState(false);
+
+  const loadLifetimeDiagnostics = React.useCallback(async () => {
+    const diagnostics = await getLifetimeAccessDiagnostics();
+    setLifetimeDiagnostics(diagnostics);
+  }, []);
 
   // Load developer mode, device ID, and lifetime override on mount
   React.useEffect(() => {
@@ -50,9 +64,10 @@ export default function QaLogsScreen() {
       setDeviceId(id);
       const override = await getLifetimeOverride();
       setLifetimeOverrideState(override);
+      await loadLifetimeDiagnostics();
     };
-    loadDeviceInfo();
-  }, []);
+    void loadDeviceInfo();
+  }, [loadLifetimeDiagnostics]);
 
   const expoConfig: any = Constants.expoConfig ?? {};
   const appVersion =
@@ -208,6 +223,18 @@ export default function QaLogsScreen() {
       setLifetimeOverrideState(true);
     }
     await refreshLifetimeAccess();
+    await loadLifetimeDiagnostics();
+  };
+
+  const handleRefreshLifetimeDiagnostics = async () => {
+    setRefreshingLifetime(true);
+    try {
+      await clearLifetimeAccessCache();
+      await refreshLifetimeAccess();
+      await loadLifetimeDiagnostics();
+    } finally {
+      setRefreshingLifetime(false);
+    }
   };
 
   const lifetimeOverrideLabel =
@@ -366,6 +393,56 @@ export default function QaLogsScreen() {
           >
             <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
               {lifetimeOverride === true ? "Force OFF" : lifetimeOverride === false ? "Clear" : "Force ON"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>
+          Lifetime Receipt Diagnostics
+        </Text>
+
+        <View style={[styles.stateBox, { backgroundColor: "#fff", borderColor: colors.mist }]}>
+          <Text style={[styles.stateLabel, { color: colors.ink }]}>
+            Source: {lifetimeDiagnostics?.source ?? "loading"}
+          </Text>
+          <Text style={[styles.stateLabel, { color: colors.ink }]}>
+            Effective access: {lifetimeDiagnostics?.effectiveStatus.hasLifetimeAccess ? "true" : "false"}
+          </Text>
+          <Text style={[styles.stateLabel, { color: colors.ink }]}>
+            Detection method: {lifetimeDiagnostics?.effectiveStatus.detectionMethod ?? "loading"}
+          </Text>
+          <Text style={[styles.stateLabel, { color: colors.ink }]}>
+            Original app version: {lifetimeDiagnostics?.effectiveStatus.originalAppVersion ?? "null"}
+          </Text>
+          <Text style={[styles.stateLabel, { color: colors.ink }]}>
+            Original purchase date: {lifetimeDiagnostics?.effectiveStatus.originalPurchaseDate ?? "null"}
+          </Text>
+          <Text style={[styles.stateLabel, { color: colors.ink }]}>
+            First free build: {lifetimeDiagnostics?.firstFreeBuildNumber ?? "null"}
+          </Text>
+          <Text style={[styles.stateLabel, { color: colors.ink }]}>
+            Native available: {lifetimeDiagnostics?.nativeInfo ? String(lifetimeDiagnostics.nativeInfo.available) : "n/a"}
+          </Text>
+          <Text style={[styles.stateLabel, { color: colors.ink }]}>
+            Native verified: {lifetimeDiagnostics?.nativeInfo ? String(lifetimeDiagnostics.nativeInfo.verified) : "n/a"}
+          </Text>
+          <Text style={[styles.stateLabel, { color: colors.ink }]}>
+            Native reason: {lifetimeDiagnostics?.nativeInfo?.reason ?? lifetimeDiagnostics?.nativeError ?? "null"}
+          </Text>
+          <Text style={[styles.stateLabel, { color: colors.ink }]}>
+            Cached status present: {lifetimeDiagnostics?.cachedStatus ? "true" : "false"}
+          </Text>
+        </View>
+
+        <View style={styles.actionsRow}>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleRefreshLifetimeDiagnostics}
+            disabled={refreshingLifetime}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              {refreshingLifetime ? "Refreshing..." : "Refresh Lifetime Check"}
             </Text>
           </TouchableOpacity>
         </View>
