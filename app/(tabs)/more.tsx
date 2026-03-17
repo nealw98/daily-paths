@@ -108,8 +108,8 @@ export default function MoreTab() {
   const [feedbackContact, setFeedbackContact] = useState("");
   const [isSharing, setIsSharing] = useState(false);
   const [openingCustomerCenter, setOpeningCustomerCenter] = useState(false);
-  const [showExtendedThemes, setShowExtendedThemes] = useState(false);
-  const [appearanceExpanded, setAppearanceExpanded] = useState(false);
+  const [defaultThemesExpanded, setDefaultThemesExpanded] = useState(true);
+  const [premiumThemesExpanded, setPremiumThemesExpanded] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -117,17 +117,15 @@ export default function MoreTab() {
     }, []),
   );
 
-  // Show premium colors by default for paid users; revert when entitlement lapses
+  // Collapse premium themes when entitlement lapses and reset protected theme choices.
   useEffect(() => {
     const hasPaidEntitlement = hasLifetimeAccess || status.isSubscribed || status.isLegacy;
-    if (hasPaidEntitlement) {
-      setShowExtendedThemes(true);
-    } else {
-      setShowExtendedThemes(false);
-      if (EXTENDED_THEME_OPTIONS.some((t) => t.id === settings.themeId)) {
-        setThemeId("ocean-light");
-        updateThemeMode("light");
-      }
+    if (!hasPaidEntitlement) {
+      setPremiumThemesExpanded(false);
+    }
+    if (!hasPaidEntitlement && EXTENDED_THEME_OPTIONS.some((t) => t.id === settings.themeId)) {
+      setThemeId("ocean-light");
+      updateThemeMode("light");
     }
   }, [hasLifetimeAccess, status.isSubscribed, status.isLegacy, settings.themeId]);
 
@@ -170,10 +168,6 @@ export default function MoreTab() {
       setThemeId(optionId);
       updateThemeMode(DARK_THEME_IDS.has(optionId) ? "dark" : "light");
     }
-  };
-
-  const handleColorThemesToggle = (enabled: boolean) => {
-    setShowExtendedThemes(enabled);
   };
 
   const handleReminderToggle = async (enabled: boolean) => {
@@ -246,7 +240,7 @@ export default function MoreTab() {
         showsVerticalScrollIndicator={false}
       >
         {/* ── 1. Subscription ────────────────────────────────── */}
-        <Text allowFontScaling={false} style={[styles.sectionLabel, { color: colors.deepTeal, marginTop: 0, fontSize: 24 }]}>Subscription</Text>
+        <Text allowFontScaling={false} style={[styles.sectionLabel, styles.firstSectionLabel, { color: colors.deepTeal }]}>Subscription</Text>
         {subLoading ? (
           <View style={[styles.subscriptionRow, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
             <View style={styles.subscriptionLeft}>
@@ -369,17 +363,7 @@ export default function MoreTab() {
 
 
         {/* ── 2. Appearance ────────────────────────────────── */}
-        <TouchableOpacity activeOpacity={0.7} onPress={() => setAppearanceExpanded(!appearanceExpanded)}>
-          <View style={styles.sectionHeaderRow}>
-            <Text allowFontScaling={false} style={[styles.sectionLabel, { color: colors.deepTeal, marginBottom: 0, marginTop: 0, marginLeft: 0, fontSize: 24 }]}>Appearance</Text>
-            <Ionicons
-              name={appearanceExpanded ? "chevron-up" : "chevron-down"}
-              size={20}
-              color={colors.deepTeal}
-            />
-          </View>
-        </TouchableOpacity>
-        {appearanceExpanded && (
+        <Text allowFontScaling={false} style={[styles.sectionLabel, { color: colors.deepTeal }]}>Appearance</Text>
         <View style={[styles.card, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
           {/* Text size row */}
           <Text style={[styles.cardLabel, { color: colors.deepTeal }]}>Text Size</Text>
@@ -446,99 +430,115 @@ export default function MoreTab() {
           <View style={[styles.cardDivider, { backgroundColor: colors.mist }]} />
 
           {/* Theme row */}
-          <View style={styles.themeHeaderRow}>
-            <Text style={[styles.cardLabel, { color: colors.deepTeal, marginBottom: 0 }]}>Default Themes</Text>
-            {!subLoading && hasPaidEntitlement && (
-              <View style={styles.themeToggleRow}>
-                <Text style={[styles.cardLabel, { color: colors.deepTeal, marginBottom: 0 }]}>Premium Colors</Text>
-                <Switch
-                  value={showExtendedThemes}
-                  onValueChange={handleColorThemesToggle}
-                  trackColor={{ false: colors.mist, true: colors.deepTeal }}
-                  thumbColor={showExtendedThemes ? colors.pearl : colors.mist}
-                />
-              </View>
-            )}
-          </View>
-          <View style={styles.themeOptions}>
-            {DEFAULT_THEME_OPTIONS.map((option) => {
-              const isSelected =
-                option.id === "system"
-                  ? settings.colorScheme === "system"
-                  : settings.themeId === option.id && settings.colorScheme !== "system";
-              return (
-                <TouchableOpacity
-                  key={option.id}
-                  style={[
-                    styles.themeOption,
-                    { borderColor: colors.border },
-                    isSelected && { backgroundColor: colors.deepTeal, borderColor: colors.deepTeal },
-                  ]}
-                  onPress={() => handleThemeChange(option.id)}
-                  activeOpacity={0.8}
-                >
-                  {option.icon && (
-                    <Ionicons
-                      name={option.icon as any}
-                      size={20}
-                      color={isSelected ? colors.textOnAccent : colors.deepTeal}
-                    />
-                  )}
-                  <Text
+          <TouchableOpacity
+            style={styles.themeSectionHeader}
+            activeOpacity={0.7}
+            onPress={() => setDefaultThemesExpanded((current) => !current)}
+          >
+            <Text style={[styles.cardLabel, { color: colors.deepTeal, marginBottom: 0 }]}>
+              Default Themes
+            </Text>
+            <Ionicons
+              name={defaultThemesExpanded ? "chevron-up" : "chevron-down"}
+              size={18}
+              color={colors.deepTeal}
+            />
+          </TouchableOpacity>
+          {defaultThemesExpanded && (
+            <View style={styles.themeOptions}>
+              {DEFAULT_THEME_OPTIONS.map((option) => {
+                const isSelected =
+                  option.id === "system"
+                    ? settings.colorScheme === "system"
+                    : settings.themeId === option.id && settings.colorScheme !== "system";
+                return (
+                  <TouchableOpacity
+                    key={option.id}
                     style={[
-                      styles.themeOptionText,
-                      { color: colors.deepTeal },
-                      isSelected && { color: colors.textOnAccent },
+                      styles.themeOption,
+                      { borderColor: colors.border },
+                      isSelected && { backgroundColor: colors.deepTeal, borderColor: colors.deepTeal },
                     ]}
-                    numberOfLines={2}
+                    onPress={() => handleThemeChange(option.id)}
+                    activeOpacity={0.8}
                   >
-                    {option.displayName}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+                    {option.icon && (
+                      <Ionicons
+                        name={option.icon as any}
+                        size={20}
+                        color={isSelected ? colors.textOnAccent : colors.deepTeal}
+                      />
+                    )}
+                    <Text
+                      style={[
+                        styles.themeOptionText,
+                        { color: colors.deepTeal },
+                        isSelected && { color: colors.textOnAccent },
+                      ]}
+                      numberOfLines={2}
+                    >
+                      {option.displayName}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
 
-          {showExtendedThemes && (
+          {!subLoading && hasPaidEntitlement && (
             <>
               <View style={[styles.cardDivider, { backgroundColor: colors.mist }]} />
-              <Text style={[styles.cardLabel, { color: colors.deepTeal }]}>Color Themes</Text>
-              <View style={styles.themeOptions}>
-                {EXTENDED_THEME_OPTIONS.map((option) => {
-                  const isSelected =
-                    settings.themeId === option.id && settings.colorScheme !== "system";
-                  return (
-                    <TouchableOpacity
-                      key={option.id}
-                      style={[
-                        styles.themeOption,
-                        { borderColor: colors.border },
-                        isSelected && { backgroundColor: colors.deepTeal, borderColor: colors.deepTeal },
-                      ]}
-                      onPress={() => handleThemeChange(option.id)}
-                      activeOpacity={0.8}
-                    >
-                      <Text
+              <TouchableOpacity
+                style={styles.themeSectionHeader}
+                activeOpacity={0.7}
+                onPress={() => setPremiumThemesExpanded((current) => !current)}
+              >
+                <Text style={[styles.cardLabel, { color: colors.deepTeal, marginBottom: 0 }]}>
+                  Premium Themes
+                </Text>
+                <Ionicons
+                  name={premiumThemesExpanded ? "chevron-up" : "chevron-down"}
+                  size={18}
+                  color={colors.deepTeal}
+                />
+              </TouchableOpacity>
+              {premiumThemesExpanded && (
+                <View style={styles.themeOptions}>
+                  {EXTENDED_THEME_OPTIONS.map((option) => {
+                    const isSelected =
+                      settings.themeId === option.id && settings.colorScheme !== "system";
+                    return (
+                      <TouchableOpacity
+                        key={option.id}
                         style={[
-                          styles.themeOptionText,
-                          { color: colors.deepTeal },
-                          isSelected && { color: colors.textOnAccent },
+                          styles.themeOption,
+                          { borderColor: colors.border },
+                          isSelected && { backgroundColor: colors.deepTeal, borderColor: colors.deepTeal },
                         ]}
-                        numberOfLines={2}
+                        onPress={() => handleThemeChange(option.id)}
+                        activeOpacity={0.8}
                       >
-                        {option.displayName}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+                        <Text
+                          style={[
+                            styles.themeOptionText,
+                            { color: colors.deepTeal },
+                            isSelected && { color: colors.textOnAccent },
+                          ]}
+                          numberOfLines={2}
+                        >
+                          {option.displayName}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
             </>
           )}
         </View>
-        )}
 
         {/* ── 3. Daily Notification ────────────────────────── */}
-        <Text allowFontScaling={false} style={[styles.sectionLabel, { color: colors.deepTeal, fontSize: 24 }]}>Daily Notification</Text>
+        <Text allowFontScaling={false} style={[styles.sectionLabel, { color: colors.deepTeal }]}>Daily Notification</Text>
         <View style={[styles.card, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
           <View style={styles.row}>
             <View style={styles.rowTextWrap}>
@@ -619,7 +619,7 @@ export default function MoreTab() {
         </View>
 
         {/* ── 4. Support & Share ─────────────────────────── */}
-        <Text style={[styles.sectionLabel, { color: colors.deepTeal, fontSize: 24 }]}>Support & Share</Text>
+        <Text allowFontScaling={false} style={[styles.sectionLabel, { color: colors.deepTeal }]}>Support & Share</Text>
         <View style={[styles.card, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
           <View style={styles.buttonRow}>
             <TouchableOpacity
@@ -795,21 +795,16 @@ const styles = StyleSheet.create({
   },
 
   /* ── Section Labels ────────────────────────────── */
-  sectionHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 24,
-    marginBottom: 8,
-    marginLeft: 4,
-    marginRight: 4,
-  },
   sectionLabel: {
     fontFamily: fonts.headerFamilyItalic,
     fontSize: 22,
+    lineHeight: 30,
     marginBottom: 8,
     marginTop: 24,
     marginLeft: 4,
+  },
+  firstSectionLabel: {
+    marginTop: 0,
   },
 
   /* ── Cards ─────────────────────────────────────── */
@@ -826,8 +821,9 @@ const styles = StyleSheet.create({
   },
   cardLabel: {
     fontFamily: fonts.headerFamilyItalic,
-    fontSize: 24,
-    marginBottom: 10,
+    fontSize: 18,
+    lineHeight: 24,
+    marginBottom: 8,
   },
   cardDivider: {
     height: 1,
@@ -842,16 +838,12 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 4,
   },
-  themeHeaderRow: {
+  themeSectionHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    paddingVertical: 2,
     marginBottom: 10,
-  },
-  themeToggleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
   },
   themeOption: {
     flexBasis: "29%",
