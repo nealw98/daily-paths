@@ -63,7 +63,14 @@ export async function initializeRevenueCat(userId?: string): Promise<void> {
     });
 
     isInitialized = true;
-    qaLog("subscription", "RevenueCat initialized", { userId, platform: Platform.OS });
+
+    // Log the RC app user ID so we can find this customer in the dashboard
+    try {
+      const appUserId = await Purchases.getAppUserID();
+      qaLog("subscription", "RevenueCat initialized", { userId, appUserId, platform: Platform.OS });
+    } catch {
+      qaLog("subscription", "RevenueCat initialized", { userId, platform: Platform.OS });
+    }
   } catch (err) {
     qaLog("subscription", "RevenueCat init error", { error: String(err) });
   }

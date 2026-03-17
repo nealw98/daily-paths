@@ -26,7 +26,7 @@ import {
 } from "../utils/trialTimer";
 import { getRequiredGate, type GateType } from "../utils/accessControl";
 import { qaLog } from "../utils/qaLog";
-import type { PurchasesPackage } from "react-native-purchases";
+import Purchases, { type PurchasesPackage } from "react-native-purchases";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -117,29 +117,76 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
 
       // Initialize RC (module-level guard prevents double-init)
       if (!rcInitialized.current) {
+        qaLog("subscription", "Initializing RevenueCat...");
         await initializeRevenueCat();
         rcInitialized.current = true;
       }
 
-      // ── One-time migration: restore purchases after auth removal ───────
-      // Previously the app identified users to RevenueCat via their Supabase
-      // user ID. Now users are anonymous. On the first launch after the
-      // update, call restorePurchases() so RevenueCat reads the App Store
-      // receipt and re-attaches entitlements to the new anonymous user.
+      qaLog("subscription", "RC initialized check", {
+        isInitialized: isRevenueCatInitialized(),
+      });
+
+      // ── One-time migration: re-link RevenueCat identity after auth removal ─
+      // Previously the app called Purchases.logIn(supabaseUserId), so all
+      // entitlements (subscriptions, lifetime) are attached to that user ID in
+      // RevenueCat. After auth removal the SDK creates a new anonymous user
+      // with zero entitlements. We read the old Supabase session (still in
+      // AsyncStorage), extract the user ID, and call Purchases.logIn() to
+      // re-identify this device with its original RevenueCat user.
+      // If no Supabase session exists (new user), we fall back to
+      // restorePurchases() to pick up any App Store receipts.
       if (isRevenueCatInitialized()) {
-        const MIGRATION_KEY = "@daily_paths_rc_restore_migration_v1";
+        const MIGRATION_KEY = "@daily_paths_rc_identity_migration_v1";
         try {
           const migrated = await AsyncStorage.getItem(MIGRATION_KEY);
+          qaLog("subscription", "Migration status", { alreadyMigrated: !!migrated });
+
           if (!migrated) {
-            qaLog("subscription", "Running one-time purchase restore migration");
-            await restorePurchases();
+            qaLog("subscription", "Running one-time RevenueCat identity migration");
+
+            // Try to read the old Supabase session for the user ID
+            let oldUserId: string | null = null;
+            try {
+              const sbSession = await AsyncStorage.getItem(
+                "sb-ofmqgqaoubsiwujgvcil-auth-token",
+              );
+              qaLog("subscription", "Supabase session lookup", {
+                found: !!sbSession,
+                keyLength: sbSession?.length ?? 0,
+              });
+              if (sbSession) {
+                const parsed = JSON.parse(sbSession);
+                oldUserId = parsed?.user?.id || parsed?.currentSession?.user?.id || null;
+                qaLog("subscription", "Parsed Supabase session", { oldUserId });
+              }
+            } catch (parseErr) {
+              qaLog("subscription", "Supabase session parse error", { error: String(parseErr) });
+            }
+
+            if (oldUserId) {
+              qaLog("subscription", "Re-linking RevenueCat with old user ID", { oldUserId });
+              const { customerInfo } = await Purchases.logIn(oldUserId);
+              qaLog("subscription", "RevenueCat logIn complete", {
+                appUserId: oldUserId,
+                activeEntitlements: Object.keys(customerInfo.entitlements.active),
+              });
+            } else {
+              qaLog("subscription", "No old Supabase session found, trying restorePurchases");
+              const customerInfo = await restorePurchases();
+              qaLog("subscription", "restorePurchases complete", {
+                activeEntitlements: Object.keys(customerInfo.entitlements.active),
+              });
+            }
+
             await AsyncStorage.setItem(MIGRATION_KEY, "done");
-            qaLog("subscription", "Purchase restore migration complete");
+            qaLog("subscription", "Migration key saved");
           }
         } catch (err) {
-          qaLog("subscription", "Purchase restore migration failed", { error: String(err) });
+          qaLog("subscription", "RevenueCat identity migration failed", { error: String(err) });
           // Non-fatal — user can still tap Restore Purchases manually
         }
+      } else {
+        qaLog("subscription", "RevenueCat NOT initialized — skipping migration");
       }
 
       // Ensure the trial clock is running
@@ -155,9 +202,15 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       if (isRevenueCatInitialized()) {
         try {
           const fresh = await getSubscriptionStatus();
+          qaLog("subscription", "Fresh RC status", {
+            isSubscribed: fresh.isSubscribed,
+            isLegacy: fresh.isLegacy,
+            isTrialing: fresh.isTrialing,
+            productIdentifier: fresh.productIdentifier,
+          });
           if (!cancelled) setStatus(fresh);
-        } catch {
-          // cached status already set above
+        } catch (err) {
+          qaLog("subscription", "Error fetching fresh RC status", { error: String(err) });
         }
       }
 
