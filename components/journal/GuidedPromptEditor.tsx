@@ -70,8 +70,8 @@ export function GuidedPromptEditor({
                 {
                   fontFamily: fonts.bodyFamilyRegular,
                   color: colors.text,
-                  fontSize: typography.bodyFontSize - 2,
-                  lineHeight: (typography.bodyFontSize - 2) * 1.65,
+                  fontSize: typography.bodyFontSize,
+                  lineHeight: typography.bodyLineHeight,
                   backgroundColor: isFocused
                     ? colors.cardBackground
                     : colors.background,
@@ -137,8 +137,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     minHeight: 70,
-    fontSize: 14.5,
-    lineHeight: 14.5 * 1.65,
+    fontSize: 18,
+    lineHeight: 28,
   },
   hintText: {
     fontSize: 12,
