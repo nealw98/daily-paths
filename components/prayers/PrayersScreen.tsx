@@ -242,7 +242,8 @@ export const PrayersScreen: React.FC = () => {
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={0}
       >
       <ScrollView
         ref={scrollRef}
@@ -320,6 +321,7 @@ export const PrayersScreen: React.FC = () => {
             </View>
           )}
         </View>
+        <View style={{ height: 100 }} />
       </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -336,7 +338,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 100,
   },
   prayerSection: {
     marginBottom: 8,
