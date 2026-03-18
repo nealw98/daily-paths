@@ -7,6 +7,8 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -237,11 +239,17 @@ export const PrayersScreen: React.FC = () => {
         leftIcon={<LeafOnWater size={28} color={colors.textOnAccent} />}
       />
 
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
       <ScrollView
         ref={scrollRef}
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        keyboardDismissMode="interactive"
+        keyboardShouldPersistTaps="handled"
       >
         {/* Built-in Prayers */}
         {PRAYERS.map(renderPrayer)}
@@ -254,10 +262,13 @@ export const PrayersScreen: React.FC = () => {
           <TouchableOpacity
             style={styles.prayerHeader}
             onPress={() => {
-              setShowAddForm(!showAddForm);
-              if (showAddForm) {
+              const opening = !showAddForm;
+              setShowAddForm(opening);
+              if (!opening) {
                 setNewTitle("");
                 setNewText("");
+              } else {
+                setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
               }
             }}
             activeOpacity={0.7}
@@ -307,6 +318,7 @@ export const PrayersScreen: React.FC = () => {
           )}
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
