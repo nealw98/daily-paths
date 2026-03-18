@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -62,7 +62,6 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
 
   // ─── Text editor state (journal type) ──────────────────
   const [content, setContent] = useState(initialContent ?? "");
-  const inputRef = useRef<TextInput>(null);
 
   // ─── Gratitude items state ─────────────────────────────
   const [gratitudeItems, setGratitudeItems] = useState<string[]>(() => {
@@ -99,15 +98,6 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
     }
     return {};
   });
-
-  useEffect(() => {
-    if (editorType === "text") {
-      const timer = setTimeout(() => {
-        inputRef.current?.focus();
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [editorType]);
 
   // ─── Computed State ────────────────────────────────────
 
@@ -282,7 +272,6 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                 </View>
               )}
               <TextInput
-                ref={inputRef}
                 style={[
                   styles.textInput,
                   { color: colors.text, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight },

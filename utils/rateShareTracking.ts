@@ -234,11 +234,11 @@ export async function shareApp(): Promise<boolean> {
     // Android: include URL in message since it doesn't support the url field
     const shareContent = Platform.OS === "ios"
       ? {
-          message: "Check out Al-Anon Daily Paths - daily readings for recovery!",
+          message: "Check out Daily Paths - your daily recovery companion!",
           url: appStoreUrl,
         }
       : {
-          message: `Check out Al-Anon Daily Paths - daily readings for recovery! ${appStoreUrl}`,
+          message: `Check out Daily Paths - your daily recovery companion! ${appStoreUrl}`,
         };
 
     // Use React Native's Share API for URLs/text
