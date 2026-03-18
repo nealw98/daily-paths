@@ -144,6 +144,7 @@ export const PrayersScreen: React.FC = () => {
     await addPrayer(newTitle, newText);
     setNewTitle("");
     setNewText("");
+    setShowAddForm(false);
   };
 
   const renderPersonalPrayer = (prayer: PersonalPrayer) => {
