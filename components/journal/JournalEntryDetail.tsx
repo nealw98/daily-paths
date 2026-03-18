@@ -15,7 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../../hooks/useTheme";
-import { fonts } from "../../constants/theme";
+import { fonts, getHeaderGradientPoints } from "../../constants/theme";
 import type { JournalEntry } from "../../hooks/useJournalStorage";
 import {
   getCategoryById,
@@ -62,7 +62,10 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
   hasPrev = false,
   hasNext = false,
 }) => {
-  const { colors } = useTheme();
+  const { colors, themeId } = useTheme();
+  const { start: headerGradientStart, end: headerGradientEnd } =
+    getHeaderGradientPoints(themeId);
+
   const { settings } = useSettings();
   const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
   const [isEditing, setIsEditing] = useState(false);
@@ -478,14 +481,14 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
         {/* Gradient Header — 2-line: title row + actions row */}
         <LinearGradient
           colors={[colors.headerGradientStart, colors.headerGradientEnd]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+          start={headerGradientStart}
+          end={headerGradientEnd}
           style={styles.gradientHeader}
         >
           {/* Icon + Title (centered) */}
           <View style={styles.headerTitleRow}>
             {catConfig && (
-              <EntryTypeIcon svgIcon={catConfig.svgIcon} size={24} color={colors.textOnAccent} />
+              <EntryTypeIcon svgIcon={catConfig.svgIcon} size={28} color={colors.textOnAccent} />
             )}
             <Text style={[styles.headerTitleText, { color: colors.textOnAccent }]}>
               {catLabel}
@@ -664,8 +667,8 @@ const styles = StyleSheet.create({
   },
   gradientHeader: {
     paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 16,
+    paddingTop: 24,
+    paddingBottom: 20,
   },
   headerTitleRow: {
     flexDirection: "row",
@@ -675,8 +678,8 @@ const styles = StyleSheet.create({
   },
   headerTitleText: {
     fontFamily: fonts.headerFamilyItalic,
-    fontSize: 28,
-    lineHeight: 34,
+    fontSize: 38,
+    lineHeight: 46,
   },
   dateBarActions: {
     flexDirection: "row",

@@ -518,6 +518,30 @@ export function getScheme(schemeId: string): ColorSchemeDef | undefined {
   return schemeById.get(schemeId);
 }
 
+export function getHeaderGradientPoints(themeId: string): {
+  start: { x: number; y: number };
+  end: { x: number; y: number };
+} {
+  if (themeId === "morning-light") {
+    return {
+      start: { x: 0.5, y: 0 },
+      end: { x: 0.5, y: 1 },
+    };
+  }
+
+  if (themeId === "twilight-fire") {
+    return {
+      start: { x: 0, y: 0 },
+      end: { x: 0, y: 1 },
+    };
+  }
+
+  return {
+    start: { x: 0, y: 0 },
+    end: { x: 1, y: 1 },
+  };
+}
+
 // Fallback palette for use before SettingsProvider mounts (e.g. loading screen in _layout.tsx).
 // Components should use useTheme().colors instead of importing this directly.
 export const fallbackColors = COLOR_SCHEMES[0].colors;

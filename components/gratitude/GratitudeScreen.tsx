@@ -17,6 +17,7 @@ import { useGratitude } from "../../hooks/useGratitude";
 import { GratitudeQuote } from "./GratitudeQuote";
 import { GratitudeEntry } from "./GratitudeEntry";
 import { GratitudeHistory } from "./GratitudeHistory";
+import { TealHeader } from "../shared/TealHeader";
 
 interface GratitudeScreenProps {
   onBack: () => void;
@@ -85,8 +86,12 @@ export const GratitudeScreen: React.FC<GratitudeScreenProps> = ({ onBack }) => {
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        {/* Header */}
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <TealHeader
+          title="Gratitude List"
+          leftIcon={<Ionicons name="heart-outline" size={28} color={colors.textOnAccent} />}
+        />
+
+        <View style={[styles.actionRow, { borderBottomColor: colors.border }]}>
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={colors.accent} />
             <Text style={[styles.backText, { color: colors.accent }]}>Back</Text>
@@ -109,11 +114,6 @@ export const GratitudeScreen: React.FC<GratitudeScreenProps> = ({ onBack }) => {
           keyboardDismissMode="on-drag"
           contentContainerStyle={styles.scrollContent}
         >
-          {/* Title */}
-          <Text style={[styles.screenTitle, { color: colors.text }]}>
-            Gratitude List
-          </Text>
-
           {/* Date */}
           <Text style={[styles.dateText, { color: colors.textSecondary }]}>
             {dateStr}
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
-  header: {
+  actionRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -175,17 +175,11 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 40,
   },
-  screenTitle: {
-    fontFamily: fonts.headerFamily,
-    fontSize: 32,
-    fontWeight: "700",
-    paddingHorizontal: 20,
-    marginBottom: 6,
-  },
   dateText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
     paddingHorizontal: 20,
+    marginTop: 20,
     marginBottom: 20,
   },
 });

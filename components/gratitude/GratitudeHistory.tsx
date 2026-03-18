@@ -10,6 +10,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { fonts } from "../../constants/theme";
 import type { GratitudeEntry } from "../../hooks/useGratitude";
+import { TealHeader } from "../shared/TealHeader";
 
 interface GratitudeHistoryProps {
   entries: GratitudeEntry[];
@@ -54,16 +55,16 @@ export const GratitudeHistory: React.FC<GratitudeHistoryProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+      <TealHeader
+        title="Gratitude History"
+        leftIcon={<Ionicons name="heart-outline" size={28} color={colors.textOnAccent} />}
+      />
+
+      <View style={[styles.actionRow, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.accent} />
           <Text style={[styles.backText, { color: colors.accent }]}>Back</Text>
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>
-          Gratitude History
-        </Text>
-        <View style={{ width: 60 }} />
       </View>
 
       <FlatList
@@ -89,10 +90,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
+  actionRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: 1,
@@ -101,16 +101,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    width: 60,
   },
   backText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-  },
-  headerTitle: {
-    fontFamily: fonts.headerFamily,
-    fontSize: 18,
-    fontWeight: "600",
   },
   listContent: {
     paddingHorizontal: 20,

@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../../hooks/useTheme";
-import { fonts } from "../../constants/theme";
+import { fonts, getHeaderGradientPoints } from "../../constants/theme";
 
 interface TealHeaderProps {
   title: string;
@@ -17,14 +17,7 @@ export const TealHeader: React.FC<TealHeaderProps> = ({ title, leftIcon }) => {
   const { colors, themeId } = useTheme();
 
   const isSolid = colors.headerGradientStart === colors.headerGradientEnd;
-  const gradientStart =
-    themeId === "morning-light" ? { x: 0.5, y: 0 } : { x: 0, y: 0 };
-  const gradientEnd =
-    themeId === "twilight-fire"
-      ? { x: 0, y: 1 }
-      : themeId === "morning-light"
-        ? { x: 0.5, y: 1 }
-        : { x: 1, y: 1 };
+  const { start, end } = getHeaderGradientPoints(themeId);
 
   const content = (
     <View style={styles.inner}>
@@ -46,8 +39,8 @@ export const TealHeader: React.FC<TealHeaderProps> = ({ title, leftIcon }) => {
   return (
     <LinearGradient
       colors={[colors.headerGradientStart, colors.headerGradientEnd]}
-      start={gradientStart}
-      end={gradientEnd}
+      start={start}
+      end={end}
       style={styles.container}
     >
       {content}
