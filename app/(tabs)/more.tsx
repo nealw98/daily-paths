@@ -108,8 +108,8 @@ export default function MoreTab() {
   const [feedbackContact, setFeedbackContact] = useState("");
   const [isSharing, setIsSharing] = useState(false);
   const [openingCustomerCenter, setOpeningCustomerCenter] = useState(false);
-  const [textSizeExpanded, setTextSizeExpanded] = useState(false);
-  const [defaultThemesExpanded, setDefaultThemesExpanded] = useState(true);
+  const [textSizeExpanded, setTextSizeExpanded] = useState(true);
+  const [defaultThemesExpanded, setDefaultThemesExpanded] = useState(false);
   const [premiumThemesExpanded, setPremiumThemesExpanded] = useState(false);
 
   useFocusEffect(
