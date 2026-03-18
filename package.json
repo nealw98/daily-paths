@@ -9,7 +9,6 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "paid-app-detector": "file:modules/paid-app-detector",
     "@expo-google-fonts/cormorant-garamond": "^0.4.1",
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo-google-fonts/lora": "^0.4.2",
@@ -40,8 +39,10 @@
     "expo-store-review": "~9.0.9",
     "expo-updates": "~29.0.14",
     "mixpanel-react-native": "^3.3.0",
+    "paid-app-detector": "file:modules/paid-app-detector",
     "react": "19.1.0",
     "react-native": "0.81.5",
+    "react-native-keyboard-controller": "1.18.5",
     "react-native-purchases": "^9.7.6",
     "react-native-purchases-ui": "9.7.6",
     "react-native-safe-area-context": "~5.6.0",

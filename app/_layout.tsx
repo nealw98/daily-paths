@@ -30,6 +30,7 @@ import { TrialEndedModal } from "../components/TrialEndedModal";
 import { hasSeenTrialEndedModal, markTrialEndedModalSeen } from "../utils/trialTimer";
 import { LifetimeWelcomeModal } from "../components/LifetimeWelcomeModal";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 
 console.log("[STARTUP] _layout.tsx module loading...");
 console.log("[STARTUP] Platform:", Platform.OS, Platform.Version);
@@ -202,45 +203,47 @@ export default function RootLayout() {
   console.log("[STARTUP] Fonts loaded, rendering main app with SettingsProvider");
 
   return (
-    <SettingsProvider>
-          <SubscriptionProvider>
-              <TrialExpiryPresenter />
-              <LifetimeWelcomePresenter />
-              {updateReady && (
-                <View style={styles.updateBanner}>
-                  <Text style={styles.updateText}>
-                    Update available. Restart to apply.
-                  </Text>
-                  <View style={styles.updateActions}>
-                    <TouchableOpacity
-                      style={[styles.updateButtonPrimary, { backgroundColor: colors.seafoam }]}
-                      onPress={handleRestart}
-                      disabled={restarting}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[styles.updateButtonPrimaryText, { color: colors.deepTeal }]}>
-                        {restarting ? "Restarting..." : "Restart"}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.updateButtonSecondary}
-                      onPress={() => setUpdateReady(false)}
-                      activeOpacity={0.8}
-                      disabled={restarting}
-                    >
-                      <Text style={styles.updateButtonSecondaryText}>Later</Text>
-                    </TouchableOpacity>
+    <KeyboardProvider>
+      <SettingsProvider>
+            <SubscriptionProvider>
+                <TrialExpiryPresenter />
+                <LifetimeWelcomePresenter />
+                {updateReady && (
+                  <View style={styles.updateBanner}>
+                    <Text style={styles.updateText}>
+                      Update available. Restart to apply.
+                    </Text>
+                    <View style={styles.updateActions}>
+                      <TouchableOpacity
+                        style={[styles.updateButtonPrimary, { backgroundColor: colors.seafoam }]}
+                        onPress={handleRestart}
+                        disabled={restarting}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={[styles.updateButtonPrimaryText, { color: colors.deepTeal }]}>
+                          {restarting ? "Restarting..." : "Restart"}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.updateButtonSecondary}
+                        onPress={() => setUpdateReady(false)}
+                        activeOpacity={0.8}
+                        disabled={restarting}
+                      >
+                        <Text style={styles.updateButtonSecondaryText}>Later</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                </View>
-              )}
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  contentStyle: { backgroundColor: colors.pearl },
-                }}
-              />
-          </SubscriptionProvider>
-    </SettingsProvider>
+                )}
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    contentStyle: { backgroundColor: colors.pearl },
+                  }}
+                />
+            </SubscriptionProvider>
+      </SettingsProvider>
+    </KeyboardProvider>
   );
 }
 

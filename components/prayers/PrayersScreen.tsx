@@ -5,13 +5,13 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
   Alert,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useTheme } from "../../hooks/useTheme";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { useAnalytics } from "../../utils/analytics";
@@ -34,7 +34,7 @@ export const PrayersScreen: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editText, setEditText] = useState("");
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<any>(null);
 
   /** Render prayer text with bold phrases (e.g. "Just for today", "Just for tonight") */
   const renderPrayerText = (text: string, boldPhrases: string[]) => {
@@ -245,11 +245,13 @@ export const PrayersScreen: React.FC = () => {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={0}
       >
-      <ScrollView
+      <KeyboardAwareScrollView
         ref={scrollRef}
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        bottomOffset={24}
+        extraKeyboardSpace={24}
         keyboardDismissMode="interactive"
         keyboardShouldPersistTaps="handled"
       >
@@ -322,7 +324,7 @@ export const PrayersScreen: React.FC = () => {
           )}
         </View>
         <View style={{ height: 100 }} />
-      </ScrollView>
+      </KeyboardAwareScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

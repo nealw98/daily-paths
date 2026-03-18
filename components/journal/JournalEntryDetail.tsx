@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useTheme } from "../../hooks/useTheme";
 import { fonts, getHeaderGradientPoints } from "../../constants/theme";
 import type { JournalEntry } from "../../hooks/useJournalStorage";
@@ -517,8 +518,10 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
         </View>
 
         {/* Content */}
-        <ScrollView
+        <KeyboardAwareScrollView
           style={styles.contentScroll}
+          bottomOffset={96}
+          extraKeyboardSpace={24}
           keyboardShouldPersistTaps="handled"
         >
           {isEditing ? (
@@ -535,7 +538,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
             </>
           )}
           <View style={{ height: 100 }} />
-        </ScrollView>
+        </KeyboardAwareScrollView>
 
         {/* Bottom Bar */}
         <View

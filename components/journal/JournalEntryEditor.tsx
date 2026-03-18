@@ -8,11 +8,11 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useTheme } from "../../hooks/useTheme";
 import { fonts, getHeaderGradientPoints } from "../../constants/theme";
 import {
@@ -251,8 +251,10 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
         </View>
 
         {/* Editor Content */}
-        <ScrollView
+        <KeyboardAwareScrollView
           style={[styles.editorScroll, { backgroundColor: colors.background }]}
+          bottomOffset={96}
+          extraKeyboardSpace={24}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
         >
@@ -398,7 +400,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
 
           {/* Spacer for keyboard */}
           <View style={{ height: 100 }} />
-        </ScrollView>
+        </KeyboardAwareScrollView>
 
         {/* Bottom Bar */}
         <View

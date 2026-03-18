@@ -4,13 +4,13 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
   Alert,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useTheme } from "../../hooks/useTheme";
 import { fonts } from "../../constants/theme";
 import { useGratitude } from "../../hooks/useGratitude";
@@ -107,9 +107,11 @@ export const GratitudeScreen: React.FC<GratitudeScreenProps> = ({ onBack }) => {
           </TouchableOpacity>
         </View>
 
-        <ScrollView
+        <KeyboardAwareScrollView
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
+          bottomOffset={24}
+          extraKeyboardSpace={24}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           contentContainerStyle={styles.scrollContent}
@@ -129,7 +131,7 @@ export const GratitudeScreen: React.FC<GratitudeScreenProps> = ({ onBack }) => {
             onReset={handleReset}
             saving={saving}
           />
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
