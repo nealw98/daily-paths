@@ -294,6 +294,7 @@ export const PrayersScreen: React.FC = () => {
                 onChangeText={setNewTitle}
                 placeholder="Prayer title"
                 placeholderTextColor={colors.textSecondary}
+                onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 300)}
               />
               <TextInput
                 style={[styles.bodyInput, { color: colors.ink, borderColor: colors.mist, backgroundColor: colors.cloud, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.625 }]}
@@ -303,6 +304,7 @@ export const PrayersScreen: React.FC = () => {
                 placeholderTextColor={colors.textSecondary}
                 multiline
                 textAlignVertical="top"
+                onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 300)}
               />
               <View style={styles.formActions}>
                 <TouchableOpacity
