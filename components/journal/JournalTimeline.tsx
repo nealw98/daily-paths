@@ -317,37 +317,6 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
     return item.data.id;
   };
 
-  // ─── Render: Stats Bar ─────────────────────────────────────────────────
-
-  const StatsBar = () => (
-    <View style={styles.statsRow}>
-      <View style={[styles.statPill, { backgroundColor: colors.background }]}>
-        <Text style={[styles.statNumber, { color: colors.accent }]}>
-          {stats.thisMonth}
-        </Text>
-        <Text style={[styles.statLabel, { color: colors.text }]}>
-          this month
-        </Text>
-      </View>
-      <View style={[styles.statPill, { backgroundColor: colors.background }]}>
-        <Text style={[styles.statNumber, { color: colors.accent }]}>
-          {stats.thisWeek}
-        </Text>
-        <Text style={[styles.statLabel, { color: colors.text }]}>
-          this week
-        </Text>
-      </View>
-      <View style={[styles.statPill, { backgroundColor: colors.background }]}>
-        <Text style={[styles.statNumber, { color: colors.accent }]}>
-          {stats.today}
-        </Text>
-        <Text style={[styles.statLabel, { color: colors.text }]}>
-          today
-        </Text>
-      </View>
-    </View>
-  );
-
   // ─── Render: Segmented Filter ───────────────────────────────────────────
 
   // Icon size scales with the user's text size; generous hit target for primary nav
@@ -453,7 +422,6 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
 
   const ListHeader = () => (
     <View style={styles.listHeader}>
-      <StatsBar />
       <SegmentedFilter />
     </View>
   );
@@ -590,32 +558,6 @@ const styles = StyleSheet.create({
   // ─── List Header ──────────────────────────────────────────────────────────
   listHeader: {
     marginBottom: 8,
-  },
-
-  // ─── Stats Bar (Friendly Pills) ──────────────────────────────────────────
-  statsRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 4,
-  },
-  statPill: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderRadius: 20,
-  },
-  statNumber: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 24,
-    fontWeight: "600",
-  },
-  statLabel: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: 12,
   },
 
   // ─── Filter Icons ─────────────────────────────────────────────────────
