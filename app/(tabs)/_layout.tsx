@@ -30,10 +30,10 @@ export default function TabLayout() {
           paddingTop: 8,
         },
         tabBarActiveTintColor: colors.accent,
-        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarInactiveTintColor: colors.accent,
         tabBarLabelStyle: {
-          fontFamily: fonts.bodyFamilyRegular,
-          fontSize: 12,
+          fontFamily: "Inter_600SemiBold",
+          fontSize: 13,
           fontWeight: "600",
         },
       }}
@@ -43,7 +43,7 @@ export default function TabLayout() {
         options={{
           title: "Today",
           tabBarIcon: ({ color, size }) => (
-            <LightOnWater size={size} color={color} />
+            <LightOnWater size={size + 1} color={color} strokeWidth={1.9} />
           ),
         }}
       />
@@ -52,7 +52,7 @@ export default function TabLayout() {
         options={{
           title: "Notebook",
           tabBarIcon: ({ color, size }) => (
-            <Feather size={size} color={color} />
+            <Feather size={size + 1} color={color} strokeWidth={1.9} />
           ),
         }}
       />
@@ -61,7 +61,7 @@ export default function TabLayout() {
         options={{
           title: "Prayers",
           tabBarIcon: ({ color, size }) => (
-            <LeafOnWater size={size} color={color} />
+            <LeafOnWater size={size + 1} color={color} strokeWidth={1.9} />
           ),
         }}
       />
@@ -70,7 +70,7 @@ export default function TabLayout() {
         options={{
           title: "Speakers",
           tabBarIcon: ({ color, size }) => (
-            <Microphone size={size} color={color} />
+            <Microphone size={size + 1} color={color} strokeWidth={1.9} />
           ),
         }}
       />
@@ -79,7 +79,7 @@ export default function TabLayout() {
         options={{
           title: "Settings",
           tabBarIcon: ({ color, size }) => (
-            <Nautilus size={size} color={color} />
+            <Nautilus size={size + 1} color={color} strokeWidth={1.7} />
           ),
         }}
       />
