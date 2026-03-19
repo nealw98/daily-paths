@@ -32,9 +32,9 @@ export default function TabLayout() {
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.accent,
         tabBarLabelStyle: {
-          fontFamily: "Inter_600SemiBold",
-          fontSize: 13,
-          fontWeight: "600",
+          fontFamily: "Inter_500Medium",
+          fontSize: 12.5,
+          fontWeight: "500",
         },
       }}
     >
@@ -43,7 +43,7 @@ export default function TabLayout() {
         options={{
           title: "Today",
           tabBarIcon: ({ color, size }) => (
-            <LightOnWater size={size + 1} color={color} strokeWidth={1.9} />
+            <LightOnWater size={size} color={color} strokeWidth={1.7} />
           ),
         }}
       />
@@ -52,7 +52,7 @@ export default function TabLayout() {
         options={{
           title: "Notebook",
           tabBarIcon: ({ color, size }) => (
-            <Feather size={size + 1} color={color} strokeWidth={1.9} />
+            <Feather size={size} color={color} strokeWidth={1.7} />
           ),
         }}
       />
@@ -61,7 +61,7 @@ export default function TabLayout() {
         options={{
           title: "Prayers",
           tabBarIcon: ({ color, size }) => (
-            <LeafOnWater size={size + 1} color={color} strokeWidth={1.9} />
+            <LeafOnWater size={size} color={color} strokeWidth={1.7} />
           ),
         }}
       />
@@ -70,7 +70,7 @@ export default function TabLayout() {
         options={{
           title: "Speakers",
           tabBarIcon: ({ color, size }) => (
-            <Microphone size={size + 1} color={color} strokeWidth={1.9} />
+            <Microphone size={size} color={color} strokeWidth={1.7} />
           ),
         }}
       />
@@ -79,7 +79,7 @@ export default function TabLayout() {
         options={{
           title: "Settings",
           tabBarIcon: ({ color, size }) => (
-            <Nautilus size={size + 1} color={color} strokeWidth={1.7} />
+            <Nautilus size={size} color={color} strokeWidth={1.55} />
           ),
         }}
       />
