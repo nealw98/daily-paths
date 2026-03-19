@@ -332,7 +332,12 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
   };
 
   const SegmentedFilter = () => (
-    <View style={[styles.segmentedWrapper, { borderBottomColor: colors.border }]}>
+    <View
+      style={[
+        styles.segmentedWrapper,
+        { borderBottomColor: colors.textSecondary + "A6" },
+      ]}
+    >
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -564,7 +569,7 @@ const styles = StyleSheet.create({
   segmentedWrapper: {
     paddingVertical: 10,
     paddingHorizontal: 12,
-    borderBottomWidth: 1,
+    borderBottomWidth: 1.5,
   },
   segmentedContainer: {
     flexGrow: 1,
