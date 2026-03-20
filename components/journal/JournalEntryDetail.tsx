@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Alert,
   Share,
+  ScrollView,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
@@ -75,6 +76,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
   const catConfig = getCategoryById(entryType);
   const catLabel = getCategoryLabel(entryType);
   const catColor = getCategoryColor(entryType);
+  // catBadgeBg removed — type info now in gradient header
   const editorType = catConfig?.editorType ?? "text";
 
   // ─── Edit state for text entries ──────────────────────
@@ -388,15 +390,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
         </View>
       )}
       <TextInput
-        style={[
-          styles.editInput,
-          {
-            color: colors.text,
-            fontSize: typography.bodyFontSize,
-            lineHeight: typography.bodyLineHeight,
-            backgroundColor: "#FFFFFF",
-          },
-        ]}
+        style={[styles.editInput, { color: colors.text, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight }]}
         value={editContent}
         onChangeText={setEditContent}
         multiline
@@ -404,7 +398,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
         autoFocus
         autoCorrect
         autoCapitalize="sentences"
-        scrollEnabled
+        scrollEnabled={false}
         selectionColor={colors.accent}
       />
     </View>
@@ -418,7 +412,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
           style={[
             styles.gratitudeEditCard,
             {
-              backgroundColor: "#FFFFFF",
+              backgroundColor: colors.cardBackground,
               borderColor: colors.border,
             },
           ]}
@@ -525,12 +519,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
 
         {/* Content */}
         <KeyboardAwareScrollView
-          style={[styles.contentScroll, { backgroundColor: colors.background }]}
-          contentContainerStyle={
-            isEditing && editorType === "text"
-              ? styles.journalEditScrollContent
-              : undefined
-          }
+          style={styles.contentScroll}
           bottomOffset={96}
           extraKeyboardSpace={24}
           keyboardShouldPersistTaps="handled"
@@ -548,19 +537,14 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
               {editorType === "guided" && renderGuidedReadOnly()}
             </>
           )}
-          {!(isEditing && editorType === "text") && (
-            <View style={{ height: 100 }} />
-          )}
+          <View style={{ height: 100 }} />
         </KeyboardAwareScrollView>
 
         {/* Bottom Bar */}
         <View
           style={[
             styles.bottomBar,
-            {
-              backgroundColor: isEditing ? "#FFFFFF" : colors.background,
-              borderTopColor: colors.border,
-            },
+            { backgroundColor: colors.background, borderTopColor: colors.border },
           ]}
         >
           {isEditing ? (
@@ -732,9 +716,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
   },
-  journalEditScrollContent: {
-    flexGrow: 1,
-  },
 
   // ─── Read-Only ────────────────────────────────────────
   introWrapper: {
@@ -835,16 +816,13 @@ const styles = StyleSheet.create({
 
   // ─── Text Edit ────────────────────────────────────────
   editContainer: {
-    flex: 1,
+    minHeight: 200,
   },
   editInput: {
-    flex: 1,
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 18,
     lineHeight: 28,
-    paddingTop: 8,
-    paddingBottom: 20,
-    minHeight: 120,
+    minHeight: 200,
   },
 
   // ─── Bottom Bar ───────────────────────────────────────
