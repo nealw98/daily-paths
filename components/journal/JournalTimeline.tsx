@@ -20,6 +20,7 @@ import type { JournalStats } from "../../hooks/useJournalStats";
 import {
   getCategoryLabel,
   getCategoryColor,
+  getCategoryBgColor,
   getCategoryById,
   JOURNAL_CATEGORIES,
 } from "../../constants/journalCategories";
@@ -250,10 +251,11 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
     const catLabel = getCategoryLabel(entry.entry_type);
     const catColor = getCategoryColor(entry.entry_type);
     const preview = getEntryPreview(entry);
+    const cardBackgroundColor = getCategoryBgColor(entry.entry_type);
 
     return (
       <TouchableOpacity
-        style={[styles.entryCard, { backgroundColor: colors.cardBackground, borderTopColor: catColor, borderTopWidth: 2.5 }]}
+        style={[styles.entryCard, { backgroundColor: cardBackgroundColor, borderTopColor: catColor, borderTopWidth: 2.5 }]}
         onPress={() => onSelectEntry(entry)}
         activeOpacity={0.7}
       >
