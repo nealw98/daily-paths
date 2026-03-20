@@ -19,6 +19,7 @@ import {
   getCategoryById,
   getCategoryLabel,
   getCategoryColor,
+  getCategoryBadgeBgColor,
   type EntryType,
 } from "../../constants/journalCategories";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
@@ -56,6 +57,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
   const categoryConfig = getCategoryById(entryType);
   const categoryLabel = getCategoryLabel(entryType);
   const categoryColor = getCategoryColor(entryType);
+  const pageBackgroundColor = getCategoryBadgeBgColor(entryType);
   const editorType = categoryConfig?.editorType ?? "text";
 
   const [saving, setSaving] = useState(false);
@@ -217,7 +219,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
 
   return (
     <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={[styles.container, { backgroundColor: pageBackgroundColor }]}
       edges={["top"]}
     >
       <KeyboardAvoidingView
@@ -244,7 +246,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
         </LinearGradient>
 
         {/* Date bar */}
-        <View style={[styles.dateBar, { backgroundColor: colors.background }]}>
+        <View style={[styles.dateBar, { backgroundColor: pageBackgroundColor }]}>
           <Text style={[styles.dateText, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 6 }]}>
             {isEditing ? "Editing Entry" : dateStr}
           </Text>
@@ -252,7 +254,10 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
 
         {/* Editor Content */}
         <KeyboardAwareScrollView
-          style={[styles.editorScroll, { backgroundColor: colors.background }]}
+          style={[styles.editorScroll, { backgroundColor: pageBackgroundColor }]}
+          contentContainerStyle={
+            editorType === "text" ? styles.editorTextScrollContent : undefined
+          }
           bottomOffset={96}
           extraKeyboardSpace={24}
           keyboardShouldPersistTaps="handled"
@@ -276,7 +281,12 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
               <TextInput
                 style={[
                   styles.textInput,
-                  { color: colors.text, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight },
+                  {
+                    color: colors.text,
+                    fontSize: typography.bodyFontSize,
+                    lineHeight: typography.bodyLineHeight,
+                    backgroundColor: "#FFFFFF",
+                  },
                 ]}
                 placeholder="What's on your mind..."
                 placeholderTextColor={colors.textSecondary + "60"}
@@ -286,7 +296,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                 textAlignVertical="top"
                 autoCorrect
                 autoCapitalize="sentences"
-                scrollEnabled={false}
+                scrollEnabled
                 selectionColor={colors.accent}
               />
             </View>
@@ -313,7 +323,8 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                   style={[
                     styles.gratitudeCard,
                     {
-                      borderBottomColor: colors.border,
+                      backgroundColor: "#FFFFFF",
+                      borderColor: colors.border,
                     },
                   ]}
                 >
@@ -398,8 +409,8 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
               </View>
             )}
 
-          {/* Spacer for keyboard */}
-          <View style={{ height: 100 }} />
+          {/* Spacer for keyboard (journal text fills height via flex; spacer would shrink the field) */}
+          {editorType !== "text" && <View style={{ height: 100 }} />}
         </KeyboardAwareScrollView>
 
         {/* Bottom Bar */}
@@ -407,7 +418,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
           style={[
             styles.bottomBar,
             {
-              backgroundColor: colors.background,
+              backgroundColor: "#FFFFFF",
               borderTopColor: colors.border,
             },
           ]}
@@ -500,10 +511,14 @@ const styles = StyleSheet.create({
   editorScroll: {
     flex: 1,
   },
+  /** Lets the journal editor column fill space down to the bottom bar. */
+  editorTextScrollContent: {
+    flexGrow: 1,
+  },
 
   // ─── Text Editor ──────────────────────────────────────
   textEditorContainer: {
-    minHeight: 200,
+    flex: 1,
   },
   textIntroWrapper: {
     paddingHorizontal: 20,
@@ -513,12 +528,14 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   textInput: {
+    flex: 1,
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 18,
     lineHeight: 28,
     paddingHorizontal: 20,
     paddingTop: 20,
-    minHeight: 200,
+    paddingBottom: 20,
+    minHeight: 120,
   },
 
   // ─── Gratitude ────────────────────────────────────────
@@ -537,8 +554,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 10,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
+    padding: 14,
+    marginBottom: 12,
+    borderRadius: 12,
+    borderWidth: 1,
   },
   gratitudeIconWrapper: {
     marginTop: 2,

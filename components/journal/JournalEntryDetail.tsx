@@ -7,7 +7,6 @@ import {
   StyleSheet,
   Alert,
   Share,
-  ScrollView,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
@@ -22,6 +21,7 @@ import {
   getCategoryById,
   getCategoryLabel,
   getCategoryColor,
+  getCategoryBadgeBgColor,
   type EntryType,
 } from "../../constants/journalCategories";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
@@ -76,6 +76,9 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
   const catConfig = getCategoryById(entryType);
   const catLabel = getCategoryLabel(entryType);
   const catColor = getCategoryColor(entryType);
+  const pageChromeBackgroundColor = isEditing
+    ? getCategoryBadgeBgColor(entryType)
+    : colors.background;
   // catBadgeBg removed — type info now in gradient header
   const editorType = catConfig?.editorType ?? "text";
 
@@ -390,7 +393,15 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
         </View>
       )}
       <TextInput
-        style={[styles.editInput, { color: colors.text, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight }]}
+        style={[
+          styles.editInput,
+          {
+            color: colors.text,
+            fontSize: typography.bodyFontSize,
+            lineHeight: typography.bodyLineHeight,
+            backgroundColor: "#FFFFFF",
+          },
+        ]}
         value={editContent}
         onChangeText={setEditContent}
         multiline
@@ -398,7 +409,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
         autoFocus
         autoCorrect
         autoCapitalize="sentences"
-        scrollEnabled={false}
+        scrollEnabled
         selectionColor={colors.accent}
       />
     </View>
@@ -412,7 +423,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
           style={[
             styles.gratitudeEditCard,
             {
-              backgroundColor: colors.cardBackground,
+              backgroundColor: "#FFFFFF",
               borderColor: colors.border,
             },
           ]}
@@ -472,7 +483,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
 
   return (
     <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={[styles.container, { backgroundColor: pageChromeBackgroundColor }]}
       edges={["top"]}
     >
       <KeyboardAvoidingView
@@ -498,7 +509,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
         </LinearGradient>
 
         {/* Date & Time + Delete */}
-        <View style={[styles.dateBar, { backgroundColor: colors.background }]}>
+        <View style={[styles.dateBar, { backgroundColor: pageChromeBackgroundColor }]}>
           <View style={styles.dateBarRow}>
             <View style={{ flex: 1 }}>
               <Text style={[styles.dateText, { color: colors.text, fontSize: typography.bodyFontSize - 5 }]}>{dateStr}</Text>
@@ -519,7 +530,12 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
 
         {/* Content */}
         <KeyboardAwareScrollView
-          style={styles.contentScroll}
+          style={[styles.contentScroll, { backgroundColor: pageChromeBackgroundColor }]}
+          contentContainerStyle={
+            isEditing && editorType === "text"
+              ? styles.journalEditScrollContent
+              : undefined
+          }
           bottomOffset={96}
           extraKeyboardSpace={24}
           keyboardShouldPersistTaps="handled"
@@ -537,14 +553,19 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
               {editorType === "guided" && renderGuidedReadOnly()}
             </>
           )}
-          <View style={{ height: 100 }} />
+          {!(isEditing && editorType === "text") && (
+            <View style={{ height: 100 }} />
+          )}
         </KeyboardAwareScrollView>
 
         {/* Bottom Bar */}
         <View
           style={[
             styles.bottomBar,
-            { backgroundColor: colors.background, borderTopColor: colors.border },
+            {
+              backgroundColor: isEditing ? "#FFFFFF" : pageChromeBackgroundColor,
+              borderTopColor: colors.border,
+            },
           ]}
         >
           {isEditing ? (
@@ -716,6 +737,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
   },
+  journalEditScrollContent: {
+    flexGrow: 1,
+  },
 
   // ─── Read-Only ────────────────────────────────────────
   introWrapper: {
@@ -816,13 +840,16 @@ const styles = StyleSheet.create({
 
   // ─── Text Edit ────────────────────────────────────────
   editContainer: {
-    minHeight: 200,
+    flex: 1,
   },
   editInput: {
+    flex: 1,
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 18,
     lineHeight: 28,
-    minHeight: 200,
+    paddingTop: 8,
+    paddingBottom: 20,
+    minHeight: 120,
   },
 
   // ─── Bottom Bar ───────────────────────────────────────

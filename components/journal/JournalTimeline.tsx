@@ -20,6 +20,8 @@ import type { JournalStats } from "../../hooks/useJournalStats";
 import {
   getCategoryLabel,
   getCategoryColor,
+  getCategoryBgColor,
+  getCategoryBadgeBgColor,
   getCategoryById,
   JOURNAL_CATEGORIES,
 } from "../../constants/journalCategories";
@@ -232,6 +234,11 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
     return entries.filter((e) => e.entry_type === categoryFilter);
   }, [entries, categoryFilter]);
 
+  const timelineBackgroundColor =
+    categoryFilter === "all"
+      ? colors.background
+      : getCategoryBadgeBgColor(categoryFilter);
+
   // Build timeline items (headers + entries)
   const timelineItems = useMemo(
     () => groupEntriesByDate(filteredEntries),
@@ -250,10 +257,14 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
     const catLabel = getCategoryLabel(entry.entry_type);
     const catColor = getCategoryColor(entry.entry_type);
     const preview = getEntryPreview(entry);
+    const cardBackgroundColor =
+      categoryFilter === "all"
+        ? getCategoryBgColor(entry.entry_type)
+        : colors.cardBackground;
 
     return (
       <TouchableOpacity
-        style={[styles.entryCard, { backgroundColor: colors.cardBackground, borderTopColor: catColor, borderTopWidth: 2.5 }]}
+        style={[styles.entryCard, { backgroundColor: cardBackgroundColor, borderTopColor: catColor, borderTopWidth: 2.5 }]}
         onPress={() => onSelectEntry(entry)}
         activeOpacity={0.7}
       >
@@ -509,7 +520,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
   // ─── Main Render ───────────────────────────────────────────────────────
 
   return (
-    <View style={styles.wrapper}>
+    <View style={[styles.wrapper, { backgroundColor: timelineBackgroundColor }]}>
       <FlatList
         data={timelineItems}
         renderItem={renderItem}
@@ -521,7 +532,11 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
           <RefreshControl
             refreshing={loading}
             onRefresh={onRefresh}
-            tintColor={colors.accent}
+            tintColor={
+              categoryFilter === "all"
+                ? colors.accent
+                : getCategoryColor(categoryFilter)
+            }
           />
         }
         showsVerticalScrollIndicator={false}
