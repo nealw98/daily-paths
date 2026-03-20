@@ -19,7 +19,6 @@ import {
   getCategoryById,
   getCategoryLabel,
   getCategoryColor,
-  getCategoryBadgeBgColor,
   type EntryType,
 } from "../../constants/journalCategories";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
@@ -57,7 +56,6 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
   const categoryConfig = getCategoryById(entryType);
   const categoryLabel = getCategoryLabel(entryType);
   const categoryColor = getCategoryColor(entryType);
-  const pageBackgroundColor = getCategoryBadgeBgColor(entryType);
   const editorType = categoryConfig?.editorType ?? "text";
 
   const [saving, setSaving] = useState(false);
@@ -219,7 +217,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
 
   return (
     <SafeAreaView
-      style={[styles.container, { backgroundColor: pageBackgroundColor }]}
+      style={[styles.container, { backgroundColor: colors.background }]}
       edges={["top"]}
     >
       <KeyboardAvoidingView
@@ -246,7 +244,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
         </LinearGradient>
 
         {/* Date bar */}
-        <View style={[styles.dateBar, { backgroundColor: pageBackgroundColor }]}>
+        <View style={[styles.dateBar, { backgroundColor: colors.background }]}>
           <Text style={[styles.dateText, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 6 }]}>
             {isEditing ? "Editing Entry" : dateStr}
           </Text>
@@ -254,7 +252,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
 
         {/* Editor Content */}
         <KeyboardAwareScrollView
-          style={[styles.editorScroll, { backgroundColor: pageBackgroundColor }]}
+          style={[styles.editorScroll, { backgroundColor: colors.background }]}
           contentContainerStyle={
             editorType === "text" ? styles.editorTextScrollContent : undefined
           }

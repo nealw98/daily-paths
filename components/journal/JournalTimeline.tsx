@@ -21,7 +21,6 @@ import {
   getCategoryLabel,
   getCategoryColor,
   getCategoryBgColor,
-  getCategoryBadgeBgColor,
   getCategoryById,
   JOURNAL_CATEGORIES,
 } from "../../constants/journalCategories";
@@ -234,11 +233,6 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
     return entries.filter((e) => e.entry_type === categoryFilter);
   }, [entries, categoryFilter]);
 
-  const timelineBackgroundColor =
-    categoryFilter === "all"
-      ? colors.background
-      : getCategoryBadgeBgColor(categoryFilter);
-
   // Build timeline items (headers + entries)
   const timelineItems = useMemo(
     () => groupEntriesByDate(filteredEntries),
@@ -257,10 +251,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
     const catLabel = getCategoryLabel(entry.entry_type);
     const catColor = getCategoryColor(entry.entry_type);
     const preview = getEntryPreview(entry);
-    const cardBackgroundColor =
-      categoryFilter === "all"
-        ? getCategoryBgColor(entry.entry_type)
-        : colors.cardBackground;
+    const cardBackgroundColor = getCategoryBgColor(entry.entry_type);
 
     return (
       <TouchableOpacity
@@ -520,7 +511,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
   // ─── Main Render ───────────────────────────────────────────────────────
 
   return (
-    <View style={[styles.wrapper, { backgroundColor: timelineBackgroundColor }]}>
+    <View style={styles.wrapper}>
       <FlatList
         data={timelineItems}
         renderItem={renderItem}
@@ -532,11 +523,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
           <RefreshControl
             refreshing={loading}
             onRefresh={onRefresh}
-            tintColor={
-              categoryFilter === "all"
-                ? colors.accent
-                : getCategoryColor(categoryFilter)
-            }
+            tintColor={colors.accent}
           />
         }
         showsVerticalScrollIndicator={false}

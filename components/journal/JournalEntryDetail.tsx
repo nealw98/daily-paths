@@ -21,7 +21,6 @@ import {
   getCategoryById,
   getCategoryLabel,
   getCategoryColor,
-  getCategoryBadgeBgColor,
   type EntryType,
 } from "../../constants/journalCategories";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
@@ -76,10 +75,6 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
   const catConfig = getCategoryById(entryType);
   const catLabel = getCategoryLabel(entryType);
   const catColor = getCategoryColor(entryType);
-  const pageChromeBackgroundColor = isEditing
-    ? getCategoryBadgeBgColor(entryType)
-    : colors.background;
-  // catBadgeBg removed — type info now in gradient header
   const editorType = catConfig?.editorType ?? "text";
 
   // ─── Edit state for text entries ──────────────────────
@@ -483,7 +478,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
 
   return (
     <SafeAreaView
-      style={[styles.container, { backgroundColor: pageChromeBackgroundColor }]}
+      style={[styles.container, { backgroundColor: colors.background }]}
       edges={["top"]}
     >
       <KeyboardAvoidingView
@@ -509,7 +504,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
         </LinearGradient>
 
         {/* Date & Time + Delete */}
-        <View style={[styles.dateBar, { backgroundColor: pageChromeBackgroundColor }]}>
+        <View style={[styles.dateBar, { backgroundColor: colors.background }]}>
           <View style={styles.dateBarRow}>
             <View style={{ flex: 1 }}>
               <Text style={[styles.dateText, { color: colors.text, fontSize: typography.bodyFontSize - 5 }]}>{dateStr}</Text>
@@ -530,7 +525,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
 
         {/* Content */}
         <KeyboardAwareScrollView
-          style={[styles.contentScroll, { backgroundColor: pageChromeBackgroundColor }]}
+          style={[styles.contentScroll, { backgroundColor: colors.background }]}
           contentContainerStyle={
             isEditing && editorType === "text"
               ? styles.journalEditScrollContent
@@ -563,7 +558,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
           style={[
             styles.bottomBar,
             {
-              backgroundColor: isEditing ? "#FFFFFF" : pageChromeBackgroundColor,
+              backgroundColor: isEditing ? "#FFFFFF" : colors.background,
               borderTopColor: colors.border,
             },
           ]}
