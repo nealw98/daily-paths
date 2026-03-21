@@ -93,68 +93,11 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
     return sorted;
   }, [speakers, searchQuery, sortMode]);
 
-  // ─── Render: Search Bar ─────────────────────────────────────────────────
-
-  const SearchBar = () => (
-    <View style={[styles.searchContainer, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-      <Ionicons name="search" size={Math.round(18 * scale)} color={colors.textSecondary} style={styles.searchIcon} />
-      <TextInput
-        style={[styles.searchInput, { color: colors.text, fontFamily: fonts.bodyFamilyRegular, fontSize: Math.round(15 * scale) }]}
-        placeholder="Search speakers..."
-        placeholderTextColor={colors.textSecondary + "80"}
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-        returnKeyType="search"
-        autoCorrect={false}
-      />
-      {searchQuery.length > 0 && (
-        <TouchableOpacity onPress={() => setSearchQuery("")} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Ionicons name="close-circle" size={Math.round(18 * scale)} color={colors.textSecondary} />
-        </TouchableOpacity>
-      )}
-    </View>
-  );
-
-  // ─── Render: Sort Toggle ────────────────────────────────────────────────
-
-  const SortToggle = () => {
-    const options: { key: SortMode; label: string }[] = [
-      { key: "newest", label: "Newest" },
-      { key: "oldest", label: "Oldest" },
-      { key: "az", label: "A\u2013Z" },
-    ];
-
-    return (
-      <View style={styles.sortRow}>
-        {options.map(({ key, label }) => {
-          const isActive = sortMode === key;
-          return (
-            <TouchableOpacity
-              key={key}
-              onPress={() => setSortMode(key)}
-              style={styles.sortButton}
-              activeOpacity={0.7}
-            >
-              <Text
-                style={[
-                  styles.sortLabel,
-                  {
-                    color: isActive ? colors.accent : colors.textSecondary,
-                    fontFamily: isActive ? fonts.bodyFamilyRegular : fonts.bodyFamily,
-                    fontWeight: isActive ? "700" : "400",
-                    fontSize: Math.round(14 * scale),
-                  },
-                ]}
-              >
-                {label}
-              </Text>
-              {isActive && <View style={[styles.sortUnderline, { backgroundColor: colors.accent }]} />}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    );
-  };
+  const sortOptions: { key: SortMode; label: string }[] = [
+    { key: "newest", label: "Newest" },
+    { key: "oldest", label: "Oldest" },
+    { key: "az", label: "A\u2013Z" },
+  ];
 
   // ─── Render: Speaker Card ───────────────────────────────────────────────
 
@@ -259,10 +202,85 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
 
   // ─── Render: List Header ────────────────────────────────────────────────
 
-  const ListHeader = () => (
+  const listHeader = (
     <View style={styles.listHeader}>
-      <SearchBar />
-      <SortToggle />
+      <View
+        style={[
+          styles.searchContainer,
+          {
+            backgroundColor: colors.cardBackground,
+            borderColor: colors.border,
+          },
+        ]}
+      >
+        <Ionicons
+          name="search"
+          size={Math.round(18 * scale)}
+          color={colors.textSecondary}
+          style={styles.searchIcon}
+        />
+        <TextInput
+          style={[
+            styles.searchInput,
+            {
+              color: colors.text,
+              fontFamily: fonts.bodyFamilyRegular,
+              fontSize: Math.round(15 * scale),
+            },
+          ]}
+          placeholder="Search speakers..."
+          placeholderTextColor={colors.textSecondary + "80"}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          returnKeyType="search"
+          autoCorrect={false}
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity
+            onPress={() => setSearchQuery("")}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons
+              name="close-circle"
+              size={Math.round(18 * scale)}
+              color={colors.textSecondary}
+            />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <View style={styles.sortRow}>
+        {sortOptions.map(({ key, label }) => {
+          const isActive = sortMode === key;
+          return (
+            <TouchableOpacity
+              key={key}
+              onPress={() => setSortMode(key)}
+              style={styles.sortButton}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.sortLabel,
+                  {
+                    color: isActive ? colors.accent : colors.textSecondary,
+                    fontFamily: isActive ? fonts.bodyFamilyRegular : fonts.bodyFamily,
+                    fontWeight: isActive ? "700" : "400",
+                    fontSize: Math.round(14 * scale),
+                  },
+                ]}
+              >
+                {label}
+              </Text>
+              {isActive && (
+                <View
+                  style={[styles.sortUnderline, { backgroundColor: colors.accent }]}
+                />
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
     </View>
   );
 
@@ -274,7 +292,7 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
         data={filteredAndSorted}
         renderItem={renderCard}
         keyExtractor={(item) => item.id}
-        ListHeaderComponent={ListHeader}
+        ListHeaderComponent={listHeader}
         ListEmptyComponent={ListEmpty}
         contentContainerStyle={styles.listContent}
         keyboardDismissMode="on-drag"

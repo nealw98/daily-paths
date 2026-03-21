@@ -43,7 +43,7 @@ console.log("[STARTUP] index.tsx module loading...");
 export default function Index() {
   console.log("[STARTUP] Index function called");
   
-  const { colors, colorScheme } = useTheme();
+  const { colors, colorScheme, isDark } = useTheme();
 
   let router;
   try {
@@ -84,7 +84,7 @@ export default function Index() {
 
   // Paywall gating for the journal FAB
   const trialStatus = useTrialStatus();
-  const { status: subStatus, hasLifetimeAccess, refresh: refreshSub } = useSubscription();
+  const { status: subStatus, hasLifetimeAccess, refresh: refreshSub, loading: subLoading } = useSubscription();
   
   // Analytics
   const { trackAppOpened, startReadingView, trackReadingFavorited, trackReadingUnfavorited, updateThemeMode } = useAnalytics();
@@ -388,6 +388,17 @@ export default function Index() {
   };
 
   let content: React.ReactNode = null;
+  const journalFabLocked =
+    !subLoading &&
+    !trialStatus.loading &&
+    getRequiredGate(subStatus, trialStatus, hasLifetimeAccess) === "paywall";
+  const lockedFabBackgroundColor = isDark
+    ? colors.backgroundSecondary
+    : colors.highlight + "BA";
+  const lockedFabIconColor = isDark ? colors.textSecondary : colors.accent;
+  const lockedFabBorderColor = isDark
+    ? colors.textSecondary + "55"
+    : colors.accent + "30";
 
   // Show loading only on initial load, not when navigating
   if (loading && !reading) {
@@ -455,7 +466,10 @@ export default function Index() {
       {/* Journal FAB — only show when reading is visible */}
       {reading && (
         <TouchableOpacity
-          style={styles.fabTouchable}
+          style={[
+            styles.fabTouchable,
+            journalFabLocked && styles.fabTouchableLocked,
+          ]}
           onPress={async () => {
             const gate = getRequiredGate(subStatus, trialStatus, hasLifetimeAccess);
             if (gate === "paywall") {
@@ -486,14 +500,37 @@ export default function Index() {
           }}
           activeOpacity={0.85}
         >
-          <LinearGradient
-            colors={[colors.heroGradientStart, colors.heroGradientEnd]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.fab}
-          >
-            <Ionicons name="add" size={28} color={colors.textOnAccent} />
-          </LinearGradient>
+          {journalFabLocked ? (
+            <View
+              style={[
+                styles.fab,
+                styles.fabLocked,
+                {
+                  backgroundColor: lockedFabBackgroundColor,
+                  borderColor: lockedFabBorderColor,
+                },
+              ]}
+            >
+              <Ionicons
+                name="lock-closed"
+                size={22}
+                color={lockedFabIconColor}
+              />
+            </View>
+          ) : (
+            <LinearGradient
+              colors={[colors.heroGradientStart, colors.heroGradientEnd]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.fab}
+            >
+              <Ionicons
+                name="add"
+                size={28}
+                color={colors.textOnAccent}
+              />
+            </LinearGradient>
+          )}
         </TouchableOpacity>
       )}
 
@@ -579,6 +616,8 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 24,
     right: 24,
+    width: 56,
+    height: 56,
     zIndex: 10,
     shadowColor: "rgba(44, 95, 93, 1)",
     shadowOffset: { width: 0, height: 4 },
@@ -586,11 +625,21 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     elevation: 8,
   },
+  fabTouchableLocked: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
+  },
   fab: {
     width: 56,
     height: 56,
     borderRadius: 28,
     alignItems: "center",
     justifyContent: "center",
+  },
+  fabLocked: {
+    borderWidth: 1.5,
   },
 });
