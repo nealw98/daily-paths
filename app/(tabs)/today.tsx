@@ -11,7 +11,7 @@ import {
   Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ReadingScreen } from "../../components/ReadingScreen";
 import { JournalCategoryPicker } from "../../components/journal/JournalCategoryPicker";
@@ -511,11 +511,18 @@ export default function Index() {
                 },
               ]}
             >
-              <Ionicons
-                name="lock-closed"
-                size={22}
-                color={lockedFabIconColor}
-              />
+              <View
+                style={[
+                  styles.fabPremiumBadgeCentered,
+                  { backgroundColor: colors.accent },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  name="crown"
+                  size={13}
+                  color={colors.textOnAccent}
+                />
+              </View>
             </View>
           ) : (
             <LinearGradient
@@ -641,5 +648,12 @@ const styles = StyleSheet.create({
   },
   fabLocked: {
     borderWidth: 1.5,
+  },
+  fabPremiumBadgeCentered: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
