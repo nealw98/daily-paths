@@ -106,14 +106,15 @@ export default function TabLayout() {
           <View
             style={{
               position: "absolute",
-              right: -2,
-              top: -2,
+              left: "50%",
+              top: "50%",
               width: 15,
               height: 15,
               borderRadius: 7.5,
               alignItems: "center",
               justifyContent: "center",
               backgroundColor: badgeBackground,
+              transform: [{ translateX: -7.5 }, { translateY: -10 }],
             }}
           >
             <MaterialCommunityIcons
