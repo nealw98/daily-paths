@@ -4,6 +4,7 @@ import { useTheme } from "../../hooks/useTheme";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { fonts } from "../../constants/theme";
 import type { GuidedPrompt } from "../../constants/journalCategories";
+import { FieldShell, SanctuaryCard } from "../ui/Sanctuary";
 
 interface GuidedPromptEditorProps {
   prompts: GuidedPrompt[];
@@ -27,14 +28,13 @@ export function GuidedPromptEditor({
 
   return (
     <View style={styles.container}>
-      {/* Intro text */}
-      <View style={[styles.introWrapper, { borderBottomColor: colors.border }]}>
+      <SanctuaryCard tone="low" style={styles.introWrapper} contentStyle={styles.introCardContent}>
         <Text
           style={[
             styles.introText,
             {
-              fontFamily: fonts.headerFamilyItalic,
-              color: colors.accent,
+              fontFamily: fonts.headerFamily,
+              color: colors.primaryContainer,
               fontSize: typography.bodyFontSize,
               lineHeight: typography.bodyFontSize * 1.5,
             },
@@ -42,16 +42,18 @@ export function GuidedPromptEditor({
         >
           {introText}
         </Text>
-      </View>
+      </SanctuaryCard>
 
       {/* Prompt cards */}
       {prompts.map((prompt, index) => {
         const isFocused = focusedId === prompt.id;
 
         return (
-          <View
+          <SanctuaryCard
             key={prompt.id}
+            tone="lowest"
             style={styles.card}
+            contentStyle={styles.cardContent}
           >
             {/* Question label */}
             <Text
@@ -63,32 +65,27 @@ export function GuidedPromptEditor({
               {prompt.question}
             </Text>
 
-            {/* TextInput */}
-            <TextInput
-              style={[
-                styles.textInput,
-                {
-                  fontFamily: fonts.bodyFamilyRegular,
-                  color: colors.text,
-                  fontSize: typography.bodyFontSize,
-                  lineHeight: typography.bodyLineHeight,
-                  backgroundColor: isFocused
-                    ? colors.cardBackground
-                    : colors.background,
-                  borderColor: isFocused
-                    ? colors.highlight
-                    : colors.border,
-                },
-              ]}
-              value={responses[prompt.id] ?? ""}
-              onChangeText={(text) => onResponseChange(prompt.id, text)}
-              placeholder={prompt.placeholder}
-              placeholderTextColor={colors.textSecondary + "60"}
-              multiline
-              textAlignVertical="top"
-              onFocus={() => setFocusedId(prompt.id)}
-              onBlur={() => setFocusedId(null)}
-            />
+            <FieldShell focused={isFocused}>
+              <TextInput
+                style={[
+                  styles.textInput,
+                  {
+                    fontFamily: fonts.bodyFamilyRegular,
+                    color: colors.text,
+                    fontSize: typography.bodyFontSize,
+                    lineHeight: typography.bodyLineHeight,
+                  },
+                ]}
+                value={responses[prompt.id] ?? ""}
+                onChangeText={(text) => onResponseChange(prompt.id, text)}
+                placeholder={prompt.placeholder}
+                placeholderTextColor={colors.textSecondary + "60"}
+                multiline
+                textAlignVertical="top"
+                onFocus={() => setFocusedId(prompt.id)}
+                onBlur={() => setFocusedId(null)}
+              />
+            </FieldShell>
 
             {/* Hint text */}
             {prompt.hint ? (
@@ -101,7 +98,7 @@ export function GuidedPromptEditor({
                 {prompt.hint}
               </Text>
             ) : null}
-          </View>
+          </SanctuaryCard>
         );
       })}
     </View>
@@ -113,9 +110,11 @@ const styles = StyleSheet.create({
     // No scroll — parent handles scrolling
   },
   introWrapper: {
-    borderBottomWidth: 1,
-    paddingBottom: 14,
     marginBottom: 20,
+  },
+  introCardContent: {
+    paddingHorizontal: 18,
+    paddingVertical: 18,
   },
   introText: {
     fontSize: 18,
@@ -125,6 +124,9 @@ const styles = StyleSheet.create({
   card: {
     marginBottom: 20,
   },
+  cardContent: {
+    padding: 18,
+  },
   questionText: {
     fontSize: 14,
     fontWeight: "600",
@@ -132,10 +134,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   textInput: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
     minHeight: 70,
     fontSize: 18,
     lineHeight: 28,

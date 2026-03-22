@@ -10,7 +10,6 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { fonts } from "../../constants/theme";
@@ -20,12 +19,12 @@ import type { JournalStats } from "../../hooks/useJournalStats";
 import {
   getCategoryLabel,
   getCategoryColor,
-  getCategoryBgColor,
   getCategoryById,
   JOURNAL_CATEGORIES,
 } from "../../constants/journalCategories";
 import { EntryTypeIcon } from "../../utils/entryTypeIcon";
 import { FourSquares } from "../icons";
+import { FocusPill, SanctuaryCard } from "../ui/Sanctuary";
 
 // ─── Public types ───────────────────────────────────────────────────────────
 
@@ -251,41 +250,40 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
     const catLabel = getCategoryLabel(entry.entry_type);
     const catColor = getCategoryColor(entry.entry_type);
     const preview = getEntryPreview(entry);
-    const cardBackgroundColor = getCategoryBgColor(entry.entry_type);
 
     return (
       <TouchableOpacity
-        style={[styles.entryCard, { backgroundColor: cardBackgroundColor, borderTopColor: catColor, borderTopWidth: 2.5 }]}
+        style={styles.entryCardTouchable}
         onPress={() => onSelectEntry(entry)}
         activeOpacity={0.7}
       >
-        <View style={styles.entryInner}>
+        <SanctuaryCard tone="lowest" style={styles.entryCard} contentStyle={styles.entryInner} elevated>
           <View style={styles.entryHeader}>
-            <View style={styles.entryTypeBadge}>
-              {(() => {
+            <FocusPill
+              label={catLabel}
+              icon={(() => {
                 const cat = getCategoryById(entry.entry_type);
                 return cat ? (
                   <EntryTypeIcon svgIcon={cat.svgIcon} size={14} color={catColor} />
                 ) : null;
               })()}
-              <Text style={[styles.entryTypeLabel, { color: catColor }]}>
-                {catLabel}
-              </Text>
-            </View>
-            <Text style={[styles.entryTime, { color: colors.textSecondary }]}>
+              style={styles.entryTypeBadge}
+              labelStyle={[styles.entryTypeLabel, { color: catColor }]}
+            />
+            <Text style={[styles.entryTime, { color: colors.onSurfaceVariant }]}>
               {timeStr}
             </Text>
           </View>
 
           {preview ? (
             <Text
-              style={[styles.entryPreview, { color: colors.ink, fontSize: typography.bodyFontSize - 2, lineHeight: (typography.bodyFontSize - 2) * 1.55 }]}
+              style={[styles.entryPreview, { color: colors.onSurface, fontSize: typography.bodyFontSize - 1, lineHeight: (typography.bodyFontSize - 1) * 1.6 }]}
               numberOfLines={3}
             >
               {preview}
             </Text>
           ) : null}
-        </View>
+        </SanctuaryCard>
       </TouchableOpacity>
     );
   };
@@ -296,11 +294,9 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
     const label = formatDateHeader(dateKey);
     return (
       <View style={styles.dateDivider}>
-        <View style={[styles.dateLine, { backgroundColor: colors.accent + "30" }]} />
-        <Text style={[styles.dateLabel, { color: colors.accent }]}>
+        <Text style={[styles.dateLabel, { color: colors.onSurfaceVariant }]}>
           {label}
         </Text>
-        <View style={[styles.dateLine, { backgroundColor: colors.accent + "30" }]} />
       </View>
     );
   };
@@ -321,10 +317,6 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
 
   // ─── Render: Segmented Filter ───────────────────────────────────────────
 
-  // Icon size scales with the user's text size; generous hit target for primary nav
-  const iconSize = Math.round(typography.bodyFontSize * 1.25);
-  const hitTarget = Math.round(iconSize * 1.7);
-
   // Short labels for filter icons
   const filterLabels: Record<string, string> = {
     journal: "Journal",
@@ -334,90 +326,41 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
   };
 
   const SegmentedFilter = () => (
-    <View
-      style={[
-        styles.segmentedWrapper,
-        { borderBottomColor: colors.textSecondary + "A6" },
-      ]}
-    >
+    <View style={styles.segmentedWrapper}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.segmentedContainer}
       >
-        {/* All icon — first position */}
-        <TouchableOpacity
-          style={[
-            styles.filterIconWrapper,
-          ]}
+        <FocusPill
+          label="All"
+          selected={categoryFilter === "all"}
           onPress={() => onFilterChange("all")}
-          activeOpacity={0.7}
-        >
-          <View
-            style={[
-              styles.filterIcon,
-              { width: hitTarget, height: hitTarget, borderRadius: Math.round(hitTarget * 0.3) },
-              categoryFilter === "all"
-                ? { backgroundColor: colors.accent + "14", borderColor: colors.accent + "35", borderWidth: 1.5 }
-                : { borderColor: "transparent", borderWidth: 1.5 },
-            ]}
-          >
-            <FourSquares
-              size={iconSize}
-              color={colors.accent}
-              strokeWidth={categoryFilter === "all" ? 2.6 : 2.2}
-            />
-          </View>
-          <Text
-            style={[
-              styles.filterLabel,
-              { color: colors.accent },
-            ]}
-            numberOfLines={1}
-          >
-            All
-          </Text>
-        </TouchableOpacity>
+          icon={<FourSquares size={14} color={colors.onSurfaceVariant} strokeWidth={2.2} />}
+          style={styles.filterPill}
+          labelStyle={styles.filterLabel}
+        />
 
-        {/* Category icon buttons */}
         {JOURNAL_CATEGORIES.map((cat) => {
           const isActive = categoryFilter === cat.id;
           const catColor = getCategoryColor(cat.id);
           return (
-            <TouchableOpacity
+            <FocusPill
               key={cat.id}
-              style={[
-                styles.filterIconWrapper,
-              ]}
-              onPress={() => onFilterChange(cat.id as CategoryFilter)}
-              activeOpacity={0.7}
-            >
-              <View
-                style={[
-                  styles.filterIcon,
-                  { width: hitTarget, height: hitTarget, borderRadius: Math.round(hitTarget * 0.3) },
-                  isActive
-                    ? { backgroundColor: catColor + "14", borderColor: catColor + "35", borderWidth: 1.5 }
-                    : { borderColor: "transparent", borderWidth: 1.5 },
-                ]}
-              >
+              style={styles.filterPill}
+              labelStyle={[styles.filterLabel, isActive ? { color: catColor } : null]}
+              icon={
                 <EntryTypeIcon
                   svgIcon={cat.svgIcon}
-                  size={iconSize}
-                  color={catColor}
-                  strokeWidth={isActive ? 2.6 : 2.2}
+                  size={14}
+                  color={isActive ? catColor : colors.onSurfaceVariant}
+                  strokeWidth={isActive ? 2.4 : 2.1}
                 />
-              </View>
-              <Text
-                style={[
-                  styles.filterLabel,
-                  { color: catColor },
-                ]}
-                numberOfLines={1}
-              >
-                {filterLabels[cat.id] ?? cat.label}
-              </Text>
-            </TouchableOpacity>
+              }
+              label={filterLabels[cat.id] ?? cat.label}
+              selected={isActive}
+              onPress={() => onFilterChange(cat.id as CategoryFilter)}
+            />
           );
         })}
 
@@ -451,11 +394,11 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
             Your entries may still be on this device. Try again to reload them.
           </Text>
           <TouchableOpacity
-            style={[styles.retryButton, { borderColor: colors.accent }]}
+            style={[styles.retryButton, { borderColor: colors.ghostBorder, backgroundColor: colors.surfaceContainerLowest }]}
             onPress={onRefresh}
             activeOpacity={0.8}
           >
-            <Text style={[styles.retryText, { color: colors.accent }]}>Retry</Text>
+            <Text style={[styles.retryText, { color: colors.secondary }]}>Retry</Text>
           </TouchableOpacity>
         </>
       ) : loading ? (
@@ -473,11 +416,11 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
               This is taking longer than expected.
             </Text>
             <TouchableOpacity
-              style={[styles.retryButton, { borderColor: colors.accent }]}
+              style={[styles.retryButton, { borderColor: colors.ghostBorder, backgroundColor: colors.surfaceContainerLowest }]}
               onPress={onRefresh}
               activeOpacity={0.8}
             >
-              <Text style={[styles.retryText, { color: colors.accent }]}>Retry</Text>
+              <Text style={[styles.retryText, { color: colors.secondary }]}>Retry</Text>
             </TouchableOpacity>
           </>
         ) : (
@@ -535,14 +478,9 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
         onPress={onNewEntry}
         activeOpacity={0.85}
       >
-        <LinearGradient
-          colors={[colors.heroGradientStart, colors.heroGradientEnd]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.fab}
-        >
+        <View style={[styles.fab, { backgroundColor: colors.secondary }]}>
           <Ionicons name="add" size={28} color={colors.textOnAccent} />
-        </LinearGradient>
+        </View>
       </TouchableOpacity>
     </View>
   );
@@ -564,115 +502,84 @@ const styles = StyleSheet.create({
 
   // ─── List Header ──────────────────────────────────────────────────────────
   listHeader: {
-    marginBottom: 8,
-  },
-
-  // ─── Filter Icons ─────────────────────────────────────────────────────
-  segmentedWrapper: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderBottomWidth: 1.5,
-  },
-  segmentedContainer: {
-    flexGrow: 1,
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 16,
-  },
-  filterIconWrapper: {
-    alignItems: "center",
-    minWidth: 52,
-  },
-  filterIcon: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  filterLabel: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 10,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-    marginTop: 5,
-    textAlign: "center",
-  },
-
-  // ─── Date Divider ────────────────────────────────────────────────────────
-  dateDivider: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    marginTop: 8,
     marginBottom: 12,
   },
-  dateLine: {
-    flex: 1,
-    height: 1,
+
+  segmentedWrapper: {
+    paddingTop: 10,
+    paddingBottom: 6,
   },
-  dateLabel: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 12,
-    textTransform: "uppercase",
-    letterSpacing: 1.2,
+  segmentedContainer: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  filterPill: {
+    minHeight: 38,
+  },
+  filterLabel: {
+    fontFamily: fonts.labelFamily,
+    fontSize: 11,
+    lineHeight: 16,
   },
 
-  // ─── Entry Card ──────────────────────────────────────────────────────────
+  dateDivider: {
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  dateLabel: {
+    fontFamily: fonts.labelFamily,
+    fontSize: 12,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+
+  entryCardTouchable: {
+    marginBottom: 12,
+  },
   entryCard: {
-    // backgroundColor set inline via colors.cardBackground
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
-    marginBottom: 10,
+    borderRadius: 16,
   },
   entryInner: {
-    paddingTop: 14,
-    paddingBottom: 16,
+    paddingTop: 16,
+    paddingBottom: 18,
     paddingLeft: 18,
     paddingRight: 18,
   },
   entryHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
+    alignItems: "flex-start",
+    marginBottom: 10,
   },
   entryTypeBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
+    alignSelf: "flex-start",
   },
   entryTypeLabel: {
-    fontFamily: fonts.bodyFamilyRegular,
+    fontFamily: fonts.labelFamily,
     fontSize: 12,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
+    lineHeight: 16,
   },
   entryTime: {
     fontFamily: fonts.bodyFamily,
     fontSize: 12,
+    paddingTop: 8,
   },
   entryPreview: {
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: 15,
+    lineHeight: 24,
   },
 
-  // ─── FAB ─────────────────────────────────────────────────────────────────
   fabTouchable: {
     position: "absolute",
     bottom: 24,
     right: 24,
     zIndex: 10,
-    // Outer shadow layer
-    shadowColor: "rgba(44, 95, 93, 1)",
+    shadowColor: "rgba(25, 28, 28, 0.16)",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 18,
-    elevation: 8,
+    shadowOpacity: 1,
+    shadowRadius: 20,
+    elevation: 10,
   },
   fab: {
     width: 56,
@@ -703,14 +610,13 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     marginTop: 14,
-    borderWidth: 1.5,
-    borderRadius: 10,
+    borderWidth: 1,
+    borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
   },
   retryText: {
-    fontFamily: fonts.bodyFamilyRegular,
+    fontFamily: fonts.bodyFamilySemiBold,
     fontSize: 14,
-    fontWeight: "600",
   },
 });

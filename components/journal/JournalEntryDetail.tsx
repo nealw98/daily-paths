@@ -13,10 +13,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useTheme } from "../../hooks/useTheme";
-import { fonts, getHeaderGradientPoints } from "../../constants/theme";
+import { fonts } from "../../constants/theme";
 import type { JournalEntry } from "../../hooks/useJournalStorage";
 import {
   getCategoryById,
@@ -28,6 +27,7 @@ import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { GuidedPromptEditor } from "./GuidedPromptEditor";
 import { EntryTypeIcon } from "../../utils/entryTypeIcon";
 import { Seedling } from "../../components/icons";
+import { FieldShell, FocusPill, SanctuaryButton, SanctuaryCard } from "../ui/Sanctuary";
 
 interface JournalEntryDetailProps {
   entry: JournalEntry;
@@ -63,9 +63,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
   hasPrev = false,
   hasNext = false,
 }) => {
-  const { colors, themeId } = useTheme();
-  const { start: headerGradientStart, end: headerGradientEnd } =
-    getHeaderGradientPoints(themeId);
+  const { colors } = useTheme();
 
   const { settings } = useSettings();
   const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
@@ -383,24 +381,26 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
   const renderTextEdit = () => (
     <View style={styles.editContainer}>
       {catConfig?.introText && (
-        <View style={[styles.introWrapper, { borderBottomColor: colors.border }]}>
+        <SanctuaryCard tone="low" style={styles.introWrapper} contentStyle={styles.introCardContent}>
           <Text style={[styles.introText, { color: colors.accent, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.5 }]}>
             {catConfig.introText}
           </Text>
-        </View>
+        </SanctuaryCard>
       )}
-      <TextInput
-        style={[styles.editInput, { color: colors.text, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight }]}
-        value={editContent}
-        onChangeText={setEditContent}
-        multiline
-        textAlignVertical="top"
-        autoFocus
-        autoCorrect
-        autoCapitalize="sentences"
-        scrollEnabled={false}
-        selectionColor={colors.accent}
-      />
+      <FieldShell style={styles.editInputShell}>
+        <TextInput
+          style={[styles.editInput, { color: colors.text, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight }]}
+          value={editContent}
+          onChangeText={setEditContent}
+          multiline
+          textAlignVertical="top"
+          autoFocus
+          autoCorrect
+          autoCapitalize="sentences"
+          scrollEnabled={false}
+          selectionColor={colors.secondary}
+        />
+      </FieldShell>
     </View>
   );
 
@@ -472,33 +472,29 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
 
   return (
     <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={[styles.container, { backgroundColor: colors.surface }]}
       edges={["top"]}
     >
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        {/* Gradient Header — 2-line: title row + actions row */}
-        <LinearGradient
-          colors={[colors.headerGradientStart, colors.headerGradientEnd]}
-          start={headerGradientStart}
-          end={headerGradientEnd}
-          style={styles.gradientHeader}
-        >
-          {/* Icon + Title (centered) */}
+        <View style={[styles.gradientHeader, { backgroundColor: colors.surface }]}>
           <View style={styles.headerTitleRow}>
-            {catConfig && (
-              <EntryTypeIcon svgIcon={catConfig.svgIcon} size={28} color={colors.textOnAccent} />
-            )}
-            <Text style={[styles.headerTitleText, { color: colors.textOnAccent }]}>
-              {catLabel}
-            </Text>
+            {catConfig ? (
+              <View style={[styles.headerIconShell, { backgroundColor: colors.primaryContainer }]}>
+                <EntryTypeIcon svgIcon={catConfig.svgIcon} size={24} color={colors.onPrimary} />
+              </View>
+            ) : null}
+            <View style={styles.headerTextBlock}>
+              <Text style={[styles.headerEyebrow, { color: colors.onSurfaceVariant }]}>Notebook entry</Text>
+              <Text style={[styles.headerTitleText, { color: colors.onSurface }]}>{catLabel}</Text>
+            </View>
           </View>
-        </LinearGradient>
+        </View>
 
         {/* Date & Time + Delete */}
-        <View style={[styles.dateBar, { backgroundColor: colors.background }]}>
+        <View style={[styles.dateBar, { backgroundColor: colors.surface }]}>
           <View style={styles.dateBarRow}>
             <View style={{ flex: 1 }}>
               <Text style={[styles.dateText, { color: colors.text, fontSize: typography.bodyFontSize - 5 }]}>{dateStr}</Text>
@@ -507,12 +503,16 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
               </Text>
             </View>
             <View style={styles.dateBarActions}>
-              <TouchableOpacity onPress={handleShare} style={styles.dateBarActionButton}>
-                <Ionicons name="share-outline" size={18} color={colors.textSecondary} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleDelete} style={styles.dateBarActionButton}>
-                <Ionicons name="trash-outline" size={18} color={colors.textSecondary} />
-              </TouchableOpacity>
+              <FocusPill
+                label="Share"
+                onPress={handleShare}
+                icon={<Ionicons name="share-outline" size={14} color={colors.onSurfaceVariant} />}
+              />
+              <FocusPill
+                label="Delete"
+                onPress={handleDelete}
+                icon={<Ionicons name="trash-outline" size={14} color={colors.danger} />}
+              />
             </View>
           </View>
         </View>
@@ -544,40 +544,23 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
         <View
           style={[
             styles.bottomBar,
-            { backgroundColor: colors.background, borderTopColor: colors.border },
+            { backgroundColor: colors.surface, borderTopColor: colors.ghostBorder },
           ]}
         >
           {isEditing ? (
             <>
-              <TouchableOpacity
-                style={[styles.discardButton, { backgroundColor: colors.cardBackground }]}
+              <SanctuaryButton
+                label="Discard"
+                variant="secondary"
                 onPress={handleDiscard}
-              >
-                <Text style={[styles.discardText, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 4 }]}>
-                  Discard
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.saveButtonWrapper}
+                style={styles.bottomButton}
+              />
+              <SanctuaryButton
+                label={saving ? "Saving..." : "Save"}
                 onPress={handleSave}
                 disabled={saving || !hasChanges}
-                activeOpacity={0.85}
-              >
-                <LinearGradient
-                  colors={
-                    hasChanges
-                      ? [colors.heroGradientStart, colors.heroGradientEnd]
-                      : [colors.border, colors.border]
-                  }
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.saveEditButton}
-                >
-                  <Text style={[styles.saveEditText, { color: hasChanges ? colors.textOnAccent : colors.textSecondary, fontSize: typography.bodyFontSize - 4 }]}>
-                    {saving ? "Saving..." : "Save"}
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
+                style={styles.bottomButton}
+              />
             </>
           ) : (
             <>
@@ -613,14 +596,12 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.doneButton}
+              <SanctuaryButton
+                label="Done"
+                variant="secondary"
                 onPress={onBack}
-              >
-                <Text style={[styles.doneText, { color: colors.accent, fontSize: typography.bodyFontSize - 4 }]}>
-                  Done
-                </Text>
-              </TouchableOpacity>
+                style={styles.doneButton}
+              />
 
               <TouchableOpacity
                 style={[
@@ -676,25 +657,39 @@ const styles = StyleSheet.create({
   headerTitleRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
     gap: 10,
   },
+  headerIconShell: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTextBlock: {
+    flex: 1,
+  },
+  headerEyebrow: {
+    fontFamily: fonts.labelFamily,
+    fontSize: 12,
+    lineHeight: 16,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
   headerTitleText: {
-    fontFamily: fonts.headerFamilyItalic,
-    fontSize: 38,
-    lineHeight: 46,
+    fontFamily: fonts.headerFamily,
+    fontSize: 24,
+    lineHeight: 30,
   },
   dateBarActions: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-  },
-  dateBarActionButton: {
-    padding: 8,
+    gap: 10,
   },
   dateBar: {
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingBottom: 12,
   },
   dateBarRow: {
     flexDirection: "row",
@@ -719,12 +714,14 @@ const styles = StyleSheet.create({
 
   // ─── Read-Only ────────────────────────────────────────
   introWrapper: {
-    borderBottomWidth: 1,
-    paddingBottom: 8,
     marginBottom: 16,
   },
+  introCardContent: {
+    paddingHorizontal: 18,
+    paddingVertical: 18,
+  },
   introText: {
-    fontFamily: fonts.headerFamilyItalic,
+    fontFamily: fonts.headerFamily,
     textAlign: "center",
   },
   contentText: {
@@ -763,7 +760,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   guidedReadQuestion: {
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: fonts.labelFamily,
     fontSize: 13,
     letterSpacing: 0.3,
     textTransform: "uppercase",
@@ -818,6 +815,9 @@ const styles = StyleSheet.create({
   editContainer: {
     minHeight: 200,
   },
+  editInputShell: {
+    minHeight: 200,
+  },
   editInput: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 18,
@@ -835,6 +835,9 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     gap: 12,
   },
+  bottomButton: {
+    flex: 1,
+  },
   navButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -849,42 +852,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   doneButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-  },
-  doneText: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  discardButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-  },
-  discardText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  saveButtonWrapper: {
-    borderRadius: 12,
-    overflow: "hidden",
-    shadowColor: "rgba(44, 95, 93, 1)",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  saveEditButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-  },
-  saveEditText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
-    fontWeight: "600",
-    // color set inline via colors.textOnAccent
+    flex: 1,
   },
 });

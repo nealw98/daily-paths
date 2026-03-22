@@ -13,8 +13,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { fonts } from "../../constants/theme";
-import { Microphone } from "../icons";
 import type { Speaker } from "../../types/speakers";
+import { FieldShell, FocusPill, SanctuaryCard } from "../ui/Sanctuary";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -103,25 +103,12 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
 
   const renderCard = ({ item: speaker }: { item: Speaker }) => (
     <TouchableOpacity
-      style={[
-        styles.card,
-        {
-          backgroundColor: colors.cardBackground,
-          borderTopColor: colors.accent,
-          borderTopWidth: 2.5,
-        },
-      ]}
+      style={styles.cardTouchable}
       onPress={() => onSelectSpeaker(speaker, false)}
       activeOpacity={0.7}
     >
-      <View style={styles.cardContent}>
+      <SanctuaryCard tone="lowest" style={styles.card} contentStyle={styles.cardContent} elevated>
         <View style={styles.cardBody}>
-          {/* Type label row */}
-          <View style={styles.typeBadge}>
-            <Microphone size={Math.round(12 * scale)} color={colors.accent} strokeWidth={2} />
-            <Text style={[styles.typeLabel, { color: colors.accent, fontSize: Math.round(11 * scale) }]}>AL-ANON SPEAKER</Text>
-          </View>
-
           {/* Speaker name */}
           <Text style={[styles.speakerName, { color: colors.text, fontSize: Math.round(16 * scale) }]}>{speaker.speaker}</Text>
 
@@ -158,11 +145,11 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           activeOpacity={0.6}
         >
-          <View style={[styles.playCircle, { borderColor: colors.accent, width: Math.round(44 * scale), height: Math.round(44 * scale), borderRadius: Math.round(22 * scale) }]}>
-            <Ionicons name="play" size={Math.round(20 * scale)} color={colors.accent} style={styles.playIcon} />
+          <View style={[styles.playCircle, { backgroundColor: colors.secondaryContainer, width: Math.round(44 * scale), height: Math.round(44 * scale), borderRadius: Math.round(22 * scale) }]}>
+            <Ionicons name="play" size={Math.round(20 * scale)} color={colors.onSecondaryContainer} style={styles.playIcon} />
           </View>
         </TouchableOpacity>
-      </View>
+      </SanctuaryCard>
     </TouchableOpacity>
   );
 
@@ -204,15 +191,7 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
 
   const listHeader = (
     <View style={styles.listHeader}>
-      <View
-        style={[
-          styles.searchContainer,
-          {
-            backgroundColor: colors.cardBackground,
-            borderColor: colors.border,
-          },
-        ]}
-      >
+      <FieldShell style={styles.searchContainer}>
         <Ionicons
           name="search"
           size={Math.round(18 * scale)}
@@ -247,37 +226,20 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
             />
           </TouchableOpacity>
         )}
-      </View>
+      </FieldShell>
 
       <View style={styles.sortRow}>
         {sortOptions.map(({ key, label }) => {
           const isActive = sortMode === key;
           return (
-            <TouchableOpacity
+            <FocusPill
               key={key}
+              label={label}
+              selected={isActive}
               onPress={() => setSortMode(key)}
               style={styles.sortButton}
-              activeOpacity={0.7}
-            >
-              <Text
-                style={[
-                  styles.sortLabel,
-                  {
-                    color: isActive ? colors.accent : colors.textSecondary,
-                    fontFamily: isActive ? fonts.bodyFamilyRegular : fonts.bodyFamily,
-                    fontWeight: isActive ? "700" : "400",
-                    fontSize: Math.round(14 * scale),
-                  },
-                ]}
-              >
-                {label}
-              </Text>
-              {isActive && (
-                <View
-                  style={[styles.sortUnderline, { backgroundColor: colors.accent }]}
-                />
-              )}
-            </TouchableOpacity>
+              labelStyle={[styles.sortLabel, { fontSize: Math.round(13 * scale) }]}
+            />
           );
         })}
       </View>
@@ -321,17 +283,13 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   listHeader: {
-    marginBottom: 8,
+    marginBottom: 12,
   },
 
   // ─── Search ────────────────────────────────────────────────────────────────
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
     marginTop: 12,
     marginBottom: 8,
   },
@@ -348,60 +306,34 @@ const styles = StyleSheet.create({
   sortRow: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: 32,
+    gap: 10,
     paddingVertical: 8,
     marginBottom: 4,
   },
   sortButton: {
-    alignItems: "center",
-    paddingVertical: 4,
+    minHeight: 36,
   },
   sortLabel: {
-    fontSize: 14,
+    fontFamily: fonts.labelFamily,
     letterSpacing: 0.3,
   },
-  sortUnderline: {
-    height: 2,
-    width: "100%",
-    borderRadius: 1,
-    marginTop: 4,
-  },
 
-  // ─── Card ──────────────────────────────────────────────────────────────────
+  cardTouchable: {
+    marginBottom: 12,
+  },
   card: {
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
-    marginBottom: 10,
+    borderRadius: 16,
   },
   cardContent: {
     flexDirection: "row",
-    paddingTop: 14,
-    paddingBottom: 16,
+    paddingTop: 16,
+    paddingBottom: 18,
     paddingLeft: 18,
     paddingRight: 14,
   },
   cardBody: {
     flex: 1,
     marginRight: 12,
-  },
-
-  // ─── Type Badge ────────────────────────────────────────────────────────────
-  typeBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    marginBottom: 6,
-  },
-  typeLabel: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 11,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
   },
 
   // ─── Speaker Info ──────────────────────────────────────────────────────────
@@ -464,7 +396,6 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    borderWidth: 2,
     alignItems: "center",
     justifyContent: "center",
   },

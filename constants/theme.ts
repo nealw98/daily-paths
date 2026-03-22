@@ -51,7 +51,35 @@ export interface LegacyColorNames {
   headerGradientEnd: string;
 }
 
-export type ColorPalette = SemanticPalette & LegacyColorNames;
+export interface SanctuaryRoles {
+  surface: string;
+  surfaceContainerLowest: string;
+  surfaceContainerLow: string;
+  surfaceContainer: string;
+  surfaceContainerHigh: string;
+  surfaceContainerHighest: string;
+  surfaceGlass: string;
+  surfaceGlassStrong: string;
+  onSurface: string;
+  onSurfaceVariant: string;
+  primary: string;
+  onPrimary: string;
+  primaryContainer: string;
+  onPrimaryContainer: string;
+  secondary: string;
+  onSecondary: string;
+  secondaryContainer: string;
+  onSecondaryContainer: string;
+  outlineVariant: string;
+  ghostBorder: string;
+  focusRing: string;
+  primaryFixed: string;
+  primaryFixedDim: string;
+  scrim: string;
+  ambientShadow: string;
+}
+
+export type ColorPalette = SemanticPalette & LegacyColorNames & SanctuaryRoles;
 
 export interface ColorSchemeDef {
   id: string;
@@ -61,9 +89,50 @@ export interface ColorSchemeDef {
   colors: ColorPalette;
 }
 
-function buildPalette(semantic: SemanticPalette): ColorPalette {
+function withAlpha(hex: string, alpha: string): string {
+  if (!hex.startsWith("#")) return hex;
+  const normalized = hex.length === 4
+    ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`
+    : hex;
+  return `${normalized}${alpha}`;
+}
+
+function buildPalette(
+  semantic: SemanticPalette,
+  overrides: Partial<SanctuaryRoles> = {},
+): ColorPalette {
+  const sanctuary: SanctuaryRoles = {
+    surface: semantic.background,
+    surfaceContainerLowest: semantic.modalBackground,
+    surfaceContainerLow: semantic.backgroundSecondary,
+    surfaceContainer: semantic.cardBackground,
+    surfaceContainerHigh: semantic.cardBackground,
+    surfaceContainerHighest: semantic.modalBorder,
+    surfaceGlass: withAlpha(semantic.background, "CC"),
+    surfaceGlassStrong: withAlpha(semantic.background, "E6"),
+    onSurface: semantic.text,
+    onSurfaceVariant: semantic.textSecondary,
+    primary: semantic.heroGradientStart,
+    onPrimary: semantic.textOnAccent,
+    primaryContainer: semantic.heroGradientEnd,
+    onPrimaryContainer: semantic.textOnAccent,
+    secondary: semantic.buttonPrimary,
+    onSecondary: semantic.textOnAccent,
+    secondaryContainer: semantic.buttonSecondary,
+    onSecondaryContainer: semantic.text,
+    outlineVariant: semantic.border,
+    ghostBorder: withAlpha(semantic.border, "26"),
+    focusRing: semantic.heroGradientStart,
+    primaryFixed: semantic.heroGradientEnd,
+    primaryFixedDim: semantic.heroGradientStart,
+    scrim: "rgba(0, 0, 0, 0.10)",
+    ambientShadow: "rgba(25, 28, 28, 0.06)",
+    ...overrides,
+  };
+
   return {
     ...semantic,
+    ...sanctuary,
     deepTeal: semantic.accent,
     ocean: semantic.textSecondary,
     seafoam: semantic.highlight,
@@ -78,51 +147,51 @@ function buildPalette(semantic: SemanticPalette): ColorPalette {
 
 // ─── Ocean (current app palette) ────────────────────────────────────────────
 const oceanLightSemantic: SemanticPalette = {
-  heroGradientStart: "#2C5F5D",
-  heroGradientEnd: "#4A8B8D",
-  background: "#F7FAFA",
-  backgroundSecondary: "#E8F3F3",
-  text: "#2D3E3F",
-  textSecondary: "#4A8B8D",
-  accent: "#2C5F5D",
-  highlight: "#7EBDC3",
-  modalBackground: "#F7FAFA",
-  modalBorder: "#B8D8D8",
-  cardBackground: "#E8F3F3",
-  buttonPrimary: "#2C5F5D",
-  buttonSecondary: "#7EBDC3",
+  heroGradientStart: "#163531",
+  heroGradientEnd: "#214743",
+  background: "#F8FAF9",
+  backgroundSecondary: "#F2F4F3",
+  text: "#1C2524",
+  textSecondary: "#5A6C69",
+  accent: "#376662",
+  highlight: "#BAECE6",
+  modalBackground: "#FFFFFF",
+  modalBorder: "#C6D2CF",
+  cardBackground: "#EDF1EF",
+  buttonPrimary: "#376662",
+  buttonSecondary: "#BAECE6",
   textOnAccent: "#FFFFFF",
-  border: "#B8D8D8",
+  border: "#9EAEAA",
   backdrop: "rgba(0, 0, 0, 0.5)",
   danger: "#DC3545",
-  calendarMonthBackground: "#2C5F5D",
-  calendarDayBackground: "rgba(255, 255, 255, 0.65)",
-  calendarBorder: "rgba(255, 255, 255, 0.25)",
-  calendarDayText: "#2C5F5D", // Dark color on light background
+  calendarMonthBackground: "#163531",
+  calendarDayBackground: "#FFFFFF",
+  calendarBorder: "rgba(22, 53, 49, 0.10)",
+  calendarDayText: "#163531",
 };
 
 const oceanDarkSemantic: SemanticPalette = {
-  heroGradientStart: "#1A3A3A",
-  heroGradientEnd: "#2A4A4B",
-  background: "#1A2223",
-  backgroundSecondary: "#2A3536",
-  text: "#E8F3F3",
-  textSecondary: "#5A9B9D",
-  accent: "#7EBDC3",
-  highlight: "#4A8B8D",
-  modalBackground: "#1A2223",
-  modalBorder: "#3A4A4B",
-  cardBackground: "#2A3536",
-  buttonPrimary: "#7EBDC3",
-  buttonSecondary: "#4A8B8D",
+  heroGradientStart: "#102725",
+  heroGradientEnd: "#163531",
+  background: "#111918",
+  backgroundSecondary: "#172120",
+  text: "#EFF4F2",
+  textSecondary: "#A0B5B1",
+  accent: "#6EA59F",
+  highlight: "#2E4C48",
+  modalBackground: "#1B2625",
+  modalBorder: "#31403E",
+  cardBackground: "#202B2A",
+  buttonPrimary: "#6EA59F",
+  buttonSecondary: "#23423F",
   textOnAccent: "#FFFFFF",
-  border: "#3A4A4B",
+  border: "#536561",
   backdrop: "rgba(0, 0, 0, 0.6)",
   danger: "#E5585A",
-  calendarMonthBackground: "rgba(74, 139, 141, 0.6)", // Semi-transparent ocean (original from main)
-  calendarDayBackground: "#2A3536", // backgroundSecondary/cloud
-  calendarBorder: "#3A4A4B", // border/modalBorder/mist
-  calendarDayText: "#7EBDC3", // accent/deepTeal in dark mode
+  calendarMonthBackground: "#163531",
+  calendarDayBackground: "#202B2A",
+  calendarBorder: "#31403E",
+  calendarDayText: "#EFF4F2",
 };
 
 // ─── Forest (example second theme) ──────────────────────────────────────────
@@ -442,13 +511,44 @@ export const COLOR_SCHEMES: ColorSchemeDef[] = [
     id: "ocean-light",
     name: "Light",
     dark: false,
-    colors: buildPalette(oceanLightSemantic),
+    colors: buildPalette(oceanLightSemantic, {
+      surfaceContainerLowest: "#FFFFFF",
+      surfaceContainerLow: "#F2F4F3",
+      surfaceContainer: "#EDF1EF",
+      surfaceContainerHigh: "#E7ECEA",
+      surfaceContainerHighest: "#D9E1DE",
+      primary: "#163531",
+      primaryContainer: "#214743",
+      secondary: "#376662",
+      secondaryContainer: "#BAECE6",
+      onSecondaryContainer: "#2D514E",
+      outlineVariant: "#9EAEAA",
+      focusRing: "#214743",
+      primaryFixed: "#214743",
+      primaryFixedDim: "#163531",
+    }),
   },
   {
     id: "ocean-dark",
     name: "Dark",
     dark: true,
-    colors: buildPalette(oceanDarkSemantic),
+    colors: buildPalette(oceanDarkSemantic, {
+      surfaceContainerLowest: "#1B2625",
+      surfaceContainerLow: "#172120",
+      surfaceContainer: "#202B2A",
+      surfaceContainerHigh: "#263231",
+      surfaceContainerHighest: "#31403E",
+      primary: "#163531",
+      primaryContainer: "#214743",
+      secondary: "#6EA59F",
+      secondaryContainer: "#23423F",
+      onSecondaryContainer: "#D7EBE7",
+      outlineVariant: "#536561",
+      ghostBorder: "rgba(159, 181, 177, 0.15)",
+      focusRing: "#6EA59F",
+      primaryFixed: "#214743",
+      primaryFixedDim: "#163531",
+    }),
   },
   {
     id: "forest-light",
@@ -546,25 +646,108 @@ export function getHeaderGradientPoints(themeId: string): {
 // Components should use useTheme().colors instead of importing this directly.
 export const fallbackColors = COLOR_SCHEMES[0].colors;
 
-// ─── Fonts (for future per-theme overrides) ─────────────────────────────────
+// ─── Typography and layout ──────────────────────────────────────────────────
 export const fonts = {
-  headerFamily: "CormorantGaramond_600SemiBold",
-  headerFamilyItalic: "CormorantGaramond_600SemiBold_Italic",
-  headerFamilyBoldItalic: "CormorantGaramond_700Bold_Italic",
-  bodyFamily: "Inter_300Light",
-  bodyFamilyRegular: "Inter_400Regular",
-  loraRegular: "Lora_400Regular",
-  loraItalic: "Lora_400Regular_Italic",
-  loraBold: "Lora_700Bold",
+  headerFamilyLight: "Manrope_300Light",
+  headerFamily: "Manrope_700Bold",
+  headerFamilyItalic: "Manrope_700Bold",
+  headerFamilyBoldItalic: "Manrope_800ExtraBold",
+  bodyFamily: "Manrope_400Regular",
+  bodyFamilyRegular: "Manrope_500Medium",
+  bodyFamilyMedium: "Manrope_500Medium",
+  bodyFamilySemiBold: "Manrope_600SemiBold",
+  bodyFamilyBold: "Manrope_700Bold",
+  loraRegular: "Manrope_400Regular",
+  loraItalic: "Manrope_500Medium",
+  loraBold: "Manrope_700Bold",
+  labelFamily: "Manrope_600SemiBold",
 };
 
 export const layout = {
   borderRadius: 12,
+  borderRadiusLarge: 16,
+  borderRadiusFull: 999,
   spacing: {
     xs: 4,
     sm: 8,
     md: 16,
+    lgPlus: 20,
     lg: 24,
     xl: 32,
+    xxl: 40,
+  },
+};
+
+export const typography = {
+  displayLarge: {
+    fontFamily: fonts.headerFamilyBoldItalic,
+    fontSize: 34,
+    lineHeight: 40,
+    letterSpacing: -0.6,
+  },
+  displayMedium: {
+    fontFamily: fonts.headerFamily,
+    fontSize: 28,
+    lineHeight: 34,
+    letterSpacing: -0.4,
+  },
+  headlineMedium: {
+    fontFamily: fonts.headerFamily,
+    fontSize: 24,
+    lineHeight: 30,
+    letterSpacing: -0.3,
+  },
+  titleLarge: {
+    fontFamily: fonts.headerFamily,
+    fontSize: 20,
+    lineHeight: 26,
+    letterSpacing: -0.2,
+  },
+  titleMedium: {
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: -0.1,
+  },
+  bodyLarge: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 17,
+    lineHeight: 28,
+    letterSpacing: -0.1,
+  },
+  bodyMedium: {
+    fontFamily: fonts.bodyFamily,
+    fontSize: 15,
+    lineHeight: 24,
+    letterSpacing: -0.08,
+  },
+  bodySmall: {
+    fontFamily: fonts.bodyFamily,
+    fontSize: 13,
+    lineHeight: 20,
+    letterSpacing: -0.05,
+  },
+  labelMedium: {
+    fontFamily: fonts.labelFamily,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 0.4,
+  },
+};
+
+export const shadows = {
+  ambient: {
+    shadowColor: "#191C1C",
+    shadowOpacity: 0.06,
+    shadowRadius: 32,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 6,
+  },
+  floating: {
+    shadowColor: "#191C1C",
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 5,
   },
 };

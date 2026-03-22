@@ -2,11 +2,10 @@ import { Tabs } from "expo-router";
 import { Platform, Text, View } from "react-native";
 import { useCallback, useMemo, useRef } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
 import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
 import { fonts } from "../../constants/theme";
 import { useTheme } from "../../hooks/useTheme";
-import { LightOnWater, Feather, LeafOnWater, Microphone, Nautilus } from "../../components/icons";
 import { useSubscription } from "../../hooks/useSubscription";
 import { useTrialStatus } from "../../hooks/useTrialStatus";
 import { getRequiredGate } from "../../utils/accessControl";
@@ -26,20 +25,24 @@ export default function TabLayout() {
   const { status, hasLifetimeAccess, refresh, loading } = useSubscription();
   const trialStatus = useTrialStatus();
   const presentingPaywall = useRef(false);
-  const lockedColor = isDark ? colors.textSecondary + "CC" : colors.highlight;
+  const activeColor = colors.secondary;
+  const inactiveColor = colors.onSurfaceVariant;
+  const lockedColor = colors.onSurfaceVariant;
   const lockedOpacity = isDark ? 0.68 : 0.82;
-  const badgeBackground = isDark ? colors.textSecondary : colors.accent;
-  const badgeIconColor = colors.textOnAccent;
+  const badgeBackground = isDark ? colors.secondary : colors.secondaryContainer;
+  const badgeIconColor = isDark ? colors.onSecondary : colors.onSecondaryContainer;
+  const activeIconColor = colors.secondary;
   const premiumLocked = !loading
     && !trialStatus.loading
     && getRequiredGate(status, trialStatus, hasLifetimeAccess) === "paywall";
 
   const labelStyle = useMemo(
     () => ({
-      fontFamily: "Inter_500Medium" as const,
-      fontSize: 12.5,
+      fontFamily: fonts.bodyFamilyMedium,
+      fontSize: 11,
       lineHeight: 14,
       fontWeight: "500" as const,
+      letterSpacing: 0.25,
     }),
     [],
   );
@@ -65,56 +68,64 @@ export default function TabLayout() {
   }, [refresh]);
 
   const renderTabLabel = useCallback(
-    (title: string, locked = false) => (
-      <Text
-        style={[
-          labelStyle,
-          {
-            color: locked ? lockedColor : colors.accent,
-            opacity: locked ? lockedOpacity : 1,
-          },
-        ]}
+    (
+      title: string,
+      focused: boolean,
+      locked = false,
+    ) => (
+      <View
+        style={{
+          minWidth: 60,
+          height: 16,
+          alignItems: "center",
+          justifyContent: "flex-end",
+        }}
       >
-        {title}
-      </Text>
+        <Text
+          style={[
+            labelStyle,
+            {
+              color: locked ? lockedColor : (focused ? activeColor : inactiveColor),
+              opacity: locked ? lockedOpacity : 1,
+              includeFontPadding: false,
+              textAlign: "center",
+            },
+          ]}
+        >
+          {title}
+        </Text>
+      </View>
     ),
-    [colors.accent, labelStyle, lockedColor, lockedOpacity],
+    [activeColor, inactiveColor, labelStyle, lockedColor, lockedOpacity],
   );
 
   const renderTabIcon = useCallback(
     (
-      size: number,
       icon: React.ReactNode,
       locked = false,
-      offsetY = 0,
     ) => (
       <View
         style={{
-          width: size,
-          height: size,
+          width: 32,
+          height: 30,
           alignItems: "center",
-          justifyContent: "center",
+          justifyContent: "flex-end",
           opacity: locked ? lockedOpacity : 1,
         }}
       >
-        <View
-          style={offsetY ? { transform: [{ translateY: offsetY }] } : undefined}
-        >
-          {icon}
-        </View>
+        {icon}
         {locked ? (
           <View
             style={{
               position: "absolute",
-              left: "50%",
-              top: "50%",
+              right: 1,
+              top: 1,
               width: 15,
               height: 15,
               borderRadius: 7.5,
               alignItems: "center",
               justifyContent: "center",
               backgroundColor: badgeBackground,
-              transform: [{ translateX: -7.5 }, { translateY: -10 }],
             }}
           >
             <MaterialCommunityIcons
@@ -145,15 +156,26 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: colors.background,
-          borderTopColor: colors.border,
-          borderTopWidth: 1,
-          height: (Platform.OS === "android" ? 56 : 56) + insets.bottom,
-          paddingBottom: insets.bottom,
+          backgroundColor: colors.surface,
+          borderTopColor: "transparent",
+          borderTopWidth: 0,
+          height: (Platform.OS === "android" ? 60 : 60) + insets.bottom,
+          paddingBottom: Math.max(insets.bottom, 10),
           paddingTop: 8,
+          shadowColor: colors.ambientShadow,
+          shadowOpacity: 1,
+          shadowRadius: 24,
+          shadowOffset: { width: 0, height: -8 },
+          elevation: 10,
         },
-        tabBarActiveTintColor: colors.accent,
-        tabBarInactiveTintColor: colors.accent,
+        tabBarItemStyle: {
+          paddingTop: 2,
+          paddingBottom: 2,
+          justifyContent: "center",
+        },
+        tabBarShowLabel: true,
+        tabBarActiveTintColor: activeColor,
+        tabBarInactiveTintColor: inactiveColor,
         tabBarLabelStyle: labelStyle,
       }}
     >
@@ -161,11 +183,14 @@ export default function TabLayout() {
         name="today"
         options={{
           title: "Today",
-          tabBarLabel: () => renderTabLabel("Today"),
-          tabBarIcon: ({ color, size }) => (
+          tabBarLabel: ({ focused }) => renderTabLabel("Today", focused),
+          tabBarIcon: ({ focused }) => (
             renderTabIcon(
-              size,
-              <LightOnWater size={size} color={color} strokeWidth={1.7} />,
+              <MaterialIcons
+                name="today"
+                size={24}
+                color={focused ? activeIconColor : inactiveColor}
+              />,
             )
           ),
         }}
@@ -175,17 +200,21 @@ export default function TabLayout() {
         listeners={premiumTabListeners}
         options={{
           title: "Notebook",
-          tabBarLabel: () => renderTabLabel("Notebook", premiumLocked),
-          tabBarIcon: ({ color, size }) => (
+          tabBarLabel: ({ focused }) => renderTabLabel("Notebook", focused, premiumLocked),
+          tabBarIcon: ({ focused }) => (
             renderTabIcon(
-              size,
-              <Feather
-                size={size}
-                color={premiumLocked ? lockedColor : color}
-                strokeWidth={1.7}
+              <MaterialIcons
+                name="edit-note"
+                size={24}
+                color={
+                  premiumLocked
+                    ? lockedColor
+                    : focused
+                      ? activeIconColor
+                      : inactiveColor
+                }
               />,
               premiumLocked,
-              1.5,
             )
           ),
         }}
@@ -195,17 +224,21 @@ export default function TabLayout() {
         listeners={premiumTabListeners}
         options={{
           title: "Prayers",
-          tabBarLabel: () => renderTabLabel("Prayers", premiumLocked),
-          tabBarIcon: ({ color, size }) => (
+          tabBarLabel: ({ focused }) => renderTabLabel("Prayers", focused, premiumLocked),
+          tabBarIcon: ({ focused }) => (
             renderTabIcon(
-              size,
-              <LeafOnWater
-                size={size}
-                color={premiumLocked ? lockedColor : color}
-                strokeWidth={1.7}
+              <MaterialCommunityIcons
+                name="hands-pray"
+                size={24}
+                color={
+                  premiumLocked
+                    ? lockedColor
+                    : focused
+                      ? activeIconColor
+                      : inactiveColor
+                }
               />,
               premiumLocked,
-              1.5,
             )
           ),
         }}
@@ -215,17 +248,21 @@ export default function TabLayout() {
         listeners={premiumTabListeners}
         options={{
           title: "Speakers",
-          tabBarLabel: () => renderTabLabel("Speakers", premiumLocked),
-          tabBarIcon: ({ color, size }) => (
+          tabBarLabel: ({ focused }) => renderTabLabel("Speakers", focused, premiumLocked),
+          tabBarIcon: ({ focused }) => (
             renderTabIcon(
-              size,
-              <Microphone
-                size={size}
-                color={premiumLocked ? lockedColor : color}
-                strokeWidth={1.7}
+              <MaterialIcons
+                name="record-voice-over"
+                size={24}
+                color={
+                  premiumLocked
+                    ? lockedColor
+                    : focused
+                      ? activeIconColor
+                      : inactiveColor
+                }
               />,
               premiumLocked,
-              1.5,
             )
           ),
         }}
@@ -234,11 +271,14 @@ export default function TabLayout() {
         name="more"
         options={{
           title: "Settings",
-          tabBarLabel: () => renderTabLabel("Settings"),
-          tabBarIcon: ({ color, size }) => (
+          tabBarLabel: ({ focused }) => renderTabLabel("Settings", focused),
+          tabBarIcon: ({ focused }) => (
             renderTabIcon(
-              size,
-              <Nautilus size={size} color={color} strokeWidth={1.55} />,
+              <MaterialIcons
+                name="settings"
+                size={24}
+                color={focused ? activeIconColor : inactiveColor}
+              />,
             )
           ),
         }}

@@ -2,20 +2,13 @@ import React, { useEffect, useState, useRef } from "react";
 import { Stack, useRouter } from "expo-router";
 import { useFonts } from "expo-font";
 import {
-  CormorantGaramond_600SemiBold,
-  CormorantGaramond_600SemiBold_Italic,
-  CormorantGaramond_700Bold_Italic,
-} from "@expo-google-fonts/cormorant-garamond";
-import {
-  Inter_300Light,
-  Inter_400Regular,
-  Inter_600SemiBold,
-} from "@expo-google-fonts/inter";
-import {
-  Lora_400Regular,
-  Lora_400Regular_Italic,
-  Lora_700Bold,
-} from "@expo-google-fonts/lora";
+  Manrope_300Light,
+  Manrope_400Regular,
+  Manrope_500Medium,
+  Manrope_600SemiBold,
+  Manrope_700Bold,
+  Manrope_800ExtraBold,
+} from "@expo-google-fonts/manrope";
 import { fallbackColors } from "../constants/theme";
 import { SettingsProvider } from "../hooks/useSettings";
 import { SubscriptionProvider, useSubscriptionContext } from "../contexts/SubscriptionContext";
@@ -87,15 +80,12 @@ export default function RootLayout() {
   let fontsLoaded = false;
   try {
     [fontsLoaded] = useFonts({
-      CormorantGaramond_600SemiBold,
-      CormorantGaramond_600SemiBold_Italic,
-      CormorantGaramond_700Bold_Italic,
-      Inter_300Light,
-      Inter_400Regular,
-      Inter_600SemiBold,
-      Lora_400Regular,
-      Lora_400Regular_Italic,
-      Lora_700Bold,
+      Manrope_300Light,
+      Manrope_400Regular,
+      Manrope_500Medium,
+      Manrope_600SemiBold,
+      Manrope_700Bold,
+      Manrope_800ExtraBold,
     });
     console.log("[STARTUP] useFonts called, fontsLoaded:", fontsLoaded);
   } catch (err) {

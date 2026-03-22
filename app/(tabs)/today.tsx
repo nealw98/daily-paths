@@ -5,13 +5,10 @@ import {
   ActivityIndicator,
   StyleSheet,
   Share,
-  TouchableOpacity,
   AppState,
   AppStateStatus,
-  Alert,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ReadingScreen } from "../../components/ReadingScreen";
 import { JournalCategoryPicker } from "../../components/journal/JournalCategoryPicker";
@@ -20,9 +17,6 @@ import type { EntryType } from "../../constants/journalCategories";
 import { useJournalStorage } from "../../hooks/useJournalStorage";
 import { useTrialStatus } from "../../hooks/useTrialStatus";
 import { useSubscription } from "../../hooks/useSubscription";
-import { getRequiredGate } from "../../utils/accessControl";
-import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
-import { DatePickerModal } from "../../components/DatePickerModal";
 import { BookmarkListModal } from "../../components/BookmarkListModal";
 import { DismissibleToast } from "../../components/DismissibleToast";
 import { BookmarkToast } from "../../components/BookmarkToast";
@@ -32,11 +26,11 @@ import { qaLog } from "../../utils/qaLog";
 import { useAnalytics, NavigationMethod } from "../../utils/analytics";
 import { useReading } from "../../hooks/useReading";
 import { useBookmarkManager } from "../../hooks/useBookmarkManager";
-import { useAvailableDates } from "../../hooks/useAvailableDates";
 import { hasSeenInstruction, markInstructionSeen, type BookmarkData } from "../../utils/bookmarkStorage";
-import { parseDateLocal } from "../../utils/dateUtils";
+import { formatDateLocal, parseDateLocal } from "../../utils/dateUtils";
 import { useTheme } from "../../hooks/useTheme";
 import * as Notifications from "expo-notifications";
+import { SanctuaryButton } from "../../components/ui/Sanctuary";
 
 console.log("[STARTUP] index.tsx module loading...");
 
@@ -58,7 +52,7 @@ export default function Index() {
   let params;
   try {
     console.log("[STARTUP-INDEX] Getting params...");
-    params = useLocalSearchParams<{ jump?: string; ts?: string }>();
+    params = useLocalSearchParams<{ jump?: string; ts?: string; selectedDate?: string }>();
     console.log("[STARTUP-INDEX] Params obtained:", params);
   } catch (err) {
     console.error("[STARTUP-INDEX] ERROR getting params:", err);
@@ -68,23 +62,20 @@ export default function Index() {
   console.log("[STARTUP-INDEX] Initializing state...");
   // Start with today's date
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [showBookmarkList, setShowBookmarkList] = useState(false);
   const [showInstruction, setShowInstruction] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [navigationMethod, setNavigationMethod] = useState<NavigationMethod>('app_open');
   const [showJournalPicker, setShowJournalPicker] = useState(false);
   const [journalEntryType, setJournalEntryType] = useState<EntryType | null>(null);
-  const [presentingPaywall, setPresentingPaywall] = useState(false);
   const handledJumpTokenRef = useRef<string | null>(null);
   console.log("[STARTUP-INDEX] State initialized");
 
   // Journal entry creation from Today page (local AsyncStorage)
   const { createEntry } = useJournalStorage();
 
-  // Paywall gating for the journal FAB
   const trialStatus = useTrialStatus();
-  const { status: subStatus, hasLifetimeAccess, refresh: refreshSub, loading: subLoading } = useSubscription();
+  const { status: subStatus, hasLifetimeAccess } = useSubscription();
   
   // Analytics
   const { trackAppOpened, startReadingView, trackReadingFavorited, trackReadingUnfavorited, updateThemeMode } = useAnalytics();
@@ -104,8 +95,6 @@ export default function Index() {
     removeBookmark,
     refreshBookmarks,
   } = useBookmarkManager(currentDate, reading?.id || "", reading?.title || "");
-  const { availableDaysOfYear } = useAvailableDates();
-
   // If the app is opened from a notification, jump to today's reading.
   const lastNotificationResponse = Notifications.useLastNotificationResponse();
 
@@ -136,6 +125,18 @@ export default function Index() {
     // handledJumpTokenRef prevents repeat resets that break date navigation.
     router.setParams({ jump: undefined, ts: undefined });
   }, [params?.jump, params?.ts, router]);
+
+  useEffect(() => {
+    if (!params?.selectedDate) return;
+
+    const token = `${params.selectedDate}:${params?.ts ?? "__no_ts__"}`;
+    if (handledJumpTokenRef.current === token) return;
+    handledJumpTokenRef.current = token;
+
+    setNavigationMethod("date_picker");
+    setCurrentDate(parseDateLocal(params.selectedDate));
+    router.setParams({ selectedDate: undefined, ts: undefined });
+  }, [params?.selectedDate, params?.ts, router]);
 
   // Surface non-blocking errors only when we still have content onscreen.
   useEffect(() => {
@@ -221,27 +222,11 @@ export default function Index() {
     return () => subscription?.remove();
   }, [startReadingView]);
 
-  const handlePrevDate = () => {
-    setNavigationMethod('prev_button');
-    const prevDate = new Date(currentDate);
-    prevDate.setDate(prevDate.getDate() - 1);
-    setCurrentDate(prevDate);
-  };
-
-  const handleNextDate = () => {
-    setNavigationMethod('next_button');
-    const nextDate = new Date(currentDate);
-    nextDate.setDate(nextDate.getDate() + 1);
-    setCurrentDate(nextDate);
-  };
-
   const handleOpenDatePicker = () => {
-    setShowDatePicker(true);
-  };
-
-  const handleSelectDate = (date: Date) => {
-    setNavigationMethod('date_picker');
-    setCurrentDate(date);
+    router.push({
+      pathname: "/select-date",
+      params: { selectedDate: formatDateLocal(currentDate) },
+    });
   };
 
   const handleSelectBookmark = (dateStr: string) => {
@@ -388,18 +373,6 @@ export default function Index() {
   };
 
   let content: React.ReactNode = null;
-  const journalFabLocked =
-    !subLoading &&
-    !trialStatus.loading &&
-    getRequiredGate(subStatus, trialStatus, hasLifetimeAccess) === "paywall";
-  const lockedFabBackgroundColor = isDark
-    ? colors.backgroundSecondary
-    : colors.highlight + "BA";
-  const lockedFabIconColor = isDark ? colors.textSecondary : colors.accent;
-  const lockedFabBorderColor = isDark
-    ? colors.textSecondary + "55"
-    : colors.accent + "30";
-
   // Show loading only on initial load, not when navigating
   if (loading && !reading) {
     content = (
@@ -415,15 +388,13 @@ export default function Index() {
           {error ?? "No reading available for this date."}
         </Text>
         <View style={styles.buttonRow}>
-          <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.ocean }]} onPress={handleGoToToday}>
-            <Text style={styles.primaryButtonText}>Go to Today</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.ocean }]}
+          <SanctuaryButton label="Go to Today" onPress={handleGoToToday} style={styles.errorButton} />
+          <SanctuaryButton
+            label="Pick a Date"
+            variant="secondary"
             onPress={handleOpenDatePicker}
-          >
-            <Text style={[styles.secondaryButtonText, { color: colors.ocean }]}>Pick a Date</Text>
-          </TouchableOpacity>
+            style={styles.errorButton}
+          />
         </View>
       </View>
     );
@@ -431,8 +402,7 @@ export default function Index() {
     content = (
       <ReadingScreen
         reading={reading}
-        onPrevDate={handlePrevDate}
-        onNextDate={handleNextDate}
+        onHeaderPress={handleGoToToday}
         onOpenDatePicker={handleOpenDatePicker}
         onOpenBookmarks={handleOpenBookmarks}
         isBookmarked={isBookmarked}
@@ -463,84 +433,6 @@ export default function Index() {
     <>
       {content}
 
-      {/* Journal FAB — only show when reading is visible */}
-      {reading && (
-        <TouchableOpacity
-          style={[
-            styles.fabTouchable,
-            journalFabLocked && styles.fabTouchableLocked,
-          ]}
-          onPress={async () => {
-            const gate = getRequiredGate(subStatus, trialStatus, hasLifetimeAccess);
-            if (gate === "paywall") {
-              if (presentingPaywall) return;
-              setPresentingPaywall(true);
-              qaLog("paywall", "FAB presenting paywall");
-              try {
-                const result = await RevenueCatUI.presentPaywall();
-                qaLog("paywall", "FAB paywall result", { result });
-                if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) {
-                  await refreshSub();
-                  await new Promise((resolve) => setTimeout(resolve, 350));
-                  await refreshSub();
-                }
-              } catch (err) {
-                qaLog("paywall", "FAB paywall error", { error: String(err) });
-                Alert.alert(
-                  "Unable to Load Subscription",
-                  "The subscription page couldn't be loaded. Please try again.",
-                );
-              } finally {
-                setPresentingPaywall(false);
-              }
-              return;
-            } else {
-              setShowJournalPicker(true);
-            }
-          }}
-          activeOpacity={0.85}
-        >
-          {journalFabLocked ? (
-            <View
-              style={[
-                styles.fab,
-                styles.fabLocked,
-                {
-                  backgroundColor: lockedFabBackgroundColor,
-                  borderColor: lockedFabBorderColor,
-                },
-              ]}
-            >
-              <View
-                style={[
-                  styles.fabPremiumBadgeCentered,
-                  { backgroundColor: colors.accent },
-                ]}
-              >
-                <MaterialCommunityIcons
-                  name="crown"
-                  size={13}
-                  color={colors.textOnAccent}
-                />
-              </View>
-            </View>
-          ) : (
-            <LinearGradient
-              colors={[colors.heroGradientStart, colors.heroGradientEnd]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.fab}
-            >
-              <Ionicons
-                name="add"
-                size={28}
-                color={colors.textOnAccent}
-              />
-            </LinearGradient>
-          )}
-        </TouchableOpacity>
-      )}
-
       <JournalCategoryPicker
         visible={showJournalPicker}
         onSelect={(entryType) => {
@@ -550,13 +442,6 @@ export default function Index() {
         onClose={() => setShowJournalPicker(false)}
       />
 
-      <DatePickerModal
-        visible={showDatePicker}
-        selectedDate={currentDate}
-        onSelectDate={handleSelectDate}
-        onClose={() => setShowDatePicker(false)}
-        availableDaysOfYear={availableDaysOfYear}
-      />
       <BookmarkListModal
         visible={showBookmarkList}
         bookmarks={bookmarks}
@@ -597,63 +482,11 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
   },
   buttonRow: {
-    flexDirection: "row",
+    width: "100%",
     gap: 12,
     marginTop: 16,
   },
-  primaryButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  primaryButtonText: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-  secondaryButton: {
-    borderWidth: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  secondaryButtonText: {
-    fontWeight: "600",
-  },
-  fabTouchable: {
-    position: "absolute",
-    bottom: 24,
-    right: 24,
-    width: 56,
-    height: 56,
-    zIndex: 10,
-    shadowColor: "rgba(44, 95, 93, 1)",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 18,
-    elevation: 8,
-  },
-  fabTouchableLocked: {
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0,
-    shadowRadius: 0,
-    elevation: 0,
-  },
-  fab: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  fabLocked: {
-    borderWidth: 1.5,
-  },
-  fabPremiumBadgeCentered: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    alignItems: "center",
-    justifyContent: "center",
+  errorButton: {
+    width: "100%",
   },
 });

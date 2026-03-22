@@ -11,10 +11,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useTheme } from "../../hooks/useTheme";
-import { fonts, getHeaderGradientPoints } from "../../constants/theme";
+import { fonts } from "../../constants/theme";
 import {
   getCategoryById,
   getCategoryLabel,
@@ -25,6 +24,7 @@ import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { GuidedPromptEditor } from "./GuidedPromptEditor";
 import { EntryTypeIcon } from "../../utils/entryTypeIcon";
 import { Seedling } from "../../components/icons";
+import { FieldShell, SanctuaryButton, SanctuaryCard } from "../ui/Sanctuary";
 
 interface JournalEntryEditorProps {
   entryType: EntryType;
@@ -47,9 +47,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
   initialStructuredContent = null,
   isEditing = false,
 }) => {
-  const { colors, themeId } = useTheme();
-  const { start: headerGradientStart, end: headerGradientEnd } =
-    getHeaderGradientPoints(themeId);
+  const { colors } = useTheme();
 
   const { settings } = useSettings();
   const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
@@ -225,26 +223,25 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={0}
       >
-        {/* Gradient Header — 2-line: title row + actions row */}
-        <LinearGradient
-          colors={[colors.headerGradientStart, colors.headerGradientEnd]}
-          start={headerGradientStart}
-          end={headerGradientEnd}
-          style={styles.gradientHeader}
-        >
-          {/* Icon + Title (centered) */}
+        <View style={[styles.gradientHeader, { backgroundColor: colors.surface }]}>
           <View style={styles.headerTitleRow}>
-            {categoryConfig && (
-              <EntryTypeIcon svgIcon={categoryConfig.svgIcon} size={28} color={colors.textOnAccent} />
-            )}
-            <Text style={[styles.headerTitleText, { color: colors.textOnAccent }]}>
-              {isEditing ? "Edit " : ""}{categoryLabel}
-            </Text>
+            <View style={[styles.headerIconShell, { backgroundColor: colors.primaryContainer }]}>
+              {categoryConfig && (
+                <EntryTypeIcon svgIcon={categoryConfig.svgIcon} size={24} color={colors.onPrimary} />
+              )}
+            </View>
+            <View style={styles.headerTextBlock}>
+              <Text style={[styles.headerEyebrow, { color: colors.onSurfaceVariant }]}>
+                {isEditing ? "Edit entry" : "New entry"}
+              </Text>
+              <Text style={[styles.headerTitleText, { color: colors.onSurface }]}>
+                {categoryLabel}
+              </Text>
+            </View>
           </View>
-        </LinearGradient>
+        </View>
 
-        {/* Date bar */}
-        <View style={[styles.dateBar, { backgroundColor: colors.background }]}>
+        <View style={[styles.dateBar, { backgroundColor: colors.surface }]}>
           <Text style={[styles.dateText, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 6 }]}>
             {isEditing ? "Editing Entry" : dateStr}
           </Text>
@@ -260,35 +257,36 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
         >
           {editorType === "text" && (
             <View style={styles.textEditorContainer}>
-              {/* Intro quote */}
               {categoryConfig?.introText && (
-                <View style={[styles.textIntroWrapper, { borderBottomColor: colors.border }]}>
+                <SanctuaryCard tone="low" style={styles.textIntroWrapper} contentStyle={styles.textIntroContent}>
                   <Text
                     style={[
                       styles.introText,
-                      { color: colors.accent, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.5 },
+                      { color: colors.primaryContainer, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.5 },
                     ]}
                   >
                     {categoryConfig.introText}
                   </Text>
-                </View>
+                </SanctuaryCard>
               )}
-              <TextInput
-                style={[
-                  styles.textInput,
-                  { color: colors.text, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight },
-                ]}
-                placeholder="What's on your mind..."
-                placeholderTextColor={colors.textSecondary + "60"}
-                value={content}
-                onChangeText={setContent}
-                multiline
-                textAlignVertical="top"
-                autoCorrect
-                autoCapitalize="sentences"
-                scrollEnabled={false}
-                selectionColor={colors.accent}
-              />
+              <FieldShell style={styles.textInputShell}>
+                <TextInput
+                  style={[
+                    styles.textInput,
+                    { color: colors.text, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight },
+                  ]}
+                  placeholder="What's on your mind..."
+                  placeholderTextColor={colors.textSecondary + "60"}
+                  value={content}
+                  onChangeText={setContent}
+                  multiline
+                  textAlignVertical="top"
+                  autoCorrect
+                  autoCapitalize="sentences"
+                  scrollEnabled={false}
+                  selectionColor={colors.secondary}
+                />
+              </FieldShell>
             </View>
           )}
 
@@ -308,33 +306,32 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
 
               {/* Gratitude item cards */}
               {gratitudeItems.map((item, index) => (
-                <View
+                <SanctuaryCard
                   key={index}
-                  style={[
-                    styles.gratitudeCard,
-                    {
-                      borderBottomColor: colors.border,
-                    },
-                  ]}
+                  tone="lowest"
+                  style={styles.gratitudeCard}
+                  contentStyle={styles.gratitudeCardContent}
                 >
                   <View style={styles.gratitudeIconWrapper}>
                     <Seedling size={18} color={categoryColor} />
                   </View>
-                  <TextInput
-                    style={[
-                      styles.gratitudeInput,
-                      { color: colors.text, fontSize: typography.bodyFontSize - 2, lineHeight: typography.bodyLineHeight - 6 },
-                    ]}
-                    placeholder="I'm grateful for..."
-                    placeholderTextColor={colors.textSecondary + "60"}
-                    value={item}
-                    onChangeText={(text) =>
-                      handleGratitudeItemChange(index, text)
-                    }
-                    multiline
-                    autoCorrect
-                    autoCapitalize="sentences"
-                  />
+                  <FieldShell style={styles.gratitudeInputShell}>
+                    <TextInput
+                      style={[
+                        styles.gratitudeInput,
+                        { color: colors.text, fontSize: typography.bodyFontSize - 2, lineHeight: typography.bodyLineHeight - 6 },
+                      ]}
+                      placeholder="I'm grateful for..."
+                      placeholderTextColor={colors.textSecondary + "60"}
+                      value={item}
+                      onChangeText={(text) =>
+                        handleGratitudeItemChange(index, text)
+                      }
+                      multiline
+                      autoCorrect
+                      autoCapitalize="sentences"
+                    />
+                  </FieldShell>
                   {gratitudeItems.length > 1 && (
                     <TouchableOpacity
                       onPress={() => handleRemoveGratitudeItem(index)}
@@ -348,31 +345,16 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                       />
                     </TouchableOpacity>
                   )}
-                </View>
+                </SanctuaryCard>
               ))}
 
-              {/* Add another button */}
-              <TouchableOpacity
-                style={[
-                  styles.addItemButton,
-                  { borderColor: colors.border },
-                ]}
+              <SanctuaryButton
+                label="Add another"
+                variant="secondary"
                 onPress={handleAddGratitudeSlot}
-              >
-                <Ionicons
-                  name="add"
-                  size={18}
-                  color={categoryColor}
-                />
-                <Text
-                  style={[
-                    styles.addItemText,
-                    { color: categoryColor, fontSize: typography.bodyFontSize - 6 },
-                  ]}
-                >
-                  add another
-                </Text>
-              </TouchableOpacity>
+                style={styles.addItemButton}
+                icon={<Ionicons name="add" size={18} color={colors.onSecondaryContainer} />}
+              />
 
               <Text
                 style={[
@@ -407,59 +389,24 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
           style={[
             styles.bottomBar,
             {
-              backgroundColor: colors.background,
-              borderTopColor: colors.border,
+              backgroundColor: colors.surface,
+              borderTopColor: colors.ghostBorder,
             },
           ]}
         >
-          <TouchableOpacity
-            style={[
-              styles.cancelButton,
-              { backgroundColor: colors.cardBackground },
-            ]}
+          <SanctuaryButton
+            label="Cancel"
+            variant="secondary"
             onPress={handleCancel}
-          >
-            <Text
-              style={[styles.cancelText, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 4 }]}
-            >
-              Cancel
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.saveButtonWrapper}
+            style={styles.bottomButton}
+          />
+          <SanctuaryButton
+            label={saving ? "Saving..." : "Save"}
             onPress={handleSave}
             disabled={saving || !hasContent}
-            activeOpacity={0.85}
-          >
-            <LinearGradient
-              colors={
-                hasContent
-                  ? [colors.heroGradientStart, colors.heroGradientEnd]
-                  : [colors.border, colors.border]
-              }
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.saveButton}
-            >
-              <Ionicons
-                name="checkmark"
-                size={18}
-                color={hasContent ? colors.textOnAccent : colors.textSecondary}
-              />
-              <Text
-                style={[
-                  styles.saveText,
-                  {
-                    color: hasContent ? colors.textOnAccent : colors.textSecondary,
-                    fontSize: typography.bodyFontSize - 4,
-                  },
-                ]}
-              >
-                {saving ? "Saving..." : "Save"}
-              </Text>
-            </LinearGradient>
-          </TouchableOpacity>
+            style={styles.bottomButton}
+            icon={<Ionicons name="checkmark" size={18} color={colors.onSecondary} />}
+          />
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -475,23 +422,40 @@ const styles = StyleSheet.create({
   },
   gradientHeader: {
     paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 20,
+    paddingTop: 12,
+    paddingBottom: 16,
   },
   headerTitleRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
     gap: 10,
   },
+  headerIconShell: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTextBlock: {
+    flex: 1,
+  },
+  headerEyebrow: {
+    fontFamily: fonts.labelFamily,
+    fontSize: 12,
+    lineHeight: 16,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
   headerTitleText: {
-    fontFamily: fonts.headerFamilyItalic,
-    fontSize: 38,
-    lineHeight: 46,
+    fontFamily: fonts.headerFamily,
+    fontSize: 24,
+    lineHeight: 30,
   },
   dateBar: {
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingBottom: 12,
   },
   dateText: {
     fontFamily: fonts.bodyFamilyRegular,
@@ -506,18 +470,21 @@ const styles = StyleSheet.create({
     minHeight: 200,
   },
   textIntroWrapper: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
-    marginBottom: 4,
+    marginHorizontal: 20,
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  textIntroContent: {
+    paddingHorizontal: 18,
+    paddingVertical: 18,
+  },
+  textInputShell: {
+    marginHorizontal: 20,
   },
   textInput: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 18,
     lineHeight: 28,
-    paddingHorizontal: 20,
-    paddingTop: 20,
     minHeight: 200,
   },
 
@@ -527,21 +494,27 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   introText: {
-    fontFamily: fonts.headerFamilyItalic,
+    fontFamily: fonts.headerFamily,
     fontSize: 18,
     lineHeight: 18 * 1.5,
     marginBottom: 20,
     textAlign: "center",
   },
   gratitudeCard: {
+    marginBottom: 12,
+  },
+  gratitudeCardContent: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 10,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
+    padding: 14,
   },
   gratitudeIconWrapper: {
     marginTop: 2,
+  },
+  gratitudeInputShell: {
+    flex: 1,
+    paddingVertical: 10,
   },
   gratitudeInput: {
     flex: 1,
@@ -555,14 +528,6 @@ const styles = StyleSheet.create({
     padding: 2,
   },
   addItemButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderStyle: "dashed",
     marginBottom: 12,
   },
   addItemText: {
@@ -592,38 +557,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderTopWidth: 1,
+    marginBottom: 12,
     gap: 12,
   },
-  cancelButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-  },
-  cancelText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  saveButtonWrapper: {
-    borderRadius: 12,
-    overflow: "hidden",
-    shadowColor: "rgba(44, 95, 93, 1)",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  saveButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-  },
-  saveText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
-    fontWeight: "600",
+  bottomButton: {
+    flex: 1,
   },
 });

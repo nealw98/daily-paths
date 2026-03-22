@@ -7,14 +7,12 @@ import {
   TouchableOpacity,
   PanResponder,
   Animated,
-  Dimensions,
   Pressable,
   Platform,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { BlurView } from "expo-blur";
+import Svg, { Path } from "react-native-svg";
 import * as Haptics from "expo-haptics";
 import { fonts } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
@@ -23,6 +21,9 @@ import { DailyReading } from "../types/readings";
 import { BookmarkToast } from "./BookmarkToast";
 import { ReadingFeedback } from "./ReadingFeedback";
 import { getScheduledDayOfYear } from "../utils/dateUtils";
+import { SanctuaryCard, FocusPill } from "./ui/Sanctuary";
+import { TealHeader } from "./shared/TealHeader";
+import { LightOnWater } from "./icons";
 // Legacy instruction modal import kept for possible future use:
 // import { BookmarkInstructionOverlay } from "./BookmarkInstructionOverlay";
 
@@ -63,10 +64,24 @@ const renderInlineMarkdown = (text: string, italicStyle: any) => {
   return parts;
 };
 
+function DecorativeQuoteMark({ color }: { color: string }) {
+  return (
+    <Svg width={80} height={62} viewBox="0 0 118 92" fill="none">
+      <Path
+        d="M38 10C24.7 10 14 20.7 14 34C14 44.9 21.2 54 31.1 56.8L22 82H42.3L56 53.9V34C56 20.7 45.3 10 32 10H38Z"
+        fill={color}
+      />
+      <Path
+        d="M82 10C68.7 10 58 20.7 58 34C58 44.9 65.2 54 75.1 56.8L66 82H86.3L100 53.9V34C100 20.7 89.3 10 76 10H82Z"
+        fill={color}
+      />
+    </Svg>
+  );
+}
+
 interface ReadingScreenProps {
   reading: DailyReading;
-  onPrevDate: () => void;
-  onNextDate: () => void;
+  onHeaderPress?: () => void;
   onOpenDatePicker: () => void;
   onOpenBookmarks?: () => void;
   isBookmarked?: boolean;
@@ -81,8 +96,7 @@ interface ReadingScreenProps {
 
 export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   reading,
-  onPrevDate,
-  onNextDate,
+  onHeaderPress,
   onOpenDatePicker,
   onOpenBookmarks,
   isBookmarked = false,
@@ -93,21 +107,14 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   onDismissInstruction,
   onShowInstruction,
 }) => {
-  const { colors, isDark, themeId } = useTheme();
+  const { colors } = useTheme();
   const [localBookmarked, setLocalBookmarked] = useState(isBookmarked);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const scrollViewRef = useRef<ScrollView>(null);
   const translateX = useRef(new Animated.Value(0)).current;
   const heartScale = useRef(new Animated.Value(1)).current;
-  const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
-
-  // Scale header for smaller screens. Full size at ≥ 844pt (iPhone 14);
-  // shrinks aggressively for iPhone SE / small Android, floor at 65%.
-  const hScale = Math.min(1, Math.max(0.65, (screenHeight - 300) / 544));
   const [isSwiping, setIsSwiping] = useState(false);
-  const prevDateRef = useRef(onPrevDate);
-  const nextDateRef = useRef(onNextDate);
   const lastTapRef = useRef<number | null>(null);
 
   const { settings, setTextSize } = useSettings();
@@ -127,14 +134,10 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
     };
   }, [typography.bodyFontSize]);
 
-  // Keep gesture handlers pointing at the latest navigation callbacks
-  React.useEffect(() => {
-    prevDateRef.current = onPrevDate;
-  }, [onPrevDate]);
-
-  React.useEffect(() => {
-    nextDateRef.current = onNextDate;
-  }, [onNextDate]);
+  const quoteFontSize = Math.round(typography.bodyFontSize * 1.11) + 2;
+  const quoteLineHeight = Math.round(quoteFontSize * 1.18);
+  const thoughtFontSize = Math.round(typography.bodyFontSize * 1.33);
+  const thoughtLineHeight = Math.round(thoughtFontSize * 1.16);
 
   // Opening paragraphs (support \n\n markers in text)
   const openingParagraphs = useMemo(
@@ -214,51 +217,15 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
       },
       onPanResponderRelease: (_evt, gestureState) => {
         const { dx } = gestureState;
-        if (dx < -SWIPE_THRESHOLD) {
-          // Swipe left → slide current reading out to the left, then bring next in from the right
-          Animated.timing(translateX, {
-            toValue: -screenWidth,
-            duration: 160,
-            useNativeDriver: true,
-          }).start(() => {
-            nextDateRef.current?.();
-            // Position new reading just off-screen to the right
-            translateX.setValue(screenWidth);
-            Animated.timing(translateX, {
-              toValue: 0,
-              duration: 160,
-              useNativeDriver: true,
-            }).start(() => {
-              setIsSwiping(false);
-            });
-          });
-        } else if (dx > SWIPE_THRESHOLD) {
-          // Swipe right → slide current reading out to the right, then bring previous in from the left
-          Animated.timing(translateX, {
-            toValue: screenWidth,
-            duration: 160,
-            useNativeDriver: true,
-          }).start(() => {
-            prevDateRef.current?.();
-            // Position new reading just off-screen to the left
-            translateX.setValue(-screenWidth);
-            Animated.timing(translateX, {
-              toValue: 0,
-              duration: 160,
-              useNativeDriver: true,
-            }).start(() => {
-              setIsSwiping(false);
-            });
-          });
-        } else {
-          // Not far enough: snap back to center
-          Animated.spring(translateX, {
-            toValue: 0,
-            useNativeDriver: true,
-          }).start(() => {
-            setIsSwiping(false);
-          });
+        if (Math.abs(dx) > SWIPE_THRESHOLD) {
+          Haptics.selectionAsync().catch(() => {});
         }
+        Animated.spring(translateX, {
+          toValue: 0,
+          useNativeDriver: true,
+        }).start(() => {
+          setIsSwiping(false);
+        });
       },
       onPanResponderTerminate: () => {
         Animated.spring(translateX, {
@@ -277,20 +244,16 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
     console.log("ReadingScreen: isBookmarked prop changed to:", isBookmarked);
   }, [isBookmarked]);
 
-  const { month, day, weekday } = useMemo(() => {
+  const { fullDateLabel } = useMemo(() => {
     const date = new Date(reading.date);
-    
-    const month = date.toLocaleDateString("en-US", {
-      month: "long",
-    }).toUpperCase();
-    
-    const day = date.getDate();
 
-    const weekday = new Intl.DateTimeFormat("en-US", {
+    const fullDateLabel = new Intl.DateTimeFormat("en-US", {
       weekday: "long",
-    }).format(date).toUpperCase();
+      month: "long",
+      day: "numeric",
+    }).format(date);
 
-    return { month, day, weekday };
+    return { fullDateLabel };
   }, [reading.date]);
 
   // Legacy long-press handlers kept for possible future use:
@@ -393,111 +356,13 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   }, [reading.id]);
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.pearl }]} edges={["top", "left", "right"]}>
-      <View style={[styles.container, { backgroundColor: colors.pearl }]}>
-        {colors.headerGradientStart === colors.headerGradientEnd ? (
-          <View style={[styles.header, { backgroundColor: colors.headerGradientStart }]}>
-          <View style={styles.headerTop}>
-            <Text style={[styles.logo, { color: colors.textOnAccent }]}>Al-Anon Daily Paths</Text>
-            {/*
-            {onShowInstruction && (
-              <TouchableOpacity
-                onPress={onShowInstruction}
-                style={styles.testButton}
-              >
-                <Text style={styles.testButtonText}>?</Text>
-              </TouchableOpacity>
-            )}
-            */}
-          </View>
-
-          <View style={styles.dateNav}>
-            <TouchableOpacity onPress={onPrevDate} style={styles.navButton}>
-              <BlurView intensity={20} tint="light" style={styles.blurNavButton}>
-                <Ionicons name="chevron-back" size={20} color={colors.textOnAccent} />
-              </BlurView>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={onOpenDatePicker}
-              style={styles.calendarDate}
-            >
-              <View style={styles.calendarCardWrapper}>
-                <View style={[styles.calendarCard, { borderColor: colors.calendarBorder, backgroundColor: colors.cardBackground }]}>
-                  <View style={[styles.calendarMonth, { backgroundColor: colors.calendarMonthBackground }]}>
-                    <Text style={[styles.calendarMonthText, { color: colors.textOnAccent }]}>{month}</Text>
-                  </View>
-                  <View style={[styles.calendarDay, { backgroundColor: colors.calendarDayBackground }]}>
-                    <Text style={[styles.calendarDayText, { color: colors.calendarDayText }]}>{day}</Text>
-                  </View>
-                </View>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={onNextDate} style={styles.navButton}>
-              <BlurView intensity={20} tint="light" style={styles.blurNavButton}>
-                <Ionicons name="chevron-forward" size={20} color={colors.textOnAccent} />
-              </BlurView>
-            </TouchableOpacity>
-          </View>
-
-          </View>
-        ) : (
-        <LinearGradient
-          colors={[colors.headerGradientStart, colors.headerGradientEnd]}
-          start={{ x: 0, y: 0 }}
-          end={themeId === "twilight-fire" ? { x: 0, y: 1 } : { x: 1, y: 1 }}
-          style={[styles.header, {
-            paddingTop: 16 * hScale,
-            paddingBottom: 24 * hScale,
-          }]}
-        >
-          <View style={[styles.headerTop, { marginBottom: 20 * hScale }]}>
-            <Text style={[styles.logo, { color: colors.textOnAccent, fontSize: 40 * hScale }]}>Al-Anon Daily Paths</Text>
-            {/* Legacy test button to trigger instruction modal kept for possible future use:
-            {onShowInstruction && (
-              <TouchableOpacity
-                onPress={onShowInstruction}
-                style={styles.testButton}
-              >
-                <Text style={styles.testButtonText}>?</Text>
-              </TouchableOpacity>
-            )}
-            */}
-          </View>
-
-          <View style={styles.dateNav}>
-            <TouchableOpacity onPress={onPrevDate} style={[styles.navButton, { width: 36 * hScale, height: 36 * hScale, borderRadius: 18 * hScale }]}>
-              <BlurView intensity={20} tint="light" style={styles.blurNavButton}>
-                <Ionicons name="chevron-back" size={Math.round(20 * hScale)} color={colors.textOnAccent} />
-              </BlurView>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={onOpenDatePicker}
-              style={styles.calendarDate}
-            >
-              <View style={styles.calendarCardWrapper}>
-                <View style={[styles.calendarCard, { borderColor: colors.calendarBorder, backgroundColor: colors.cardBackground }]}>
-                  <View style={[styles.calendarMonth, { backgroundColor: colors.calendarMonthBackground }]}>
-                    <Text style={[styles.calendarMonthText, { color: colors.textOnAccent }]}>{month}</Text>
-                  </View>
-                  <View style={[styles.calendarDay, { backgroundColor: colors.calendarDayBackground }]}>
-                    <Text style={[styles.calendarDayText, { color: colors.calendarDayText, fontSize: 24 * hScale, lineHeight: 24 * hScale }]}>{day}</Text>
-                  </View>
-                </View>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={onNextDate} style={[styles.navButton, { width: 36 * hScale, height: 36 * hScale, borderRadius: 18 * hScale }]}>
-              <BlurView intensity={20} tint="light" style={styles.blurNavButton}>
-                <Ionicons name="chevron-forward" size={Math.round(20 * hScale)} color={colors.textOnAccent} />
-              </BlurView>
-            </TouchableOpacity>
-          </View>
-
-        </LinearGradient>
-        )}
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.surface }]} edges={["top", "left", "right"]}>
+      <View style={[styles.container, { backgroundColor: colors.surface }]}>
+        <TealHeader
+          title="Today"
+          leftIcon={<LightOnWater size={24} color={colors.onPrimary} strokeWidth={1.7} />}
+          onPress={onHeaderPress}
+        />
 
         <Animated.View
           style={{ flex: 1, transform: [{ translateX }] }}
@@ -505,95 +370,68 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
         >
           <ScrollView
             ref={scrollViewRef}
-            style={[styles.content, { backgroundColor: colors.pearl }]}
+            style={[styles.content, { backgroundColor: colors.surface }]}
             contentContainerStyle={styles.contentContainer}
             showsVerticalScrollIndicator={false}
             scrollEnabled={!isSwiping}
           >
             <Pressable onPress={handleContentPress}>
-              <View style={styles.actionsHeader}>
-                <TouchableOpacity
-                  onPress={onOpenBookmarks}
-                  activeOpacity={0.7}
-                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                >
-                  <Ionicons
-                    name="list-outline"
-                    size={20}
-                    color={colors.deepTeal}
-                  />
-                </TouchableOpacity>
-                <View style={styles.actionsRight}>
-                  <TouchableOpacity
-                    onPress={handleBookmarkToggle}
-                    activeOpacity={0.7}
-                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                  >
-                    <Ionicons
-                      name={localBookmarked ? "heart" : "heart-outline"}
-                      size={20}
-                      color={colors.deepTeal}
-                    />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={onShare}
-                    activeOpacity={0.7}
-                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                  >
-                    <Ionicons
-                      name="arrow-redo-outline"
-                      size={20}
-                      color={colors.deepTeal}
-                    />
-                  </TouchableOpacity>
+              <View style={styles.pageIntro}>
+                <View style={styles.pageIntroCopy}>
+                  <Text style={[styles.pageTitle, { color: colors.primaryContainer }]}>
+                    {reading.title}
+                  </Text>
+                  <Text style={[styles.pageDate, { color: colors.onSurfaceVariant }]}>
+                    {fullDateLabel}
+                  </Text>
                 </View>
-              </View>
-
-              <View style={styles.titleRow}>
-                <Text
-                  style={[
-                    styles.title,
-                    { fontSize: headingTypography.titleFontSize, color: colors.ocean },
-                  ]}
+                <TouchableOpacity
+                  onPress={onOpenDatePicker}
+                  style={styles.pageCalendarButton}
+                  hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
                 >
-                  {reading.title}
-                </Text>
+                  <Ionicons name="calendar-outline" size={28} color={colors.primaryContainer} />
+                </TouchableOpacity>
               </View>
 
               {!!applicationQuote && (
-                <View style={styles.applicationQuoteContainer}>
+                <SanctuaryCard
+                  tone="low"
+                  style={[
+                    styles.applicationQuoteContainer,
+                    { backgroundColor: colors.surfaceContainerLow },
+                  ]}
+                  contentStyle={styles.applicationQuoteContent}
+                >
+                  <View style={styles.quoteMark}>
+                    <DecorativeQuoteMark color={colors.onSurfaceVariant + "1F"} />
+                  </View>
                   <Text
                     style={[
-                      styles.bodyText,
                       styles.applicationQuoteText,
                       {
-                        fontSize: typography.bodyFontSize,
-                        lineHeight: typography.bodyLineHeight,
-                        color: colors.ink,
+                        fontSize: quoteFontSize,
+                        lineHeight: quoteLineHeight,
+                        color: colors.primary,
                       },
                     ]}
                   >
-                    {renderInlineMarkdown(
-                      applicationQuote,
-                      styles.inlineItalic
-                    )}
+                    {renderInlineMarkdown(applicationQuote, styles.quoteInlineItalic)}
                   </Text>
                   {!!applicationReference && (
                     <Text
                       style={[
-                        styles.thoughtLabel,
+                        styles.applicationReference,
                         {
-                          fontSize: headingTypography.thoughtLabelFontSize,
-                          textAlign: "right",
-                          marginTop: 0,
-                          color: colors.seafoam,
+                          fontSize: 14,
+                          color: colors.onSurfaceVariant,
                         },
                       ]}
                     >
                       {applicationReference}
                     </Text>
                   )}
-                </View>
+                </SanctuaryCard>
               )}
 
               {openingParagraphs.map((paragraph, index) => (
@@ -604,7 +442,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                     {
                       fontSize: typography.bodyFontSize,
                       lineHeight: typography.bodyLineHeight,
-                      color: colors.ink,
+                      color: colors.onSurface,
                     },
                   ]}
                 >
@@ -620,7 +458,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                     {
                       fontSize: typography.bodyFontSize,
                       lineHeight: typography.bodyLineHeight,
-                      color: colors.ink,
+                      color: colors.onSurface,
                     },
                   ]}
                 >
@@ -629,56 +467,100 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
               ))}
 
               {applicationParagraphs.length > 0 && (
-                <>
-                  <View style={styles.applicationDividerWrapper}>
-                    <View style={[styles.applicationDivider, { backgroundColor: colors.mist }]} />
+                <SanctuaryCard
+                  tone="lowest"
+                  style={[
+                    styles.practiceCardContainer,
+                    {
+                      backgroundColor: colors.surfaceContainerLowest,
+                      borderColor: colors.ghostBorder,
+                    },
+                  ]}
+                  contentStyle={styles.practiceCard}
+                  elevated
+                >
+                  <View style={styles.practiceHeader}>
+                    <View style={styles.practiceHeaderCopy}>
+                      <Text style={[styles.practiceEyebrow, { color: colors.primaryContainer }]}>
+                        The Practice
+                      </Text>
+                    </View>
+                    <Ionicons name="square-outline" size={20} color={colors.primaryContainer} />
                   </View>
+
                   {applicationParagraphs.map((paragraph, index) => (
                     <Text
                       key={`application-${index}`}
                       style={[
-                        styles.applicationText,
+                        styles.practiceText,
                         {
                           fontSize: typography.bodyFontSize,
-                          lineHeight: typography.bodyLineHeight,
-                          color: colors.ink,
+                          lineHeight: Math.round(typography.bodyLineHeight * 0.98),
+                          color: colors.onSurface,
                         },
+                        index === applicationParagraphs.length - 1 ? styles.practiceTextLast : null,
                       ]}
                     >
                       {renderInlineMarkdown(paragraph, styles.inlineItalic)}
                     </Text>
                   ))}
-                </>
+                </SanctuaryCard>
               )}
 
-              <View style={[styles.thoughtCardContainer, { backgroundColor: colors.cloud }]}>
-                <View style={[styles.thoughtCard, { backgroundColor: colors.cloud }]}>
-                  <BlurView
-                    intensity={20}
-                    tint={isDark ? "dark" : "light"}
-                    style={[styles.thoughtGradient, { backgroundColor: isDark ? colors.cloud : undefined }]}
-                  >
-                    <Text
-                      style={[
-                        styles.thoughtLabel,
-                        { fontSize: headingTypography.thoughtLabelFontSize, color: colors.ocean },
-                      ]}
-                    >
-                      Thought for the Day
-                    </Text>
-                    <Text
-                      style={[
-                        styles.thoughtText,
-                        {
-                          fontSize: headingTypography.thoughtTextFontSize,
-                          lineHeight: headingTypography.thoughtTextLineHeight,
-                          color: colors.deepTeal,
-                        },
-                      ]}
-                    >
-                      {reading.thoughtForDay}
-                    </Text>
-                  </BlurView>
+              <SanctuaryCard
+                tone="high"
+                style={styles.thoughtCardContainer}
+                contentStyle={[
+                  styles.thoughtCard,
+                  { backgroundColor: colors.primaryContainer },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.thoughtLabel,
+                    { fontSize: 15, color: colors.secondaryContainer },
+                  ]}
+                >
+                  Thought for the Day
+                </Text>
+                <Text
+                  style={[
+                    styles.thoughtText,
+                    {
+                      fontSize: thoughtFontSize,
+                      lineHeight: thoughtLineHeight,
+                      color: colors.onPrimary,
+                    },
+                  ]}
+                >
+                  {reading.thoughtForDay}
+                </Text>
+              </SanctuaryCard>
+
+              <View style={styles.actionsHeader}>
+                <FocusPill
+                  label="Library"
+                  onPress={onOpenBookmarks}
+                  icon={<Ionicons name="list-outline" size={14} color={colors.onSurfaceVariant} />}
+                />
+                <View style={styles.actionsRight}>
+                  <FocusPill
+                    label={localBookmarked ? "Saved" : "Save"}
+                    onPress={handleBookmarkToggle}
+                    selected={localBookmarked}
+                    icon={
+                      <Ionicons
+                        name={localBookmarked ? "heart" : "heart-outline"}
+                        size={14}
+                        color={localBookmarked ? colors.onSecondaryContainer : colors.onSurfaceVariant}
+                      />
+                    }
+                  />
+                  <FocusPill
+                    label="Share"
+                    onPress={onShare}
+                    icon={<Ionicons name="arrow-redo-outline" size={14} color={colors.onSurfaceVariant} />}
+                  />
                 </View>
               </View>
             </Pressable>
@@ -719,122 +601,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 24,
-  },
-  headerTop: {
-    alignItems: "center",
-    marginBottom: 20,
-    position: "relative",
-    width: "100%",
-  },
-  logo: {
-    fontFamily: fonts.headerFamilyItalic,
-    fontSize: 40,
-    fontWeight: "600",
-  },
-  testButton: {
-    position: "absolute",
-    right: 0,
-    top: 0,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.4)",
-  },
-  testButtonText: {
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  settingsButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    overflow: "hidden",
-    borderWidth: 1.5,
-    borderColor: "rgba(255, 255, 255, 0.25)",
-  },
-  blurButton: {
-    width: "100%",
-    height: "100%",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.12)",
-  },
-  dateNav: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 12,
-  },
-  navButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    overflow: "hidden",
-    borderWidth: 1.5,
-    borderColor: "rgba(255, 255, 255, 0.25)",
-  },
-  blurNavButton: {
-    width: "100%",
-    height: "100%",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.12)",
-  },
-  calendarDate: {
-    alignItems: "center",
-  },
-  calendarCardWrapper: {
-    position: "relative",
-  },
-  calendarCard: {
-    minWidth: 70,
-    borderRadius: 6,
-    overflow: "hidden",
-    borderWidth: 1.5,
-    borderColor: "rgba(255, 255, 255, 0.3)",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.25,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-  calendarMonth: {
-    paddingVertical: 3,
-    paddingHorizontal: 4,
-    alignItems: "center",
-  },
-  calendarMonthText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 9,
-    fontWeight: "700",
-    letterSpacing: 0.5,
-  },
-  calendarDay: {
-    paddingVertical: 4,
-    paddingHorizontal: 4,
-    alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.65)",
-  },
-  calendarDayText: {
-    fontFamily: fonts.headerFamily,
-    fontSize: 24,
-    fontWeight: "600",
-    lineHeight: 24,
-  },
   content: {
     flex: 1,
   },
@@ -845,34 +611,47 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 40,
   },
-  title: {
-    fontFamily: "Inter_500Medium",
-    textAlign: "center",
-    textTransform: "uppercase",
-    fontWeight: "600",
-    marginBottom: 8,
-    flex: 1,
-    flexShrink: 1,
-  },
-  titleRow: {
+  pageIntro: {
     flexDirection: "row",
     alignItems: "flex-start",
+    justifyContent: "space-between",
+    marginBottom: 20,
+    gap: 16,
+  },
+  pageIntroCopy: {
+    flex: 1,
+  },
+  pageTitle: {
+    fontFamily: fonts.headerFamilyLight,
+    fontSize: 36,
+    lineHeight: 44,
+    fontWeight: "300",
+    letterSpacing: -0.9,
+    marginBottom: 6,
+  },
+  pageDate: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 17,
+    lineHeight: 24,
+  },
+  pageCalendarButton: {
+    width: 36,
+    height: 36,
+    alignItems: "center",
     justifyContent: "center",
-    width: "100%",
-    marginTop: 4,
-    marginBottom: 8,
+    marginTop: 2,
   },
   actionsHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 12,
-    marginTop: -4,
+    marginTop: 28,
+    marginBottom: 16,
   },
   actionsRight: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 24,
+    gap: 10,
   },
   inlineFavorite: {
     marginLeft: 12,
@@ -888,11 +667,12 @@ const styles = StyleSheet.create({
   bodyText: {
     fontFamily: fonts.loraRegular,
     fontSize: 19,
-    lineHeight: 33,
-    marginBottom: 16,
+    lineHeight: 32,
+    marginBottom: 18,
   },
   inlineItalic: {
     fontFamily: fonts.loraRegular,
+    fontStyle: "italic",
   },
   section: {
     marginTop: 8,
@@ -903,68 +683,112 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   applicationQuoteContainer: {
-    marginBottom: 16,
+    marginBottom: 20,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  applicationQuoteContent: {
+    paddingHorizontal: 32,
+    paddingVertical: 32,
+    paddingTop: 80,
+    position: "relative",
+    overflow: "hidden",
+  },
+  quoteMark: {
+    position: "absolute",
+    top: 8,
+    left: 10,
+    width: 80,
+    height: 62,
   },
   applicationQuoteText: {
-    fontFamily: fonts.loraRegular,
-    textAlign: "center",
-    marginBottom: 4,
+    fontFamily: fonts.bodyFamilyBold,
+    textAlign: "left",
+    marginBottom: 16,
+    fontStyle: "italic",
+    fontWeight: "700",
+    position: "relative",
+    zIndex: 1,
+    alignSelf: "stretch",
+    marginLeft: 28,
+    marginRight: 0,
   },
-  applicationDividerWrapper: {
-    alignItems: "center",
+  quoteInlineItalic: {
+    fontFamily: fonts.bodyFamilyBold,
+    fontStyle: "italic",
+    fontWeight: "700",
+  },
+  applicationReference: {
+    fontFamily: fonts.bodyFamilyRegular,
+    textAlign: "left",
+    letterSpacing: 0.2,
+    position: "relative",
+    zIndex: 1,
+    alignSelf: "stretch",
+    marginLeft: 28,
+    marginRight: 0,
+  },
+  practiceCardContainer: {
     marginTop: 8,
-    marginBottom: 16,
+    marginBottom: 20,
+    borderRadius: 18,
+    borderWidth: 1,
   },
-  applicationDivider: {
-    width: 64,
-    height: StyleSheet.hairlineWidth * 2,
-    borderRadius: 999,
+  practiceCard: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 14,
   },
-  applicationText: {
-    fontFamily: fonts.loraRegular,
-    fontSize: 19,
-    lineHeight: 33,
-    marginBottom: 16,
+  practiceHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    marginBottom: 10,
+    gap: 16,
+  },
+  practiceHeaderCopy: {
+    flex: 1,
+  },
+  practiceEyebrow: {
+    fontFamily: fonts.labelFamily,
+    fontSize: 14,
+    lineHeight: 18,
+    letterSpacing: 2.4,
+    textTransform: "uppercase",
+  },
+  practiceText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    marginBottom: 8,
+    alignSelf: "stretch",
+  },
+  practiceTextLast: {
+    marginBottom: 0,
   },
   thoughtCardContainer: {
     marginTop: 24,
     borderRadius: 12,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        backgroundColor: "transparent",
-      },
-    }),
   },
   thoughtCard: {
+    paddingHorizontal: 28,
+    paddingTop: 20,
+    paddingBottom: 20,
     borderRadius: 12,
-    overflow: "hidden",
-    ...Platform.select({
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-  thoughtGradient: {
-    padding: 20,
+    alignItems: "center",
   },
   thoughtLabel: {
-    fontFamily: fonts.bodyFamilyRegular,
+    fontFamily: fonts.labelFamily,
     fontSize: 14,
     textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 8,
+    letterSpacing: 1.4,
+    marginBottom: 12,
+    textAlign: "center",
   },
   thoughtText: {
-    fontFamily: fonts.headerFamilyItalic,
-    fontSize: 22,
-    lineHeight: 26,
-    fontWeight: "600",
+    fontFamily: fonts.bodyFamilyMedium,
+    fontSize: 32,
+    lineHeight: 40,
+    fontWeight: "500",
+    textAlign: "center",
   },
 });
 

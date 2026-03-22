@@ -20,6 +20,7 @@ import { fonts } from "../../constants/theme";
 import { PRAYERS, type Prayer } from "../../constants/prayers";
 import { TealHeader } from "../shared/TealHeader";
 import { LeafOnWater } from "../icons";
+import { FieldShell, SanctuaryButton, SanctuaryCard } from "../ui/Sanctuary";
 
 export const PrayersScreen: React.FC = () => {
   const { colors } = useTheme();
@@ -47,7 +48,7 @@ export const PrayersScreen: React.FC = () => {
       const isBold = boldPhrases.some(p => p.toLowerCase() === part.toLowerCase());
       if (isBold) {
         return (
-          <Text key={i} style={{ fontFamily: "Inter_700Bold", fontWeight: "700" }}>
+          <Text key={i} style={{ fontFamily: fonts.bodyFamilyBold, fontWeight: "700" }}>
             {part}
           </Text>
         );
@@ -65,7 +66,7 @@ export const PrayersScreen: React.FC = () => {
     if (prayer.id === "just-for-tonight") boldPhrases.push("Just for tonight");
 
     return (
-      <View key={prayer.id} style={styles.prayerSection}>
+      <SanctuaryCard key={prayer.id} tone="lowest" style={styles.prayerSection} contentStyle={styles.prayerSectionContent}>
         <TouchableOpacity
           style={styles.prayerHeader}
           onPress={() => {
@@ -99,7 +100,7 @@ export const PrayersScreen: React.FC = () => {
             )}
           </View>
         )}
-      </View>
+      </SanctuaryCard>
     );
   };
 
@@ -152,7 +153,7 @@ export const PrayersScreen: React.FC = () => {
     const isEditing = editingId === prayer.id;
 
     return (
-      <View key={prayer.id} style={styles.prayerSection}>
+      <SanctuaryCard key={prayer.id} tone="lowest" style={styles.prayerSection} contentStyle={styles.prayerSectionContent}>
         <TouchableOpacity
           style={styles.prayerHeader}
           onPress={() => {
@@ -190,42 +191,43 @@ export const PrayersScreen: React.FC = () => {
 
         {isEditing && (
           <View style={styles.formContainer}>
-            <TextInput
-              style={[styles.titleInput, { color: colors.ink, borderColor: colors.mist, backgroundColor: colors.cloud, fontSize: typography.bodyFontSize }]}
-              value={editTitle}
-              onChangeText={setEditTitle}
-              placeholder="Prayer title"
-              placeholderTextColor={colors.textSecondary}
-            />
-            <TextInput
-              style={[styles.bodyInput, { color: colors.ink, borderColor: colors.mist, backgroundColor: colors.cloud, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.625 }]}
-              value={editText}
-              onChangeText={setEditText}
-              placeholder="Prayer text"
-              placeholderTextColor={colors.textSecondary}
-              multiline
-              textAlignVertical="top"
-            />
+            <FieldShell style={styles.inputShell}>
+              <TextInput
+                style={[styles.titleInput, { color: colors.ink, fontSize: typography.bodyFontSize }]}
+                value={editTitle}
+                onChangeText={setEditTitle}
+                placeholder="Prayer title"
+                placeholderTextColor={colors.textSecondary}
+              />
+            </FieldShell>
+            <FieldShell style={styles.inputShell}>
+              <TextInput
+                style={[styles.bodyInput, { color: colors.ink, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.625 }]}
+                value={editText}
+                onChangeText={setEditText}
+                placeholder="Prayer text"
+                placeholderTextColor={colors.textSecondary}
+                multiline
+                textAlignVertical="top"
+              />
+            </FieldShell>
             <View style={styles.formActions}>
-              <TouchableOpacity
-                style={[styles.formButton, { backgroundColor: colors.mist }]}
+              <SanctuaryButton
+                label="Delete"
+                variant="secondary"
                 onPress={() => handleDelete(prayer)}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.formButtonText, { color: "#b91c1c" }]}>Delete</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.formButton, { backgroundColor: colors.deepTeal }, (!editTitle.trim() || !editText.trim()) && { opacity: 0.5 }]}
+                style={styles.formButton}
+              />
+              <SanctuaryButton
+                label="Save"
                 onPress={handleSaveEdit}
                 disabled={!editTitle.trim() || !editText.trim()}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.formButtonText, { color: colors.textOnAccent }]}>Save</Text>
-              </TouchableOpacity>
+                style={styles.formButton}
+              />
             </View>
           </View>
         )}
-      </View>
+      </SanctuaryCard>
     );
   };
 
@@ -262,7 +264,7 @@ export const PrayersScreen: React.FC = () => {
         {personalPrayers.map(renderPersonalPrayer)}
 
         {/* Add New Prayer */}
-        <View style={styles.prayerSection}>
+        <SanctuaryCard tone="low" style={styles.prayerSection} contentStyle={styles.prayerSectionContent}>
           <TouchableOpacity
             style={styles.prayerHeader}
             onPress={() => {
@@ -292,37 +294,39 @@ export const PrayersScreen: React.FC = () => {
 
           {showAddForm && (
             <View style={styles.formContainer}>
-              <TextInput
-                style={[styles.titleInput, { color: colors.ink, borderColor: colors.mist, backgroundColor: colors.cloud, fontSize: typography.bodyFontSize }]}
-                value={newTitle}
-                onChangeText={setNewTitle}
-                placeholder="Prayer title"
-                placeholderTextColor={colors.textSecondary}
-                onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 300)}
-              />
-              <TextInput
-                style={[styles.bodyInput, { color: colors.ink, borderColor: colors.mist, backgroundColor: colors.cloud, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.625 }]}
-                value={newText}
-                onChangeText={setNewText}
-                placeholder="Prayer text"
-                placeholderTextColor={colors.textSecondary}
-                multiline
-                textAlignVertical="top"
-                onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 300)}
-              />
+              <FieldShell style={styles.inputShell}>
+                <TextInput
+                  style={[styles.titleInput, { color: colors.ink, fontSize: typography.bodyFontSize }]}
+                  value={newTitle}
+                  onChangeText={setNewTitle}
+                  placeholder="Prayer title"
+                  placeholderTextColor={colors.textSecondary}
+                  onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 300)}
+                />
+              </FieldShell>
+              <FieldShell style={styles.inputShell}>
+                <TextInput
+                  style={[styles.bodyInput, { color: colors.ink, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.625 }]}
+                  value={newText}
+                  onChangeText={setNewText}
+                  placeholder="Prayer text"
+                  placeholderTextColor={colors.textSecondary}
+                  multiline
+                  textAlignVertical="top"
+                  onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 300)}
+                />
+              </FieldShell>
               <View style={styles.formActions}>
-                <TouchableOpacity
-                  style={[styles.formButton, { backgroundColor: colors.deepTeal }, (!newTitle.trim() || !newText.trim()) && { opacity: 0.5 }]}
+                <SanctuaryButton
+                  label="Save"
                   onPress={handleSaveNew}
                   disabled={!newTitle.trim() || !newText.trim()}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.formButtonText, { color: colors.textOnAccent }]}>Save</Text>
-                </TouchableOpacity>
+                  style={styles.formButton}
+                />
               </View>
             </View>
           )}
-        </View>
+        </SanctuaryCard>
         <View style={{ height: 100 }} />
       </KeyboardAwareScrollView>
       </KeyboardAvoidingView>
@@ -342,7 +346,11 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   prayerSection: {
-    marginBottom: 8,
+    marginBottom: 12,
+  },
+  prayerSectionContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 4,
   },
   prayerHeader: {
     flexDirection: "row",
@@ -351,7 +359,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   prayerTitle: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: fonts.bodyFamilySemiBold,
     fontSize: 18,
     fontWeight: "600",
     flex: 1,
@@ -365,10 +373,10 @@ const styles = StyleSheet.create({
     lineHeight: 26,
   },
   prayerSource: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: fonts.bodyFamilySemiBold,
     fontSize: 14,
     fontWeight: "600",
-    letterSpacing: 1,
+    letterSpacing: 0.5,
     marginTop: 14,
     textAlign: "right",
   },
@@ -391,19 +399,14 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     gap: 12,
   },
+  inputShell: {
+    paddingVertical: 8,
+  },
   titleInput: {
     fontFamily: fonts.bodyFamilyRegular,
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
   },
   bodyInput: {
     fontFamily: fonts.bodyFamilyRegular,
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
     minHeight: 120,
   },
   formActions: {
@@ -412,13 +415,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   formButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
-  },
-  formButtonText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontWeight: "600",
-    fontSize: 15,
+    minWidth: 120,
   },
 });

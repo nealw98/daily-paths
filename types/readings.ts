@@ -2,6 +2,7 @@ export interface DailyReading {
   id: string;
   date: Date;
   title: string;
+  stepTheme?: string;
   opening: string;
   body: string[];
   quote: string;
