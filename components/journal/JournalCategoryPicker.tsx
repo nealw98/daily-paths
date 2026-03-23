@@ -2,13 +2,20 @@ import React, { useMemo } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Modal } from "react-native";
 import { useTheme } from "../../hooks/useTheme";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
-import { fonts } from "../../constants/theme";
+import { fonts, typography as textStyles } from "../../constants/theme";
 import {
   JOURNAL_CATEGORIES,
   type EntryType,
 } from "../../constants/journalCategories";
-import { EntryTypeIcon } from "../../utils/entryTypeIcon";
+import { Ionicons } from "@expo/vector-icons";
 import { SanctuaryCard } from "../ui/Sanctuary";
+
+const CATEGORY_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
+  journal: "document-text-outline",
+  gratitude: "leaf-outline",
+  spot_check: "pulse-outline",
+  nightly_review: "moon-outline",
+};
 
 interface JournalCategoryPickerProps {
   visible: boolean;
@@ -44,16 +51,16 @@ export const JournalCategoryPicker: React.FC<JournalCategoryPickerProps> = ({
           {/* Handle bar */}
           <View style={styles.handleBar}>
             <View
-              style={[styles.handle, { backgroundColor: colors.border }]}
+              style={[styles.handle, { backgroundColor: colors.outlineVariant }]}
             />
           </View>
 
-          <Text style={[styles.title, { color: colors.primaryContainer, fontSize: typography.bodyFontSize + 1 }]}>
+          <Text style={[styles.title, { color: colors.primary }]}>
             What would you like to do?
           </Text>
 
-          {/* 2x2 Grid */}
-          <View style={styles.grid}>
+          {/* Vertical list */}
+          <View style={styles.list}>
             {JOURNAL_CATEGORIES.map((category) => (
               <TouchableOpacity
                 key={category.id}
@@ -61,21 +68,34 @@ export const JournalCategoryPicker: React.FC<JournalCategoryPickerProps> = ({
                 activeOpacity={0.6}
               >
                 <SanctuaryCard
-                  tone={category.id === "spot_check" || category.id === "nightly_review" ? "high" : "lowest"}
-                  style={[styles.card, { backgroundColor: category.id === "spot_check" || category.id === "nightly_review" ? colors.surfaceContainerHigh : colors.surfaceContainerLowest }]}
+                  tone="lowest"
+                  style={[
+                    styles.card,
+                    {
+                      backgroundColor: colors.surfaceContainerLowest,
+                    },
+                    {
+                      shadowColor: "#191C1C",
+                      shadowOpacity: 0.08,
+                      shadowRadius: 12,
+                      shadowOffset: { width: 0, height: 3 },
+                    },
+                  ]}
                   contentStyle={styles.cardContent}
                 >
                   <View style={styles.iconWrapper}>
-                    <EntryTypeIcon svgIcon={category.svgIcon} size={28} color={category.color} />
+                    <Ionicons name={CATEGORY_ICONS[category.id] || "document-text-outline"} size={24} color={category.color} />
                   </View>
-                  <Text style={[styles.cardName, { color: colors.text, fontSize: typography.bodyFontSize - 2 }]}>
-                    {category.label}
-                  </Text>
-                  <Text
-                    style={[styles.cardDesc, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 4, lineHeight: (typography.bodyFontSize - 4) * 1.35 }]}
-                  >
-                    {category.description}
-                  </Text>
+                  <View style={styles.cardText}>
+                    <Text style={[styles.cardName, { color: colors.onSurface }]}>
+                      {category.label}
+                    </Text>
+                    <Text
+                      style={[styles.cardDesc, { color: colors.onSurfaceVariant }]}
+                    >
+                      {category.description}
+                    </Text>
+                  </View>
                 </SanctuaryCard>
               </TouchableOpacity>
             ))}
@@ -90,7 +110,6 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     justifyContent: "flex-end",
-    // backgroundColor set inline via colors.backdrop for dark mode
   },
   sheet: {
     borderTopLeftRadius: 24,
@@ -109,39 +128,33 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   title: {
-    fontFamily: fonts.headerFamily,
-    fontSize: 21,
+    ...textStyles.titleLarge,
     textAlign: "center",
     marginBottom: 18,
   },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+  list: {
     gap: 10,
   },
   card: {
-    width: "48%",
-    flexGrow: 1,
-    borderRadius: 16,
+    borderRadius: 14,
   },
   cardContent: {
+    flexDirection: "row",
     alignItems: "center",
-    paddingTop: 18,
-    paddingBottom: 16,
-    paddingHorizontal: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
   },
   iconWrapper: {
-    marginBottom: 8,
+    marginRight: 14,
+  },
+  cardText: {
+    flex: 1,
   },
   cardName: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 3,
-    textAlign: "center",
+    ...textStyles.titleMedium,
+    marginBottom: 2,
   },
   cardDesc: {
-    fontSize: 11,
-    lineHeight: 11 * 1.35,
-    textAlign: "center",
+    ...textStyles.labelMedium,
   },
 });

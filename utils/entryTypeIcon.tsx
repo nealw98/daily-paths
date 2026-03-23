@@ -1,10 +1,16 @@
 import React from "react";
-import { Feather, Seedling, SoftExhale, MoonOnWater } from "../components/icons";
+import { Ionicons } from "@expo/vector-icons";
 import type { SvgIconName } from "../constants/journalCategories";
 
+const ICON_MAP: Record<SvgIconName, keyof typeof Ionicons.glyphMap> = {
+  feather: "document-text-outline",
+  seedling: "leaf-outline",
+  softExhale: "pulse-outline",
+  moonOnWater: "moon-outline",
+};
+
 /**
- * Returns the SVG icon component for a given entry-type icon name.
- * Use this anywhere you previously rendered an emoji for an entry type.
+ * Returns the Ionicon for a given entry-type icon name.
  */
 export function EntryTypeIcon({
   svgIcon,
@@ -17,16 +23,6 @@ export function EntryTypeIcon({
   color?: string;
   strokeWidth?: number;
 }) {
-  switch (svgIcon) {
-    case "feather":
-      return <Feather size={size} color={color} strokeWidth={strokeWidth} />;
-    case "seedling":
-      return <Seedling size={size} color={color} strokeWidth={strokeWidth} />;
-    case "softExhale":
-      return <SoftExhale size={size} color={color} strokeWidth={strokeWidth} />;
-    case "moonOnWater":
-      return <MoonOnWater size={size} color={color} strokeWidth={strokeWidth} />;
-    default:
-      return <Feather size={size} color={color} strokeWidth={strokeWidth} />;
-  }
+  const iconName = ICON_MAP[svgIcon] || "document-text-outline";
+  return <Ionicons name={iconName} size={size} color={color} />;
 }
