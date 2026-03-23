@@ -9,7 +9,9 @@ import {
   Animated,
   Pressable,
   Platform,
+  Switch,
 } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
@@ -21,6 +23,7 @@ import { DailyReading } from "../types/readings";
 import { BookmarkToast } from "./BookmarkToast";
 import { ReadingFeedback } from "./ReadingFeedback";
 import { getScheduledDayOfYear } from "../utils/dateUtils";
+import { scheduleWeekOfNotifications } from "../utils/notificationSync";
 import { SanctuaryCard, FocusPill } from "./ui/Sanctuary";
 import { TealHeader } from "./shared/TealHeader";
 import { LightOnWater } from "./icons";
@@ -79,6 +82,25 @@ function DecorativeQuoteMark({ color }: { color: string }) {
   );
 }
 
+function parseTimeToDate(time: string): Date {
+  const [h = "8", m = "0"] = time.split(":");
+  const d = new Date();
+  d.setHours(Number(h), Number(m), 0, 0);
+  return d;
+}
+
+function formatTimeDisplay(date: Date): string {
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const suffix = hours >= 12 ? "PM" : "AM";
+  const displayHour = ((hours + 11) % 12) + 1;
+  return `${displayHour}:${minutes.toString().padStart(2, "0")} ${suffix}`;
+}
+
+function formatTimeStorage(date: Date): string {
+  return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
+}
+
 interface ReadingScreenProps {
   reading: DailyReading;
   onHeaderPress?: () => void;
@@ -117,10 +139,16 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   const [isSwiping, setIsSwiping] = useState(false);
   const lastTapRef = useRef<number | null>(null);
 
-  const { settings, setTextSize } = useSettings();
+  const { settings, setTextSize, setDailyReminderEnabled, setDailyReminderTime } = useSettings();
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [tempReminderDate, setTempReminderDate] = useState<Date | null>(null);
   const typography = useMemo(
     () => getTextSizeMetrics(settings.textSize),
     [settings.textSize]
+  );
+  const reminderDate = useMemo(
+    () => parseTimeToDate(settings.dailyReminderTime),
+    [settings.dailyReminderTime]
   );
 
   const headingTypography = useMemo(() => {
@@ -136,6 +164,10 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
 
   const quoteFontSize = Math.round(typography.bodyFontSize * 1.11) + 2;
   const quoteLineHeight = Math.round(quoteFontSize * 1.18);
+  const practiceEyebrowFontSize = Math.max(12, typography.bodyFontSize - 5);
+  const practiceEyebrowLineHeight = practiceEyebrowFontSize + 4;
+  const practiceBodyFontSize = Math.max(16, typography.bodyFontSize - 1);
+  const practiceBodyLineHeight = Math.round(practiceBodyFontSize * 1.35);
   const thoughtFontSize = Math.round(typography.bodyFontSize * 1.33);
   const thoughtLineHeight = Math.round(thoughtFontSize * 1.16);
 
@@ -347,6 +379,19 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
     }
   };
 
+  const handleReminderToggle = async (enabled: boolean) => {
+    await setDailyReminderEnabled(enabled);
+
+    if (enabled) {
+      await scheduleWeekOfNotifications();
+      setToastMessage(`You'll receive the Thought for the Day at ${formatTimeDisplay(reminderDate)}`);
+    } else {
+      setToastMessage("Thought for the Day notifications turned off");
+      setShowTimePicker(false);
+      setTempReminderDate(null);
+    }
+  };
+
   // Whenever we get a new reading, snap the scroll position back to the top
   // so paging forward/backward always starts at the beginning.
   React.useEffect(() => {
@@ -467,44 +512,45 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
               ))}
 
               {applicationParagraphs.length > 0 && (
-                <SanctuaryCard
-                  tone="lowest"
-                  style={[
-                    styles.practiceCardContainer,
-                    {
-                      backgroundColor: colors.surfaceContainerLowest,
-                      borderColor: colors.ghostBorder,
-                    },
-                  ]}
-                  contentStyle={styles.practiceCard}
-                  elevated
-                >
-                  <View style={styles.practiceHeader}>
-                    <View style={styles.practiceHeaderCopy}>
-                      <Text style={[styles.practiceEyebrow, { color: colors.primaryContainer }]}>
-                        The Practice
-                      </Text>
+                <View style={styles.practiceSection}>
+                  <View style={styles.practiceCardContainer}>
+                    <View style={styles.practiceAccent} />
+                    <View style={styles.practiceBodyRow}>
+                      <View style={styles.practiceBadge}>
+                        <Ionicons name="checkmark-circle-outline" size={24} color="#2E6F69" />
+                      </View>
+                      <View style={styles.practiceBodyCopy}>
+                        <Text
+                          style={[
+                            styles.practiceEyebrow,
+                            {
+                              fontSize: practiceEyebrowFontSize,
+                              lineHeight: practiceEyebrowLineHeight,
+                              color: "#2E6F69",
+                            },
+                          ]}
+                        >
+                          PRACTICE
+                        </Text>
+                        {applicationParagraphs.map((paragraph, index) => (
+                          <Text
+                            key={`application-${index}`}
+                            style={[
+                              styles.practiceText,
+                              {
+                                fontSize: practiceBodyFontSize,
+                                lineHeight: practiceBodyLineHeight,
+                              },
+                              index === applicationParagraphs.length - 1 ? styles.practiceTextLast : null,
+                            ]}
+                          >
+                            {renderInlineMarkdown(paragraph, styles.inlineItalic)}
+                          </Text>
+                        ))}
+                      </View>
                     </View>
-                    <Ionicons name="square-outline" size={20} color={colors.primaryContainer} />
                   </View>
-
-                  {applicationParagraphs.map((paragraph, index) => (
-                    <Text
-                      key={`application-${index}`}
-                      style={[
-                        styles.practiceText,
-                        {
-                          fontSize: typography.bodyFontSize,
-                          lineHeight: Math.round(typography.bodyLineHeight * 0.98),
-                          color: colors.onSurface,
-                        },
-                        index === applicationParagraphs.length - 1 ? styles.practiceTextLast : null,
-                      ]}
-                    >
-                      {renderInlineMarkdown(paragraph, styles.inlineItalic)}
-                    </Text>
-                  ))}
-                </SanctuaryCard>
+                </View>
               )}
 
               <SanctuaryCard
@@ -562,6 +608,120 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                     icon={<Ionicons name="arrow-redo-outline" size={14} color={colors.onSurfaceVariant} />}
                   />
                 </View>
+              </View>
+
+              <View style={[styles.notificationSection, { borderTopColor: colors.ghostBorder }]}>
+                <View style={styles.notificationRow}>
+                  <View style={styles.notificationCopy}>
+                    <Text style={[styles.notificationTitle, { color: colors.primaryContainer }]}>
+                      Daily Notification
+                    </Text>
+                    <Text style={[styles.notificationSubtitle, { color: colors.onSurfaceVariant }]}>
+                      Receive the Thought for the Day
+                    </Text>
+                  </View>
+                  <View style={styles.notificationControlRail}>
+                    <View style={styles.notificationSwitchWrap}>
+                      <Switch
+                        style={styles.notificationSwitch}
+                        value={settings.dailyReminderEnabled}
+                        onValueChange={handleReminderToggle}
+                        trackColor={{ false: colors.surfaceContainerHighest, true: colors.primaryContainer }}
+                        thumbColor="#FFFFFF"
+                      />
+                    </View>
+                  </View>
+                </View>
+
+                <View
+                  style={[
+                    styles.notificationRow,
+                    styles.notificationRowLast,
+                    !settings.dailyReminderEnabled && styles.notificationRowDisabled,
+                  ]}
+                >
+                  <View style={styles.notificationCopy}>
+                    <Text style={[styles.notificationTitle, { color: colors.primaryContainer }]}>
+                      Notification Time
+                    </Text>
+                    <Text style={[styles.notificationSubtitle, { color: colors.onSurfaceVariant }]}>
+                      Quiet reflection reminder
+                    </Text>
+                  </View>
+                  <View style={styles.notificationControlRail}>
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      disabled={!settings.dailyReminderEnabled}
+                      onPress={() => {
+                        if (!settings.dailyReminderEnabled) return;
+                        setTempReminderDate(reminderDate);
+                        setShowTimePicker(true);
+                      }}
+                      style={[styles.notificationTimePill, { backgroundColor: colors.surfaceContainerLowest }]}
+                    >
+                      <Text style={[styles.notificationTimeText, { color: colors.primaryContainer }]}>
+                        {formatTimeDisplay(reminderDate)}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {showTimePicker && settings.dailyReminderEnabled ? (
+                  <View style={styles.notificationTimePicker}>
+                    <DateTimePicker
+                      value={tempReminderDate ?? reminderDate}
+                      mode="time"
+                      display={Platform.OS === "ios" ? "spinner" : "default"}
+                      onChange={(event, selectedDate) => {
+                        if (Platform.OS === "android") {
+                          setShowTimePicker(false);
+                          setTempReminderDate(null);
+                          if (event.type === "set" && selectedDate) {
+                            (async () => {
+                              await setDailyReminderTime(formatTimeStorage(selectedDate));
+                              await scheduleWeekOfNotifications();
+                              setToastMessage(`You'll receive the Thought for the Day at ${formatTimeDisplay(selectedDate)}`);
+                            })();
+                          }
+                        } else if (selectedDate) {
+                          setTempReminderDate(selectedDate);
+                        }
+                      }}
+                    />
+                    {Platform.OS === "ios" ? (
+                      <View style={styles.notificationTimeActions}>
+                        <TouchableOpacity
+                          activeOpacity={0.8}
+                          onPress={() => {
+                            setShowTimePicker(false);
+                            setTempReminderDate(null);
+                          }}
+                          style={[styles.notificationTimeButton, { backgroundColor: colors.surfaceContainerLowest }]}
+                        >
+                          <Text style={[styles.notificationTimeButtonText, { color: colors.onSurface }]}>
+                            Cancel
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          activeOpacity={0.8}
+                          onPress={async () => {
+                            const finalDate = tempReminderDate ?? reminderDate;
+                            setShowTimePicker(false);
+                            setTempReminderDate(null);
+                            await setDailyReminderTime(formatTimeStorage(finalDate));
+                            await scheduleWeekOfNotifications();
+                            setToastMessage(`You'll receive the Thought for the Day at ${formatTimeDisplay(finalDate)}`);
+                          }}
+                          style={[styles.notificationTimeButton, { backgroundColor: colors.primaryContainer }]}
+                        >
+                          <Text style={[styles.notificationTimeButtonText, { color: colors.onPrimary }]}>
+                            Set Time
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    ) : null}
+                  </View>
+                ) : null}
               </View>
             </Pressable>
 
@@ -653,6 +813,92 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
   },
+  notificationSection: {
+    marginTop: 8,
+    paddingTop: 22,
+    marginBottom: 20,
+    borderTopWidth: 1,
+  },
+  notificationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 18,
+    marginBottom: 24,
+  },
+  notificationRowLast: {
+    marginBottom: 0,
+  },
+  notificationRowDisabled: {
+    opacity: 0.5,
+  },
+  notificationCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  notificationControlRail: {
+    width: 140,
+    alignItems: "flex-end",
+    justifyContent: "center",
+  },
+  notificationSwitchWrap: {
+    width: "100%",
+    alignItems: "flex-end",
+    justifyContent: "center",
+    paddingRight: 8,
+  },
+  notificationSwitch: {
+    alignSelf: "flex-end",
+  },
+  notificationTitle: {
+    fontFamily: fonts.bodyFamilyBold,
+    fontSize: 21,
+    lineHeight: 28,
+    marginBottom: 6,
+  },
+  notificationSubtitle: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  notificationTimePill: {
+    width: 140,
+    height: 80,
+    borderRadius: 16,
+    alignItems: "flex-end",
+    justifyContent: "center",
+    paddingHorizontal: 20,
+    alignSelf: "flex-end",
+  },
+  notificationTimeText: {
+    fontFamily: fonts.bodyFamilyBold,
+    fontSize: 21,
+    lineHeight: 28,
+    textAlign: "right",
+    width: "100%",
+  },
+  notificationTimePicker: {
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  notificationTimeActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 10,
+    marginTop: 12,
+  },
+  notificationTimeButton: {
+    minHeight: 44,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  notificationTimeButtonText: {
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 15,
+    lineHeight: 20,
+  },
   inlineFavorite: {
     marginLeft: 12,
     marginTop: 6,
@@ -728,38 +974,63 @@ const styles = StyleSheet.create({
     marginLeft: 28,
     marginRight: 0,
   },
-  practiceCardContainer: {
+  practiceSection: {
     marginTop: 8,
     marginBottom: 20,
-    borderRadius: 18,
+  },
+  practiceCardContainer: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
     borderWidth: 1,
+    borderColor: "#F3F4F6",
+    padding: 20,
+    overflow: "hidden",
+    shadowColor: "#163531",
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
-  practiceCard: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 14,
-  },
-  practiceHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    marginBottom: 10,
-    gap: 16,
-  },
-  practiceHeaderCopy: {
-    flex: 1,
+  practiceAccent: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    backgroundColor: "#163531",
   },
   practiceEyebrow: {
-    fontFamily: fonts.labelFamily,
-    fontSize: 14,
-    lineHeight: 18,
-    letterSpacing: 2.4,
+    fontFamily: fonts.bodyFamilyBold,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 1.2,
     textTransform: "uppercase",
+    marginBottom: 12,
+    color: "#4B5563",
+  },
+  practiceBodyRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 14,
+  },
+  practiceBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#E0F2F1",
+  },
+  practiceBodyCopy: {
+    flex: 1,
+    minWidth: 0,
   },
   practiceText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    marginBottom: 8,
-    alignSelf: "stretch",
+    fontFamily: fonts.bodyFamilyMedium,
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#4B5563",
+    marginBottom: 6,
   },
   practiceTextLast: {
     marginBottom: 0,

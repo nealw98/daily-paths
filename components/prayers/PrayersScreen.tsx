@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
@@ -22,6 +23,14 @@ import { TealHeader } from "../shared/TealHeader";
 import { LeafOnWater } from "../icons";
 import { FieldShell, SanctuaryButton, SanctuaryCard } from "../ui/Sanctuary";
 
+const BUILTIN_PRAYER_OVERRIDES_KEY = "@daily_paths_builtin_prayer_overrides_v1";
+const HIDDEN_BUILTIN_PRAYERS_KEY = "@daily_paths_hidden_builtin_prayers_v1";
+
+type BuiltInPrayerOverride = {
+  title: string;
+  text: string;
+};
+
 export const PrayersScreen: React.FC = () => {
   const { colors } = useTheme();
   const { settings } = useSettings();
@@ -33,9 +42,41 @@ export const PrayersScreen: React.FC = () => {
   const [newTitle, setNewTitle] = useState("");
   const [newText, setNewText] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingKind, setEditingKind] = useState<"personal" | "builtin" | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editText, setEditText] = useState("");
+  const [builtinOverrides, setBuiltinOverrides] = useState<Record<string, BuiltInPrayerOverride>>({});
+  const [hiddenBuiltinPrayerIds, setHiddenBuiltinPrayerIds] = useState<string[]>([]);
   const scrollRef = useRef<any>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [rawOverrides, rawHidden] = await Promise.all([
+          AsyncStorage.getItem(BUILTIN_PRAYER_OVERRIDES_KEY),
+          AsyncStorage.getItem(HIDDEN_BUILTIN_PRAYERS_KEY),
+        ]);
+
+        if (rawOverrides) {
+          setBuiltinOverrides(JSON.parse(rawOverrides));
+        }
+        if (rawHidden) {
+          setHiddenBuiltinPrayerIds(JSON.parse(rawHidden));
+        }
+      } catch (error) {
+        console.warn("Failed to load built-in prayer preferences", error);
+      }
+    })();
+  }, []);
+
+  const builtInPrayers = useMemo(
+    () =>
+      PRAYERS.filter((prayer) => !hiddenBuiltinPrayerIds.includes(prayer.id)).map((prayer) => ({
+        ...prayer,
+        ...(builtinOverrides[prayer.id] ?? {}),
+      })),
+    [builtinOverrides, hiddenBuiltinPrayerIds]
+  );
 
   /** Render prayer text with bold phrases (e.g. "Just for today", "Just for tonight") */
   const renderPrayerText = (text: string, boldPhrases: string[]) => {
@@ -57,8 +98,14 @@ export const PrayersScreen: React.FC = () => {
     });
   };
 
+  const getPrayerPreview = (text: string) =>
+    text
+      .replace(/\s+/g, " ")
+      .trim();
+
   const renderPrayer = (prayer: Prayer) => {
     const isExpanded = expandedPrayer === prayer.id;
+    const isEditing = editingKind === "builtin" && editingId === prayer.id;
 
     // Determine which phrases to bold in this prayer
     const boldPhrases: string[] = [];
@@ -78,17 +125,33 @@ export const PrayersScreen: React.FC = () => {
           }}
           activeOpacity={0.7}
         >
-          <Text style={[styles.prayerTitle, { color: colors.ocean, fontSize: typography.bodyFontSize + 2 }]}>
-            {prayer.title.toUpperCase()}
+          <Text style={[styles.prayerTitle, { color: colors.primaryContainer, fontSize: typography.bodyFontSize + 4 }]}>
+            {prayer.title}
           </Text>
           <Ionicons
-            name={isExpanded ? "chevron-up" : "chevron-down"}
-            size={18}
-            color={colors.textSecondary}
+            name={isExpanded ? "chevron-down" : "chevron-forward"}
+            size={20}
+            color={colors.onSurfaceVariant}
           />
         </TouchableOpacity>
 
-        {isExpanded && (
+        {!isExpanded && (
+          <Text
+            style={[
+              styles.prayerPreview,
+              {
+                color: colors.onSurfaceVariant,
+                fontSize: typography.bodyFontSize + 1,
+                lineHeight: Math.round((typography.bodyFontSize + 1) * 1.45),
+              },
+            ]}
+            numberOfLines={3}
+          >
+            {getPrayerPreview(prayer.text)}
+          </Text>
+        )}
+
+        {isExpanded && !isEditing && (
           <View style={styles.prayerBody}>
             <Text style={[styles.prayerText, { color: colors.ink, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.625 }]}>
               {renderPrayerText(prayer.text, boldPhrases)}
@@ -100,11 +163,73 @@ export const PrayersScreen: React.FC = () => {
             )}
           </View>
         )}
+
+        {isEditing && (
+          <View style={styles.formContainer}>
+            <FieldShell style={styles.inputShell}>
+              <TextInput
+                style={[styles.titleInput, { color: colors.ink, fontSize: typography.bodyFontSize }]}
+                value={editTitle}
+                onChangeText={setEditTitle}
+                placeholder="Prayer title"
+                placeholderTextColor={colors.textSecondary}
+              />
+            </FieldShell>
+            <FieldShell style={styles.inputShell}>
+              <TextInput
+                style={[styles.bodyInput, { color: colors.ink, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.625 }]}
+                value={editText}
+                onChangeText={setEditText}
+                placeholder="Prayer text"
+                placeholderTextColor={colors.textSecondary}
+                multiline
+                textAlignVertical="top"
+              />
+            </FieldShell>
+            <View style={styles.formActions}>
+              <SanctuaryButton
+                label="Delete"
+                variant="secondary"
+                onPress={() => handleDeleteBuiltin(prayer)}
+                style={styles.formButton}
+              />
+              <SanctuaryButton
+                label="Save"
+                onPress={handleSaveEdit}
+                disabled={!editTitle.trim() || !editText.trim()}
+                style={styles.formButton}
+              />
+            </View>
+          </View>
+        )}
+
+        {isExpanded && !isEditing && (
+          <View style={styles.personalActions}>
+            <TouchableOpacity
+              onPress={() => handleStartEdit(prayer, "builtin")}
+              activeOpacity={0.8}
+              style={[styles.personalActionButton, { borderColor: colors.ghostBorder, backgroundColor: colors.surface }]}
+            >
+              <Text style={[styles.personalActionText, { color: colors.primaryContainer }]}>Edit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleDeleteBuiltin(prayer)}
+              activeOpacity={0.8}
+              style={[styles.personalActionButton, { borderColor: colors.ghostBorder, backgroundColor: colors.surface }]}
+            >
+              <Text style={[styles.personalActionText, { color: colors.danger }]}>Delete</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </SanctuaryCard>
     );
   };
 
-  const handleStartEdit = (prayer: PersonalPrayer) => {
+  const handleStartEdit = (
+    prayer: Pick<Prayer, "id" | "title" | "text">,
+    kind: "personal" | "builtin"
+  ) => {
+    setEditingKind(kind);
     setEditingId(prayer.id);
     setEditTitle(prayer.title);
     setEditText(prayer.text);
@@ -113,13 +238,27 @@ export const PrayersScreen: React.FC = () => {
 
   const handleSaveEdit = async () => {
     if (!editingId || !editTitle.trim() || !editText.trim()) return;
-    await updatePrayer(editingId, editTitle, editText);
+    if (editingKind === "builtin") {
+      const nextOverrides = {
+        ...builtinOverrides,
+        [editingId]: {
+          title: editTitle.trim(),
+          text: editText.trim(),
+        },
+      };
+      setBuiltinOverrides(nextOverrides);
+      await AsyncStorage.setItem(BUILTIN_PRAYER_OVERRIDES_KEY, JSON.stringify(nextOverrides));
+    } else {
+      await updatePrayer(editingId, editTitle, editText);
+    }
+    setEditingKind(null);
     setEditingId(null);
     setEditTitle("");
     setEditText("");
   };
 
   const handleCancelEdit = () => {
+    setEditingKind(null);
     setEditingId(null);
     setEditTitle("");
     setEditText("");
@@ -140,6 +279,23 @@ export const PrayersScreen: React.FC = () => {
     ]);
   };
 
+  const handleDeleteBuiltin = (prayer: Prayer) => {
+    Alert.alert("Delete Prayer?", `Remove "${prayer.title}"? This cannot be undone.`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          const nextHidden = [...new Set([...hiddenBuiltinPrayerIds, prayer.id])];
+          setHiddenBuiltinPrayerIds(nextHidden);
+          await AsyncStorage.setItem(HIDDEN_BUILTIN_PRAYERS_KEY, JSON.stringify(nextHidden));
+          if (expandedPrayer === prayer.id) setExpandedPrayer(null);
+          if (editingId === prayer.id) handleCancelEdit();
+        },
+      },
+    ]);
+  };
+
   const handleSaveNew = async () => {
     if (!newTitle.trim() || !newText.trim()) return;
     await addPrayer(newTitle, newText);
@@ -150,10 +306,15 @@ export const PrayersScreen: React.FC = () => {
 
   const renderPersonalPrayer = (prayer: PersonalPrayer) => {
     const isExpanded = expandedPrayer === prayer.id;
-    const isEditing = editingId === prayer.id;
+    const isEditing = editingKind === "personal" && editingId === prayer.id;
 
     return (
-      <SanctuaryCard key={prayer.id} tone="lowest" style={styles.prayerSection} contentStyle={styles.prayerSectionContent}>
+      <SanctuaryCard
+        key={prayer.id}
+        tone="lowest"
+        style={[styles.prayerSection, { backgroundColor: colors.surfaceContainerLow }]}
+        contentStyle={styles.prayerSectionContent}
+      >
         <TouchableOpacity
           style={styles.prayerHeader}
           onPress={() => {
@@ -162,30 +323,37 @@ export const PrayersScreen: React.FC = () => {
           }}
           activeOpacity={0.7}
         >
-          <Text style={[styles.prayerTitle, { color: colors.ocean, fontSize: typography.bodyFontSize + 2 }]}>
-            {prayer.title.toUpperCase()}
+          <Text style={[styles.prayerTitle, { color: colors.primaryContainer, fontSize: typography.bodyFontSize + 4 }]}>
+            {prayer.title}
           </Text>
           <Ionicons
-            name={isExpanded ? "chevron-up" : "chevron-down"}
-            size={18}
-            color={colors.textSecondary}
+            name={isExpanded ? "chevron-down" : "chevron-forward"}
+            size={20}
+            color={colors.onSurfaceVariant}
           />
         </TouchableOpacity>
+
+        {!isExpanded && (
+          <Text
+            style={[
+              styles.prayerPreview,
+              {
+                color: colors.onSurfaceVariant,
+                fontSize: typography.bodyFontSize + 1,
+                lineHeight: Math.round((typography.bodyFontSize + 1) * 1.45),
+              },
+            ]}
+            numberOfLines={3}
+          >
+            {getPrayerPreview(prayer.text)}
+          </Text>
+        )}
 
         {isExpanded && !isEditing && (
           <View style={styles.prayerBody}>
             <Text style={[styles.prayerText, { color: colors.ink, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.625 }]}>
               {prayer.text}
             </Text>
-            <View style={styles.personalActions}>
-              <TouchableOpacity
-                onPress={() => handleStartEdit(prayer)}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.editLink, { color: colors.seafoam }]}>Edit</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         )}
 
@@ -227,6 +395,25 @@ export const PrayersScreen: React.FC = () => {
             </View>
           </View>
         )}
+
+        {isExpanded && !isEditing && (
+          <View style={styles.personalActions}>
+            <TouchableOpacity
+              onPress={() => handleStartEdit(prayer, "personal")}
+              activeOpacity={0.8}
+              style={[styles.personalActionButton, { borderColor: colors.ghostBorder, backgroundColor: colors.surface }]}
+            >
+              <Text style={[styles.personalActionText, { color: colors.primaryContainer }]}>Edit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleDelete(prayer)}
+              activeOpacity={0.8}
+              style={[styles.personalActionButton, { borderColor: colors.ghostBorder, backgroundColor: colors.surface }]}
+            >
+              <Text style={[styles.personalActionText, { color: colors.danger }]}>Delete</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </SanctuaryCard>
     );
   };
@@ -257,14 +444,12 @@ export const PrayersScreen: React.FC = () => {
         keyboardDismissMode="interactive"
         keyboardShouldPersistTaps="handled"
       >
-        {/* Built-in Prayers */}
-        {PRAYERS.map(renderPrayer)}
-
-        {/* Personal Prayers */}
-        {personalPrayers.map(renderPersonalPrayer)}
-
         {/* Add New Prayer */}
-        <SanctuaryCard tone="low" style={styles.prayerSection} contentStyle={styles.prayerSectionContent}>
+        <SanctuaryCard
+          tone="low"
+          style={[styles.prayerSection, { backgroundColor: colors.primaryContainer }]}
+          contentStyle={styles.prayerSectionContent}
+        >
           <TouchableOpacity
             style={styles.prayerHeader}
             onPress={() => {
@@ -273,22 +458,20 @@ export const PrayersScreen: React.FC = () => {
               if (!opening) {
                 setNewTitle("");
                 setNewText("");
-              } else {
-                setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200);
               }
             }}
             activeOpacity={0.7}
           >
             <View style={styles.addPrayerLeft}>
-              <Ionicons name="add" size={20} color={colors.ocean} style={{ marginRight: 6 }} />
-              <Text style={[styles.prayerTitle, { color: colors.ocean, fontSize: typography.bodyFontSize + 2 }]}>
-                ADD PRAYER
+              <Ionicons name="add" size={20} color={colors.onPrimary} style={{ marginRight: 6 }} />
+              <Text style={[styles.prayerTitle, { color: colors.onPrimary, fontSize: typography.bodyFontSize + 2 }]}>
+                Create a New Prayer
               </Text>
             </View>
             <Ionicons
               name={showAddForm ? "chevron-up" : "chevron-down"}
               size={18}
-              color={colors.textSecondary}
+              color={colors.onPrimary}
             />
           </TouchableOpacity>
 
@@ -301,7 +484,6 @@ export const PrayersScreen: React.FC = () => {
                   onChangeText={setNewTitle}
                   placeholder="Prayer title"
                   placeholderTextColor={colors.textSecondary}
-                  onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 300)}
                 />
               </FieldShell>
               <FieldShell style={styles.inputShell}>
@@ -313,7 +495,6 @@ export const PrayersScreen: React.FC = () => {
                   placeholderTextColor={colors.textSecondary}
                   multiline
                   textAlignVertical="top"
-                  onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 300)}
                 />
               </FieldShell>
               <View style={styles.formActions}>
@@ -327,6 +508,10 @@ export const PrayersScreen: React.FC = () => {
             </View>
           )}
         </SanctuaryCard>
+
+        {/* Built-in Prayers */}
+        {personalPrayers.map(renderPersonalPrayer)}
+        {builtInPrayers.map(renderPrayer)}
         <View style={{ height: 100 }} />
       </KeyboardAwareScrollView>
       </KeyboardAvoidingView>
@@ -349,23 +534,33 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   prayerSectionContent: {
-    paddingHorizontal: 16,
-    paddingVertical: 4,
+    paddingHorizontal: 22,
+    paddingTop: 14,
+    paddingBottom: 18,
   },
   prayerHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 14,
+    paddingTop: 6,
+    paddingBottom: 8,
   },
   prayerTitle: {
-    fontFamily: fonts.bodyFamilySemiBold,
+    fontFamily: fonts.bodyFamilyBold,
     fontSize: 18,
-    fontWeight: "600",
+    lineHeight: 30,
+    fontWeight: "700",
     flex: 1,
+    paddingRight: 12,
+    includeFontPadding: false,
+  },
+  prayerPreview: {
+    fontFamily: fonts.bodyFamilyRegular,
+    marginTop: 4,
   },
   prayerBody: {
-    paddingBottom: 16,
+    paddingTop: 6,
+    paddingBottom: 8,
   },
   prayerText: {
     fontFamily: fonts.bodyFamilyRegular,
@@ -383,12 +578,21 @@ const styles = StyleSheet.create({
   personalActions: {
     flexDirection: "row",
     justifyContent: "flex-end",
+    gap: 10,
     marginTop: 14,
   },
-  editLink: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 15,
-    fontWeight: "600",
+  personalActionButton: {
+    minHeight: 36,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  personalActionText: {
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 14,
+    lineHeight: 18,
   },
   addPrayerLeft: {
     flexDirection: "row",
