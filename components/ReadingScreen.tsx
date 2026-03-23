@@ -609,61 +609,47 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                 </View>
               </View>
 
-              <View style={[styles.notificationSection, { borderTopColor: colors.ghostBorder }]}>
-                <View style={styles.notificationRow}>
-                  <View style={styles.notificationCopy}>
-                    <Text style={[styles.notificationTitle, { color: colors.primaryContainer }]}>
-                      Daily Notification
+              <View style={styles.notificationSection}>
+                <View style={styles.notificationUtilityHeader}>
+                  <View style={styles.notificationUtilityCopy}>
+                    <Text style={[styles.notificationUtilityTitle, { color: colors.onSurface }]}>
+                      Daily notification
                     </Text>
-                    <Text style={[styles.notificationSubtitle, { color: colors.onSurfaceVariant }]}>
+                    <Text style={[styles.notificationUtilitySubtitle, { color: colors.onSurfaceVariant }]}>
                       Receive the Thought for the Day
                     </Text>
                   </View>
-                  <View style={styles.notificationControlRail}>
-                    <View style={styles.notificationSwitchWrap}>
-                      <Switch
-                        style={styles.notificationSwitch}
-                        value={settings.dailyReminderEnabled}
-                        onValueChange={handleReminderToggle}
-                        trackColor={{ false: colors.surfaceContainerHighest, true: colors.primaryContainer }}
-                        thumbColor="#FFFFFF"
-                      />
-                    </View>
-                  </View>
+                  <Switch
+                    style={styles.notificationSwitch}
+                    value={settings.dailyReminderEnabled}
+                    onValueChange={handleReminderToggle}
+                    trackColor={{ false: colors.surfaceContainerHighest, true: colors.primaryContainer }}
+                    thumbColor="#FFFFFF"
+                  />
                 </View>
 
-                <View
-                  style={[
-                    styles.notificationRow,
-                    styles.notificationRowLast,
-                    !settings.dailyReminderEnabled && styles.notificationRowDisabled,
-                  ]}
-                >
-                  <View style={styles.notificationCopy}>
-                    <Text style={[styles.notificationTitle, { color: colors.primaryContainer }]}>
-                      Notification Time
+                {settings.dailyReminderEnabled ? (
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      setTempReminderDate(reminderDate);
+                      setShowTimePicker(true);
+                    }}
+                    style={styles.notificationUtilityTimeLink}
+                  >
+                    <Text style={[styles.notificationUtilityTimeLabel, { color: colors.onSurface }]}>
+                      Notification time
                     </Text>
-                    <Text style={[styles.notificationSubtitle, { color: colors.onSurfaceVariant }]}>
-                      Quiet reflection reminder
-                    </Text>
-                  </View>
-                  <View style={styles.notificationControlRail}>
-                    <TouchableOpacity
-                      activeOpacity={0.8}
-                      disabled={!settings.dailyReminderEnabled}
-                      onPress={() => {
-                        if (!settings.dailyReminderEnabled) return;
-                        setTempReminderDate(reminderDate);
-                        setShowTimePicker(true);
-                      }}
-                      style={[styles.notificationTimePill, { backgroundColor: colors.surfaceContainerLowest }]}
+                    <Text
+                      style={[
+                        styles.notificationUtilityTimeValue,
+                        { color: colors.onSurfaceVariant },
+                      ]}
                     >
-                      <Text style={[styles.notificationTimeText, { color: colors.primaryContainer }]}>
-                        {formatTimeDisplay(reminderDate)}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
+                      {formatTimeDisplay(reminderDate)}
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
 
                 {showTimePicker && settings.dailyReminderEnabled ? (
                   <View style={styles.notificationTimePicker}>
@@ -813,68 +799,48 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   notificationSection: {
-    marginTop: 8,
-    paddingTop: 22,
+    marginTop: 40,
     marginBottom: 20,
-    borderTopWidth: 1,
+    gap: 10,
   },
-  notificationRow: {
+  notificationUtilityHeader: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: 18,
-    marginBottom: 24,
+    gap: 12,
   },
-  notificationRowLast: {
-    marginBottom: 0,
-  },
-  notificationRowDisabled: {
-    opacity: 0.5,
-  },
-  notificationCopy: {
+  notificationUtilityCopy: {
     flex: 1,
     minWidth: 0,
   },
-  notificationControlRail: {
-    width: 140,
-    alignItems: "flex-end",
-    justifyContent: "center",
-  },
-  notificationSwitchWrap: {
-    width: "100%",
-    alignItems: "flex-end",
-    justifyContent: "center",
-    paddingRight: 8,
-  },
   notificationSwitch: {
     alignSelf: "flex-end",
+    transform: [{ scaleX: 0.84 }, { scaleY: 0.84 }],
   },
-  notificationTitle: {
-    fontFamily: fonts.bodyFamilyBold,
-    fontSize: 21,
-    lineHeight: 28,
-    marginBottom: 6,
+  notificationUtilityTitle: {
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 15,
+    lineHeight: 20,
   },
-  notificationSubtitle: {
+  notificationUtilitySubtitle: {
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 2,
   },
-  notificationTimePill: {
-    width: 140,
-    height: 80,
-    borderRadius: 16,
-    alignItems: "flex-end",
-    justifyContent: "center",
-    paddingHorizontal: 20,
-    alignSelf: "flex-end",
+  notificationUtilityTimeLink: {
+    alignSelf: "flex-start",
   },
-  notificationTimeText: {
-    fontFamily: fonts.bodyFamilyBold,
-    fontSize: 21,
-    lineHeight: 28,
-    textAlign: "right",
-    width: "100%",
+  notificationUtilityTimeLabel: {
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 2,
+  },
+  notificationUtilityTimeValue: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 13,
+    lineHeight: 18,
   },
   notificationTimePicker: {
     marginTop: 8,
