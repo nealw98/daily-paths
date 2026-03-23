@@ -411,7 +411,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
           rightAction={
             onNewJournalEntry ? (
               <TouchableOpacity onPress={onNewJournalEntry} activeOpacity={0.7} style={styles.headerAdd}>
-                <Ionicons name="add" size={26} color={colors.secondary} />
+                <Ionicons name="add" size={26} color={colors.onPrimary} />
               </TouchableOpacity>
             ) : undefined
           }
@@ -492,11 +492,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                   key={`opening-${index}`}
                   style={[
                     styles.bodyText,
-                    {
-                      fontSize: typography.bodyFontSize,
-                      lineHeight: typography.bodyLineHeight,
-                      color: colors.onSurface,
-                    },
+                    { color: colors.onSurface },
                   ]}
                 >
                   {renderInlineMarkdown(paragraph, styles.inlineItalic)}
@@ -508,11 +504,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                   key={index}
                   style={[
                     styles.bodyText,
-                    {
-                      fontSize: typography.bodyFontSize,
-                      lineHeight: typography.bodyLineHeight,
-                      color: colors.onSurface,
-                    },
+                    { color: colors.onSurface },
                   ]}
                 >
                   {renderInlineMarkdown(paragraph, styles.inlineItalic)}
@@ -891,13 +883,14 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   bodyText: {
-    fontFamily: fonts.loraRegular,
-    fontSize: 19,
-    lineHeight: 32,
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 17,
+    lineHeight: 28,
+    letterSpacing: -0.1,
     marginBottom: 18,
   },
   inlineItalic: {
-    fontFamily: fonts.loraRegular,
+    fontFamily: fonts.bodyFamilyRegular,
     fontStyle: "italic",
   },
   section: {
@@ -911,7 +904,7 @@ const styles = StyleSheet.create({
   applicationQuoteContainer: {
     marginBottom: 20,
     borderRadius: 12,
-    shadowColor: "#163531",
+    shadowColor: "#2D4C47",
     shadowOpacity: 0.08,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 3 },
@@ -965,7 +958,7 @@ const styles = StyleSheet.create({
   practiceCardContainer: {
     borderRadius: 16,
     padding: 20,
-    shadowColor: "#163531",
+    shadowColor: "#2D4C47",
     shadowOpacity: 0.08,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 3 },
@@ -977,7 +970,7 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: 4,
-    backgroundColor: "#163531",
+    backgroundColor: "#2D4C47",
   },
   practiceEyebrow: {
     fontFamily: fonts.bodyFamilyBold,

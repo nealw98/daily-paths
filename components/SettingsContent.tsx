@@ -214,7 +214,7 @@ export const SettingsContent: React.FC<{
                 style={{
                   fontSize: 16,
                   lineHeight: 24,
-                  fontFamily: fonts.loraRegular,
+                  fontFamily: fonts.bodyFamilyRegular,
                   color: colors.ink,
                 }}
               >
@@ -462,7 +462,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   bodyText: {
-    fontFamily: fonts.loraRegular,
+    fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
     color: lightColors.ink,
     lineHeight: 24,
@@ -613,7 +613,7 @@ const styles = StyleSheet.create({
     borderTopColor: "#f3f4f6",
   },
   textPreview: {
-    fontFamily: fonts.loraRegular,
+    fontFamily: fonts.bodyFamilyRegular,
     color: "#4b5563",
   },
   row: {

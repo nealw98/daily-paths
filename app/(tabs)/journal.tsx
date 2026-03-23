@@ -245,7 +245,7 @@ function JournalTabContent() {
         leftIcon={headerIcon}
         rightAction={
           <TouchableOpacity onPress={handleNewEntry} activeOpacity={0.7} style={styles.headerAdd}>
-            <Ionicons name="add" size={26} color={colors.secondary} />
+            <Ionicons name="add" size={26} color={colors.onPrimary} />
           </TouchableOpacity>
         }
       />

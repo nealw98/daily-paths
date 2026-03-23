@@ -1019,7 +1019,7 @@ const styles = StyleSheet.create({
     paddingTop: 24,
   },
   aboutText: {
-    fontFamily: fonts.loraRegular,
+    fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
     lineHeight: 22,
     textAlign: "center",

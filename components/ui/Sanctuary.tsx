@@ -65,7 +65,7 @@ interface SanctuaryButtonProps {
   label: string;
   onPress?: () => void;
   disabled?: boolean;
-  variant?: "primary" | "secondary";
+  variant?: "primary" | "secondary" | "tertiary";
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
   icon?: React.ReactNode;
@@ -81,15 +81,18 @@ export function SanctuaryButton({
   icon,
 }: SanctuaryButtonProps) {
   const { colors } = useTheme();
+  const textColor =
+    variant === "secondary" ? colors.onSecondaryContainer :
+    variant === "tertiary" ? "#3E2218" :
+    "#FFFFFF";
+
   const content = (
     <View style={[styles.buttonInner, disabled && styles.disabled]}>
       {icon ? <View style={styles.buttonIcon}>{icon}</View> : null}
       <Text
         style={[
           styles.buttonText,
-          {
-            color: variant === "primary" ? colors.onSecondary : colors.onSecondaryContainer,
-          },
+          { color: textColor },
           textStyle,
         ]}
       >
@@ -97,6 +100,23 @@ export function SanctuaryButton({
       </Text>
     </View>
   );
+
+  if (variant === "tertiary") {
+    return (
+      <Pressable
+        onPress={onPress}
+        disabled={disabled}
+        style={[
+          styles.buttonShell,
+          { backgroundColor: "#C58B7B" },
+          disabled && styles.disabled,
+          style,
+        ]}
+      >
+        {content}
+      </Pressable>
+    );
+  }
 
   if (variant === "primary") {
     return (

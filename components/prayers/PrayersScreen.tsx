@@ -124,7 +124,7 @@ export const PrayersScreen: React.FC = () => {
           }}
           activeOpacity={0.7}
         >
-          <Text style={[styles.prayerTitle, { color: colors.primaryContainer, fontSize: typography.bodyFontSize + 4 }]}>
+          <Text style={[styles.prayerTitle, { color: colors.primaryContainer, fontSize: typography.bodyFontSize }]}>
             {prayer.title}
           </Text>
           <Ionicons
@@ -138,11 +138,7 @@ export const PrayersScreen: React.FC = () => {
           <Text
             style={[
               styles.prayerPreview,
-              {
-                color: colors.onSurfaceVariant,
-                fontSize: typography.bodyFontSize + 1,
-                lineHeight: Math.round((typography.bodyFontSize + 1) * 1.45),
-              },
+              { color: colors.ink },
             ]}
             numberOfLines={3}
           >
@@ -152,7 +148,7 @@ export const PrayersScreen: React.FC = () => {
 
         {isExpanded && !isEditing && (
           <View style={styles.prayerBody}>
-            <Text style={[styles.prayerText, { color: colors.ink, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.625 }]}>
+            <Text style={[styles.prayerText, { color: colors.ink }]}>
               {renderPrayerText(prayer.text, boldPhrases)}
             </Text>
             {prayer.source && (
@@ -186,18 +182,28 @@ export const PrayersScreen: React.FC = () => {
               />
             </FieldShell>
             <View style={styles.formActions}>
-              <SanctuaryButton
-                label="Delete"
-                variant="secondary"
+              <TouchableOpacity
                 onPress={() => handleDeleteBuiltin(prayer)}
-                style={styles.formButton}
-              />
-              <SanctuaryButton
-                label="Save"
+                activeOpacity={0.8}
+                style={[styles.personalActionButton, { borderColor: colors.ghostBorder, backgroundColor: colors.surface }]}
+              >
+                <Text style={[styles.personalActionText, { color: colors.danger }]}>Delete</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleCancelEdit}
+                activeOpacity={0.8}
+                style={[styles.personalActionButton, { borderColor: colors.ghostBorder, backgroundColor: colors.surface }]}
+              >
+                <Text style={[styles.personalActionText, { color: colors.primaryContainer }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
                 onPress={handleSaveEdit}
                 disabled={!editTitle.trim() || !editText.trim()}
-                style={styles.formButton}
-              />
+                activeOpacity={0.8}
+                style={[styles.personalActionButton, { borderColor: colors.ghostBorder, backgroundColor: colors.surface }]}
+              >
+                <Text style={[styles.personalActionText, { color: !editTitle.trim() || !editText.trim() ? colors.outlineVariant : colors.primaryContainer }]}>Save</Text>
+              </TouchableOpacity>
             </View>
           </View>
         )}
@@ -311,7 +317,7 @@ export const PrayersScreen: React.FC = () => {
       <SanctuaryCard
         key={prayer.id}
         tone="lowest"
-        style={[styles.prayerSection, { backgroundColor: colors.surfaceContainerLow }]}
+        style={[styles.prayerSection, { backgroundColor: "#BAECE699" }]}
         contentStyle={styles.prayerSectionContent}
       >
         <TouchableOpacity
@@ -322,7 +328,7 @@ export const PrayersScreen: React.FC = () => {
           }}
           activeOpacity={0.7}
         >
-          <Text style={[styles.prayerTitle, { color: colors.primaryContainer, fontSize: typography.bodyFontSize + 4 }]}>
+          <Text style={[styles.prayerTitle, { color: colors.primaryContainer, fontSize: typography.bodyFontSize }]}>
             {prayer.title}
           </Text>
           <Ionicons
@@ -336,11 +342,7 @@ export const PrayersScreen: React.FC = () => {
           <Text
             style={[
               styles.prayerPreview,
-              {
-                color: colors.onSurfaceVariant,
-                fontSize: typography.bodyFontSize + 1,
-                lineHeight: Math.round((typography.bodyFontSize + 1) * 1.45),
-              },
+              { color: colors.ink },
             ]}
             numberOfLines={3}
           >
@@ -350,7 +352,7 @@ export const PrayersScreen: React.FC = () => {
 
         {isExpanded && !isEditing && (
           <View style={styles.prayerBody}>
-            <Text style={[styles.prayerText, { color: colors.ink, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.625 }]}>
+            <Text style={[styles.prayerText, { color: colors.ink }]}>
               {prayer.text}
             </Text>
           </View>
@@ -379,18 +381,28 @@ export const PrayersScreen: React.FC = () => {
               />
             </FieldShell>
             <View style={styles.formActions}>
-              <SanctuaryButton
-                label="Delete"
-                variant="secondary"
+              <TouchableOpacity
                 onPress={() => handleDelete(prayer)}
-                style={styles.formButton}
-              />
-              <SanctuaryButton
-                label="Save"
+                activeOpacity={0.8}
+                style={[styles.personalActionButton, { borderColor: colors.ghostBorder, backgroundColor: colors.surface }]}
+              >
+                <Text style={[styles.personalActionText, { color: colors.danger }]}>Delete</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleCancelEdit}
+                activeOpacity={0.8}
+                style={[styles.personalActionButton, { borderColor: colors.ghostBorder, backgroundColor: colors.surface }]}
+              >
+                <Text style={[styles.personalActionText, { color: colors.primaryContainer }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
                 onPress={handleSaveEdit}
                 disabled={!editTitle.trim() || !editText.trim()}
-                style={styles.formButton}
-              />
+                activeOpacity={0.8}
+                style={[styles.personalActionButton, { borderColor: colors.ghostBorder, backgroundColor: colors.surface }]}
+              >
+                <Text style={[styles.personalActionText, { color: !editTitle.trim() || !editText.trim() ? colors.outlineVariant : colors.primaryContainer }]}>Save</Text>
+              </TouchableOpacity>
             </View>
           </View>
         )}
@@ -446,7 +458,7 @@ export const PrayersScreen: React.FC = () => {
         {/* Add New Prayer */}
         <SanctuaryCard
           tone="low"
-          style={[styles.prayerSection, { backgroundColor: colors.primaryContainer }]}
+          style={[styles.prayerSection, { backgroundColor: "#BAECE699" }]}
           contentStyle={styles.prayerSectionContent}
         >
           <TouchableOpacity
@@ -462,15 +474,15 @@ export const PrayersScreen: React.FC = () => {
             activeOpacity={0.7}
           >
             <View style={styles.addPrayerLeft}>
-              <Ionicons name="add" size={20} color={colors.onPrimary} style={{ marginRight: 6 }} />
-              <Text style={[styles.prayerTitle, { color: colors.onPrimary, fontSize: typography.bodyFontSize + 2 }]}>
+              <Ionicons name="add" size={20} color={colors.primaryContainer} style={{ marginRight: 6 }} />
+              <Text style={[styles.prayerTitle, { color: colors.primaryContainer, fontSize: typography.bodyFontSize }]}>
                 Create a New Prayer
               </Text>
             </View>
             <Ionicons
               name={showAddForm ? "chevron-up" : "chevron-down"}
               size={18}
-              color={colors.onPrimary}
+              color={colors.primaryContainer}
             />
           </TouchableOpacity>
 
@@ -497,12 +509,21 @@ export const PrayersScreen: React.FC = () => {
                 />
               </FieldShell>
               <View style={styles.formActions}>
-                <SanctuaryButton
-                  label="Save"
+                <TouchableOpacity
+                  onPress={() => { setNewTitle(""); setNewText(""); setShowAddForm(false); }}
+                  activeOpacity={0.8}
+                  style={[styles.personalActionButton, { borderColor: colors.ghostBorder, backgroundColor: colors.surface }]}
+                >
+                  <Text style={[styles.personalActionText, { color: colors.primaryContainer }]}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
                   onPress={handleSaveNew}
                   disabled={!newTitle.trim() || !newText.trim()}
-                  style={styles.formButton}
-                />
+                  activeOpacity={0.8}
+                  style={[styles.personalActionButton, { borderColor: colors.ghostBorder, backgroundColor: colors.surface }]}
+                >
+                  <Text style={[styles.personalActionText, { color: !newTitle.trim() || !newText.trim() ? colors.outlineVariant : colors.primaryContainer }]}>Save</Text>
+                </TouchableOpacity>
               </View>
             </View>
           )}
@@ -555,6 +576,9 @@ const styles = StyleSheet.create({
   },
   prayerPreview: {
     fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 17,
+    lineHeight: 28,
+    letterSpacing: -0.1,
     marginTop: 4,
   },
   prayerBody: {
@@ -563,8 +587,9 @@ const styles = StyleSheet.create({
   },
   prayerText: {
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
-    lineHeight: 26,
+    fontSize: 17,
+    lineHeight: 28,
+    letterSpacing: -0.1,
   },
   prayerSource: {
     fontFamily: fonts.bodyFamilySemiBold,

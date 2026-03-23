@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   gratitudeText: {
-    fontFamily: fonts.loraRegular,
+    fontFamily: fonts.bodyFamilyRegular,
     fontSize: 15,
     lineHeight: 22,
     flex: 1,

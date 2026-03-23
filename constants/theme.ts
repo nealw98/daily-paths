@@ -147,7 +147,7 @@ function buildPalette(
 
 // ─── Ocean (current app palette) ────────────────────────────────────────────
 const oceanLightSemantic: SemanticPalette = {
-  heroGradientStart: "#163531",
+  heroGradientStart: "#2D4C47",
   heroGradientEnd: "#214743",
   background: "#F8FAF9",
   backgroundSecondary: "#F2F4F3",
@@ -164,10 +164,10 @@ const oceanLightSemantic: SemanticPalette = {
   border: "#9EAEAA",
   backdrop: "rgba(0, 0, 0, 0.5)",
   danger: "#DC3545",
-  calendarMonthBackground: "#163531",
+  calendarMonthBackground: "#2D4C47",
   calendarDayBackground: "#FFFFFF",
-  calendarBorder: "rgba(22, 53, 49, 0.10)",
-  calendarDayText: "#163531",
+  calendarBorder: "rgba(45, 76, 71, 0.10)",
+  calendarDayText: "#2D4C47",
 };
 
 const oceanDarkSemantic: SemanticPalette = {
@@ -517,7 +517,7 @@ export const COLOR_SCHEMES: ColorSchemeDef[] = [
       surfaceContainer: "#EDF1EF",
       surfaceContainerHigh: "#E7ECEA",
       surfaceContainerHighest: "#D9E1DE",
-      primary: "#163531",
+      primary: "#2D4C47",
       primaryContainer: "#214743",
       secondary: "#376662",
       secondaryContainer: "#BAECE6",
@@ -525,7 +525,7 @@ export const COLOR_SCHEMES: ColorSchemeDef[] = [
       outlineVariant: "#9EAEAA",
       focusRing: "#214743",
       primaryFixed: "#214743",
-      primaryFixedDim: "#163531",
+      primaryFixedDim: "#2D4C47",
     }),
   },
   {

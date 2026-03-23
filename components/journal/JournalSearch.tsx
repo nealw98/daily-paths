@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   resultText: {
-    fontFamily: fonts.loraRegular,
+    fontFamily: fonts.bodyFamilyRegular,
     fontSize: 15,
     lineHeight: 22,
   },

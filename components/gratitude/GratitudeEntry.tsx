@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontFamily: fonts.loraRegular,
+    fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   itemText: {
-    fontFamily: fonts.loraRegular,
+    fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
     flex: 1,
     marginRight: 12,

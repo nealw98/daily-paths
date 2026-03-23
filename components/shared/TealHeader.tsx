@@ -22,9 +22,7 @@ export const TealHeader: React.FC<TealHeaderProps> = ({ title, leftIcon, onPress
       style={[
         styles.container,
         {
-          backgroundColor: colors.surface,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.ghostBorder,
+          backgroundColor: colors.primary,
         },
       ]}
     >
@@ -40,7 +38,7 @@ export const TealHeader: React.FC<TealHeaderProps> = ({ title, leftIcon, onPress
               style={[
                 styles.iconShell,
                 {
-                  backgroundColor: colors.primaryContainer,
+                  backgroundColor: colors.onPrimary + "1A",
                 },
               ]}
             >
@@ -48,10 +46,10 @@ export const TealHeader: React.FC<TealHeaderProps> = ({ title, leftIcon, onPress
             </View>
           ) : null}
           <View style={styles.textBlock}>
-            <Text style={[styles.eyebrow, { color: colors.onSurfaceVariant }]}>
+            <Text style={[styles.eyebrow, { color: colors.secondaryContainer }]}>
               Daily Paths
             </Text>
-            <Text style={[styles.title, { color: colors.onSurface }]}>{title}</Text>
+            <Text style={[styles.title, { color: colors.onPrimary }]}>{title}</Text>
           </View>
         </TouchableOpacity>
         {rightAction ?? null}

@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   speakerName: {
-    fontFamily: fonts.loraBold,
+    fontFamily: fonts.bodyFamilyBold,
     fontSize: 26,
     marginBottom: 2,
   },
@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   title: {
-    fontFamily: fonts.loraItalic,
+    fontFamily: fonts.bodyFamilyMedium,
     fontSize: 20,
     marginBottom: 6,
   },
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   quoteText: {
-    fontFamily: fonts.loraItalic,
+    fontFamily: fonts.bodyFamilyMedium,
     fontSize: 16,
     lineHeight: 24,
   },

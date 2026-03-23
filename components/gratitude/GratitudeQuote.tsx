@@ -41,7 +41,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   quoteText: {
-    fontFamily: fonts.loraItalic,
+    fontFamily: fonts.bodyFamilyRegular,
     fontSize: 18,
     lineHeight: 28,
     textAlign: "center",
