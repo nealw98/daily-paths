@@ -45,7 +45,6 @@ interface JournalTimelineProps {
   error?: string | null;
   categoryFilter: CategoryFilter;
   onFilterChange: (filter: CategoryFilter) => void;
-  onNewEntry: () => void;
   onSelectEntry: (entry: JournalEntry) => void;
   onDeleteEntry: (entryId: string) => void;
   onRefresh: () => void;
@@ -205,7 +204,6 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
   error,
   categoryFilter,
   onFilterChange,
-  onNewEntry,
   onSelectEntry,
   onDeleteEntry,
   onRefresh,
@@ -472,16 +470,6 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
         showsVerticalScrollIndicator={false}
       />
 
-      {/* FAB — New Entry */}
-      <TouchableOpacity
-        style={styles.fabTouchable}
-        onPress={onNewEntry}
-        activeOpacity={0.85}
-      >
-        <View style={[styles.fab, { backgroundColor: colors.secondary }]}>
-          <Ionicons name="add" size={28} color={colors.textOnAccent} />
-        </View>
-      </TouchableOpacity>
     </View>
   );
 };
@@ -568,25 +556,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 15,
     lineHeight: 24,
-  },
-
-  fabTouchable: {
-    position: "absolute",
-    bottom: 24,
-    right: 24,
-    zIndex: 10,
-    shadowColor: "rgba(25, 28, 28, 0.16)",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  fab: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: "center",
-    justifyContent: "center",
   },
 
   // ─── Empty State ─────────────────────────────────────────────────────────

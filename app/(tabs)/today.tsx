@@ -408,6 +408,7 @@ export default function Index() {
         isBookmarked={isBookmarked}
         onBookmarkToggle={handleBookmarkToggle}
         onShare={handleShare}
+        onNewJournalEntry={() => setShowJournalPicker(true)}
         showInstruction={showInstruction}
         onDismissInstruction={handleDismissInstruction}
         onShowInstruction={handleShowInstruction}

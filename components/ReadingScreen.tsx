@@ -109,6 +109,7 @@ interface ReadingScreenProps {
   onBookmarkToggle?: () => Promise<void>;
   onHighlight?: () => void;
   onShare?: () => void;
+  onNewJournalEntry?: () => void;
   // Legacy instruction modal props kept for possible future use:
   showInstruction?: boolean;
   onDismissInstruction?: () => void;
@@ -124,6 +125,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   onBookmarkToggle,
   onHighlight,
   onShare,
+  onNewJournalEntry,
   showInstruction = false,
   onDismissInstruction,
   onShowInstruction,
@@ -406,6 +408,13 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
           title="Today"
           leftIcon={<MaterialIcons name="today" size={24} color={colors.textOnAccent} />}
           onPress={onHeaderPress}
+          rightAction={
+            onNewJournalEntry ? (
+              <TouchableOpacity onPress={onNewJournalEntry} activeOpacity={0.7} style={styles.headerAdd}>
+                <Ionicons name="add" size={26} color={colors.secondary} />
+              </TouchableOpacity>
+            ) : undefined
+          }
         />
 
         <Animated.View
@@ -440,10 +449,10 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
 
               {!!applicationQuote && (
                 <SanctuaryCard
-                  tone="low"
+                  tone="lowest"
                   style={[
                     styles.applicationQuoteContainer,
-                    { backgroundColor: colors.surfaceContainerLow },
+                    { backgroundColor: colors.surfaceContainerLowest },
                   ]}
                   contentStyle={styles.applicationQuoteContent}
                 >
@@ -512,7 +521,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
 
               {applicationParagraphs.length > 0 && (
                 <View style={styles.practiceSection}>
-                  <View style={styles.practiceCardContainer}>
+                  <View style={[styles.practiceCardContainer, { backgroundColor: colors.surfaceContainerLowest }]}>
                     <View style={styles.practiceAccent} />
                     <View style={styles.practiceBodyRow}>
                       <View style={styles.practiceBadge}>
@@ -746,6 +755,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  headerAdd: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   content: {
     flex: 1,
   },
@@ -896,7 +911,11 @@ const styles = StyleSheet.create({
   applicationQuoteContainer: {
     marginBottom: 20,
     borderRadius: 12,
-    overflow: "hidden",
+    shadowColor: "#163531",
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   applicationQuoteContent: {
     paddingHorizontal: 32,
@@ -944,16 +963,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   practiceCardContainer: {
-    backgroundColor: "#FFFFFF",
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#F3F4F6",
     padding: 20,
-    overflow: "hidden",
     shadowColor: "#163531",
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.08,
     shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 3 },
     elevation: 3,
   },
   practiceAccent: {

@@ -7,13 +7,14 @@ interface TealHeaderProps {
   title: string;
   leftIcon?: React.ReactNode;
   onPress?: () => void;
+  rightAction?: React.ReactNode;
 }
 
 /**
  * Shared structural header for top-level screens.
  * Keeps the legacy export name so existing imports do not change.
  */
-export const TealHeader: React.FC<TealHeaderProps> = ({ title, leftIcon, onPress }) => {
+export const TealHeader: React.FC<TealHeaderProps> = ({ title, leftIcon, onPress, rightAction }) => {
   const { colors } = useTheme();
 
   return (
@@ -27,31 +28,34 @@ export const TealHeader: React.FC<TealHeaderProps> = ({ title, leftIcon, onPress
         },
       ]}
     >
-      <TouchableOpacity
-        disabled={!onPress}
-        onPress={onPress}
-        activeOpacity={onPress ? 0.8 : 1}
-        style={styles.inner}
-      >
-        {leftIcon ? (
-          <View
-            style={[
-              styles.iconShell,
-              {
-                backgroundColor: colors.primaryContainer,
-              },
-            ]}
-          >
-            {leftIcon}
+      <View style={styles.row}>
+        <TouchableOpacity
+          disabled={!onPress}
+          onPress={onPress}
+          activeOpacity={onPress ? 0.8 : 1}
+          style={styles.inner}
+        >
+          {leftIcon ? (
+            <View
+              style={[
+                styles.iconShell,
+                {
+                  backgroundColor: colors.primaryContainer,
+                },
+              ]}
+            >
+              {leftIcon}
+            </View>
+          ) : null}
+          <View style={styles.textBlock}>
+            <Text style={[styles.eyebrow, { color: colors.onSurfaceVariant }]}>
+              Daily Paths
+            </Text>
+            <Text style={[styles.title, { color: colors.onSurface }]}>{title}</Text>
           </View>
-        ) : null}
-        <View style={styles.textBlock}>
-          <Text style={[styles.eyebrow, { color: colors.onSurfaceVariant }]}>
-            Daily Paths
-          </Text>
-          <Text style={[styles.title, { color: colors.onSurface }]}>{title}</Text>
-        </View>
-      </TouchableOpacity>
+        </TouchableOpacity>
+        {rightAction ?? null}
+      </View>
     </View>
   );
 };
@@ -62,7 +66,12 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 18,
   },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
   inner: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,

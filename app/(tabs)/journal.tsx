@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import { View, Text, StyleSheet, Alert } from "react-native";
+import { View, Text, StyleSheet, Alert, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "expo-router";
-import { MaterialIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { useJournalStorage, type JournalEntry, type EntryType } from "../../hooks/useJournalStorage";
 import { useJournalStats } from "../../hooks/useJournalStats";
@@ -243,6 +243,11 @@ function JournalTabContent() {
       <TealHeader
         title={headerTitle}
         leftIcon={headerIcon}
+        rightAction={
+          <TouchableOpacity onPress={handleNewEntry} activeOpacity={0.7} style={styles.headerAdd}>
+            <Ionicons name="add" size={26} color={colors.secondary} />
+          </TouchableOpacity>
+        }
       />
       <JournalTimeline
         entries={entries}
@@ -251,7 +256,6 @@ function JournalTabContent() {
         error={error}
         categoryFilter={categoryFilter}
         onFilterChange={handleFilterChange}
-        onNewEntry={handleNewEntry}
         onSelectEntry={handleSelectEntry}
         onDeleteEntry={handleDeleteFromTimeline}
         onRefresh={handleRefreshTimeline}
@@ -268,5 +272,11 @@ function JournalTabContent() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  headerAdd: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
