@@ -133,7 +133,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
     if (download.downloadStatus === "downloading") {
       return (
         <View style={styles.dlInlineRow}>
-          <ActivityIndicator size="small" color={colors.accent} />
+          <ActivityIndicator size="small" color={colors.secondary} />
           <Text style={[styles.dlInlineText, { color: colors.textSecondary, fontSize: Math.round(14 * scale) }]}>
             {download.downloadProgress}%
           </Text>
@@ -155,8 +155,8 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
           activeOpacity={0.6}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons name="checkmark-circle" size={Math.round(18 * scale)} color={colors.accent} />
-          <Text style={[styles.dlInlineText, { color: colors.accent, fontWeight: "600", fontSize: Math.round(14 * scale) }]}>
+          <Ionicons name="checkmark-circle" size={Math.round(18 * scale)} color={colors.secondary} />
+          <Text style={[styles.dlInlineText, { color: colors.secondary, fontWeight: "600", fontSize: Math.round(14 * scale) }]}>
             Downloaded
           </Text>
         </TouchableOpacity>
@@ -170,13 +170,13 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
 
     return (
       <TouchableOpacity
-        style={[styles.dlButton, { backgroundColor: colors.accent + "18", borderColor: colors.accent + "40" }]}
+        style={[styles.dlButton, { backgroundColor: colors.secondaryContainer, borderColor: colors.ghostBorder }]}
         onPress={handleDownloadPress}
         activeOpacity={0.6}
         hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
       >
-        <Ionicons name="download-outline" size={Math.round(18 * scale)} color={colors.accent} />
-        <Text style={[styles.dlButtonText, { color: colors.accent, fontSize: Math.round(14 * scale) }]}>
+        <Ionicons name="download-outline" size={Math.round(18 * scale)} color={colors.onSecondaryContainer} />
+        <Text style={[styles.dlButtonText, { color: colors.onSecondaryContainer, fontSize: Math.round(14 * scale) }]}>
           {sizeLabel}
         </Text>
       </TouchableOpacity>
@@ -194,8 +194,8 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
         activeOpacity={0.7}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        <Ionicons name="chevron-back" size={Math.round(20 * scale)} color={colors.accent} />
-        <Text style={[styles.backLabel, { color: colors.accent, fontSize: Math.round(16 * scale) }]}>Back</Text>
+        <Ionicons name="chevron-back" size={Math.round(20 * scale)} color={colors.secondary} />
+        <Text style={[styles.backLabel, { color: colors.secondary, fontSize: Math.round(16 * scale) }]}>Back</Text>
       </TouchableOpacity>
 
       <ScrollView
@@ -211,7 +211,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
           )}
 
           {/* Accent strip */}
-          <View style={[styles.accentStrip, { backgroundColor: colors.accent + "30" }]} />
+          <View style={[styles.accentStrip, { backgroundColor: colors.secondaryContainer }]} />
 
           <Text style={[styles.title, { color: colors.text, fontSize: Math.round(20 * scale) }]}>{speaker.title}</Text>
           {speaker.subtitle && (
@@ -221,7 +221,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
 
         {/* Quote block */}
         {speaker.quote && (
-          <View style={[styles.quoteBlock, { backgroundColor: colors.cardBackground, borderLeftColor: colors.accent }]}>
+          <View style={[styles.quoteBlock, { backgroundColor: colors.surfaceContainerLow, borderLeftColor: colors.secondary }]}>
             <Text style={[styles.quoteText, { color: colors.text, fontSize: Math.round(16 * scale), lineHeight: Math.round(24 * scale) }]}>
               &ldquo;{speaker.quote}&rdquo;
             </Text>
@@ -247,7 +247,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
           {/* Now Playing + Download indicator */}
           <View style={styles.nowPlayingRow}>
             <View style={styles.nowPlayingLeft}>
-              <EqualizerBars isPlaying={player.isPlaying} color={colors.accent} />
+              <EqualizerBars isPlaying={player.isPlaying} color={colors.secondary} />
               <Text style={[styles.nowPlayingLabel, { color: colors.textSecondary, fontSize: Math.round(13 * scale) }]}>
                 {player.isPlaying ? "Now Playing" : player.isLoaded ? "Paused" : ""}
               </Text>
@@ -258,7 +258,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
           {/* Loading / Error states */}
           {player.isBuffering && !player.isLoaded && (
             <View style={styles.loadingRow}>
-              <ActivityIndicator size="small" color={colors.accent} />
+              <ActivityIndicator size="small" color={colors.secondary} />
               <Text style={[styles.loadingText, { color: colors.textSecondary, fontSize: Math.round(14 * scale) }]}>Loading audio...</Text>
             </View>
           )}
@@ -285,7 +285,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
                 style={[
                   styles.progressFill,
                   {
-                    backgroundColor: colors.accent,
+                    backgroundColor: colors.secondary,
                     width: `${progress * 100}%`,
                   },
                 ]}
@@ -295,7 +295,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
                 style={[
                   styles.progressThumb,
                   {
-                    backgroundColor: colors.accent,
+                    backgroundColor: colors.secondary,
                     left: `${progress * 100}%`,
                   },
                 ]}
@@ -327,7 +327,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
 
             {/* Play/Pause */}
             <TouchableOpacity
-              style={[styles.playPauseButton, { backgroundColor: colors.accent, width: Math.round(64 * scale), height: Math.round(64 * scale), borderRadius: Math.round(32 * scale) }]}
+              style={[styles.playPauseButton, { backgroundColor: colors.secondary, width: Math.round(64 * scale), height: Math.round(64 * scale), borderRadius: Math.round(32 * scale) }]}
               onPress={() => {
                 if (player.isPlaying) {
                   trackSpeakerAudioPaused(speaker.id, speaker.speaker, player.positionMs, player.durationMs);
@@ -342,7 +342,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
               <Ionicons
                 name={player.isPlaying ? "pause" : "play"}
                 size={Math.round(32 * scale)}
-                color={colors.textOnAccent}
+                color={colors.onSecondary}
                 style={!player.isPlaying ? styles.playIconOffset : undefined}
               />
             </TouchableOpacity>
@@ -368,8 +368,8 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
                   style={[
                     styles.speedPill,
                     {
-                      backgroundColor: isActive ? colors.accent : "transparent",
-                      borderColor: isActive ? colors.accent : colors.border,
+                      backgroundColor: isActive ? colors.secondary : "transparent",
+                      borderColor: isActive ? colors.secondary : colors.border,
                     },
                   ]}
                   onPress={() => player.setRate(speed)}
@@ -379,7 +379,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
                     style={[
                       styles.speedLabel,
                       {
-                        color: isActive ? colors.textOnAccent : colors.textSecondary,
+                        color: isActive ? colors.onSecondary : colors.textSecondary,
                         fontWeight: isActive ? "700" : "400",
                         fontSize: Math.round(13 * scale),
                       },

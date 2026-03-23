@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from "react";
 import { AppState, AppStateStatus, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "expo-router";
+import { MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { useSpeakers, getSpeakerAudioUrl } from "../../hooks/useSpeakers";
 import { useAudioPlayer } from "../../hooks/useAudioPlayer";
@@ -12,7 +13,6 @@ import { useTrialStatus } from "../../hooks/useTrialStatus";
 import { useDownloadedSpeakerIds } from "../../hooks/useSpeakerDownload";
 import { canDownloadSpeakers } from "../../utils/accessControl";
 import { TealHeader } from "../../components/shared/TealHeader";
-import { Microphone } from "../../components/icons";
 import { SpeakersBrowse } from "../../components/speakers/SpeakersBrowse";
 import { SpeakerDetail } from "../../components/speakers/SpeakerDetail";
 import { PremiumGate } from "../../components/PremiumGate";
@@ -142,7 +142,7 @@ function SpeakersTabContent() {
       >
         <TealHeader
           title="Speakers"
-          leftIcon={<Microphone size={28} color={colors.textOnAccent} />}
+          leftIcon={<MaterialIcons name="record-voice-over" size={24} color={colors.textOnAccent} />}
         />
         <SpeakerDetail
           speaker={selectedSpeaker}
@@ -164,7 +164,7 @@ function SpeakersTabContent() {
     >
       <TealHeader
         title="Speakers"
-        leftIcon={<Microphone size={28} color={colors.textOnAccent} />}
+        leftIcon={<MaterialIcons name="record-voice-over" size={24} color={colors.textOnAccent} />}
       />
       <SpeakersBrowse
         speakers={speakers}

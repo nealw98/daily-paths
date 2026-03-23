@@ -11,8 +11,9 @@ import {
   Platform,
   Switch,
 } from "react-native";
+<<<<<<< HEAD
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import * as Haptics from "expo-haptics";
@@ -26,7 +27,6 @@ import { getScheduledDayOfYear } from "../utils/dateUtils";
 import { scheduleWeekOfNotifications } from "../utils/notificationSync";
 import { SanctuaryCard, FocusPill } from "./ui/Sanctuary";
 import { TealHeader } from "./shared/TealHeader";
-import { LightOnWater } from "./icons";
 // Legacy instruction modal import kept for possible future use:
 // import { BookmarkInstructionOverlay } from "./BookmarkInstructionOverlay";
 
@@ -405,7 +405,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
       <View style={[styles.container, { backgroundColor: colors.surface }]}>
         <TealHeader
           title="Today"
-          leftIcon={<LightOnWater size={24} color={colors.onPrimary} strokeWidth={1.7} />}
+          leftIcon={<MaterialIcons name="today" size={24} color={colors.textOnAccent} />}
           onPress={onHeaderPress}
         />
 

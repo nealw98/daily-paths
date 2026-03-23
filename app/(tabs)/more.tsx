@@ -20,7 +20,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useFocusEffect } from "@react-navigation/native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Constants from "expo-constants";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTheme } from "../../hooks/useTheme";
 import { useSettings, TextSize } from "../../hooks/useSettings";
@@ -31,7 +31,6 @@ import { scheduleWeekOfNotifications } from "../../utils/notificationSync";
 import { qaLog } from "../../utils/qaLog";
 import { fonts } from "../../constants/theme";
 import { TealHeader } from "../../components/shared/TealHeader";
-import { Nautilus } from "../../components/icons";
 import { useSubscription } from "../../hooks/useSubscription";
 import { useSubscriptionContext } from "../../contexts/SubscriptionContext";
 import RevenueCatUI from "react-native-purchases-ui";
@@ -231,7 +230,7 @@ export default function MoreTab() {
     >
       <TealHeader
         title="Settings"
-        leftIcon={<Nautilus size={28} color={colors.textOnAccent} />}
+        leftIcon={<MaterialIcons name="settings" size={24} color={colors.textOnAccent} />}
       />
 
       <ScrollView

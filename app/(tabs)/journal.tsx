@@ -2,6 +2,7 @@ import React, { useState, useCallback, useMemo, useEffect, useRef } from "react"
 import { View, Text, StyleSheet, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "expo-router";
+import { MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { useJournalStorage, type JournalEntry, type EntryType } from "../../hooks/useJournalStorage";
 import { useJournalStats } from "../../hooks/useJournalStats";
@@ -16,7 +17,6 @@ import { PremiumGate } from "../../components/PremiumGate";
 import { fonts } from "../../constants/theme";
 import { getCategoryById, getCategoryLabel } from "../../constants/journalCategories";
 import { EntryTypeIcon } from "../../utils/entryTypeIcon";
-import { FourSquares } from "../../components/icons";
 
 type JournalView = "timeline" | "editor" | "detail";
 
@@ -59,7 +59,7 @@ function JournalTabContent() {
 
   const headerIcon = useMemo(() => {
     if (categoryFilter === "all") {
-      return <FourSquares size={28} color={colors.textOnAccent} />;
+      return <MaterialIcons name="edit-note" size={28} color={colors.textOnAccent} />;
     }
     const cat = getCategoryById(categoryFilter);
     if (!cat) return undefined;

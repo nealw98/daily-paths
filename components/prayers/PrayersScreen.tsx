@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useTheme } from "../../hooks/useTheme";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
@@ -20,7 +20,6 @@ import { usePersonalPrayers, type PersonalPrayer } from "../../hooks/usePersonal
 import { fonts } from "../../constants/theme";
 import { PRAYERS, type Prayer } from "../../constants/prayers";
 import { TealHeader } from "../shared/TealHeader";
-import { LeafOnWater } from "../icons";
 import { FieldShell, SanctuaryButton, SanctuaryCard } from "../ui/Sanctuary";
 
 const BUILTIN_PRAYER_OVERRIDES_KEY = "@daily_paths_builtin_prayer_overrides_v1";
@@ -426,7 +425,7 @@ export const PrayersScreen: React.FC = () => {
       {/* Teal Gradient Header */}
       <TealHeader
         title="Prayers"
-        leftIcon={<LeafOnWater size={28} color={colors.textOnAccent} />}
+        leftIcon={<MaterialCommunityIcons name="hands-pray" size={24} color={colors.textOnAccent} />}
       />
 
       <KeyboardAvoidingView
