@@ -182,7 +182,7 @@ export default function SelectDateScreen() {
             {reading?.thoughtForDay || "Select an available day to preview the Thought for the Day."}
           </Text>
           <SanctuaryButton
-            label="Visit"
+            label="View"
             onPress={handleRevisitReading}
             disabled={!reading}
             style={styles.previewButton}
