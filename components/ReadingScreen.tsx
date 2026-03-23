@@ -11,7 +11,6 @@ import {
   Platform,
   Switch,
 } from "react-native";
-<<<<<<< HEAD
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
