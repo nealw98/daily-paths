@@ -18,6 +18,7 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useNavigation } from "expo-router";
 import { useTheme } from "../../hooks/useTheme";
 import { fonts } from "../../constants/theme";
+import { useDailyGratitudeQuote } from "../../hooks/useDailyGratitudeQuote";
 import {
   getCategoryById,
   getCategoryLabel,
@@ -29,7 +30,6 @@ import { GuidedPromptEditor } from "./GuidedPromptEditor";
 import { EntryTypeIcon } from "../../utils/entryTypeIcon";
 import { Seedling } from "../../components/icons";
 import { FieldShell, SanctuaryButton, SanctuaryCard } from "../ui/Sanctuary";
-import { supabase } from "../../lib/supabase";
 
 interface JournalEntryEditorProps {
   entryType: EntryType;
@@ -80,8 +80,6 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
   }, [categoryConfig?.introText]);
 
   const [saving, setSaving] = useState(false);
-  const [dailyGratitudeQuote, setDailyGratitudeQuote] = useState<string>("");
-  const [dailyGratitudeReference, setDailyGratitudeReference] = useState<string>("");
 
   // ─── Text editor state (journal type) ──────────────────
   const [content, setContent] = useState(initialContent ?? "");
@@ -120,6 +118,10 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
       return responses;
     }
     return {};
+  });
+  const [focusedPromptId, setFocusedPromptId] = useState<string | null>(null);
+  const { quote: dailyGratitudeQuoteData } = useDailyGratitudeQuote(new Date(), {
+    enabled: entryType === "gratitude",
   });
 
   // ─── Computed State ────────────────────────────────────
@@ -266,51 +268,17 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
     year: "numeric",
   });
 
-  const gratitudeQuoteFontSize = Math.round(typography.bodyFontSize * 1.11) + 2;
-  const gratitudeQuoteLineHeight = Math.round(gratitudeQuoteFontSize * 1.18);
   const journalQuoteFontSize = Math.max(16, typography.bodyFontSize - 1);
   const journalQuoteLineHeight = Math.round(journalQuoteFontSize * 1.35);
   const journalHeroWidth = screenWidth;
   const journalHeroHeight = journalHeroWidth / 3;
-
-  // Load daily gratitude quote for the gratitude editor from `gratitude_quotes`.
-  React.useEffect(() => {
-    if (entryType !== "gratitude") return;
-    let cancelled = false;
-
-    const fetchDailyQuote = async () => {
-      const now = new Date();
-      const start = new Date(now.getFullYear(), 0, 0);
-      const diff = now.getTime() - start.getTime();
-      const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-      const { data } = await supabase
-        .from("gratitude_quotes")
-        .select("quote, author")
-        .eq("day_of_year", dayOfYear)
-        .single();
-
-      if (!cancelled && data?.quote) {
-        let quoteText = String(data.quote).trim();
-        let referenceText = data.author ? String(data.author).trim() : "";
-
-        // Match Today page behavior: if quote has trailing parenthetical, move it to reference.
-        const match = quoteText.match(/^(.*?)(\s*\(([^()]*)\))\s*$/);
-        if (match) {
-          quoteText = match[1].trim();
-          referenceText = match[3].trim();
-        }
-
-        setDailyGratitudeQuote(quoteText);
-        setDailyGratitudeReference(referenceText);
-      }
-    };
-
-    fetchDailyQuote();
-    return () => {
-      cancelled = true;
-    };
-  }, [entryType]);
+  const gratitudeQuoteText =
+    dailyGratitudeQuoteData?.quote || (entryType === "gratitude" ? journalIntroQuote : "");
+  const gratitudeReferenceText = dailyGratitudeQuoteData?.quote
+    ? dailyGratitudeQuoteData.author
+    : entryType === "gratitude"
+      ? journalIntroReference
+      : "";
 
   // In any journal editor, tab presses should close this sheet.
   // If there's unsaved content, ask whether to save or discard first.
@@ -394,7 +362,10 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
           </View>
         </View>
 
-        {entryType !== "journal" ? (
+        {entryType !== "journal" &&
+        entryType !== "gratitude" &&
+        entryType !== "spot_check" &&
+        entryType !== "nightly_review" ? (
           <View style={[styles.dateBar, { backgroundColor: colors.surface }]}>
             <Text style={[styles.dateText, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 6 }]}>
               {isEditing ? "Editing Entry" : dateStr}
@@ -640,7 +611,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                 ]}
                 elevated
               >
-                {!!dailyGratitudeQuote && (
+                {!!gratitudeQuoteText && (
                   <View style={styles.quoteCardContent}>
                     <View pointerEvents="none" style={styles.quotePatternLayer}>
                       <Text numberOfLines={1} style={styles.quotePatternSmall}>
@@ -661,16 +632,16 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                           },
                         ]}
                       >
-                        {dailyGratitudeQuote}
+                        {gratitudeQuoteText}
                       </Text>
-                      {!!dailyGratitudeReference && (
+                      {!!gratitudeReferenceText && (
                         <Text
                           style={[
                             styles.gratitudeDailyReference,
                             { color: colors.secondaryContainer },
                           ]}
                         >
-                          {dailyGratitudeReference}
+                          {gratitudeReferenceText}
                         </Text>
                       )}
                     </View>
@@ -785,7 +756,201 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
           )}
 
           {editorType === "guided" &&
-            categoryConfig?.guidedPrompts && (
+            categoryConfig?.guidedPrompts &&
+            (entryType === "spot_check" || entryType === "nightly_review" ? (
+              <View style={styles.spotCheckContainer}>
+                <Image
+                  source={
+                    entryType === "spot_check"
+                      ? require("../../assets/spot_check.jpg")
+                      : require("../../assets/nightly_review.jpg")
+                  }
+                  style={[
+                    styles.spotCheckHeroImage,
+                    { width: journalHeroWidth, height: journalHeroHeight },
+                  ]}
+                  resizeMode="contain"
+                />
+                <View
+                  style={[
+                    styles.spotCheckDatePill,
+                    { backgroundColor: "rgba(255, 255, 255, 0.90)" },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.spotCheckDatePillText,
+                      { color: colors.onSurface },
+                    ]}
+                  >
+                    {isEditing ? "Editing Entry" : dateStr}
+                  </Text>
+                </View>
+
+                <SanctuaryCard
+                  tone="lowest"
+                  style={styles.spotCheckQuoteCard}
+                  contentStyle={[
+                    styles.spotCheckQuoteCardInner,
+                    { backgroundColor: colors.primary },
+                  ]}
+                  elevated
+                >
+                  {categoryConfig?.introText && (
+                    <View style={styles.quoteCardContent}>
+                      <View pointerEvents="none" style={styles.quotePatternLayer}>
+                        <Text numberOfLines={1} style={styles.quotePatternSmall}>
+                          quote   quote   quote
+                        </Text>
+                        <Text style={styles.quotePatternLargeA}>quote</Text>
+                        <Text style={styles.quotePatternLargeB}>quote</Text>
+                        <Text style={styles.quotePatternMedium}>quote</Text>
+                      </View>
+                      <View style={styles.journalQuoteWrap}>
+                        <Text
+                          style={[
+                            styles.journalQuoteText,
+                            {
+                              color: colors.onPrimary,
+                              fontSize: journalQuoteFontSize,
+                              lineHeight: journalQuoteLineHeight,
+                            },
+                          ]}
+                        >
+                          {journalIntroQuote}
+                        </Text>
+                        {!!journalIntroReference && (
+                          <Text
+                            style={[
+                              styles.journalQuoteReference,
+                              {
+                                fontSize: 14,
+                                color: colors.secondaryContainer,
+                              },
+                            ]}
+                          >
+                            {journalIntroReference}
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                  )}
+                </SanctuaryCard>
+
+                <SanctuaryCard
+                  tone="lowest"
+                  style={styles.spotCheckEntryCard}
+                  contentStyle={[
+                    styles.spotCheckEntryCardInner,
+                    { backgroundColor: colors.surfaceContainerLowest },
+                  ]}
+                  elevated
+                >
+                  {categoryConfig.guidedPrompts.map((prompt, index) => {
+                    const isFocused = focusedPromptId === prompt.id;
+
+                    return (
+                      <View
+                        key={prompt.id}
+                        style={[
+                          styles.spotCheckPromptBlock,
+                          index === categoryConfig.guidedPrompts!.length - 1
+                            ? styles.spotCheckPromptBlockLast
+                            : null,
+                          { borderBottomColor: colors.ghostBorder },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.spotCheckPromptQuestion,
+                            {
+                              color: colors.text,
+                              fontSize: typography.bodyFontSize - 2,
+                              lineHeight: (typography.bodyFontSize - 2) * 1.35,
+                            },
+                          ]}
+                        >
+                          {prompt.question}
+                        </Text>
+
+                        <FieldShell focused={isFocused} style={styles.spotCheckFieldShell}>
+                          <TextInput
+                            style={[
+                              styles.spotCheckPromptInput,
+                              {
+                                color: colors.text,
+                                fontSize: typography.bodyFontSize,
+                                lineHeight: typography.bodyLineHeight,
+                              },
+                            ]}
+                            value={guidedResponses[prompt.id] ?? ""}
+                            onChangeText={(text) =>
+                              handleGuidedResponseChange(prompt.id, text)
+                            }
+                            placeholder={prompt.placeholder}
+                            placeholderTextColor={colors.textSecondary + "60"}
+                            multiline
+                            textAlignVertical="top"
+                            autoCorrect
+                            autoCapitalize="sentences"
+                            scrollEnabled={false}
+                            selectionColor={colors.secondary}
+                            onFocus={() => setFocusedPromptId(prompt.id)}
+                            onBlur={() => setFocusedPromptId(null)}
+                          />
+                        </FieldShell>
+
+                        {prompt.hint ? (
+                          <Text
+                            style={[
+                              styles.spotCheckPromptHint,
+                              {
+                                color: colors.textSecondary,
+                                fontSize: typography.bodyFontSize - 8,
+                              },
+                            ]}
+                          >
+                            {prompt.hint}
+                          </Text>
+                        ) : null}
+                      </View>
+                    );
+                  })}
+                </SanctuaryCard>
+
+                <View style={styles.gratitudeActionsRow}>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={handleCancel}
+                    style={styles.journalFooterCancel}
+                  >
+                    <Text
+                      style={[
+                        styles.journalFooterCancelText,
+                        { color: colors.onSurfaceVariant },
+                      ]}
+                    >
+                      Cancel
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={handleSave}
+                    disabled={saving || !hasContent}
+                    style={[
+                      styles.journalFooterSave,
+                      { backgroundColor: colors.primaryContainer },
+                      (saving || !hasContent) && styles.journalFooterSaveDisabled,
+                    ]}
+                  >
+                    <Ionicons name="checkmark" size={14} color={colors.onPrimary} />
+                    <Text style={[styles.journalFooterSaveText, { color: colors.onPrimary }]}>
+                      {saving ? "Saving..." : "Save"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
               <View style={styles.guidedContainer}>
                 <GuidedPromptEditor
                   prompts={categoryConfig.guidedPrompts}
@@ -795,14 +960,17 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                   introText={categoryConfig.introText ?? ""}
                 />
               </View>
-            )}
+            ))}
 
           {/* Spacer for keyboard */}
           <View style={{ height: 100 }} />
         </KeyboardAwareScrollView>
 
         {/* Bottom Bar */}
-        {entryType !== "journal" && entryType !== "gratitude" ? (
+        {entryType !== "journal" &&
+        entryType !== "gratitude" &&
+        entryType !== "spot_check" &&
+        entryType !== "nightly_review" ? (
           <View
             style={[
               styles.bottomBar,
@@ -1209,6 +1377,78 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+  },
+  spotCheckContainer: {
+    paddingTop: 0,
+  },
+  spotCheckHeroImage: {
+    width: "100%",
+    aspectRatio: 3,
+  },
+  spotCheckDatePill: {
+    alignSelf: "flex-start",
+    marginLeft: 20,
+    marginTop: -22,
+    minHeight: 44,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    justifyContent: "center",
+    shadowColor: "#191C1C",
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
+  },
+  spotCheckDatePillText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 14,
+    lineHeight: 18,
+    letterSpacing: 0.2,
+  },
+  spotCheckQuoteCard: {
+    marginHorizontal: 20,
+    marginTop: 18,
+    marginBottom: 0,
+    borderRadius: 12,
+  },
+  spotCheckQuoteCardInner: {
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  spotCheckEntryCard: {
+    marginHorizontal: 20,
+    marginTop: 18,
+    borderRadius: 12,
+  },
+  spotCheckEntryCardInner: {
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 6,
+    borderRadius: 12,
+  },
+  spotCheckPromptBlock: {
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  spotCheckPromptBlockLast: {
+    borderBottomWidth: 0,
+  },
+  spotCheckPromptQuestion: {
+    fontFamily: fonts.bodyFamilySemiBold,
+    marginBottom: 10,
+  },
+  spotCheckFieldShell: {
+    marginTop: 0,
+  },
+  spotCheckPromptInput: {
+    minHeight: 80,
+    fontFamily: fonts.bodyFamilyRegular,
+    paddingVertical: 0,
+  },
+  spotCheckPromptHint: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontStyle: "italic",
+    marginTop: 8,
   },
 
   // ─── Guided Prompts ───────────────────────────────────

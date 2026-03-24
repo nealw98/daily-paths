@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { supabase } from "../lib/supabase";
 import { qaLog } from "../utils/qaLog";
 import { trackEvent } from "../utils/trackEvent";
 import { ANALYTICS_EVENTS } from "../utils/analytics";
+import { useDailyGratitudeQuote } from "./useDailyGratitudeQuote";
+import type { GratitudeQuote as CachedGratitudeQuote } from "../utils/gratitudeQuoteCache";
 
 const STORAGE_KEY = "@daily_paths_gratitude_entries";
 
@@ -14,12 +15,7 @@ export interface GratitudeEntry {
   created_at: string;
 }
 
-export interface GratitudeQuote {
-  id: string;
-  day_of_year: number;
-  quote: string;
-  author: string | null;
-}
+export type GratitudeQuote = CachedGratitudeQuote;
 
 // ── Local storage helpers ───────────────────────────────────────────────────
 
@@ -43,53 +39,18 @@ async function writeAllEntries(entries: GratitudeEntry[]): Promise<void> {
 // ── Hook ────────────────────────────────────────────────────────────────────
 
 /**
- * Hook for managing gratitude entries (AsyncStorage) and daily quotes (Supabase).
- * The daily quote is fetched from the public `gratitude_quotes` table.
+ * Hook for managing gratitude entries (AsyncStorage) and today's quote.
+ * The daily quote uses the shared cached quote loader for faster, offline-safe reads.
  * Entries are stored locally in AsyncStorage.
  */
 export function useGratitude() {
   const [todayEntry, setTodayEntry] = useState<GratitudeEntry | null>(null);
   const [history, setHistory] = useState<GratitudeEntry[]>([]);
-  const [todayQuote, setTodayQuote] = useState<GratitudeQuote | null>(null);
   const [loading, setLoading] = useState(true);
   const mounted = useRef(true);
+  const { quote: todayQuote } = useDailyGratitudeQuote();
 
   const todayStr = new Date().toISOString().split("T")[0];
-
-  // Always fetch today's quote (public table, no auth required)
-  useEffect(() => {
-    const fetchQuote = async () => {
-      try {
-        const dayOfYear = getDayOfYear(new Date());
-        qaLog("gratitude", "Fetching quote", { dayOfYear });
-
-        const { data: quoteData, error } = await supabase
-          .from("gratitude_quotes")
-          .select("*")
-          .eq("day_of_year", dayOfYear)
-          .single();
-
-        if (error) {
-          qaLog("gratitude", "Quote fetch error", {
-            code: error.code,
-            message: error.message,
-            dayOfYear,
-          });
-        }
-
-        if (mounted.current && quoteData) {
-          qaLog("gratitude", "Quote loaded", { dayOfYear, author: quoteData.author });
-          setTodayQuote(quoteData);
-        } else if (mounted.current) {
-          qaLog("gratitude", "No quote data returned", { dayOfYear });
-        }
-      } catch (err) {
-        qaLog("gratitude", "Exception fetching quote", { error: String(err) });
-      }
-    };
-
-    fetchQuote();
-  }, []);
 
   // Fetch entries from AsyncStorage
   const fetchEntries = useCallback(async () => {
@@ -180,11 +141,4 @@ export function useGratitude() {
     saveTodayItems,
     refreshData: fetchEntries,
   };
-}
-
-function getDayOfYear(date: Date): number {
-  const start = new Date(date.getFullYear(), 0, 0);
-  const diff = date.getTime() - start.getTime();
-  const oneDay = 1000 * 60 * 60 * 24;
-  return Math.floor(diff / oneDay);
 }
