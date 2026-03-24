@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,10 +8,13 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ImageBackground,
+  BackHandler,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
+import { useNavigation } from "expo-router";
 import { useTheme } from "../../hooks/useTheme";
 import { fonts } from "../../constants/theme";
 import {
@@ -25,6 +28,7 @@ import { GuidedPromptEditor } from "./GuidedPromptEditor";
 import { EntryTypeIcon } from "../../utils/entryTypeIcon";
 import { Seedling } from "../../components/icons";
 import { FieldShell, SanctuaryButton, SanctuaryCard } from "../ui/Sanctuary";
+import { supabase } from "../../lib/supabase";
 
 interface JournalEntryEditorProps {
   entryType: EntryType;
@@ -48,6 +52,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
   isEditing = false,
 }) => {
   const { colors } = useTheme();
+  const navigation = useNavigation();
 
   const { settings } = useSettings();
   const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
@@ -57,6 +62,8 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
   const editorType = categoryConfig?.editorType ?? "text";
 
   const [saving, setSaving] = useState(false);
+  const [dailyGratitudeQuote, setDailyGratitudeQuote] = useState<string>("");
+  const [dailyGratitudeReference, setDailyGratitudeReference] = useState<string>("");
 
   // ─── Text editor state (journal type) ──────────────────
   const [content, setContent] = useState(initialContent ?? "");
@@ -116,7 +123,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
 
   // ─── Save Handler ──────────────────────────────────────
 
-  const handleSave = async () => {
+  const saveEntry = useCallback(async (): Promise<boolean> => {
     if (!hasContent) {
       Alert.alert(
         "Nothing to save",
@@ -124,7 +131,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
           ? "Add at least one item before saving."
           : "Write something before saving."
       );
-      return;
+      return false;
     }
 
     setSaving(true);
@@ -132,7 +139,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
       switch (editorType) {
         case "text": {
           await onSave(entryType, content.trim(), null);
-          break;
+          return true;
         }
         case "items": {
           const filledItems = gratitudeItems
@@ -140,7 +147,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
             .filter(Boolean);
           const searchableContent = filledItems.join(" • ");
           await onSave(entryType, searchableContent, { items: filledItems });
-          break;
+          return true;
         }
         case "guided": {
           const filledResponses: Record<string, string> = {};
@@ -150,32 +157,62 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
           // Build searchable content from non-empty responses
           const searchableContent = Object.values(filledResponses).join("\n\n");
           await onSave(entryType, searchableContent, filledResponses);
-          break;
+          return true;
         }
+        default:
+          return false;
       }
     } catch (err) {
       const message = String(err).toLowerCase().includes("timed out")
         ? "Saving is taking too long. Please try again."
         : "Failed to save your entry. Please try again.";
       Alert.alert("Error", message);
+      return false;
     } finally {
       setSaving(false);
     }
+  }, [
+    content,
+    editorType,
+    entryType,
+    gratitudeItems,
+    guidedResponses,
+    hasContent,
+    onSave,
+  ]);
+
+  const handleSave = async () => {
+    await saveEntry();
   };
 
-  const handleCancel = () => {
-    if (hasContent) {
-      Alert.alert("Discard this entry?", "Your writing will not be saved.", [
-        { text: "Keep Writing", style: "cancel" },
+  const confirmExit = useCallback(
+    (onProceed: () => void) => {
+      if (!hasContent) {
+        onProceed();
+        return;
+      }
+
+      Alert.alert("Unsaved entry", "Do you want to save this entry before leaving?", [
+        { text: "Keep editing", style: "cancel" },
         {
           text: "Discard",
           style: "destructive",
-          onPress: onCancel,
+          onPress: onProceed,
+        },
+        {
+          text: "Save",
+          onPress: async () => {
+            const saved = await saveEntry();
+            if (saved) onProceed();
+          },
         },
       ]);
-    } else {
-      onCancel();
-    }
+    },
+    [hasContent, saveEntry]
+  );
+
+  const handleCancel = () => {
+    confirmExit(onCancel);
   };
 
   // ─── Gratitude Handlers ────────────────────────────────
@@ -210,6 +247,100 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
     day: "numeric",
     year: "numeric",
   });
+
+  const gratitudeQuoteFontSize = Math.round(typography.bodyFontSize * 1.11) + 2;
+  const gratitudeQuoteLineHeight = Math.round(gratitudeQuoteFontSize * 1.18);
+
+  // Load daily gratitude quote for the gratitude editor from `gratitude_quotes`.
+  React.useEffect(() => {
+    if (entryType !== "gratitude") return;
+    let cancelled = false;
+
+    const fetchDailyQuote = async () => {
+      const now = new Date();
+      const start = new Date(now.getFullYear(), 0, 0);
+      const diff = now.getTime() - start.getTime();
+      const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+      const { data } = await supabase
+        .from("gratitude_quotes")
+        .select("quote, author")
+        .eq("day_of_year", dayOfYear)
+        .single();
+
+      if (!cancelled && data?.quote) {
+        let quoteText = String(data.quote).trim();
+        let referenceText = data.author ? String(data.author).trim() : "";
+
+        // Match Today page behavior: if quote has trailing parenthetical, move it to reference.
+        const match = quoteText.match(/^(.*?)(\s*\(([^()]*)\))\s*$/);
+        if (match) {
+          quoteText = match[1].trim();
+          referenceText = match[3].trim();
+        }
+
+        setDailyGratitudeQuote(quoteText);
+        setDailyGratitudeReference(referenceText);
+      }
+    };
+
+    fetchDailyQuote();
+    return () => {
+      cancelled = true;
+    };
+  }, [entryType]);
+
+  // In any journal editor, tab presses should close this sheet.
+  // If there's unsaved content, ask whether to save or discard first.
+  React.useEffect(() => {
+    const resolveTabNavigation = () => {
+      let current: any = navigation;
+      let tabNav: any = null;
+
+      while (current) {
+        const state = current.getState?.();
+        if (state?.type === "tab") {
+          tabNav = current;
+        }
+        current = current.getParent?.();
+      }
+
+      return tabNav ?? ((navigation as any).getParent?.() ?? navigation);
+    };
+
+    const tabNavigation = resolveTabNavigation();
+    const unsubscribe = (tabNavigation as any).addListener("tabPress", (e: any) => {
+      const targetKey: string | undefined = e?.target;
+      const state = (tabNavigation as any).getState?.();
+      const targetRoute = state?.routes?.find((r: any) => r.key === targetKey);
+      const targetRouteName = targetRoute?.name as string | undefined;
+
+      e.preventDefault();
+      confirmExit(() => {
+        onCancel();
+        if (targetRouteName) {
+          setTimeout(() => {
+            (tabNavigation as any).navigate(targetRouteName);
+          }, 0);
+        }
+      });
+    });
+
+    return unsubscribe;
+  }, [confirmExit, navigation, onCancel]);
+
+  // Android hardware back should follow the same save/discard flow.
+  React.useEffect(() => {
+    const subscription = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        confirmExit(onCancel);
+        return true;
+      }
+    );
+
+    return () => subscription.remove();
+  }, [confirmExit, onCancel]);
 
   // ─── Render ────────────────────────────────────────────
 
@@ -257,113 +388,210 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
         >
           {editorType === "text" && (
             <View style={styles.textEditorContainer}>
-              {categoryConfig?.introText && (
-                <SanctuaryCard tone="low" style={styles.textIntroWrapper} contentStyle={styles.textIntroContent}>
-                  <Text
-                    style={[
-                      styles.introText,
-                      { color: colors.primaryContainer, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.5 },
-                    ]}
+              {entryType === "journal" ? (
+                <View style={styles.journalContainer}>
+                  <ImageBackground
+                    source={require("../../assets/journal.jpg")}
+                    style={styles.journalHeroImage}
+                    imageStyle={styles.journalHeroImageInner}
+                    resizeMode="cover"
+                  />
+                  <SanctuaryCard
+                    tone="lowest"
+                    style={styles.journalOverlayCard}
+                    contentStyle={styles.journalOverlayContent}
                   >
-                    {categoryConfig.introText}
-                  </Text>
-                </SanctuaryCard>
+                    {categoryConfig?.introText && (
+                      <View style={styles.journalQuoteWrap}>
+                        <Text
+                          style={[
+                            styles.journalQuoteText,
+                            {
+                              color: colors.primary,
+                              fontSize: gratitudeQuoteFontSize,
+                              lineHeight: gratitudeQuoteLineHeight,
+                            },
+                          ]}
+                        >
+                          {categoryConfig.introText}
+                        </Text>
+                      </View>
+                    )}
+                    <FieldShell style={styles.textInputShell}>
+                      <TextInput
+                        style={[
+                          styles.textInput,
+                          {
+                            color: colors.text,
+                            fontSize: typography.bodyFontSize,
+                            lineHeight: typography.bodyLineHeight,
+                          },
+                        ]}
+                        placeholder="What's on your mind..."
+                        placeholderTextColor={colors.textSecondary + "60"}
+                        value={content}
+                        onChangeText={setContent}
+                        multiline
+                        textAlignVertical="top"
+                        autoCorrect
+                        autoCapitalize="sentences"
+                        scrollEnabled={false}
+                        selectionColor={colors.secondary}
+                      />
+                    </FieldShell>
+                  </SanctuaryCard>
+                </View>
+              ) : (
+                <>
+                  {categoryConfig?.introText && (
+                    <SanctuaryCard
+                      tone="low"
+                      style={styles.textIntroWrapper}
+                      contentStyle={styles.textIntroContent}
+                    >
+                      <Text
+                        style={[
+                          styles.introText,
+                          {
+                            color: colors.primaryContainer,
+                            fontSize: typography.bodyFontSize,
+                            lineHeight: typography.bodyFontSize * 1.5,
+                          },
+                        ]}
+                      >
+                        {categoryConfig.introText}
+                      </Text>
+                    </SanctuaryCard>
+                  )}
+                  <FieldShell style={styles.textInputShell}>
+                    <TextInput
+                      style={[
+                        styles.textInput,
+                        {
+                          color: colors.text,
+                          fontSize: typography.bodyFontSize,
+                          lineHeight: typography.bodyLineHeight,
+                        },
+                      ]}
+                      placeholder="What's on your mind..."
+                      placeholderTextColor={colors.textSecondary + "60"}
+                      value={content}
+                      onChangeText={setContent}
+                      multiline
+                      textAlignVertical="top"
+                      autoCorrect
+                      autoCapitalize="sentences"
+                      scrollEnabled={false}
+                      selectionColor={colors.secondary}
+                    />
+                  </FieldShell>
+                </>
               )}
-              <FieldShell style={styles.textInputShell}>
-                <TextInput
-                  style={[
-                    styles.textInput,
-                    { color: colors.text, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight },
-                  ]}
-                  placeholder="What's on your mind..."
-                  placeholderTextColor={colors.textSecondary + "60"}
-                  value={content}
-                  onChangeText={setContent}
-                  multiline
-                  textAlignVertical="top"
-                  autoCorrect
-                  autoCapitalize="sentences"
-                  scrollEnabled={false}
-                  selectionColor={colors.secondary}
-                />
-              </FieldShell>
             </View>
           )}
 
           {editorType === "items" && (
             <View style={styles.gratitudeContainer}>
-              {/* Intro text */}
-              {categoryConfig?.introText && (
-                <Text
-                  style={[
-                    styles.introText,
-                    { color: colors.accent, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.5 },
-                  ]}
-                >
-                  {categoryConfig.introText}
-                </Text>
-              )}
-
-              {/* Gratitude item cards */}
-              {gratitudeItems.map((item, index) => (
-                <SanctuaryCard
-                  key={index}
-                  tone="lowest"
-                  style={styles.gratitudeCard}
-                  contentStyle={styles.gratitudeCardContent}
-                >
-                  <View style={styles.gratitudeIconWrapper}>
-                    <Seedling size={18} color={categoryColor} />
-                  </View>
-                  <FieldShell style={styles.gratitudeInputShell}>
-                    <TextInput
-                      style={[
-                        styles.gratitudeInput,
-                        { color: colors.text, fontSize: typography.bodyFontSize - 2, lineHeight: typography.bodyLineHeight - 6 },
-                      ]}
-                      placeholder="I'm grateful for..."
-                      placeholderTextColor={colors.textSecondary + "60"}
-                      value={item}
-                      onChangeText={(text) =>
-                        handleGratitudeItemChange(index, text)
-                      }
-                      multiline
-                      autoCorrect
-                      autoCapitalize="sentences"
-                    />
-                  </FieldShell>
-                  {gratitudeItems.length > 1 && (
-                    <TouchableOpacity
-                      onPress={() => handleRemoveGratitudeItem(index)}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                      style={styles.removeItemButton}
-                    >
-                      <Ionicons
-                        name="close-circle"
-                        size={18}
-                        color={colors.textSecondary + "60"}
-                      />
-                    </TouchableOpacity>
-                  )}
-                </SanctuaryCard>
-              ))}
-
-              <SanctuaryButton
-                label="Add another"
-                variant="secondary"
-                onPress={handleAddGratitudeSlot}
-                style={styles.addItemButton}
-                icon={<Ionicons name="add" size={18} color={colors.onSecondaryContainer} />}
+              <ImageBackground
+                source={require("../../assets/gratitude.jpg")}
+                style={styles.gratitudeHeroImage}
+                imageStyle={styles.gratitudeHeroImageInner}
+                resizeMode="cover"
               />
 
-              <Text
-                style={[
-                  styles.gratitudeHint,
-                  { color: colors.textSecondary, fontSize: typography.bodyFontSize - 8 },
-                ]}
+              <SanctuaryCard
+                tone="lowest"
+                style={styles.gratitudeOverlayCard}
+                contentStyle={styles.gratitudeOverlayContent}
               >
-                Write as many or as few as you'd like
-              </Text>
+                {!!dailyGratitudeQuote && (
+                  <View style={styles.gratitudeQuoteWrap}>
+                    <Text
+                      style={[
+                        styles.gratitudeDailyQuote,
+                        {
+                          color: colors.primary,
+                          fontSize: gratitudeQuoteFontSize,
+                          lineHeight: gratitudeQuoteLineHeight,
+                        },
+                      ]}
+                    >
+                      {dailyGratitudeQuote}
+                    </Text>
+                    {!!dailyGratitudeReference && (
+                      <Text
+                        style={[
+                          styles.gratitudeDailyReference,
+                          { color: colors.onSurfaceVariant },
+                        ]}
+                      >
+                        {dailyGratitudeReference}
+                      </Text>
+                    )}
+                  </View>
+                )}
+
+                {/* Gratitude item cards */}
+                {gratitudeItems.map((item, index) => (
+                  <SanctuaryCard
+                    key={index}
+                    tone="lowest"
+                    style={styles.gratitudeCard}
+                    contentStyle={styles.gratitudeCardContent}
+                  >
+                    <View style={styles.gratitudeIconWrapper}>
+                      <Seedling size={18} color={categoryColor} />
+                    </View>
+                    <FieldShell style={styles.gratitudeInputShell}>
+                      <TextInput
+                        style={[
+                          styles.gratitudeInput,
+                          { color: colors.text, fontSize: typography.bodyFontSize - 2, lineHeight: typography.bodyLineHeight - 6 },
+                        ]}
+                        placeholder="I'm grateful for..."
+                        placeholderTextColor={colors.textSecondary + "60"}
+                        value={item}
+                        onChangeText={(text) =>
+                          handleGratitudeItemChange(index, text)
+                        }
+                        multiline
+                        autoCorrect
+                        autoCapitalize="sentences"
+                      />
+                    </FieldShell>
+                    {gratitudeItems.length > 1 && (
+                      <TouchableOpacity
+                        onPress={() => handleRemoveGratitudeItem(index)}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        style={styles.removeItemButton}
+                      >
+                        <Ionicons
+                          name="close-circle"
+                          size={18}
+                          color={colors.textSecondary + "60"}
+                        />
+                      </TouchableOpacity>
+                    )}
+                  </SanctuaryCard>
+                ))}
+
+                <SanctuaryButton
+                  label="Add another"
+                  variant="secondary"
+                  onPress={handleAddGratitudeSlot}
+                  style={styles.addItemButton}
+                  icon={<Ionicons name="add" size={18} color={colors.onSecondaryContainer} />}
+                />
+
+                <Text
+                  style={[
+                    styles.gratitudeHint,
+                    { color: colors.textSecondary, fontSize: typography.bodyFontSize - 8 },
+                  ]}
+                >
+                  Write as many or as few as you'd like
+                </Text>
+              </SanctuaryCard>
             </View>
           )}
 
@@ -469,6 +697,38 @@ const styles = StyleSheet.create({
   textEditorContainer: {
     minHeight: 200,
   },
+  journalContainer: {
+    paddingTop: 0,
+  },
+  journalHeroImage: {
+    height: 220,
+    width: "100%",
+  },
+  journalHeroImageInner: {
+    opacity: 0.95,
+  },
+  journalOverlayCard: {
+    marginHorizontal: 20,
+    marginTop: -72,
+    marginBottom: 8,
+    borderRadius: 12,
+  },
+  journalOverlayContent: {
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    paddingBottom: 12,
+  },
+  journalQuoteWrap: {
+    marginHorizontal: 10,
+    marginTop: 8,
+    marginBottom: 24,
+  },
+  journalQuoteText: {
+    fontFamily: fonts.bodyFamilyBold,
+    textAlign: "left",
+    fontWeight: "700",
+    paddingHorizontal: 14,
+  },
   textIntroWrapper: {
     marginHorizontal: 20,
     marginTop: 8,
@@ -490,8 +750,45 @@ const styles = StyleSheet.create({
 
   // ─── Gratitude ────────────────────────────────────────
   gratitudeContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 0,
+  },
+  gratitudeHeroImage: {
+    height: 220,
+    width: "100%",
+  },
+  gratitudeHeroImageInner: {
+    opacity: 0.95,
+  },
+  gratitudeOverlayCard: {
+    marginHorizontal: 20,
+    marginTop: -72,
+    marginBottom: 8,
+    borderRadius: 12,
+  },
+  gratitudeOverlayContent: {
+    paddingHorizontal: 22,
+    paddingTop: 22,
+    paddingBottom: 16,
+  },
+  gratitudeDailyQuote: {
+    fontFamily: fonts.bodyFamilyBold,
+    textAlign: "left",
+    fontWeight: "700",
+    paddingHorizontal: 14,
+  },
+  gratitudeQuoteWrap: {
+    marginHorizontal: 10,
+    marginTop: 8,
+    marginBottom: 24,
+  },
+  gratitudeDailyReference: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 14,
+    lineHeight: 18,
+    letterSpacing: 0.2,
+    textAlign: "left",
+    marginTop: 10,
+    paddingHorizontal: 14,
   },
   introText: {
     fontFamily: fonts.headerFamily,

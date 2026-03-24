@@ -85,6 +85,10 @@ function JournalTabContent() {
   // ─── Tab press → always return to "all" timeline ─────────────────
   useEffect(() => {
     const unsubscribe = navigation.addListener("tabPress" as any, (e: any) => {
+      if (viewRef.current === "editor") {
+        // Let the editor-level guard handle save/discard + navigation.
+        return;
+      }
       if (viewRef.current !== "timeline") {
         e.preventDefault();
         setSelectedEntry(null);
