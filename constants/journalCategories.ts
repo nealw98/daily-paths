@@ -82,7 +82,7 @@ export const JOURNAL_CATEGORIES: JournalCategory[] = [
     editorType: "text",
     svgIcon: "feather",
     description: "Write freely about what's on your mind",
-    introText: "Pour out your heart, without reservation.",
+    introText: "We are all part of creation, all kings, all poets, all musicians; we have only to open up, to discover what is already there. - Henry Miller",
   },
   {
     id: "gratitude",

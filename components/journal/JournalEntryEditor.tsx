@@ -8,8 +8,9 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  ImageBackground,
+  Image,
   BackHandler,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -53,6 +54,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
 }) => {
   const { colors } = useTheme();
   const navigation = useNavigation();
+  const { width: screenWidth } = useWindowDimensions();
 
   const { settings } = useSettings();
   const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
@@ -60,6 +62,22 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
   const categoryLabel = getCategoryLabel(entryType);
   const categoryColor = getCategoryColor(entryType);
   const editorType = categoryConfig?.editorType ?? "text";
+  const { journalIntroQuote, journalIntroReference } = useMemo(() => {
+    const raw = categoryConfig?.introText?.trim() ?? "";
+    if (!raw) {
+      return { journalIntroQuote: "", journalIntroReference: "" };
+    }
+
+    const dashMatch = raw.match(/^(.*?)(?:\s+[—-]\s*)([^—-][\s\S]*)$/);
+    if (dashMatch) {
+      return {
+        journalIntroQuote: dashMatch[1].trim(),
+        journalIntroReference: dashMatch[2].trim(),
+      };
+    }
+
+    return { journalIntroQuote: raw, journalIntroReference: "" };
+  }, [categoryConfig?.introText]);
 
   const [saving, setSaving] = useState(false);
   const [dailyGratitudeQuote, setDailyGratitudeQuote] = useState<string>("");
@@ -250,6 +268,10 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
 
   const gratitudeQuoteFontSize = Math.round(typography.bodyFontSize * 1.11) + 2;
   const gratitudeQuoteLineHeight = Math.round(gratitudeQuoteFontSize * 1.18);
+  const journalQuoteFontSize = Math.max(16, typography.bodyFontSize - 1);
+  const journalQuoteLineHeight = Math.round(journalQuoteFontSize * 1.35);
+  const journalHeroWidth = screenWidth;
+  const journalHeroHeight = journalHeroWidth / 3;
 
   // Load daily gratitude quote for the gratitude editor from `gratitude_quotes`.
   React.useEffect(() => {
@@ -346,7 +368,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
 
   return (
     <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={[styles.container, { backgroundColor: colors.surface }]}
       edges={["top"]}
     >
       <KeyboardAvoidingView
@@ -372,15 +394,17 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
           </View>
         </View>
 
-        <View style={[styles.dateBar, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.dateText, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 6 }]}>
-            {isEditing ? "Editing Entry" : dateStr}
-          </Text>
-        </View>
+        {entryType !== "journal" ? (
+          <View style={[styles.dateBar, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.dateText, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 6 }]}>
+              {isEditing ? "Editing Entry" : dateStr}
+            </Text>
+          </View>
+        ) : null}
 
         {/* Editor Content */}
         <KeyboardAwareScrollView
-          style={[styles.editorScroll, { backgroundColor: colors.background }]}
+          style={[styles.editorScroll, { backgroundColor: colors.surface }]}
           bottomOffset={96}
           extraKeyboardSpace={24}
           keyboardShouldPersistTaps="handled"
@@ -390,55 +414,146 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
             <View style={styles.textEditorContainer}>
               {entryType === "journal" ? (
                 <View style={styles.journalContainer}>
-                  <ImageBackground
+                  <Image
                     source={require("../../assets/journal.jpg")}
-                    style={styles.journalHeroImage}
-                    imageStyle={styles.journalHeroImageInner}
-                    resizeMode="cover"
+                    style={[
+                      styles.journalHeroImage,
+                      { width: journalHeroWidth, height: journalHeroHeight },
+                    ]}
+                    resizeMode="contain"
                   />
+                  <View
+                    style={[
+                      styles.journalDatePill,
+                      { backgroundColor: "rgba(255, 255, 255, 0.90)" },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.journalDatePillText,
+                        {
+                          color: colors.onSurface,
+                        },
+                      ]}
+                    >
+                      {isEditing ? "Editing Entry" : dateStr}
+                    </Text>
+                  </View>
                   <SanctuaryCard
                     tone="lowest"
-                    style={styles.journalOverlayCard}
-                    contentStyle={styles.journalOverlayContent}
+                    style={styles.journalQuoteCard}
+                    contentStyle={[
+                      styles.journalQuoteCardInner,
+                      { backgroundColor: colors.primary },
+                    ]}
+                    elevated
                   >
                     {categoryConfig?.introText && (
-                      <View style={styles.journalQuoteWrap}>
-                        <Text
-                          style={[
-                            styles.journalQuoteText,
-                            {
-                              color: colors.primary,
-                              fontSize: gratitudeQuoteFontSize,
-                              lineHeight: gratitudeQuoteLineHeight,
-                            },
-                          ]}
-                        >
-                          {categoryConfig.introText}
-                        </Text>
+                      <View style={styles.quoteCardContent}>
+                        <View pointerEvents="none" style={styles.quotePatternLayer}>
+                          <Text numberOfLines={1} style={styles.quotePatternSmall}>
+                            quote   quote   quote
+                          </Text>
+                          <Text style={styles.quotePatternLargeA}>quote</Text>
+                          <Text style={styles.quotePatternLargeB}>quote</Text>
+                          <Text style={styles.quotePatternMedium}>quote</Text>
+                        </View>
+                        <View style={styles.journalQuoteWrap}>
+                          <Text
+                            style={[
+                              styles.journalQuoteText,
+                              {
+                                color: colors.onPrimary,
+                                fontSize: journalQuoteFontSize,
+                                lineHeight: journalQuoteLineHeight,
+                              },
+                            ]}
+                          >
+                            {journalIntroQuote}
+                          </Text>
+                          {!!journalIntroReference && (
+                            <Text
+                              style={[
+                                styles.journalQuoteReference,
+                                {
+                                  fontSize: 14,
+                                  color: colors.secondaryContainer,
+                                },
+                              ]}
+                            >
+                              {journalIntroReference}
+                            </Text>
+                          )}
+                        </View>
                       </View>
                     )}
-                    <FieldShell style={styles.textInputShell}>
-                      <TextInput
+                  </SanctuaryCard>
+                  <SanctuaryCard
+                    tone="lowest"
+                    style={styles.journalEntryFieldCard}
+                    contentStyle={[
+                      styles.journalEntryFieldCardInner,
+                      { backgroundColor: colors.surfaceContainerLowest },
+                    ]}
+                    elevated
+                  >
+                    <TextInput
+                      style={[
+                        styles.textInput,
+                        styles.journalTextInput,
+                        {
+                          color: colors.text,
+                          fontSize: typography.bodyFontSize,
+                          lineHeight: typography.bodyLineHeight,
+                        },
+                      ]}
+                      placeholder="What's on your mind..."
+                      placeholderTextColor={colors.textSecondary + "60"}
+                      value={content}
+                      onChangeText={setContent}
+                      multiline
+                      textAlignVertical="top"
+                      autoCorrect
+                      autoCapitalize="sentences"
+                      scrollEnabled={false}
+                      selectionColor={colors.secondary}
+                    />
+                    <View
+                      style={[
+                        styles.journalEntryFooter,
+                        { borderTopColor: colors.ghostBorder },
+                      ]}
+                    >
+                      <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPress={handleCancel}
+                        style={styles.journalFooterCancel}
+                      >
+                        <Text
+                          style={[
+                            styles.journalFooterCancelText,
+                            { color: colors.onSurfaceVariant },
+                          ]}
+                        >
+                          Cancel
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPress={handleSave}
+                        disabled={saving || !hasContent}
                         style={[
-                          styles.textInput,
-                          {
-                            color: colors.text,
-                            fontSize: typography.bodyFontSize,
-                            lineHeight: typography.bodyLineHeight,
-                          },
+                          styles.journalFooterSave,
+                          { backgroundColor: colors.primaryContainer },
+                          (saving || !hasContent) && styles.journalFooterSaveDisabled,
                         ]}
-                        placeholder="What's on your mind..."
-                        placeholderTextColor={colors.textSecondary + "60"}
-                        value={content}
-                        onChangeText={setContent}
-                        multiline
-                        textAlignVertical="top"
-                        autoCorrect
-                        autoCapitalize="sentences"
-                        scrollEnabled={false}
-                        selectionColor={colors.secondary}
-                      />
-                    </FieldShell>
+                      >
+                        <Ionicons name="checkmark" size={14} color={colors.onPrimary} />
+                        <Text style={[styles.journalFooterSaveText, { color: colors.onPrimary }]}>
+                          {saving ? "Saving..." : "Save"}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   </SanctuaryCard>
                 </View>
               ) : (
@@ -492,57 +607,99 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
 
           {editorType === "items" && (
             <View style={styles.gratitudeContainer}>
-              <ImageBackground
+              <Image
                 source={require("../../assets/gratitude.jpg")}
-                style={styles.gratitudeHeroImage}
-                imageStyle={styles.gratitudeHeroImageInner}
-                resizeMode="cover"
+                style={[
+                  styles.gratitudeHeroImage,
+                  { width: journalHeroWidth, height: journalHeroHeight },
+                ]}
+                resizeMode="contain"
               />
+              <View
+                style={[
+                  styles.gratitudeDatePill,
+                  { backgroundColor: "rgba(255, 255, 255, 0.90)" },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.gratitudeDatePillText,
+                    { color: colors.onSurface },
+                  ]}
+                >
+                  {isEditing ? "Editing Entry" : dateStr}
+                </Text>
+              </View>
 
               <SanctuaryCard
                 tone="lowest"
-                style={styles.gratitudeOverlayCard}
-                contentStyle={styles.gratitudeOverlayContent}
+                style={styles.gratitudeQuoteCard}
+                contentStyle={[
+                  styles.gratitudeQuoteCardInner,
+                  { backgroundColor: colors.primary },
+                ]}
+                elevated
               >
                 {!!dailyGratitudeQuote && (
-                  <View style={styles.gratitudeQuoteWrap}>
-                    <Text
-                      style={[
-                        styles.gratitudeDailyQuote,
-                        {
-                          color: colors.primary,
-                          fontSize: gratitudeQuoteFontSize,
-                          lineHeight: gratitudeQuoteLineHeight,
-                        },
-                      ]}
-                    >
-                      {dailyGratitudeQuote}
-                    </Text>
-                    {!!dailyGratitudeReference && (
+                  <View style={styles.quoteCardContent}>
+                    <View pointerEvents="none" style={styles.quotePatternLayer}>
+                      <Text numberOfLines={1} style={styles.quotePatternSmall}>
+                        quote   quote   quote
+                      </Text>
+                      <Text style={styles.quotePatternLargeA}>quote</Text>
+                      <Text style={styles.quotePatternLargeB}>quote</Text>
+                      <Text style={styles.quotePatternMedium}>quote</Text>
+                    </View>
+                    <View style={styles.gratitudeQuoteWrap}>
                       <Text
                         style={[
-                          styles.gratitudeDailyReference,
-                          { color: colors.onSurfaceVariant },
+                          styles.gratitudeDailyQuote,
+                          {
+                            color: colors.onPrimary,
+                            fontSize: journalQuoteFontSize,
+                            lineHeight: journalQuoteLineHeight,
+                          },
                         ]}
                       >
-                        {dailyGratitudeReference}
+                        {dailyGratitudeQuote}
                       </Text>
-                    )}
+                      {!!dailyGratitudeReference && (
+                        <Text
+                          style={[
+                            styles.gratitudeDailyReference,
+                            { color: colors.secondaryContainer },
+                          ]}
+                        >
+                          {dailyGratitudeReference}
+                        </Text>
+                      )}
+                    </View>
                   </View>
                 )}
+              </SanctuaryCard>
 
-                {/* Gratitude item cards */}
+              <SanctuaryCard
+                tone="lowest"
+                style={styles.gratitudeEntryCard}
+                contentStyle={[
+                  styles.gratitudeEntryCardInner,
+                  { backgroundColor: colors.surfaceContainerLowest },
+                ]}
+                elevated
+              >
                 {gratitudeItems.map((item, index) => (
-                  <SanctuaryCard
+                  <View
                     key={index}
-                    tone="lowest"
-                    style={styles.gratitudeCard}
-                    contentStyle={styles.gratitudeCardContent}
+                    style={[
+                      styles.gratitudeItemRow,
+                      index === gratitudeItems.length - 1 ? styles.gratitudeItemRowLast : null,
+                      { borderBottomColor: colors.ghostBorder },
+                    ]}
                   >
                     <View style={styles.gratitudeIconWrapper}>
                       <Seedling size={18} color={categoryColor} />
                     </View>
-                    <FieldShell style={styles.gratitudeInputShell}>
+                    <View style={styles.gratitudeInputShell}>
                       <TextInput
                         style={[
                           styles.gratitudeInput,
@@ -558,7 +715,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                         autoCorrect
                         autoCapitalize="sentences"
                       />
-                    </FieldShell>
+                    </View>
                     {gratitudeItems.length > 1 && (
                       <TouchableOpacity
                         onPress={() => handleRemoveGratitudeItem(index)}
@@ -572,7 +729,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                         />
                       </TouchableOpacity>
                     )}
-                  </SanctuaryCard>
+                  </View>
                 ))}
 
                 <SanctuaryButton
@@ -592,6 +749,38 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                   Write as many or as few as you'd like
                 </Text>
               </SanctuaryCard>
+
+              <View style={styles.gratitudeActionsRow}>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={handleCancel}
+                  style={styles.journalFooterCancel}
+                >
+                  <Text
+                    style={[
+                      styles.journalFooterCancelText,
+                      { color: colors.onSurfaceVariant },
+                    ]}
+                  >
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={handleSave}
+                  disabled={saving || !hasContent}
+                  style={[
+                    styles.journalFooterSave,
+                    { backgroundColor: colors.primaryContainer },
+                    (saving || !hasContent) && styles.journalFooterSaveDisabled,
+                  ]}
+                >
+                  <Ionicons name="checkmark" size={14} color={colors.onPrimary} />
+                  <Text style={[styles.journalFooterSaveText, { color: colors.onPrimary }]}>
+                    {saving ? "Saving..." : "Save"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
 
@@ -613,29 +802,31 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
         </KeyboardAwareScrollView>
 
         {/* Bottom Bar */}
-        <View
-          style={[
-            styles.bottomBar,
-            {
-              backgroundColor: colors.surface,
-              borderTopColor: colors.ghostBorder,
-            },
-          ]}
-        >
-          <SanctuaryButton
-            label="Cancel"
-            variant="secondary"
-            onPress={handleCancel}
-            style={styles.bottomButton}
-          />
-          <SanctuaryButton
-            label={saving ? "Saving..." : "Save"}
-            onPress={handleSave}
-            disabled={saving || !hasContent}
-            style={styles.bottomButton}
-            icon={<Ionicons name="checkmark" size={18} color={colors.onSecondary} />}
-          />
-        </View>
+        {entryType !== "journal" && entryType !== "gratitude" ? (
+          <View
+            style={[
+              styles.bottomBar,
+              {
+                backgroundColor: colors.surface,
+                borderTopColor: colors.ghostBorder,
+              },
+            ]}
+          >
+            <SanctuaryButton
+              label="Cancel"
+              variant="secondary"
+              onPress={handleCancel}
+              style={styles.bottomButton}
+            />
+            <SanctuaryButton
+              label={saving ? "Saving..." : "Save"}
+              onPress={handleSave}
+              disabled={saving || !hasContent}
+              style={styles.bottomButton}
+              icon={<Ionicons name="checkmark" size={18} color={colors.onSecondary} />}
+            />
+          </View>
+        ) : null}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -701,33 +892,164 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   journalHeroImage: {
-    height: 220,
     width: "100%",
+    aspectRatio: 3,
   },
-  journalHeroImageInner: {
-    opacity: 0.95,
+  journalDatePill: {
+    alignSelf: "flex-start",
+    marginLeft: 20,
+    marginTop: -22,
+    minHeight: 44,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    justifyContent: "center",
+    shadowColor: "#191C1C",
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
   },
-  journalOverlayCard: {
+  journalDatePillText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 14,
+    lineHeight: 18,
+    letterSpacing: 0.2,
+  },
+  journalQuoteCard: {
     marginHorizontal: 20,
-    marginTop: -72,
-    marginBottom: 8,
+    marginTop: 18,
+    marginBottom: 0,
     borderRadius: 12,
   },
-  journalOverlayContent: {
-    paddingHorizontal: 18,
-    paddingTop: 18,
-    paddingBottom: 12,
+  journalQuoteCardInner: {
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  quoteCardContent: {
+    position: "relative",
+    overflow: "hidden",
+    borderRadius: 12,
   },
   journalQuoteWrap: {
-    marginHorizontal: 10,
-    marginTop: 8,
-    marginBottom: 24,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 18,
+    position: "relative",
   },
   journalQuoteText: {
-    fontFamily: fonts.bodyFamilyBold,
+    fontFamily: fonts.bodyFamilyMedium,
     textAlign: "left",
-    fontWeight: "700",
+    fontWeight: "500",
     paddingHorizontal: 14,
+    position: "relative",
+    zIndex: 2,
+  },
+  journalQuoteReference: {
+    fontFamily: fonts.bodyFamilyRegular,
+    textAlign: "left",
+    letterSpacing: 0.2,
+    alignSelf: "stretch",
+    marginLeft: 14,
+    marginRight: 0,
+    marginTop: 10,
+    position: "relative",
+    zIndex: 2,
+  },
+  quotePatternLayer: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: "hidden",
+    zIndex: 0,
+  },
+  quotePatternSmall: {
+    position: "absolute",
+    left: -36,
+    right: -36,
+    top: 10,
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 28,
+    lineHeight: 32,
+    letterSpacing: 1.4,
+    color: "rgba(255, 255, 255, 0.10)",
+    zIndex: 0,
+  },
+  quotePatternLargeA: {
+    position: "absolute",
+    right: -34,
+    top: -10,
+    fontFamily: fonts.bodyFamilyBold,
+    fontSize: 148,
+    lineHeight: 148,
+    color: "rgba(255, 255, 255, 0.07)",
+    transform: [{ rotate: "-8deg" }],
+    zIndex: 0,
+  },
+  quotePatternLargeB: {
+    position: "absolute",
+    left: -12,
+    bottom: -40,
+    fontFamily: fonts.bodyFamilyBold,
+    fontSize: 164,
+    lineHeight: 164,
+    color: "rgba(255, 255, 255, 0.05)",
+    transform: [{ rotate: "10deg" }],
+    zIndex: 0,
+  },
+  quotePatternMedium: {
+    position: "absolute",
+    left: 110,
+    bottom: 8,
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 72,
+    lineHeight: 72,
+    color: "rgba(255, 255, 255, 0.06)",
+    transform: [{ rotate: "-90deg" }],
+    zIndex: 0,
+  },
+  journalEntryFieldCard: {
+    marginHorizontal: 20,
+    marginTop: 18,
+    borderRadius: 12,
+  },
+  journalEntryFieldCardInner: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+    borderRadius: 12,
+  },
+  journalEntryFooter: {
+    marginTop: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  journalFooterCancel: {
+    minHeight: 32,
+    justifyContent: "center",
+    paddingHorizontal: 6,
+  },
+  journalFooterCancelText: {
+    fontFamily: fonts.bodyFamilyMedium,
+    fontSize: 14,
+    lineHeight: 18,
+  },
+  journalFooterSave: {
+    minHeight: 36,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  journalFooterSaveDisabled: {
+    opacity: 0.55,
+  },
+  journalFooterSaveText: {
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 14,
+    lineHeight: 18,
   },
   textIntroWrapper: {
     marginHorizontal: 20,
@@ -747,39 +1069,65 @@ const styles = StyleSheet.create({
     lineHeight: 28,
     minHeight: 200,
   },
+  journalTextInput: {
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+  },
 
   // ─── Gratitude ────────────────────────────────────────
   gratitudeContainer: {
     paddingTop: 0,
   },
   gratitudeHeroImage: {
-    height: 220,
     width: "100%",
+    aspectRatio: 3,
   },
-  gratitudeHeroImageInner: {
-    opacity: 0.95,
+  gratitudeDatePill: {
+    alignSelf: "flex-start",
+    marginLeft: 20,
+    marginTop: -22,
+    minHeight: 44,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    justifyContent: "center",
+    shadowColor: "#191C1C",
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
   },
-  gratitudeOverlayCard: {
+  gratitudeDatePillText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 14,
+    lineHeight: 18,
+    letterSpacing: 0.2,
+  },
+  gratitudeQuoteCard: {
     marginHorizontal: 20,
-    marginTop: -72,
-    marginBottom: 8,
+    marginTop: 18,
+    marginBottom: 0,
     borderRadius: 12,
   },
-  gratitudeOverlayContent: {
-    paddingHorizontal: 22,
-    paddingTop: 22,
-    paddingBottom: 16,
+  gratitudeQuoteCardInner: {
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    paddingBottom: 18,
+    borderRadius: 12,
+    overflow: "hidden",
   },
   gratitudeDailyQuote: {
-    fontFamily: fonts.bodyFamilyBold,
+    fontFamily: fonts.bodyFamilyMedium,
     textAlign: "left",
-    fontWeight: "700",
+    fontWeight: "500",
     paddingHorizontal: 14,
+    position: "relative",
+    zIndex: 1,
   },
   gratitudeQuoteWrap: {
-    marginHorizontal: 10,
-    marginTop: 8,
-    marginBottom: 24,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 18,
+    position: "relative",
   },
   gratitudeDailyReference: {
     fontFamily: fonts.bodyFamilyRegular,
@@ -788,7 +1136,20 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
     textAlign: "left",
     marginTop: 10,
-    paddingHorizontal: 14,
+    marginLeft: 14,
+    position: "relative",
+    zIndex: 1,
+  },
+  gratitudeEntryCard: {
+    marginHorizontal: 20,
+    marginTop: 18,
+    borderRadius: 12,
+  },
+  gratitudeEntryCardInner: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 16,
+    borderRadius: 12,
   },
   introText: {
     fontFamily: fonts.headerFamily,
@@ -797,35 +1158,37 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: "center",
   },
-  gratitudeCard: {
-    marginBottom: 12,
-  },
-  gratitudeCardContent: {
+  gratitudeItemRow: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 10,
-    padding: 14,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+  },
+  gratitudeItemRowLast: {
+    borderBottomWidth: 0,
   },
   gratitudeIconWrapper: {
     marginTop: 2,
   },
   gratitudeInputShell: {
     flex: 1,
-    paddingVertical: 10,
   },
   gratitudeInput: {
     flex: 1,
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
     lineHeight: 22,
-    minHeight: 22,
+    minHeight: 28,
   },
   removeItemButton: {
     marginTop: 2,
     padding: 2,
   },
   addItemButton: {
+    marginTop: 4,
     marginBottom: 12,
+    alignSelf: "flex-start",
   },
   addItemText: {
     fontFamily: fonts.bodyFamilyRegular,
@@ -838,6 +1201,14 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     textAlign: "center",
     marginTop: 4,
+  },
+  gratitudeActionsRow: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
 
   // ─── Guided Prompts ───────────────────────────────────
