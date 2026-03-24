@@ -124,7 +124,7 @@ export const PrayersScreen: React.FC = () => {
           }}
           activeOpacity={0.7}
         >
-          <Text style={[styles.prayerTitle, { color: colors.primaryContainer, fontSize: typography.bodyFontSize }]}>
+          <Text style={[styles.prayerTitle, { color: colors.primaryContainer }]}>
             {prayer.title}
           </Text>
           <Ionicons
@@ -328,7 +328,7 @@ export const PrayersScreen: React.FC = () => {
           }}
           activeOpacity={0.7}
         >
-          <Text style={[styles.prayerTitle, { color: colors.primaryContainer, fontSize: typography.bodyFontSize }]}>
+          <Text style={[styles.prayerTitle, { color: colors.primaryContainer }]}>
             {prayer.title}
           </Text>
           <Ionicons
@@ -475,7 +475,7 @@ export const PrayersScreen: React.FC = () => {
           >
             <View style={styles.addPrayerLeft}>
               <Ionicons name="add" size={20} color={colors.primaryContainer} style={{ marginRight: 6 }} />
-              <Text style={[styles.prayerTitle, { color: colors.primaryContainer, fontSize: typography.bodyFontSize }]}>
+              <Text style={[styles.prayerTitle, { color: colors.primaryContainer, fontSize: 17, fontFamily: fonts.bodyFamilyMedium, fontWeight: undefined }]}>
                 Create a New Prayer
               </Text>
             </View>
@@ -567,9 +567,7 @@ const styles = StyleSheet.create({
   },
   prayerTitle: {
     fontFamily: fonts.bodyFamilyBold,
-    fontSize: 18,
-    lineHeight: 30,
-    fontWeight: "700",
+    fontSize: 24,
     flex: 1,
     paddingRight: 12,
     includeFontPadding: false,

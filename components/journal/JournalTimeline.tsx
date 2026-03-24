@@ -288,11 +288,14 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
 
   // ─── Render: Date Divider ───────────────────────────────────────────────
 
-  const renderDateDivider = (dateKey: string) => {
+  const renderDateDivider = (dateKey: string, index: number) => {
     const label = formatDateHeader(dateKey);
     return (
       <View style={styles.dateDivider}>
-        <Text style={[styles.dateLabel, { color: colors.onSurfaceVariant }]}>
+        <View style={styles.timelineLineColumn}>
+          <View style={[styles.timelineDot, { backgroundColor: colors.primary }]} />
+        </View>
+        <Text style={[styles.dateLabel, { color: colors.primary }]}>
           {label}
         </Text>
       </View>
@@ -303,9 +306,16 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
 
   const renderItem = ({ item, index }: { item: TimelineItem; index: number }) => {
     if (item.type === "header") {
-      return renderDateDivider(item.date);
+      return renderDateDivider(item.date, index);
     }
-    return renderEntryCard(item.data);
+    return (
+      <View style={styles.timelineEntryRow}>
+        <View style={styles.timelineLineColumn} />
+        <View style={styles.timelineEntryContent}>
+          {renderEntryCard(item.data)}
+        </View>
+      </View>
+    );
   };
 
   const keyExtractor = (item: TimelineItem, index: number) => {
@@ -453,6 +463,10 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
 
   return (
     <View style={styles.wrapper}>
+      {/* Continuous vertical timeline line */}
+      {timelineItems.length > 0 && (
+        <View style={[styles.timelineAbsoluteLine, { backgroundColor: '#D1D5DB' }]} pointerEvents="none" />
+      )}
       <FlatList
         data={timelineItems}
         renderItem={renderItem}
@@ -480,6 +494,14 @@ const styles = StyleSheet.create({
   // Wrapper so FAB can be absolutely positioned over the FlatList
   wrapper: {
     flex: 1,
+  },
+  timelineAbsoluteLine: {
+    position: "absolute",
+    left: 36, // 16px padding + 20px (center of 40px column)
+    top: 0,
+    bottom: 0,
+    width: 1,
+    zIndex: 0,
   },
 
   // FlatList content
@@ -511,14 +533,33 @@ const styles = StyleSheet.create({
   },
 
   dateDivider: {
-    marginTop: 12,
-    marginBottom: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    minHeight: 36,
+    marginTop: 6,
+    marginBottom: 2,
+  },
+  timelineDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
   },
   dateLabel: {
-    fontFamily: fonts.labelFamily,
-    fontSize: 12,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    fontFamily: fonts.bodyFamilyBold,
+    fontSize: 24,
+    marginLeft: 16,
+  },
+
+  timelineEntryRow: {
+    flexDirection: "row",
+  },
+  timelineLineColumn: {
+    width: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  timelineEntryContent: {
+    flex: 1,
   },
 
   entryCardTouchable: {
