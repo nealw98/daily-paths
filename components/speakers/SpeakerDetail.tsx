@@ -14,7 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { useAnalytics } from "../../utils/analytics";
-import { fonts } from "../../constants/theme";
+import { fonts, layout, shadows, typography } from "../../constants/theme";
 import { EqualizerBars } from "./EqualizerBars";
 import { getSpeakerAudioUrl } from "../../hooks/useSpeakers";
 import { useSpeakerDownload, resolveAudioUri } from "../../hooks/useSpeakerDownload";
@@ -68,6 +68,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
   // Scale factor: medium bodyFontSize (18) is the baseline (1.0)
   const textMetrics = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
   const scale = textMetrics.bodyFontSize / 18;
+  const scaled = useCallback((size: number) => Math.round(size * scale), [scale]);
   const hasLoadedRef = useRef(false);
 
   const audioUrl = getSpeakerAudioUrl(speaker);
@@ -176,7 +177,16 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
         hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
       >
         <Ionicons name="download-outline" size={Math.round(18 * scale)} color={colors.onSecondaryContainer} />
-        <Text style={[styles.dlButtonText, { color: colors.onSecondaryContainer, fontSize: Math.round(14 * scale) }]}>
+        <Text
+          style={[
+            styles.dlButtonText,
+            {
+              color: colors.onSecondaryContainer,
+              fontSize: scaled(typography.bodySmall.fontSize),
+              lineHeight: scaled(typography.bodySmall.lineHeight),
+            },
+          ]}
+        >
           {sizeLabel}
         </Text>
       </TouchableOpacity>
@@ -195,7 +205,18 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
         <Ionicons name="chevron-back" size={Math.round(20 * scale)} color={colors.secondary} />
-        <Text style={[styles.backLabel, { color: colors.secondary, fontSize: Math.round(16 * scale) }]}>Back</Text>
+        <Text
+          style={[
+            styles.backLabel,
+            {
+              color: colors.secondary,
+              fontSize: scaled(typography.titleMedium.fontSize),
+              lineHeight: scaled(typography.titleMedium.lineHeight),
+            },
+          ]}
+        >
+          Back
+        </Text>
       </TouchableOpacity>
 
       <ScrollView
@@ -205,24 +226,66 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
       >
         {/* Speaker info section */}
         <View style={styles.infoSection}>
-          <Text style={[styles.speakerName, { color: colors.text, fontSize: Math.round(26 * scale) }]}>{speaker.speaker}</Text>
+          <Text style={[styles.speakerName, { color: colors.text, fontSize: scaled(24) }]}>{speaker.speaker}</Text>
           {speaker.hometown && (
-            <Text style={[styles.hometown, { color: colors.textSecondary, fontSize: Math.round(15 * scale) }]}>{speaker.hometown}</Text>
+            <Text
+              style={[
+                styles.hometown,
+                {
+                  color: colors.textSecondary,
+                  fontSize: scaled(typography.bodySmall.fontSize),
+                  lineHeight: scaled(typography.bodySmall.lineHeight),
+                },
+              ]}
+            >
+              {speaker.hometown}
+            </Text>
           )}
 
           {/* Accent strip */}
           <View style={[styles.accentStrip, { backgroundColor: colors.secondaryContainer }]} />
 
-          <Text style={[styles.title, { color: colors.text, fontSize: Math.round(20 * scale) }]}>{speaker.title}</Text>
+          <Text
+            style={[
+              styles.title,
+              {
+                color: colors.text,
+                fontSize: scaled(typography.titleLarge.fontSize),
+                lineHeight: scaled(typography.titleLarge.lineHeight),
+              },
+            ]}
+          >
+            {speaker.title}
+          </Text>
           {speaker.subtitle && (
-            <Text style={[styles.subtitle, { color: colors.textSecondary, fontSize: Math.round(16 * scale), lineHeight: Math.round(24 * scale) }]}>{speaker.subtitle}</Text>
+            <Text
+              style={[
+                styles.subtitle,
+                {
+                  color: colors.textSecondary,
+                  fontSize: scaled(typography.bodyMedium.fontSize),
+                  lineHeight: scaled(typography.bodyMedium.lineHeight),
+                },
+              ]}
+            >
+              {speaker.subtitle}
+            </Text>
           )}
         </View>
 
         {/* Quote block */}
         {speaker.quote && (
           <View style={[styles.quoteBlock, { backgroundColor: colors.surfaceContainerLow, borderLeftColor: colors.secondary }]}>
-            <Text style={[styles.quoteText, { color: colors.text, fontSize: Math.round(16 * scale), lineHeight: Math.round(24 * scale) }]}>
+            <Text
+              style={[
+                styles.quoteText,
+                {
+                  color: colors.text,
+                  fontSize: scaled(typography.bodyLarge.fontSize),
+                  lineHeight: scaled(typography.bodyLarge.lineHeight),
+                },
+              ]}
+            >
               &ldquo;{speaker.quote}&rdquo;
             </Text>
           </View>
@@ -231,13 +294,29 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
         {/* Meta row */}
         <View style={styles.metaRow}>
           {speaker.date && (
-            <Text style={[styles.metaText, { color: colors.textSecondary, fontSize: Math.round(13 * scale) }]}>
+            <Text
+              style={[
+                styles.metaText,
+                {
+                  color: colors.textSecondary,
+                  fontSize: scaled(typography.labelMedium.fontSize),
+                  lineHeight: scaled(typography.labelMedium.lineHeight),
+                },
+              ]}
+            >
               {formatDate(speaker.date)}
             </Text>
           )}
           {speaker.explicit && (
             <View style={[styles.explicitBadge, { backgroundColor: colors.danger + "15" }]}>
-              <Text style={[styles.explicitText, { color: colors.danger, fontSize: Math.round(10 * scale) }]}>EXPLICIT</Text>
+              <Text
+                style={[
+                  styles.explicitText,
+                  { color: colors.danger, fontSize: scaled(typography.labelMedium.fontSize) },
+                ]}
+              >
+                EXPLICIT
+              </Text>
             </View>
           )}
         </View>
@@ -248,7 +327,16 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
           <View style={styles.nowPlayingRow}>
             <View style={styles.nowPlayingLeft}>
               <EqualizerBars isPlaying={player.isPlaying} color={colors.secondary} />
-              <Text style={[styles.nowPlayingLabel, { color: colors.textSecondary, fontSize: Math.round(13 * scale) }]}>
+              <Text
+                style={[
+                  styles.nowPlayingLabel,
+                  {
+                    color: colors.textSecondary,
+                    fontSize: scaled(typography.labelMedium.fontSize),
+                    lineHeight: scaled(typography.labelMedium.lineHeight),
+                  },
+                ]}
+              >
                 {player.isPlaying ? "Now Playing" : player.isLoaded ? "Paused" : ""}
               </Text>
             </View>
@@ -259,14 +347,34 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
           {player.isBuffering && !player.isLoaded && (
             <View style={styles.loadingRow}>
               <ActivityIndicator size="small" color={colors.secondary} />
-              <Text style={[styles.loadingText, { color: colors.textSecondary, fontSize: Math.round(14 * scale) }]}>Loading audio...</Text>
+              <Text
+                style={[
+                  styles.loadingText,
+                  {
+                    color: colors.textSecondary,
+                    fontSize: scaled(typography.bodySmall.fontSize),
+                    lineHeight: scaled(typography.bodySmall.lineHeight),
+                  },
+                ]}
+              >
+                Loading audio...
+              </Text>
             </View>
           )}
 
           {player.loadError && (
             <View style={styles.errorRow}>
               <Ionicons name="alert-circle-outline" size={Math.round(18 * scale)} color={colors.danger} />
-              <Text style={[styles.errorText, { color: colors.danger, fontSize: Math.round(14 * scale) }]}>
+              <Text
+                style={[
+                  styles.errorText,
+                  {
+                    color: colors.danger,
+                    fontSize: scaled(typography.bodySmall.fontSize),
+                    lineHeight: scaled(typography.bodySmall.lineHeight),
+                  },
+                ]}
+              >
                 Failed to load audio. Please try again.
               </Text>
             </View>
@@ -305,10 +413,28 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
 
           {/* Time labels */}
           <View style={styles.timeRow}>
-            <Text style={[styles.timeText, { color: colors.textSecondary, fontSize: Math.round(12 * scale) }]}>
+            <Text
+              style={[
+                styles.timeText,
+                {
+                  color: colors.textSecondary,
+                  fontSize: scaled(typography.labelMedium.fontSize),
+                  lineHeight: scaled(typography.labelMedium.lineHeight),
+                },
+              ]}
+            >
               {formatTime(player.positionMs)}
             </Text>
-            <Text style={[styles.timeText, { color: colors.textSecondary, fontSize: Math.round(12 * scale) }]}>
+            <Text
+              style={[
+                styles.timeText,
+                {
+                  color: colors.textSecondary,
+                  fontSize: scaled(typography.labelMedium.fontSize),
+                  lineHeight: scaled(typography.labelMedium.lineHeight),
+                },
+              ]}
+            >
               {formatTime(player.durationMs)}
             </Text>
           </View>
@@ -322,7 +448,18 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
               activeOpacity={0.6}
             >
               <Ionicons name="play-back" size={Math.round(24 * scale)} color={colors.text} />
-              <Text style={[styles.skipLabel, { color: colors.textSecondary, fontSize: Math.round(11 * scale) }]}>15s</Text>
+              <Text
+                style={[
+                  styles.skipLabel,
+                  {
+                    color: colors.textSecondary,
+                    fontSize: scaled(typography.labelMedium.fontSize),
+                    lineHeight: scaled(typography.labelMedium.lineHeight),
+                  },
+                ]}
+              >
+                15s
+              </Text>
             </TouchableOpacity>
 
             {/* Play/Pause */}
@@ -354,7 +491,18 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
               activeOpacity={0.6}
             >
               <Ionicons name="play-forward" size={Math.round(24 * scale)} color={colors.text} />
-              <Text style={[styles.skipLabel, { color: colors.textSecondary, fontSize: Math.round(11 * scale) }]}>30s</Text>
+              <Text
+                style={[
+                  styles.skipLabel,
+                  {
+                    color: colors.textSecondary,
+                    fontSize: scaled(typography.labelMedium.fontSize),
+                    lineHeight: scaled(typography.labelMedium.lineHeight),
+                  },
+                ]}
+              >
+                30s
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -381,7 +529,8 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
                       {
                         color: isActive ? colors.onSecondary : colors.textSecondary,
                         fontWeight: isActive ? "700" : "400",
-                        fontSize: Math.round(13 * scale),
+                        fontSize: scaled(typography.bodySmall.fontSize),
+                        lineHeight: scaled(typography.bodySmall.lineHeight),
                       },
                     ]}
                   >
@@ -409,14 +558,15 @@ const styles = StyleSheet.create({
   backButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    gap: layout.spacing.xs + 2,
+    paddingHorizontal: layout.spacing.md,
+    paddingVertical: layout.spacing.sm + 4,
   },
   backLabel: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
-    fontWeight: "600",
+    fontFamily: typography.titleMedium.fontFamily,
+    fontSize: typography.titleMedium.fontSize,
+    lineHeight: typography.titleMedium.lineHeight,
+    letterSpacing: typography.titleMedium.letterSpacing,
   },
 
   // ─── Scroll ────────────────────────────────────────────────────────────────
@@ -424,13 +574,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 40,
+    paddingHorizontal: layout.spacing.lgPlus,
+    paddingBottom: layout.spacing.xxl,
   },
 
   // ─── Info Section ──────────────────────────────────────────────────────────
   infoSection: {
-    marginBottom: 16,
+    marginBottom: layout.spacing.md,
   },
   speakerName: {
     fontFamily: fonts.bodyFamilyBold,
@@ -438,74 +588,78 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   hometown: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 15,
-    marginBottom: 10,
+    fontFamily: typography.bodySmall.fontFamily,
+    fontSize: typography.bodySmall.fontSize,
+    lineHeight: typography.bodySmall.lineHeight,
+    letterSpacing: typography.bodySmall.letterSpacing,
+    marginBottom: layout.spacing.sm + 2,
   },
   accentStrip: {
     height: 1,
-    marginBottom: 14,
+    marginBottom: layout.spacing.sm + 6,
   },
   title: {
-    fontFamily: fonts.bodyFamilyMedium,
-    fontSize: 20,
-    marginBottom: 6,
+    fontFamily: typography.titleLarge.fontFamily,
+    fontSize: typography.titleLarge.fontSize,
+    lineHeight: typography.titleLarge.lineHeight,
+    letterSpacing: typography.titleLarge.letterSpacing,
+    marginBottom: layout.spacing.xs + 2,
   },
   subtitle: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
-    lineHeight: 24,
+    fontFamily: typography.bodyMedium.fontFamily,
+    fontSize: typography.bodyMedium.fontSize,
+    lineHeight: typography.bodyMedium.lineHeight,
+    letterSpacing: typography.bodyMedium.letterSpacing,
   },
 
   // ─── Quote Block ───────────────────────────────────────────────────────────
   quoteBlock: {
     borderLeftWidth: 3,
-    borderRadius: 8,
-    paddingVertical: 14,
-    paddingLeft: 16,
-    paddingRight: 14,
-    marginBottom: 16,
+    borderRadius: layout.borderRadius,
+    paddingVertical: layout.spacing.sm + 6,
+    paddingLeft: layout.spacing.md,
+    paddingRight: layout.spacing.sm + 6,
+    marginBottom: layout.spacing.md,
   },
   quoteText: {
-    fontFamily: fonts.bodyFamilyMedium,
-    fontSize: 16,
-    lineHeight: 24,
+    fontFamily: typography.bodyLarge.fontFamily,
+    fontSize: typography.bodyLarge.fontSize,
+    lineHeight: typography.bodyLarge.lineHeight,
+    letterSpacing: typography.bodyLarge.letterSpacing,
   },
 
   // ─── Meta Row ──────────────────────────────────────────────────────────────
   metaRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    marginBottom: 20,
+    gap: layout.spacing.sm + 4,
+    marginBottom: layout.spacing.lgPlus,
   },
   metaText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 13,
+    fontFamily: typography.labelMedium.fontFamily,
+    fontSize: typography.labelMedium.fontSize,
+    lineHeight: typography.labelMedium.lineHeight,
     textTransform: "uppercase",
     letterSpacing: 0.8,
   },
   explicitBadge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: layout.spacing.sm,
     paddingVertical: 3,
-    borderRadius: 4,
+    borderRadius: layout.spacing.xs,
   },
   explicitText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 10,
+    fontFamily: typography.labelMedium.fontFamily,
+    fontSize: typography.labelMedium.fontSize,
+    lineHeight: typography.labelMedium.lineHeight,
     fontWeight: "800",
     letterSpacing: 0.8,
   },
 
   // ─── Player Card ───────────────────────────────────────────────────────────
   playerCard: {
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
+    borderRadius: layout.borderRadiusLarge,
+    padding: layout.spacing.lgPlus,
+    ...shadows.ambient,
   },
 
   // ─── Now Playing ───────────────────────────────────────────────────────────
@@ -513,17 +667,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 16,
-    minHeight: 20,
+    marginBottom: layout.spacing.md,
+    minHeight: layout.spacing.lgPlus,
   },
   nowPlayingLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: layout.spacing.sm + 2,
   },
   nowPlayingLabel: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 13,
+    fontFamily: typography.labelMedium.fontFamily,
+    fontSize: typography.labelMedium.fontSize,
+    lineHeight: typography.labelMedium.lineHeight,
     fontWeight: "600",
     textTransform: "uppercase",
     letterSpacing: 0.8,
@@ -533,32 +688,36 @@ const styles = StyleSheet.create({
   loadingRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    marginBottom: 12,
+    gap: layout.spacing.sm + 2,
+    marginBottom: layout.spacing.sm + 4,
   },
   loadingText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
+    fontFamily: typography.bodySmall.fontFamily,
+    fontSize: typography.bodySmall.fontSize,
+    lineHeight: typography.bodySmall.lineHeight,
+    letterSpacing: typography.bodySmall.letterSpacing,
   },
   errorRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 12,
+    gap: layout.spacing.sm,
+    marginBottom: layout.spacing.sm + 4,
   },
   errorText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
+    fontFamily: typography.bodySmall.fontFamily,
+    fontSize: typography.bodySmall.fontSize,
+    lineHeight: typography.bodySmall.lineHeight,
+    letterSpacing: typography.bodySmall.letterSpacing,
     flex: 1,
   },
 
   // ─── Progress Bar ──────────────────────────────────────────────────────────
   progressContainer: {
-    paddingVertical: 8,
+    paddingVertical: layout.spacing.sm,
   },
   progressTrack: {
-    height: 4,
-    borderRadius: 2,
+    height: layout.spacing.xs,
+    borderRadius: layout.borderRadiusFull,
     position: "relative",
   },
   progressFill: {
@@ -566,7 +725,7 @@ const styles = StyleSheet.create({
     left: 0,
     top: 0,
     bottom: 0,
-    borderRadius: 2,
+    borderRadius: layout.borderRadiusFull,
   },
   progressThumb: {
     position: "absolute",
@@ -581,11 +740,13 @@ const styles = StyleSheet.create({
   timeRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 16,
+    marginBottom: layout.spacing.md,
   },
   timeText: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: 12,
+    fontFamily: typography.labelMedium.fontFamily,
+    fontSize: typography.labelMedium.fontSize,
+    lineHeight: typography.labelMedium.lineHeight,
+    letterSpacing: typography.labelMedium.letterSpacing,
   },
 
   // ─── Transport Controls ────────────────────────────────────────────────────
@@ -593,16 +754,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 32,
-    marginBottom: 20,
+    gap: layout.spacing.xl,
+    marginBottom: layout.spacing.lgPlus,
   },
   skipButton: {
     alignItems: "center",
     gap: 2,
   },
   skipLabel: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: 11,
+    fontFamily: typography.labelMedium.fontFamily,
+    fontSize: typography.labelMedium.fontSize,
+    lineHeight: typography.labelMedium.lineHeight,
+    letterSpacing: typography.labelMedium.letterSpacing,
   },
   playPauseButton: {
     width: 64,
@@ -619,41 +782,46 @@ const styles = StyleSheet.create({
   speedRow: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: 10,
+    gap: layout.spacing.sm + 2,
   },
   speedPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: layout.spacing.md,
+    paddingVertical: layout.spacing.sm,
+    borderRadius: layout.borderRadiusFull,
     borderWidth: 1,
   },
   speedLabel: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 13,
+    fontFamily: typography.bodySmall.fontFamily,
+    fontSize: typography.bodySmall.fontSize,
+    lineHeight: typography.bodySmall.lineHeight,
+    letterSpacing: typography.bodySmall.letterSpacing,
   },
 
   // ─── Download Indicator (inline, top-right) ──────────────────────────────────
   dlInlineRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: layout.spacing.xs + 2,
   },
   dlInlineText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
+    fontFamily: typography.bodySmall.fontFamily,
+    fontSize: typography.bodySmall.fontSize,
+    lineHeight: typography.bodySmall.lineHeight,
+    letterSpacing: typography.bodySmall.letterSpacing,
   },
   dlButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    gap: layout.spacing.xs + 2,
+    paddingHorizontal: layout.spacing.sm + 4,
+    paddingVertical: layout.spacing.xs + 2,
+    borderRadius: layout.borderRadiusLarge,
     borderWidth: 1,
   },
   dlButtonText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
-    fontWeight: "600",
+    fontFamily: typography.bodySmall.fontFamily,
+    fontSize: typography.bodySmall.fontSize,
+    lineHeight: typography.bodySmall.lineHeight,
+    letterSpacing: typography.bodySmall.letterSpacing,
   },
 });
