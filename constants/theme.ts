@@ -679,6 +679,62 @@ export const layout = {
 };
 
 export const typography = {
+  h1: {
+    fontFamily: fonts.headerFamilyBoldItalic,
+    fontSize: 34,
+    lineHeight: 40,
+    letterSpacing: -0.6,
+  },
+  h2: {
+    fontFamily: fonts.headerFamily,
+    fontSize: 28,
+    lineHeight: 34,
+    letterSpacing: -0.4,
+  },
+  h3: {
+    fontFamily: fonts.headerFamily,
+    fontSize: 20,
+    lineHeight: 26,
+    letterSpacing: -0.2,
+  },
+  bodyLarge: {
+    fontFamily: fonts.bodyFamilyMedium,
+    fontSize: 19,
+    lineHeight: 32,
+    letterSpacing: -0.1,
+  },
+  // Quote block variant: tighter leading to visually group quote text.
+  quoteBox: {
+    fontFamily: fonts.bodyFamilyMedium,
+    fontSize: 19,
+    lineHeight: 26,
+    letterSpacing: -0.1,
+  },
+  body: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 17,
+    lineHeight: 28,
+    letterSpacing: -0.1,
+  },
+  bodySmall: {
+    fontFamily: fonts.bodyFamily,
+    fontSize: 15,
+    lineHeight: 24,
+    letterSpacing: -0.08,
+  },
+  label: {
+    fontFamily: fonts.labelFamily,
+    fontSize: 13,
+    lineHeight: 20,
+    letterSpacing: -0.05,
+  },
+  caption: {
+    fontFamily: fonts.bodyFamily,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 0.4,
+  },
+  // Legacy mappings (deprecated)
   displayLarge: {
     fontFamily: fonts.headerFamilyBoldItalic,
     fontSize: 34,
@@ -709,23 +765,11 @@ export const typography = {
     lineHeight: 22,
     letterSpacing: -0.1,
   },
-  bodyLarge: {
+  bodyMedium: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 17,
     lineHeight: 28,
     letterSpacing: -0.1,
-  },
-  bodyMedium: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: 15,
-    lineHeight: 24,
-    letterSpacing: -0.08,
-  },
-  bodySmall: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: 13,
-    lineHeight: 20,
-    letterSpacing: -0.05,
   },
   labelMedium: {
     fontFamily: fonts.labelFamily,

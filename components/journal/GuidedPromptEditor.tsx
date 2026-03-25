@@ -1,8 +1,8 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { View, Text, TextInput, StyleSheet } from "react-native";
 import { useTheme } from "../../hooks/useTheme";
-import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
-import { fonts } from "../../constants/theme";
+import { useTypography } from "../../hooks/useTypography";
+import { fonts, typography as staticTypography } from "../../constants/theme";
 import type { GuidedPrompt } from "../../constants/journalCategories";
 import { FieldShell, SanctuaryCard } from "../ui/Sanctuary";
 
@@ -22,8 +22,7 @@ export function GuidedPromptEditor({
   introText,
 }: GuidedPromptEditorProps) {
   const { colors } = useTheme();
-  const { settings } = useSettings();
-  const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
+  const { typography } = useTypography();
   const [focusedId, setFocusedId] = useState<string | null>(null);
 
   return (
@@ -117,8 +116,7 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
   },
   introText: {
-    fontSize: 18,
-    lineHeight: 18 * 1.5,
+    ...staticTypography.h3,
     textAlign: "center",
   },
   card: {
@@ -128,18 +126,16 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   questionText: {
-    fontSize: 14,
-    fontWeight: "600",
-    lineHeight: 14 * 1.35,
+    ...staticTypography.bodySmall,
+    fontFamily: fonts.bodyFamilySemiBold,
     marginBottom: 10,
   },
   textInput: {
     minHeight: 70,
-    fontSize: 18,
-    lineHeight: 28,
+    ...staticTypography.body,
   },
   hintText: {
-    fontSize: 12,
+    ...staticTypography.caption,
     fontStyle: "italic",
     marginTop: 6,
   },

@@ -13,7 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useTheme } from "../../hooks/useTheme";
-import { fonts } from "../../constants/theme";
+import { fonts, typography } from "../../constants/theme";
 import { useGratitude } from "../../hooks/useGratitude";
 import { GratitudeEntry } from "./GratitudeEntry";
 import { GratitudeHistory } from "./GratitudeHistory";
@@ -229,9 +229,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
   },
   quoteText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 17,
-    lineHeight: 26,
+    fontFamily: typography.quoteBox.fontFamily,
+    fontSize: typography.quoteBox.fontSize,
+    lineHeight: typography.quoteBox.lineHeight,
     textAlign: "center",
     paddingHorizontal: 24,
     marginBottom: 18,

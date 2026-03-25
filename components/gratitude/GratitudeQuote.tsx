@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useTheme } from "../../hooks/useTheme";
-import { fonts } from "../../constants/theme";
+import { typography } from "../../constants/theme";
 import type { GratitudeQuote as QuoteType } from "../../hooks/useGratitude";
 
 interface GratitudeQuoteProps {
@@ -41,9 +41,9 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   quoteText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 18,
-    lineHeight: 28,
+    fontFamily: typography.quoteBox.fontFamily,
+    fontSize: typography.quoteBox.fontSize,
+    lineHeight: typography.quoteBox.lineHeight,
     textAlign: "center",
   },
 });

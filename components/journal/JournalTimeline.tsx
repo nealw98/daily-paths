@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
-import { fonts, typography } from "../../constants/theme";
+import { fonts, typography as staticTypography } from "../../constants/theme";
 import type { JournalEntry } from "../../hooks/useJournalStorage";
 import type { JournalStats } from "../../hooks/useJournalStats";
 import {
@@ -561,16 +561,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   progressValue: {
-    fontFamily: fonts.bodyFamilyBold,
-    fontSize: 32,
-    lineHeight: 36,
+    ...staticTypography.h1,
   },
   progressLabel: {
     marginBottom: 4,
-    fontFamily: fonts.labelFamily,
-    fontSize: 11,
-    lineHeight: 14,
-    letterSpacing: 0.6,
+    ...staticTypography.label,
     textAlign: "center",
   },
 
@@ -587,8 +582,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   dateLabel: {
-    fontFamily: fonts.bodyFamilyBold,
-    fontSize: 24,
+    ...staticTypography.h3,
     marginLeft: 16,
   },
 
@@ -656,21 +650,14 @@ const styles = StyleSheet.create({
   },
   entryTypeLabel: {
     alignSelf: "flex-start",
-    fontFamily: typography.titleLarge.fontFamily,
-    fontSize: typography.titleLarge.fontSize,
-    lineHeight: typography.titleLarge.lineHeight,
-    letterSpacing: typography.titleLarge.letterSpacing,
+    ...staticTypography.h3,
   },
   entryTime: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: 12,
+    ...staticTypography.caption,
     paddingTop: 8,
   },
   entryPreview: {
-    fontFamily: typography.bodyLarge.fontFamily,
-    fontSize: typography.bodyLarge.fontSize,
-    lineHeight: typography.bodyLarge.lineHeight,
-    letterSpacing: typography.bodyLarge.letterSpacing,
+    ...staticTypography.bodyLarge,
   },
   placeholderCard: {
     borderWidth: 2,
@@ -683,15 +670,12 @@ const styles = StyleSheet.create({
   },
   placeholderTitle: {
     marginTop: 8,
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
-    lineHeight: 22,
+    ...staticTypography.bodySmall,
     textAlign: "center",
   },
   placeholderAction: {
     marginTop: 8,
-    fontFamily: fonts.bodyFamilyBold,
-    fontSize: 14,
+    ...staticTypography.label,
     letterSpacing: 1.2,
   },
 
@@ -702,17 +686,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   emptyTitle: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 18,
-    fontWeight: "600",
+    ...staticTypography.h3,
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtitle: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: 14,
+    ...staticTypography.bodySmall,
     textAlign: "center",
-    lineHeight: 20,
   },
   retryButton: {
     marginTop: 14,
@@ -722,7 +702,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   retryText: {
-    fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 14,
+    ...staticTypography.label,
   },
 });

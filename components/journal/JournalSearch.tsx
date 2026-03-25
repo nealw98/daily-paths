@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useMemo } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,8 +10,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
-import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
-import { fonts } from "../../constants/theme";
+import { useTypography } from "../../hooks/useTypography";
+import { fonts, typography as staticTypography } from "../../constants/theme";
 import type { JournalEntry } from "../../hooks/useJournalStorage";
 import {
   getCategoryLabel,
@@ -34,8 +34,7 @@ export const JournalSearch: React.FC<JournalSearchProps> = ({
   onClose,
 }) => {
   const { colors } = useTheme();
-  const { settings } = useSettings();
-  const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
+  const { typography } = useTypography();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<JournalEntry[]>([]);
   const [searched, setSearched] = useState(false);
@@ -256,28 +255,24 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   resultTypeLabel: {
+    ...staticTypography.caption,
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 12,
     fontWeight: "600",
     textTransform: "uppercase",
     letterSpacing: 0.8,
   },
   resultDate: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 13,
+    ...staticTypography.caption,
   },
   resultText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 15,
-    lineHeight: 22,
+    ...staticTypography.bodySmall,
   },
   emptyContainer: {
     alignItems: "center",
     paddingTop: 60,
   },
   emptyText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 15,
+    ...staticTypography.bodySmall,
     textAlign: "center",
   },
 });

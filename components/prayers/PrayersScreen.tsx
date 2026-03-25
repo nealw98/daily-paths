@@ -14,7 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useTheme } from "../../hooks/useTheme";
-import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
+import { useTypography } from "../../hooks/useTypography";
 import { useAnalytics } from "../../utils/analytics";
 import { usePersonalPrayers, type PersonalPrayer } from "../../hooks/usePersonalPrayers";
 import { useJournalStorage } from "../../hooks/useJournalStorage";
@@ -36,9 +36,8 @@ type BuiltInPrayerOverride = {
 
 export const PrayersScreen: React.FC = () => {
   const { colors } = useTheme();
-  const { settings } = useSettings();
+  const { typography } = useTypography();
   const { trackPrayerViewed } = useAnalytics();
-  const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
   const { prayers: personalPrayers, addPrayer, updatePrayer, deletePrayer } = usePersonalPrayers();
   const { createEntry } = useJournalStorage();
   const [expandedPrayer, setExpandedPrayer] = useState<string | null>(null);

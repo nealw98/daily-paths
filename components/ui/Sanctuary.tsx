@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../../hooks/useTheme";
-import { fonts, layout, shadows, typography } from "../../constants/theme";
+import { fonts, layout, shadows, typography as staticTypography } from "../../constants/theme";
 
 type CardTone = "lowest" | "low" | "base" | "high" | "highest";
 
@@ -270,9 +270,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   buttonText: {
+    ...staticTypography.body,
     fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: typography.titleMedium.fontSize,
-    lineHeight: typography.titleMedium.lineHeight,
   },
   disabled: {
     opacity: 0.55,
@@ -290,9 +289,7 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   pillLabel: {
-    fontFamily: fonts.labelFamily,
-    fontSize: typography.labelMedium.fontSize,
-    lineHeight: typography.labelMedium.lineHeight,
+    ...staticTypography.label,
   },
   fieldShell: {
     borderRadius: layout.borderRadius,

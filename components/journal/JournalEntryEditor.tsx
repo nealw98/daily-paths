@@ -17,7 +17,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useNavigation } from "expo-router";
 import { useTheme } from "../../hooks/useTheme";
-import { fonts } from "../../constants/theme";
+import { useTypography } from "../../hooks/useTypography";
+import { fonts, typography as staticTypography } from "../../constants/theme";
 import { useDailyGratitudeQuote } from "../../hooks/useDailyGratitudeQuote";
 import {
   getCategoryById,
@@ -25,7 +26,7 @@ import {
   getCategoryColor,
   type EntryType,
 } from "../../constants/journalCategories";
-import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
+import { useSettings } from "../../hooks/useSettings";
 import { GuidedPromptEditor } from "./GuidedPromptEditor";
 import { JournalCategoryPicker } from "./JournalCategoryPicker";
 import { EntryTypeIcon } from "../../utils/entryTypeIcon";
@@ -62,7 +63,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
   const { width: screenWidth } = useWindowDimensions();
 
   const { settings } = useSettings();
-  const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
+  const { typography } = useTypography();
   const categoryConfig = getCategoryById(entryType);
   const categoryLabel = getCategoryLabel(entryType);
   const categoryColor = getCategoryColor(entryType);
@@ -290,8 +291,8 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
     year: "numeric",
   });
 
-  const journalQuoteFontSize = Math.max(16, typography.bodyFontSize - 1);
-  const journalQuoteLineHeight = Math.round(journalQuoteFontSize * 1.35);
+  const journalQuoteFontSize = typography.quoteBox.fontSize;
+  const journalQuoteLineHeight = typography.quoteBox.lineHeight;
   const journalHeroWidth = screenWidth;
   const journalHeroHeight = journalHeroWidth / 3;
   const gratitudeQuoteText =
@@ -1053,25 +1054,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerEyebrow: {
-    fontFamily: fonts.labelFamily,
-    fontSize: 12,
-    lineHeight: 16,
+    ...staticTypography.label,
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 2,
   },
   headerTitleText: {
-    fontFamily: fonts.headerFamily,
-    fontSize: 24,
-    lineHeight: 30,
+    ...staticTypography.h3,
   },
   dateBar: {
     paddingHorizontal: 20,
     paddingBottom: 12,
   },
   dateText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
+    ...staticTypography.caption,
   },
   editorScroll: {
     flex: 1,
@@ -1103,9 +1099,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   journalDatePillText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
-    lineHeight: 18,
+    ...staticTypography.caption,
     letterSpacing: 0.2,
   },
   journalQuoteCard: {
@@ -1130,7 +1124,7 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   journalQuoteText: {
-    fontFamily: fonts.bodyFamilyMedium,
+    ...staticTypography.quoteBox,
     textAlign: "left",
     fontWeight: "500",
     paddingHorizontal: 14,
@@ -1138,7 +1132,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   journalQuoteReference: {
-    fontFamily: fonts.bodyFamilyRegular,
+    ...staticTypography.caption,
     textAlign: "left",
     letterSpacing: 0.2,
     alignSelf: "stretch",
@@ -1178,9 +1172,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   journalFooterCancelText: {
-    fontFamily: fonts.bodyFamilyMedium,
-    fontSize: 14,
-    lineHeight: 18,
+    ...staticTypography.label,
   },
   journalFooterSave: {
     minHeight: 36,
@@ -1195,9 +1187,8 @@ const styles = StyleSheet.create({
     opacity: 0.55,
   },
   journalFooterSaveText: {
+    ...staticTypography.label,
     fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 14,
-    lineHeight: 18,
   },
   textIntroWrapper: {
     marginHorizontal: 20,
@@ -1212,9 +1203,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
   },
   textInput: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 18,
-    lineHeight: 28,
+    ...staticTypography.body,
     minHeight: 200,
   },
   journalTextInput: {
@@ -1245,9 +1234,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   gratitudeDatePillText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
-    lineHeight: 18,
+    ...staticTypography.caption,
     letterSpacing: 0.2,
   },
   gratitudeQuoteCard: {
@@ -1261,7 +1248,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   gratitudeDailyQuote: {
-    fontFamily: fonts.bodyFamilyMedium,
+    ...staticTypography.quoteBox,
     textAlign: "left",
     fontWeight: "500",
     paddingHorizontal: 14,
@@ -1275,10 +1262,7 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   gratitudeDailyReference: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
-    lineHeight: 18,
-    letterSpacing: 0.2,
+    ...staticTypography.caption,
     textAlign: "left",
     marginTop: 10,
     marginLeft: 14,
@@ -1297,9 +1281,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   introText: {
-    fontFamily: fonts.headerFamily,
-    fontSize: 18,
-    lineHeight: 18 * 1.5,
+    ...staticTypography.h3,
     marginBottom: 20,
     textAlign: "center",
   },
@@ -1321,9 +1303,7 @@ const styles = StyleSheet.create({
   },
   gratitudeInput: {
     flex: 1,
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
-    lineHeight: 22,
+    ...staticTypography.body,
     minHeight: 28,
   },
   removeItemButton: {
@@ -1336,13 +1316,11 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   addItemText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
+    ...staticTypography.label,
     fontWeight: "500",
   },
   gratitudeHint: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: 12,
+    ...staticTypography.caption,
     fontStyle: "italic",
     textAlign: "center",
     marginTop: 4,
@@ -1377,9 +1355,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   spotCheckDatePillText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
-    lineHeight: 18,
+    ...staticTypography.caption,
     letterSpacing: 0.2,
   },
   spotCheckQuoteCard: {
@@ -1411,6 +1387,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
   },
   spotCheckPromptQuestion: {
+    ...staticTypography.bodySmall,
     fontFamily: fonts.bodyFamilySemiBold,
     marginBottom: 10,
   },
@@ -1419,11 +1396,11 @@ const styles = StyleSheet.create({
   },
   spotCheckPromptInput: {
     minHeight: 80,
-    fontFamily: fonts.bodyFamilyRegular,
+    ...staticTypography.body,
     paddingVertical: 0,
   },
   spotCheckPromptHint: {
-    fontFamily: fonts.bodyFamilyRegular,
+    ...staticTypography.caption,
     fontStyle: "italic",
     marginTop: 8,
   },

@@ -1,8 +1,7 @@
 import React, { useMemo } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Modal } from "react-native";
 import { useTheme } from "../../hooks/useTheme";
-import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
-import { fonts, typography as textStyles } from "../../constants/theme";
+import { fonts, typography as staticTypography } from "../../constants/theme";
 import {
   JOURNAL_CATEGORIES,
   type EntryType,
@@ -29,8 +28,6 @@ export const JournalCategoryPicker: React.FC<JournalCategoryPickerProps> = ({
   onClose,
 }) => {
   const { colors } = useTheme();
-  const { settings } = useSettings();
-  const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
 
   return (
     <Modal
@@ -128,7 +125,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   title: {
-    ...textStyles.titleLarge,
+    ...staticTypography.h3,
     textAlign: "center",
     marginBottom: 18,
   },
@@ -151,10 +148,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cardName: {
-    ...textStyles.titleMedium,
+    ...staticTypography.body,
+    fontFamily: fonts.bodyFamilySemiBold,
     marginBottom: 2,
   },
   cardDesc: {
-    ...textStyles.labelMedium,
+    ...staticTypography.caption,
   },
 });

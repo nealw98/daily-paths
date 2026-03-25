@@ -16,9 +16,10 @@ import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import * as Haptics from "expo-haptics";
-import { fonts } from "../constants/theme";
+import { fonts, typography as staticTypography } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
-import { useSettings, getTextSizeMetrics } from "../hooks/useSettings";
+import { useSettings } from "../hooks/useSettings";
+import { useTypography } from "../hooks/useTypography";
 import { DailyReading } from "../types/readings";
 import { BookmarkToast } from "./BookmarkToast";
 import { ReadingFeedback } from "./ReadingFeedback";
@@ -141,36 +142,14 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   const lastTapRef = useRef<number | null>(null);
 
   const { settings, setTextSize, setDailyReminderEnabled, setDailyReminderTime } = useSettings();
+  const { typography } = useTypography();
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [tempReminderDate, setTempReminderDate] = useState<Date | null>(null);
-  const typography = useMemo(
-    () => getTextSizeMetrics(settings.textSize),
-    [settings.textSize]
-  );
+
   const reminderDate = useMemo(
     () => parseTimeToDate(settings.dailyReminderTime),
     [settings.dailyReminderTime]
   );
-
-  const headingTypography = useMemo(() => {
-    return {
-      // Title is always body size + 2 for a subtle hierarchy
-      titleFontSize: typography.bodyFontSize + 2,
-      sectionHeadingFontSize: typography.bodyFontSize + 6,
-      thoughtLabelFontSize: typography.bodyFontSize - 4,
-      thoughtTextFontSize: typography.bodyFontSize + 4,
-      thoughtTextLineHeight: typography.bodyFontSize + 8,
-    };
-  }, [typography.bodyFontSize]);
-
-  const quoteFontSize = Math.round(typography.bodyFontSize * 1.11) + 2;
-  const quoteLineHeight = Math.round(quoteFontSize * 1.18);
-  const practiceEyebrowFontSize = Math.max(12, typography.bodyFontSize - 5);
-  const practiceEyebrowLineHeight = practiceEyebrowFontSize + 4;
-  const practiceBodyFontSize = Math.max(16, typography.bodyFontSize - 1);
-  const practiceBodyLineHeight = Math.round(practiceBodyFontSize * 1.35);
-  const thoughtFontSize = Math.round(typography.bodyFontSize * 1.33);
-  const thoughtLineHeight = Math.round(thoughtFontSize * 1.16);
 
   // Opening paragraphs (support \n\n markers in text)
   const openingParagraphs = useMemo(
@@ -463,8 +442,8 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                     style={[
                       styles.applicationQuoteText,
                       {
-                        fontSize: quoteFontSize,
-                        lineHeight: quoteLineHeight,
+                        fontSize: typography.quoteBox.fontSize,
+                        lineHeight: typography.quoteBox.lineHeight,
                         color: colors.primary,
                       },
                     ]}
@@ -524,8 +503,8 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                           style={[
                             styles.practiceEyebrow,
                             {
-                              fontSize: practiceEyebrowFontSize,
-                              lineHeight: practiceEyebrowLineHeight,
+                              fontSize: typography.label.fontSize,
+                              lineHeight: typography.label.lineHeight,
                               color: "#2E6F69",
                             },
                           ]}
@@ -538,8 +517,8 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                             style={[
                               styles.practiceText,
                               {
-                                fontSize: practiceBodyFontSize,
-                                lineHeight: practiceBodyLineHeight,
+                                fontSize: typography.body.fontSize,
+                                lineHeight: typography.quoteBox.lineHeight,
                               },
                               index === applicationParagraphs.length - 1 ? styles.practiceTextLast : null,
                             ]}
@@ -564,7 +543,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                 <Text
                   style={[
                     styles.thoughtLabel,
-                    { fontSize: 15, color: colors.secondaryContainer },
+                    { fontSize: 13, color: colors.secondaryContainer },
                   ]}
                 >
                   Thought for the Day
@@ -573,8 +552,8 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                   style={[
                     styles.thoughtText,
                     {
-                      fontSize: thoughtFontSize,
-                      lineHeight: thoughtLineHeight,
+                      fontSize: typography.h3.fontSize,
+                      lineHeight: typography.h3.lineHeight,
                       color: colors.onPrimary,
                     },
                   ]}
@@ -776,17 +755,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   pageTitle: {
+    // Preserve the original editorial hero title treatment for Today.
     fontFamily: fonts.headerFamilyLight,
     fontSize: 36,
     lineHeight: 44,
-    fontWeight: "300",
     letterSpacing: -0.9,
+    fontWeight: "300",
     marginBottom: 6,
   },
   pageDate: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 17,
-    lineHeight: 24,
+    ...staticTypography.body,
+    marginBottom: 0, // Reset any default margin
   },
   pageCalendarButton: {
     width: 36,
@@ -827,29 +806,23 @@ const styles = StyleSheet.create({
     transform: [{ scaleX: 0.84 }, { scaleY: 0.84 }],
   },
   notificationUtilityTitle: {
+    ...staticTypography.bodySmall,
     fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 15,
-    lineHeight: 20,
   },
   notificationUtilitySubtitle: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 13,
-    lineHeight: 18,
+    ...staticTypography.caption,
     marginTop: 2,
   },
   notificationUtilityTimeLink: {
     alignSelf: "flex-start",
   },
   notificationUtilityTimeLabel: {
+    ...staticTypography.caption,
     fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 13,
-    lineHeight: 18,
     marginBottom: 2,
   },
   notificationUtilityTimeValue: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 13,
-    lineHeight: 18,
+    ...staticTypography.caption,
   },
   notificationTimePicker: {
     marginTop: 8,
@@ -869,9 +842,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   notificationTimeButtonText: {
+    ...staticTypography.bodySmall,
     fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 15,
-    lineHeight: 20,
   },
   inlineFavorite: {
     marginLeft: 12,
@@ -885,10 +857,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   bodyText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 17,
-    lineHeight: 28,
-    letterSpacing: -0.1,
+    ...staticTypography.bodyLarge,
     marginBottom: 18,
   },
   inlineItalic: {
@@ -899,8 +868,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   sectionHeading: {
-    fontFamily: fonts.headerFamilyBoldItalic,
-    fontSize: 24,
+    ...staticTypography.h2,
     marginBottom: 12,
   },
   applicationQuoteContainer: {
@@ -929,7 +897,7 @@ const styles = StyleSheet.create({
   applicationQuoteText: {
     fontFamily: fonts.bodyFamilyBold,
     textAlign: "left",
-    marginBottom: 16,
+    marginBottom: 10,
     fontStyle: "italic",
     fontWeight: "700",
     position: "relative",
@@ -975,9 +943,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#2D4C47",
   },
   practiceEyebrow: {
-    fontFamily: fonts.bodyFamilyBold,
-    fontSize: 12,
-    lineHeight: 16,
+    ...staticTypography.label,
     letterSpacing: 1.2,
     textTransform: "uppercase",
     marginBottom: 12,
@@ -1001,9 +967,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   practiceText: {
-    fontFamily: fonts.bodyFamilyMedium,
-    fontSize: 14,
-    lineHeight: 20,
+    ...staticTypography.bodySmall,
     color: "#4B5563",
     marginBottom: 6,
   },
@@ -1022,17 +986,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   thoughtLabel: {
-    fontFamily: fonts.labelFamily,
-    fontSize: 14,
+    ...staticTypography.label,
     textTransform: "uppercase",
     letterSpacing: 1.4,
     marginBottom: 12,
     textAlign: "center",
   },
   thoughtText: {
-    fontFamily: fonts.bodyFamilyMedium,
-    fontSize: 32,
-    lineHeight: 40,
+    ...staticTypography.h3,
     fontWeight: "500",
     textAlign: "center",
   },

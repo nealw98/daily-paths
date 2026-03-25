@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { useTheme } from "../../hooks/useTheme";
-import { fonts, layout, typography } from "../../constants/theme";
+import { fonts, layout, typography as staticTypography } from "../../constants/theme";
 
 interface TealHeaderProps {
   title: string;
@@ -85,17 +85,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   eyebrow: {
-    fontFamily: fonts.labelFamily,
-    fontSize: typography.labelMedium.fontSize,
-    lineHeight: typography.labelMedium.lineHeight,
+    ...staticTypography.label,
     letterSpacing: 0.5,
     textTransform: "uppercase",
     marginBottom: 2,
   },
   title: {
+    ...staticTypography.h2,
     fontFamily: fonts.headerFamilyBoldItalic,
-    fontSize: typography.headlineMedium.fontSize,
-    lineHeight: typography.headlineMedium.lineHeight,
-    letterSpacing: typography.headlineMedium.letterSpacing,
   },
 });

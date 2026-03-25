@@ -504,8 +504,8 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
                     styles.quoteText,
                     {
                       color: colors.onPrimary,
-                      fontSize: scaled(typography.bodyLarge.fontSize),
-                      lineHeight: scaled(typography.bodyLarge.lineHeight),
+                      fontSize: scaled(typography.quoteBox.fontSize),
+                      lineHeight: scaled(typography.quoteBox.lineHeight),
                     },
                   ]}
                 >

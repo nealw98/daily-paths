@@ -15,7 +15,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useTheme } from "../../hooks/useTheme";
-import { fonts } from "../../constants/theme";
+import { useTypography } from "../../hooks/useTypography";
+import { fonts, typography as staticTypography } from "../../constants/theme";
 import type { JournalEntry } from "../../hooks/useJournalStorage";
 import {
   getCategoryById,
@@ -23,7 +24,7 @@ import {
   getCategoryColor,
   type EntryType,
 } from "../../constants/journalCategories";
-import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
+import { useSettings } from "../../hooks/useSettings";
 import { GuidedPromptEditor } from "./GuidedPromptEditor";
 import { EntryTypeIcon } from "../../utils/entryTypeIcon";
 import { Seedling } from "../../components/icons";
@@ -66,7 +67,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
   const { colors } = useTheme();
 
   const { settings } = useSettings();
-  const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
+  const { typography } = useTypography();
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -670,17 +671,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerEyebrow: {
-    fontFamily: fonts.labelFamily,
-    fontSize: 12,
-    lineHeight: 16,
+    ...staticTypography.label,
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 2,
   },
   headerTitleText: {
-    fontFamily: fonts.headerFamily,
-    fontSize: 24,
-    lineHeight: 30,
+    ...staticTypography.h3,
   },
   dateBarActions: {
     flexDirection: "row",
@@ -696,14 +693,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   dateText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 15,
-    fontWeight: "600",
+    ...staticTypography.bodySmall,
+    fontFamily: fonts.bodyFamilySemiBold,
   },
   // typeBadge styles removed — type info now shown in gradient header
   timeText: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: 13,
+    ...staticTypography.caption,
     marginTop: 2,
   },
   contentScroll: {
@@ -721,17 +716,15 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
   },
   introText: {
+    ...staticTypography.body,
     fontFamily: fonts.headerFamily,
     textAlign: "center",
   },
   contentText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 18,
-    lineHeight: 28,
+    ...staticTypography.body,
   },
   tapHint: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: 12,
+    ...staticTypography.caption,
     fontStyle: "italic",
     marginTop: 20,
     textAlign: "center",
@@ -749,9 +742,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   gratitudeReadText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
-    lineHeight: 22,
+    ...staticTypography.bodySmall,
     flex: 1,
   },
 
@@ -760,16 +751,14 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   guidedReadQuestion: {
+    ...staticTypography.caption,
     fontFamily: fonts.labelFamily,
-    fontSize: 13,
     letterSpacing: 0.3,
     textTransform: "uppercase",
     marginBottom: 6,
   },
   guidedReadResponse: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: 16,
-    lineHeight: 24,
+    ...staticTypography.bodySmall,
   },
 
   // ─── Gratitude Edit ───────────────────────────────────
@@ -789,9 +778,7 @@ const styles = StyleSheet.create({
   },
   gratitudeEditInput: {
     flex: 1,
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
-    lineHeight: 22,
+    ...staticTypography.bodySmall,
     minHeight: 22,
   },
   addSlotButton: {
@@ -806,8 +793,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   addSlotText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
+    ...staticTypography.label,
     fontWeight: "500",
   },
 
@@ -819,9 +805,7 @@ const styles = StyleSheet.create({
     minHeight: 200,
   },
   editInput: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 18,
-    lineHeight: 28,
+    ...staticTypography.body,
     minHeight: 200,
   },
 
@@ -847,8 +831,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   navText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 15,
+    ...staticTypography.label,
     fontWeight: "500",
   },
   doneButton: {

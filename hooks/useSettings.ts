@@ -205,8 +205,19 @@ export function useSettings(): SettingsContextValue {
 }
 
 export function getTextSizeMetrics(textSize: TextSize): {
+  h3FontSize: number;
+  h3LineHeight: number;
+  bodyLargeFontSize: number;
+  bodyLargeLineHeight: number;
   bodyFontSize: number;
   bodyLineHeight: number;
+  bodySmallFontSize: number;
+  bodySmallLineHeight: number;
+  labelFontSize: number;
+  labelLineHeight: number;
+  captionFontSize: number;
+  captionLineHeight: number;
+  // Deprecated legacy metrics
   favoriteFontSize: number;
   favoriteLineHeight: number;
   favoriteDateFontSize: number;
@@ -218,32 +229,72 @@ export function getTextSizeMetrics(textSize: TextSize): {
   switch (textSize) {
     case "extraSmall":
       return {
+        h3FontSize: 16 + androidBump,
+        h3LineHeight: 22 + androidBump,
+        bodyLargeFontSize: 15 + androidBump,
+        bodyLargeLineHeight: 26 + androidBump,
         bodyFontSize: 13 + androidBump,
         bodyLineHeight: 23 + androidBump,
+        bodySmallFontSize: 12 + androidBump,
+        bodySmallLineHeight: 20 + androidBump,
+        labelFontSize: 11 + androidBump,
+        labelLineHeight: 16 + androidBump,
+        captionFontSize: 10 + androidBump,
+        captionLineHeight: 14 + androidBump,
         favoriteFontSize: 14 + androidBump,
         favoriteLineHeight: 18 + androidBump,
         favoriteDateFontSize: 12 + androidBump,
       };
     case "small":
       return {
+        h3FontSize: 18 + androidBump,
+        h3LineHeight: 24 + androidBump,
+        bodyLargeFontSize: 17 + androidBump,
+        bodyLargeLineHeight: 29 + androidBump,
         bodyFontSize: 15 + androidBump,
         bodyLineHeight: 26 + androidBump,
+        bodySmallFontSize: 13 + androidBump,
+        bodySmallLineHeight: 22 + androidBump,
+        labelFontSize: 12 + androidBump,
+        labelLineHeight: 18 + androidBump,
+        captionFontSize: 11 + androidBump,
+        captionLineHeight: 15 + androidBump,
         favoriteFontSize: 15 + androidBump,
         favoriteLineHeight: 20 + androidBump,
         favoriteDateFontSize: 13 + androidBump,
       };
     case "large":
       return {
+        h3FontSize: 24 + androidBump,
+        h3LineHeight: 32 + androidBump,
+        bodyLargeFontSize: 24 + androidBump,
+        bodyLargeLineHeight: 40 + androidBump,
         bodyFontSize: 22 + androidBump,
         bodyLineHeight: 37 + androidBump,
+        bodySmallFontSize: 18 + androidBump,
+        bodySmallLineHeight: 28 + androidBump,
+        labelFontSize: 16 + androidBump,
+        labelLineHeight: 24 + androidBump,
+        captionFontSize: 14 + androidBump,
+        captionLineHeight: 20 + androidBump,
         favoriteFontSize: 18 + androidBump,
         favoriteLineHeight: 24 + androidBump,
         favoriteDateFontSize: 16 + androidBump,
       };
     case "extraLarge":
       return {
+        h3FontSize: 28 + androidBump,
+        h3LineHeight: 38 + androidBump,
+        bodyLargeFontSize: 28 + androidBump,
+        bodyLargeLineHeight: 46 + androidBump,
         bodyFontSize: 26 + androidBump,
         bodyLineHeight: 43 + androidBump,
+        bodySmallFontSize: 22 + androidBump,
+        bodySmallLineHeight: 34 + androidBump,
+        labelFontSize: 18 + androidBump,
+        labelLineHeight: 28 + androidBump,
+        captionFontSize: 16 + androidBump,
+        captionLineHeight: 22 + androidBump,
         favoriteFontSize: 20 + androidBump,
         favoriteLineHeight: 26 + androidBump,
         favoriteDateFontSize: 18 + androidBump,
@@ -251,8 +302,18 @@ export function getTextSizeMetrics(textSize: TextSize): {
     case "medium":
     default:
       return {
+        h3FontSize: 20 + androidBump,
+        h3LineHeight: 26 + androidBump,
+        bodyLargeFontSize: 19 + androidBump,
+        bodyLargeLineHeight: 32 + androidBump,
         bodyFontSize: 18 + androidBump,
         bodyLineHeight: 31 + androidBump,
+        bodySmallFontSize: 15 + androidBump,
+        bodySmallLineHeight: 24 + androidBump,
+        labelFontSize: 13 + androidBump,
+        labelLineHeight: 20 + androidBump,
+        captionFontSize: 12 + androidBump,
+        captionLineHeight: 16 + androidBump,
         favoriteFontSize: 16 + androidBump,
         favoriteLineHeight: 21 + androidBump,
         favoriteDateFontSize: 14 + androidBump,
