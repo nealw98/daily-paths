@@ -21,12 +21,12 @@ import Constants from "expo-constants";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTheme } from "../../hooks/useTheme";
-import { useSettings, TextSize } from "../../hooks/useSettings";
+import { useSettings } from "../../hooks/useSettings";
 import { useAppFeedback } from "../../hooks/useAppFeedback";
 import { useAnalytics } from "../../utils/analytics";
 import { shareApp, openAppStoreForRating } from "../../utils/rateShareTracking";
 import { qaLog } from "../../utils/qaLog";
-import { fonts } from "../../constants/theme";
+import { fonts, typography } from "../../constants/theme";
 import { TealHeader } from "../../components/shared/TealHeader";
 import { useSubscription } from "../../hooks/useSubscription";
 import { useSubscriptionContext } from "../../contexts/SubscriptionContext";
@@ -54,18 +54,10 @@ const EXTENDED_THEME_OPTIONS: { id: string; displayName: string }[] = [
 /** IDs of dark themes for analytics */
 const DARK_THEME_IDS = new Set(["ocean-dark", "deep-sea", "champagne"]);
 
-const textSizeStops: TextSize[] = [
-  "extraSmall",
-  "small",
-  "medium",
-  "large",
-  "extraLarge",
-];
-
 export default function MoreTab() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const { settings, setTextSize, setThemeId, setColorScheme } =
+  const { settings, setThemeId, setColorScheme } =
     useSettings();
   const { submitting: submittingFeedback, submitFeedback } = useAppFeedback();
   const { status, hasLifetimeAccess, loading: subLoading, refresh } = useSubscription();
@@ -80,8 +72,6 @@ export default function MoreTab() {
   const [feedbackContact, setFeedbackContact] = useState("");
   const [isSharing, setIsSharing] = useState(false);
   const [openingCustomerCenter, setOpeningCustomerCenter] = useState(false);
-  const [textSizeExpanded, setTextSizeExpanded] = useState(true);
-  const [defaultThemesExpanded, setDefaultThemesExpanded] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -105,25 +95,6 @@ export default function MoreTab() {
     expoConfig.ios?.buildNumber ?? Constants.nativeBuildVersion ?? "dev";
 
   const hasPaidEntitlement = hasLifetimeAccess || status.isSubscribed || status.isLegacy;
-
-  const handleTextSizePress = async (size: TextSize) => {
-    if (settings.textSize === size) return;
-    await setTextSize(size);
-  };
-
-  const handleDecrementTextSize = async () => {
-    const currentIndex = textSizeStops.indexOf(settings.textSize);
-    if (currentIndex > 0) {
-      await setTextSize(textSizeStops[currentIndex - 1]);
-    }
-  };
-
-  const handleIncrementTextSize = async () => {
-    const currentIndex = textSizeStops.indexOf(settings.textSize);
-    if (currentIndex < textSizeStops.length - 1) {
-      await setTextSize(textSizeStops[currentIndex + 1]);
-    }
-  };
 
   const handleThemeChange = (optionId: string) => {
     if (optionId === "system") {
@@ -200,7 +171,7 @@ export default function MoreTab() {
         {/* ── 1. Subscription ────────────────────────────────── */}
         <Text allowFontScaling={false} style={[styles.sectionLabel, styles.firstSectionLabel, { color: colors.deepTeal }]}>Subscription</Text>
         {subLoading ? (
-          <View style={[styles.subscriptionRow, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
+          <View style={[styles.subscriptionRow, { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.ghostBorder }]}>
             <View style={styles.subscriptionLeft}>
               <ActivityIndicator size="small" color={colors.deepTeal} />
               <Text style={[styles.subscriptionText, { color: colors.text }]}>Checking Access...</Text>
@@ -208,7 +179,7 @@ export default function MoreTab() {
           </View>
         ) : status.isSubscribed ? (
           <TouchableOpacity
-            style={[styles.subscriptionRow, { backgroundColor: colors.cloud, borderColor: colors.mist }]}
+            style={[styles.subscriptionRow, { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.ghostBorder }]}
             disabled={openingCustomerCenter}
             onPress={async () => {
               if (openingCustomerCenter) return;
@@ -269,7 +240,7 @@ export default function MoreTab() {
             )}
           </TouchableOpacity>
         ) : hasLifetimeAccess || status.isLegacy ? (
-          <View style={[styles.subscriptionRow, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
+          <View style={[styles.subscriptionRow, { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.ghostBorder }]}>
             <View style={styles.subscriptionLeft}>
               <Ionicons name="star" size={22} color={colors.deepTeal} />
               <Text style={[styles.subscriptionText, { color: colors.deepTeal }]}>Lifetime Access</Text>
@@ -277,7 +248,7 @@ export default function MoreTab() {
           </View>
         ) : trialStatus.isInTrial ? (
           <TouchableOpacity
-            style={[styles.subscriptionRow, { backgroundColor: colors.cloud, borderColor: colors.mist }]}
+            style={[styles.subscriptionRow, { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.ghostBorder }]}
             onPress={async () => {
               try {
                 const result = await RevenueCatUI.presentPaywall();
@@ -300,7 +271,7 @@ export default function MoreTab() {
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
-            style={[styles.subscriptionRow, { backgroundColor: colors.cloud, borderColor: colors.mist }]}
+            style={[styles.subscriptionRow, { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.ghostBorder }]}
             onPress={async () => {
               try {
                 const result = await RevenueCatUI.presentPaywall();
@@ -322,179 +293,103 @@ export default function MoreTab() {
 
         {/* ── 2. Appearance ────────────────────────────────── */}
         <Text allowFontScaling={false} style={[styles.sectionLabel, { color: colors.deepTeal }]}>Appearance</Text>
-        <View style={[styles.card, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
-          {/* Text size row */}
-          <TouchableOpacity
-            style={styles.themeSectionHeader}
-            activeOpacity={0.7}
-            onPress={() => setTextSizeExpanded((current) => !current)}
-          >
-            <Text style={[styles.cardLabel, { color: colors.deepTeal, marginBottom: 0 }]}>
-              Text Size
-            </Text>
-            <Ionicons
-              name={textSizeExpanded ? "chevron-up" : "chevron-down"}
-              size={18}
-              color={colors.deepTeal}
-            />
-          </TouchableOpacity>
-          {textSizeExpanded && (
-            <View style={styles.sliderRow}>
-              <TouchableOpacity
-                onPress={handleDecrementTextSize}
-                disabled={settings.textSize === textSizeStops[0]}
-                activeOpacity={0.7}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              >
-                <Text
+        <View style={[styles.card, { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.ghostBorder }]}>
+          <Text style={[styles.cardLabel, { color: colors.deepTeal }]}>
+            Themes
+          </Text>
+          <View style={styles.themeOptions}>
+            {DEFAULT_THEME_OPTIONS.map((option) => {
+              const isSelected =
+                option.id === "system"
+                  ? settings.colorScheme === "system"
+                  : settings.themeId === option.id && settings.colorScheme !== "system";
+              return (
+                <TouchableOpacity
+                  key={option.id}
                   style={[
-                    styles.sliderEdgeLabel,
-                    { color: colors.deepTeal, fontSize: 14 },
-                    settings.textSize === textSizeStops[0] && { opacity: 0.3 },
+                    styles.themeOption,
+                    { borderColor: colors.border },
+                    isSelected && { backgroundColor: colors.deepTeal, borderColor: colors.deepTeal },
                   ]}
+                  onPress={() => handleThemeChange(option.id)}
+                  activeOpacity={0.8}
                 >
-                  A
-                </Text>
-              </TouchableOpacity>
-              <View style={styles.sliderTrack}>
-                {textSizeStops.map((size, index) => {
-                  const selectedIndex = textSizeStops.indexOf(settings.textSize);
-                  const isActive = index <= selectedIndex;
-                  const isSelected = size === settings.textSize;
-                  return (
-                    <TouchableOpacity
-                      key={size}
-                      style={styles.sliderStopTouch}
-                      activeOpacity={0.8}
-                      onPress={() => handleTextSizePress(size)}
-                    >
-                      <View
-                        style={[
-                          styles.sliderStop,
-                          { borderColor: colors.border, backgroundColor: colors.pearl },
-                          isActive && { borderColor: colors.seafoam, backgroundColor: colors.seafoam },
-                          isSelected && { borderColor: colors.deepTeal, backgroundColor: colors.deepTeal },
-                        ]}
-                      />
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-              <TouchableOpacity
-                onPress={handleIncrementTextSize}
-                disabled={settings.textSize === textSizeStops[textSizeStops.length - 1]}
-                activeOpacity={0.7}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              >
-                <Text
-                  style={[
-                    styles.sliderEdgeLabel,
-                    { color: colors.deepTeal, fontSize: 22 },
-                    settings.textSize === textSizeStops[textSizeStops.length - 1] && { opacity: 0.3 },
-                  ]}
-                >
-                  A
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* Divider */}
-          <View style={[styles.cardDivider, { backgroundColor: colors.mist }]} />
-
-          {/* Theme row */}
-          <TouchableOpacity
-            style={styles.themeSectionHeader}
-            activeOpacity={0.7}
-            onPress={() => setDefaultThemesExpanded((current) => !current)}
-          >
-            <Text style={[styles.cardLabel, { color: colors.deepTeal, marginBottom: 0 }]}>
-              Default Themes
-            </Text>
-            <Ionicons
-              name={defaultThemesExpanded ? "chevron-up" : "chevron-down"}
-              size={18}
-              color={colors.deepTeal}
-            />
-          </TouchableOpacity>
-          {defaultThemesExpanded && (
-            <View style={styles.themeOptions}>
-              {DEFAULT_THEME_OPTIONS.map((option) => {
-                const isSelected =
-                  option.id === "system"
-                    ? settings.colorScheme === "system"
-                    : settings.themeId === option.id && settings.colorScheme !== "system";
-                return (
-                  <TouchableOpacity
-                    key={option.id}
+                  {option.icon && (
+                    <Ionicons
+                      name={option.icon as any}
+                      size={20}
+                      color={isSelected ? colors.textOnAccent : colors.deepTeal}
+                    />
+                  )}
+                  <Text
                     style={[
-                      styles.themeOption,
-                      { borderColor: colors.border },
-                      isSelected && { backgroundColor: colors.deepTeal, borderColor: colors.deepTeal },
+                      styles.themeOptionText,
+                      { color: colors.deepTeal },
+                      isSelected && { color: colors.textOnAccent },
                     ]}
-                    onPress={() => handleThemeChange(option.id)}
-                    activeOpacity={0.8}
+                    numberOfLines={2}
                   >
-                    {option.icon && (
-                      <Ionicons
-                        name={option.icon as any}
-                        size={20}
-                        color={isSelected ? colors.textOnAccent : colors.deepTeal}
-                      />
-                    )}
-                    <Text
-                      style={[
-                        styles.themeOptionText,
-                        { color: colors.deepTeal },
-                        isSelected && { color: colors.textOnAccent },
-                      ]}
-                      numberOfLines={2}
-                    >
-                      {option.displayName}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
+                    {option.displayName}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
 
         </View>
 
         {/* ── 3. Support & Share ─────────────────────────── */}
         <Text allowFontScaling={false} style={[styles.sectionLabel, { color: colors.deepTeal }]}>Support & Share</Text>
-        <View style={[styles.card, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
-          <View style={styles.buttonRow}>
+        <View style={[styles.card, { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.ghostBorder }]}>
+          <View style={styles.supportActions}>
             <TouchableOpacity
-              style={[styles.secondaryButton, { borderColor: colors.mist, backgroundColor: colors.pearl }]}
+              style={[styles.supportAction, { borderColor: colors.ghostBorder, backgroundColor: colors.surfaceContainerLowest }]}
               onPress={() => setShowFeedbackModal(true)}
               activeOpacity={0.8}
             >
-              <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Feedback</Text>
+              <View style={styles.supportActionLeft}>
+                <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.deepTeal} />
+                <Text style={[styles.supportActionText, { color: colors.deepTeal }]}>Send Feedback</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.seafoam} />
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.secondaryButton, { borderColor: colors.mist, backgroundColor: colors.pearl }]}
+              style={[styles.supportAction, { borderColor: colors.ghostBorder, backgroundColor: colors.surfaceContainerLowest }]}
               onPress={handleRateApp}
               activeOpacity={0.8}
             >
-              <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Rate App</Text>
+              <View style={styles.supportActionLeft}>
+                <Ionicons name="star-outline" size={18} color={colors.deepTeal} />
+                <Text style={[styles.supportActionText, { color: colors.deepTeal }]}>Rate App</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.seafoam} />
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.secondaryButton, { borderColor: colors.mist, backgroundColor: colors.pearl }]}
+              style={[styles.supportAction, { borderColor: colors.ghostBorder, backgroundColor: colors.surfaceContainerLowest }]}
               onPress={handleShareApp}
               disabled={isSharing}
               activeOpacity={0.8}
             >
-              <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
-                {isSharing ? "Sharing..." : "Share"}
-              </Text>
+              <View style={styles.supportActionLeft}>
+                <Ionicons name="share-social-outline" size={18} color={colors.deepTeal} />
+                <Text style={[styles.supportActionText, { color: colors.deepTeal }]}>
+                  {isSharing ? "Sharing..." : "Share App"}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.seafoam} />
             </TouchableOpacity>
           </View>
         </View>
 
         {/* ── About ────────────────────────────────────── */}
-        <View style={styles.aboutSection}>
+        <Text allowFontScaling={false} style={[styles.sectionLabel, { color: colors.deepTeal }]}>About</Text>
+        <View style={[styles.card, { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.ghostBorder }]}>
           <Text style={[styles.aboutText, { color: colors.ink }]}>
-            Daily Paths supports your recovery with 366 original readings based on Al-Anon's Steps, Traditions, and Concepts. It is not affiliated with Al-Anon, AA or any 12-step fellowship.
+            Daily Paths supports your recovery with 366 original readings based on Al-Anon's
+            Steps, Traditions, and Concepts. Premium features include guided notebook prompts,
+            prayer customization, and speaker talks.
+            {"\n\n"}
+            The app is not affiliated with Al-Anon, AA, or any 12-step fellowship.
           </Text>
         </View>
 
@@ -631,42 +526,41 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 40,
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 48,
   },
 
   /* ── Section Labels ────────────────────────────── */
   sectionLabel: {
-    fontFamily: fonts.headerFamilyItalic,
-    fontSize: 22,
+    fontFamily: fonts.bodyFamilyBold,
+    fontSize: 24,
     lineHeight: 30,
     marginBottom: 8,
-    marginTop: 24,
+    marginTop: 22,
     marginLeft: 4,
   },
   firstSectionLabel: {
-    marginTop: 0,
+    marginTop: 12,
   },
 
   /* ── Cards ─────────────────────────────────────── */
   card: {
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
-    padding: 14,
-    marginBottom: 16,
+    padding: 16,
+    marginBottom: 18,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.06,
+    shadowRadius: 32,
+    elevation: 6,
   },
   cardLabel: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
-    lineHeight: 20,
-    fontWeight: "600",
-    marginBottom: 8,
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: typography.titleMedium.fontSize,
+    lineHeight: typography.titleMedium.lineHeight,
+    marginBottom: 12,
   },
   cardDivider: {
     height: 1,
@@ -678,7 +572,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     alignContent: "flex-start",
-    gap: 10,
+    gap: 12,
     marginBottom: 4,
   },
   themeSectionHeader: {
@@ -696,18 +590,17 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: 10,
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: "transparent",
-    borderWidth: 2,
-    gap: 4,
-    minHeight: 60,
+    borderWidth: 1.5,
+    gap: 6,
+    minHeight: 66,
   },
   themeOptionText: {
-    fontFamily: fonts.bodyFamilyRegular,
+    fontFamily: fonts.bodyFamilySemiBold,
     fontSize: 13,
-    fontWeight: "600",
     textAlign: "center",
   },
 
@@ -786,25 +679,28 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
-  /* ── Buttons ───────────────────────────────────── */
-  buttonRow: {
-    flexDirection: "row",
-    gap: 12,
+  /* ── Support Actions ───────────────────────────── */
+  supportActions: {
+    gap: 10,
   },
-  secondaryButton: {
-    flex: 1,
+  supportAction: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 12,
-    borderRadius: 10,
-    borderWidth: 2,
+    justifyContent: "space-between",
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    borderRadius: 12,
+    borderWidth: 1,
   },
-  secondaryButtonText: {
-    fontFamily: fonts.bodyFamilyRegular,
+  supportActionLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  supportActionText: {
+    fontFamily: fonts.bodyFamilySemiBold,
     fontSize: 16,
-    fontWeight: "600",
+    lineHeight: 20,
   },
 
   /* ── Subscription Row ──────────────────────────── */
@@ -812,16 +708,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: 16,
-    borderRadius: 12,
+    padding: 14,
+    borderRadius: 14,
     borderWidth: 1,
-    marginBottom: 8,
+    marginBottom: 10,
     marginTop: 0,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.06,
+    shadowRadius: 32,
+    elevation: 6,
   },
   subscriptionLeft: {
     flexDirection: "row",
@@ -829,17 +725,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   subscriptionText: {
-    fontFamily: fonts.bodyFamilyRegular,
+    fontFamily: fonts.bodyFamilySemiBold,
     fontSize: 16,
-    fontWeight: "600",
+    lineHeight: 20,
   },
 
   /* ── About Footer ──────────────────────────────── */
-  aboutSection: {
-    alignItems: "center",
-    paddingHorizontal: 8,
-    marginTop: 16,
-  },
   footerSection: {
     alignItems: "center",
     paddingHorizontal: 8,
@@ -847,10 +738,9 @@ const styles = StyleSheet.create({
   },
   aboutText: {
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
-    lineHeight: 22,
-    textAlign: "center",
-    marginBottom: 24,
+    fontSize: typography.bodyMedium.fontSize,
+    lineHeight: typography.bodyMedium.lineHeight,
+    textAlign: "left",
   },
   legalRow: {
     flexDirection: "row",
