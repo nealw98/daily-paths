@@ -118,11 +118,11 @@ export default function TabLayout() {
           <View
             style={{
               position: "absolute",
-              right: 1,
-              top: 1,
-              width: 15,
-              height: 15,
-              borderRadius: 7.5,
+              right: -1,
+              top: -1,
+              width: 20,
+              height: 20,
+              borderRadius: 10,
               alignItems: "center",
               justifyContent: "center",
               backgroundColor: badgeBackground,
@@ -130,7 +130,7 @@ export default function TabLayout() {
           >
             <MaterialCommunityIcons
               name="crown"
-              size={9}
+              size={12}
               color={badgeIconColor}
             />
           </View>

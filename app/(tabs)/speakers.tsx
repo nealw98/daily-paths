@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { AppState, AppStateStatus, StyleSheet } from "react-native";
+import { AppState, AppStateStatus, StyleSheet, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "expo-router";
-import { MaterialIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { useSpeakers, getSpeakerAudioUrl } from "../../hooks/useSpeakers";
 import { useAudioPlayer } from "../../hooks/useAudioPlayer";
@@ -15,8 +15,12 @@ import { canDownloadSpeakers } from "../../utils/accessControl";
 import { TealHeader } from "../../components/shared/TealHeader";
 import { SpeakersBrowse } from "../../components/speakers/SpeakersBrowse";
 import { SpeakerDetail } from "../../components/speakers/SpeakerDetail";
+import { JournalCategoryPicker } from "../../components/journal/JournalCategoryPicker";
+import { JournalEntryEditor } from "../../components/journal/JournalEntryEditor";
 import { PremiumGate } from "../../components/PremiumGate";
 import type { Speaker } from "../../types/speakers";
+import type { EntryType } from "../../constants/journalCategories";
+import { useJournalStorage } from "../../hooks/useJournalStorage";
 
 type SpeakerView = "browse" | "detail";
 
@@ -35,6 +39,7 @@ function SpeakersTabContent() {
   const { trackSpeakerAudioCompleted } = useAnalytics();
   const { status: subscriptionStatus, hasLifetimeAccess } = useSubscription();
   const trialStatus = useTrialStatus();
+  const { createEntry } = useJournalStorage();
 
   // Download access is entitlement-driven.
   const canDownload = canDownloadSpeakers(subscriptionStatus, trialStatus, hasLifetimeAccess);
@@ -46,6 +51,8 @@ function SpeakersTabContent() {
   const player = useAudioPlayer();
 
   const [view, setView] = useState<SpeakerView>("browse");
+  const [showJournalPicker, setShowJournalPicker] = useState(false);
+  const [journalEntryType, setJournalEntryType] = useState<EntryType | null>(null);
   const viewRef = useRef(view);
   useEffect(() => {
     viewRef.current = view;
@@ -132,6 +139,21 @@ function SpeakersTabContent() {
     refreshDownloads();
   }, [refreshDownloads]);
 
+  if (journalEntryType) {
+    return (
+      <JournalEntryEditor
+        key={journalEntryType}
+        entryType={journalEntryType}
+        onSave={async (entryType, content, structuredContent) => {
+          await createEntry(entryType, content, structuredContent);
+          setJournalEntryType(null);
+        }}
+        onCancel={() => setJournalEntryType(null)}
+        onSwitchEntryType={setJournalEntryType}
+      />
+    );
+  }
+
   // ─── Detail View ──────────────────────────────────────────────────────
 
   if (view === "detail" && selectedSpeaker) {
@@ -143,6 +165,15 @@ function SpeakersTabContent() {
         <TealHeader
           title="Speakers"
           leftIcon={<MaterialIcons name="record-voice-over" size={24} color={colors.textOnAccent} />}
+          rightAction={
+            <TouchableOpacity
+              onPress={() => setShowJournalPicker(true)}
+              activeOpacity={0.7}
+              style={styles.headerAdd}
+            >
+              <Ionicons name="add" size={26} color={colors.onPrimary} />
+            </TouchableOpacity>
+          }
         />
         <SpeakerDetail
           speaker={selectedSpeaker}
@@ -165,6 +196,15 @@ function SpeakersTabContent() {
       <TealHeader
         title="Speakers"
         leftIcon={<MaterialIcons name="record-voice-over" size={24} color={colors.textOnAccent} />}
+        rightAction={
+          <TouchableOpacity
+            onPress={() => setShowJournalPicker(true)}
+            activeOpacity={0.7}
+            style={styles.headerAdd}
+          >
+            <Ionicons name="add" size={26} color={colors.onPrimary} />
+          </TouchableOpacity>
+        }
       />
       <SpeakersBrowse
         speakers={speakers}
@@ -174,6 +214,14 @@ function SpeakersTabContent() {
         onRefresh={refresh}
         downloadedIds={downloadedIds}
       />
+      <JournalCategoryPicker
+        visible={showJournalPicker}
+        onSelect={(entryType) => {
+          setShowJournalPicker(false);
+          setJournalEntryType(entryType);
+        }}
+        onClose={() => setShowJournalPicker(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -181,5 +229,11 @@ function SpeakersTabContent() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  headerAdd: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

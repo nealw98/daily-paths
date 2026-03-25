@@ -4,6 +4,8 @@ import { qaLog } from "../utils/qaLog";
 import { trackEvent } from "../utils/trackEvent";
 import { ANALYTICS_EVENTS } from "../utils/analytics";
 import type { EntryType } from "../constants/journalCategories";
+import { parseDateLocal } from "../utils/dateUtils";
+import { useAppDate } from "../contexts/AppDateContext";
 
 export type { EntryType };
 
@@ -76,6 +78,7 @@ export function useLocalJournalEntries() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(true);
+  const { todayKey } = useAppDate();
 
   // ── Fetch ────────────────────────────────────────────────────────────
   const fetchEntries = useCallback(async () => {
@@ -106,7 +109,15 @@ export function useLocalJournalEntries() {
     ): Promise<JournalEntry | null> => {
       if (!content?.trim() && !structuredContent) return null;
 
-      const now = new Date().toISOString();
+      const nowSource = new Date();
+      const nowLocalAligned = parseDateLocal(todayKey);
+      nowLocalAligned.setHours(
+        nowSource.getHours(),
+        nowSource.getMinutes(),
+        nowSource.getSeconds(),
+        nowSource.getMilliseconds()
+      );
+      const now = nowLocalAligned.toISOString();
       const entry: JournalEntry = {
         id: localId(),
         user_id: "local",
@@ -139,7 +150,7 @@ export function useLocalJournalEntries() {
         throw err;
       }
     },
-    [],
+    [todayKey],
   );
 
   // ── Update ───────────────────────────────────────────────────────────

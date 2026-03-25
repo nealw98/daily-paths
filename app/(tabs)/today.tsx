@@ -24,6 +24,7 @@ import { markRatePromptShown, recordFirstUseIfNeeded, requestReview } from "../.
 import { recordDailyActivity, recordReadingView } from "../../utils/deviceIdentity";
 import { qaLog } from "../../utils/qaLog";
 import { useAnalytics, NavigationMethod } from "../../utils/analytics";
+import { getRequiredGate } from "../../utils/accessControl";
 import { useReading } from "../../hooks/useReading";
 import { useBookmarkManager } from "../../hooks/useBookmarkManager";
 import { hasSeenInstruction, markInstructionSeen, type BookmarkData } from "../../utils/bookmarkStorage";
@@ -75,7 +76,15 @@ export default function Index() {
   const { createEntry } = useJournalStorage();
 
   const trialStatus = useTrialStatus();
-  const { status: subStatus, hasLifetimeAccess } = useSubscription();
+  const {
+    status: subStatus,
+    hasLifetimeAccess,
+    loading: subscriptionLoading,
+  } = useSubscription();
+  const journalLockedByPaywall =
+    !subscriptionLoading &&
+    !trialStatus.loading &&
+    getRequiredGate(subStatus, trialStatus, hasLifetimeAccess) === "paywall";
   
   // Analytics
   const { trackAppOpened, startReadingView, trackReadingFavorited, trackReadingUnfavorited, updateThemeMode } = useAnalytics();
@@ -408,7 +417,9 @@ export default function Index() {
         isBookmarked={isBookmarked}
         onBookmarkToggle={handleBookmarkToggle}
         onShare={handleShare}
-        onNewJournalEntry={() => setShowJournalPicker(true)}
+        onNewJournalEntry={
+          journalLockedByPaywall ? undefined : () => setShowJournalPicker(true)
+        }
         showInstruction={showInstruction}
         onDismissInstruction={handleDismissInstruction}
         onShowInstruction={handleShowInstruction}
@@ -420,12 +431,14 @@ export default function Index() {
   if (journalEntryType) {
     return (
       <JournalEntryEditor
+        key={journalEntryType}
         entryType={journalEntryType}
         onSave={async (entryType, content, structuredContent) => {
           await createEntry(entryType, content, structuredContent);
           setJournalEntryType(null);
         }}
         onCancel={() => setJournalEntryType(null)}
+        onSwitchEntryType={setJournalEntryType}
       />
     );
   }
@@ -435,8 +448,9 @@ export default function Index() {
       {content}
 
       <JournalCategoryPicker
-        visible={showJournalPicker}
+        visible={showJournalPicker && !journalLockedByPaywall}
         onSelect={(entryType) => {
+          if (journalLockedByPaywall) return;
           setShowJournalPicker(false);
           setJournalEntryType(entryType);
         }}

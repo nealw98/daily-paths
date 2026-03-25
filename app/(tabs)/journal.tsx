@@ -8,15 +8,12 @@ import { useJournalStorage, type JournalEntry, type EntryType } from "../../hook
 import { useJournalStats } from "../../hooks/useJournalStats";
 import { useAnalytics } from "../../utils/analytics";
 import { useFeatureTimeTracker } from "../../hooks/useFeatureTimeTracker";
-import { JournalTimeline, type CategoryFilter } from "../../components/journal/JournalTimeline";
+import { JournalTimeline } from "../../components/journal/JournalTimeline";
 import { JournalEntryEditor } from "../../components/journal/JournalEntryEditor";
 import { JournalEntryDetail } from "../../components/journal/JournalEntryDetail";
 import { JournalCategoryPicker } from "../../components/journal/JournalCategoryPicker";
 import { TealHeader } from "../../components/shared/TealHeader";
 import { PremiumGate } from "../../components/PremiumGate";
-import { fonts } from "../../constants/theme";
-import { getCategoryById, getCategoryLabel } from "../../constants/journalCategories";
-import { EntryTypeIcon } from "../../utils/entryTypeIcon";
 
 type JournalView = "timeline" | "editor" | "detail";
 
@@ -50,21 +47,6 @@ function JournalTabContent() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [selectedEntryType, setSelectedEntryType] = useState<EntryType>("journal");
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
-  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
-
-  // Header title and icon reflect the active filter
-  const headerTitle = categoryFilter === "all"
-    ? "Notebook"
-    : getCategoryLabel(categoryFilter);
-
-  const headerIcon = useMemo(() => {
-    if (categoryFilter === "all") {
-      return <MaterialIcons name="edit-note" size={28} color={colors.textOnAccent} />;
-    }
-    const cat = getCategoryById(categoryFilter);
-    if (!cat) return undefined;
-    return <EntryTypeIcon svgIcon={cat.svgIcon} size={28} color={colors.textOnAccent} />;
-  }, [categoryFilter, colors.textOnAccent]);
 
   // ─── Track notebook opened on tab focus ─────────────────────────
   const [tabFocused, setTabFocused] = useState(false);
@@ -92,7 +74,6 @@ function JournalTabContent() {
       if (viewRef.current !== "timeline") {
         e.preventDefault();
         setSelectedEntry(null);
-        setCategoryFilter("all");
         setView("timeline");
       }
     });
@@ -102,14 +83,8 @@ function JournalTabContent() {
   // ─── Navigation ──────────────────────────────────────────
 
   const handleNewEntry = useCallback(() => {
-    // Smart FAB: when filtered to a specific type, skip the picker
-    if (categoryFilter !== "all") {
-      setSelectedEntryType(categoryFilter);
-      setView("editor");
-    } else {
-      setShowCategoryPicker(true);
-    }
-  }, [categoryFilter]);
+    setShowCategoryPicker(true);
+  }, []);
 
   const handleCategorySelected = useCallback((entryType: EntryType) => {
     setShowCategoryPicker(false);
@@ -133,10 +108,6 @@ function JournalTabContent() {
     setView("timeline");
     void refreshEntries();
   }, [refreshEntries]);
-
-  const handleFilterChange = useCallback((filter: CategoryFilter) => {
-    setCategoryFilter(filter);
-  }, []);
 
   const handleRefreshTimeline = useCallback(() => {
     void refreshEntries();
@@ -216,9 +187,11 @@ function JournalTabContent() {
   if (view === "editor") {
     return (
       <JournalEntryEditor
+        key={selectedEntryType}
         entryType={selectedEntryType}
         onSave={handleSaveNew}
         onCancel={handleBackToTimeline}
+        onSwitchEntryType={setSelectedEntryType}
       />
     );
   }
@@ -245,8 +218,8 @@ function JournalTabContent() {
       edges={["top"]}
     >
       <TealHeader
-        title={headerTitle}
-        leftIcon={headerIcon}
+        title="Notebook"
+        leftIcon={<MaterialIcons name="edit-note" size={28} color={colors.textOnAccent} />}
         rightAction={
           <TouchableOpacity onPress={handleNewEntry} activeOpacity={0.7} style={styles.headerAdd}>
             <Ionicons name="add" size={26} color={colors.onPrimary} />
@@ -258,8 +231,7 @@ function JournalTabContent() {
         stats={stats}
         loading={loading}
         error={error}
-        categoryFilter={categoryFilter}
-        onFilterChange={handleFilterChange}
+        onCreateEntry={handleNewEntry}
         onSelectEntry={handleSelectEntry}
         onDeleteEntry={handleDeleteFromTimeline}
         onRefresh={handleRefreshTimeline}

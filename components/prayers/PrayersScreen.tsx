@@ -17,9 +17,13 @@ import { useTheme } from "../../hooks/useTheme";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { useAnalytics } from "../../utils/analytics";
 import { usePersonalPrayers, type PersonalPrayer } from "../../hooks/usePersonalPrayers";
+import { useJournalStorage } from "../../hooks/useJournalStorage";
+import type { EntryType } from "../../constants/journalCategories";
 import { fonts } from "../../constants/theme";
 import { PRAYERS, type Prayer } from "../../constants/prayers";
 import { TealHeader } from "../shared/TealHeader";
+import { JournalCategoryPicker } from "../journal/JournalCategoryPicker";
+import { JournalEntryEditor } from "../journal/JournalEntryEditor";
 import { FieldShell, SanctuaryButton, SanctuaryCard } from "../ui/Sanctuary";
 
 const BUILTIN_PRAYER_OVERRIDES_KEY = "@daily_paths_builtin_prayer_overrides_v1";
@@ -36,8 +40,11 @@ export const PrayersScreen: React.FC = () => {
   const { trackPrayerViewed } = useAnalytics();
   const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
   const { prayers: personalPrayers, addPrayer, updatePrayer, deletePrayer } = usePersonalPrayers();
+  const { createEntry } = useJournalStorage();
   const [expandedPrayer, setExpandedPrayer] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showJournalPicker, setShowJournalPicker] = useState(false);
+  const [journalEntryType, setJournalEntryType] = useState<EntryType | null>(null);
   const [newTitle, setNewTitle] = useState("");
   const [newText, setNewText] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -429,6 +436,21 @@ export const PrayersScreen: React.FC = () => {
     );
   };
 
+  if (journalEntryType) {
+    return (
+      <JournalEntryEditor
+        key={journalEntryType}
+        entryType={journalEntryType}
+        onSave={async (entryType, content, structuredContent) => {
+          await createEntry(entryType, content, structuredContent);
+          setJournalEntryType(null);
+        }}
+        onCancel={() => setJournalEntryType(null)}
+        onSwitchEntryType={setJournalEntryType}
+      />
+    );
+  }
+
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.pearl }]}
@@ -438,6 +460,15 @@ export const PrayersScreen: React.FC = () => {
       <TealHeader
         title="Prayers"
         leftIcon={<MaterialCommunityIcons name="hands-pray" size={24} color={colors.textOnAccent} />}
+        rightAction={
+          <TouchableOpacity
+            onPress={() => setShowJournalPicker(true)}
+            activeOpacity={0.7}
+            style={styles.headerAdd}
+          >
+            <Ionicons name="add" size={26} color={colors.onPrimary} />
+          </TouchableOpacity>
+        }
       />
 
       <KeyboardAvoidingView
@@ -535,6 +566,14 @@ export const PrayersScreen: React.FC = () => {
         <View style={{ height: 100 }} />
       </KeyboardAwareScrollView>
       </KeyboardAvoidingView>
+      <JournalCategoryPicker
+        visible={showJournalPicker}
+        onSelect={(entryType) => {
+          setShowJournalPicker(false);
+          setJournalEntryType(entryType);
+        }}
+        onClose={() => setShowJournalPicker(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -542,6 +581,12 @@ export const PrayersScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  headerAdd: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
   },
   scrollView: {
     flex: 1,

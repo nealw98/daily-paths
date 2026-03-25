@@ -27,9 +27,11 @@ import {
 } from "../../constants/journalCategories";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { GuidedPromptEditor } from "./GuidedPromptEditor";
+import { JournalCategoryPicker } from "./JournalCategoryPicker";
 import { EntryTypeIcon } from "../../utils/entryTypeIcon";
 import { Seedling } from "../../components/icons";
 import { FieldShell, SanctuaryButton, SanctuaryCard } from "../ui/Sanctuary";
+import { useAppDate } from "../../contexts/AppDateContext";
 
 interface JournalEntryEditorProps {
   entryType: EntryType;
@@ -42,6 +44,7 @@ interface JournalEntryEditorProps {
   initialContent?: string | null;
   initialStructuredContent?: Record<string, any> | null;
   isEditing?: boolean;
+  onSwitchEntryType?: (entryType: EntryType) => void;
 }
 
 export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
@@ -51,6 +54,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
   initialContent = "",
   initialStructuredContent = null,
   isEditing = false,
+  onSwitchEntryType,
 }) => {
   const { colors } = useTheme();
   const navigation = useNavigation();
@@ -120,7 +124,9 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
     return {};
   });
   const [focusedPromptId, setFocusedPromptId] = useState<string | null>(null);
-  const { quote: dailyGratitudeQuoteData } = useDailyGratitudeQuote(new Date(), {
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const { today } = useAppDate();
+  const { quote: dailyGratitudeQuoteData } = useDailyGratitudeQuote({
     enabled: entryType === "gratitude",
   });
 
@@ -235,6 +241,21 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
     confirmExit(onCancel);
   };
 
+  const handleSwitchEntryType = useCallback(
+    (nextEntryType: EntryType) => {
+      setShowCategoryPicker(false);
+      if (nextEntryType === entryType) return;
+      confirmExit(() => {
+        if (onSwitchEntryType) {
+          onSwitchEntryType(nextEntryType);
+          return;
+        }
+        onCancel();
+      });
+    },
+    [confirmExit, entryType, onCancel, onSwitchEntryType]
+  );
+
   // ─── Gratitude Handlers ────────────────────────────────
 
   const handleGratitudeItemChange = (index: number, text: string) => {
@@ -261,7 +282,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
 
   // ─── Date String ───────────────────────────────────────
 
-  const dateStr = new Date().toLocaleDateString("en-US", {
+  const dateStr = today.toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
@@ -359,6 +380,13 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                 {categoryLabel}
               </Text>
             </View>
+            <TouchableOpacity
+              onPress={() => setShowCategoryPicker(true)}
+              activeOpacity={0.7}
+              style={styles.headerAdd}
+            >
+              <Ionicons name="add" size={24} color={colors.onPrimary} />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -996,6 +1024,11 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
           </View>
         ) : null}
       </KeyboardAvoidingView>
+      <JournalCategoryPicker
+        visible={showCategoryPicker}
+        onSelect={handleSwitchEntryType}
+        onClose={() => setShowCategoryPicker(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -1016,6 +1049,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
+  },
+  headerAdd: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
   },
   headerIconShell: {
     width: 44,

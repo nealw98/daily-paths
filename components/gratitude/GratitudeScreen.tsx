@@ -7,6 +7,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ImageBackground,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -14,10 +15,9 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useTheme } from "../../hooks/useTheme";
 import { fonts } from "../../constants/theme";
 import { useGratitude } from "../../hooks/useGratitude";
-import { GratitudeQuote } from "./GratitudeQuote";
 import { GratitudeEntry } from "./GratitudeEntry";
 import { GratitudeHistory } from "./GratitudeHistory";
-import { TealHeader } from "../shared/TealHeader";
+import { useAppDate } from "../../contexts/AppDateContext";
 
 interface GratitudeScreenProps {
   onBack: () => void;
@@ -27,6 +27,7 @@ type GratitudeView = "today" | "history";
 
 export const GratitudeScreen: React.FC<GratitudeScreenProps> = ({ onBack }) => {
   const { colors } = useTheme();
+  const { today } = useAppDate();
   const { todayEntry, history, todayQuote, loading, saveTodayItems } =
     useGratitude();
   const [view, setView] = useState<GratitudeView>("today");
@@ -70,42 +71,50 @@ export const GratitudeScreen: React.FC<GratitudeScreenProps> = ({ onBack }) => {
     );
   }
 
-  const dateStr = new Date().toLocaleDateString("en-US", {
+  const dateStr = today.toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
     year: "numeric",
   });
 
+  const quoteText = todayQuote
+    ? todayQuote.author
+      ? `“${todayQuote.quote}” — ${todayQuote.author}`
+      : `“${todayQuote.quote}”`
+    : "";
+
   return (
     <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={[styles.container, { backgroundColor: colors.surfaceContainerLow }]}
       edges={["top"]}
     >
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <TealHeader
-          title="Gratitude List"
-          leftIcon={<Ionicons name="heart-outline" size={28} color={colors.textOnAccent} />}
-        />
-
-        <View style={[styles.actionRow, { borderBottomColor: colors.border }]}>
+        <View style={[styles.headerRow, { backgroundColor: colors.surface }]}>
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={colors.accent} />
-            <Text style={[styles.backText, { color: colors.accent }]}>Back</Text>
+            <Ionicons name="arrow-back" size={20} color={colors.primary} />
+            <Text style={[styles.backText, { color: colors.primary }]}>Back</Text>
           </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.onSurface }]}>Gratitude</Text>
           <TouchableOpacity
             onPress={() => setView("history")}
             style={styles.historyButton}
           >
-            <Ionicons name="time-outline" size={20} color={colors.accent} />
-            <Text style={[styles.historyText, { color: colors.accent }]}>
+            <Ionicons name="time-outline" size={18} color={colors.primary} />
+            <Text style={[styles.historyText, { color: colors.primary }]}>
               History
             </Text>
           </TouchableOpacity>
         </View>
+
+        <ImageBackground
+          source={require("../../assets/gratitude.jpg")}
+          style={styles.heroImage}
+          resizeMode="cover"
+        />
 
         <KeyboardAwareScrollView
           style={styles.scrollView}
@@ -116,21 +125,35 @@ export const GratitudeScreen: React.FC<GratitudeScreenProps> = ({ onBack }) => {
           keyboardDismissMode="on-drag"
           contentContainerStyle={styles.scrollContent}
         >
-          {/* Date */}
-          <Text style={[styles.dateText, { color: colors.textSecondary }]}>
-            {dateStr}
-          </Text>
+          <View
+            style={[
+              styles.overlayCard,
+              {
+                backgroundColor: colors.surfaceContainerLowest,
+                shadowColor: "#163531",
+              },
+            ]}
+          >
+            {/* Date */}
+            <Text style={[styles.dateText, { color: colors.onSurfaceVariant }]}>
+              {dateStr}
+            </Text>
 
-          {/* Daily Quote */}
-          <GratitudeQuote quote={todayQuote} />
+            {/* Daily Quote from gratitude_quotes */}
+            {!!quoteText && (
+              <Text style={[styles.quoteText, { color: colors.onSurfaceVariant }]}>
+                {quoteText}
+              </Text>
+            )}
 
-          {/* Entry Input + List */}
-          <GratitudeEntry
-            initialItems={todayEntry?.items || []}
-            onSave={handleSave}
-            onReset={handleReset}
-            saving={saving}
-          />
+            {/* Entry Input + List */}
+            <GratitudeEntry
+              initialItems={todayEntry?.items || []}
+              onSave={handleSave}
+              onReset={handleReset}
+              saving={saving}
+            />
+          </View>
         </KeyboardAwareScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -144,22 +167,27 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
-  actionRow: {
+  headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
+    paddingLeft: 18,
+    paddingRight: 16,
+    paddingVertical: 10,
   },
   backButton: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
   },
+  headerTitle: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 18,
+    fontWeight: "600",
+  },
   backText: {
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
+    fontSize: 14,
   },
   historyButton: {
     flexDirection: "row",
@@ -168,20 +196,44 @@ const styles = StyleSheet.create({
   },
   historyText: {
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
+    fontSize: 13,
+  },
+  heroImage: {
+    height: 230,
+    width: "100%",
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingTop: 20,
+    paddingTop: 0,
     paddingBottom: 40,
+  },
+  overlayCard: {
+    marginTop: -96,
+    marginHorizontal: 16,
+    borderRadius: 16,
+    paddingTop: 20,
+    paddingBottom: 14,
+    shadowOffset: { width: 0, height: 24 },
+    shadowOpacity: 0.06,
+    shadowRadius: 48,
+    elevation: 8,
   },
   dateText: {
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
+    fontSize: 13,
     paddingHorizontal: 20,
-    marginTop: 20,
-    marginBottom: 20,
+    marginBottom: 12,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
+  quoteText: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 17,
+    lineHeight: 26,
+    textAlign: "center",
+    paddingHorizontal: 24,
+    marginBottom: 18,
   },
 });

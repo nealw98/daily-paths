@@ -5,6 +5,7 @@ import { trackEvent } from "../utils/trackEvent";
 import { ANALYTICS_EVENTS } from "../utils/analytics";
 import { useDailyGratitudeQuote } from "./useDailyGratitudeQuote";
 import type { GratitudeQuote as CachedGratitudeQuote } from "../utils/gratitudeQuoteCache";
+import { useAppDate } from "../contexts/AppDateContext";
 
 const STORAGE_KEY = "@daily_paths_gratitude_entries";
 
@@ -48,9 +49,10 @@ export function useGratitude() {
   const [history, setHistory] = useState<GratitudeEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const mounted = useRef(true);
+  const { todayKey } = useAppDate();
   const { quote: todayQuote } = useDailyGratitudeQuote();
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = todayKey;
 
   // Fetch entries from AsyncStorage
   const fetchEntries = useCallback(async () => {

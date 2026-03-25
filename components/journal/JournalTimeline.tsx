@@ -1,9 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   StyleSheet,
   FlatList,
@@ -12,29 +10,24 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
-import { fonts } from "../../constants/theme";
+import { fonts, typography } from "../../constants/theme";
 import type { JournalEntry } from "../../hooks/useJournalStorage";
-import type { EntryType } from "../../constants/journalCategories";
 import type { JournalStats } from "../../hooks/useJournalStats";
 import {
   getCategoryLabel,
   getCategoryColor,
+  getCategoryBadgeBgColor,
   getCategoryById,
-  JOURNAL_CATEGORIES,
 } from "../../constants/journalCategories";
 import { EntryTypeIcon } from "../../utils/entryTypeIcon";
-import { FourSquares } from "../icons";
-import { FocusPill, SanctuaryCard } from "../ui/Sanctuary";
-
-// ─── Public types ───────────────────────────────────────────────────────────
-
-export type CategoryFilter = "all" | EntryType;
+import { SanctuaryCard } from "../ui/Sanctuary";
 
 // ─── Timeline item union (date headers + entries) ───────────────────────────
 
 type TimelineItem =
   | { type: "header"; date: string }
-  | { type: "entry"; data: JournalEntry };
+  | { type: "entry"; data: JournalEntry }
+  | { type: "placeholder"; date: string };
 
 // ─── Props ──────────────────────────────────────────────────────────────────
 
@@ -43,11 +36,10 @@ interface JournalTimelineProps {
   stats: JournalStats;
   loading: boolean;
   error?: string | null;
-  categoryFilter: CategoryFilter;
-  onFilterChange: (filter: CategoryFilter) => void;
   onSelectEntry: (entry: JournalEntry) => void;
   onDeleteEntry: (entryId: string) => void;
   onRefresh: () => void;
+  onCreateEntry: () => void;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -202,15 +194,12 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
   stats,
   loading,
   error,
-  categoryFilter,
-  onFilterChange,
   onSelectEntry,
   onDeleteEntry,
   onRefresh,
+  onCreateEntry,
 }) => {
   const { colors } = useTheme();
-  const { settings } = useSettings();
-  const typography = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
   const [slowLoading, setSlowLoading] = useState(false);
 
   useEffect(() => {
@@ -224,17 +213,51 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
     return () => clearTimeout(timer);
   }, [loading]);
 
-  // Filter entries by category
-  const filteredEntries = useMemo(() => {
-    if (categoryFilter === "all") return entries;
-    return entries.filter((e) => e.entry_type === categoryFilter);
-  }, [entries, categoryFilter]);
+  const todayKey = useMemo(() => toDateKey(new Date()), []);
+  const currentStreak = useMemo(() => {
+    if (entries.length === 0) return 0;
 
-  // Build timeline items (headers + entries)
-  const timelineItems = useMemo(
-    () => groupEntriesByDate(filteredEntries),
-    [filteredEntries]
-  );
+    const entryDays = new Set<string>(
+      entries.map((entry) => toDateKey(new Date(entry.created_at)))
+    );
+
+    const cursor = new Date();
+    cursor.setHours(0, 0, 0, 0);
+
+    let streak = 0;
+    while (entryDays.has(toDateKey(cursor))) {
+      streak += 1;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+
+    return streak;
+  }, [entries]);
+
+  // Build timeline items (headers + entries), always anchored to a Today section.
+  const timelineItems = useMemo(() => {
+    const todayEntries: JournalEntry[] = [];
+    const otherEntries: JournalEntry[] = [];
+
+    for (const entry of entries) {
+      const dateKey = toDateKey(new Date(entry.created_at));
+      if (dateKey === todayKey) {
+        todayEntries.push(entry);
+      } else {
+        otherEntries.push(entry);
+      }
+    }
+
+    const grouped = groupEntriesByDate([...todayEntries, ...otherEntries]);
+    if (todayEntries.length > 0) {
+      return grouped;
+    }
+
+    return [
+      { type: "header", date: todayKey } as TimelineItem,
+      { type: "placeholder", date: todayKey } as TimelineItem,
+      ...grouped,
+    ];
+  }, [entries, todayKey]);
 
   // ─── Render: Entry Card ─────────────────────────────────────────────────
 
@@ -245,8 +268,10 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
       minute: "2-digit",
     });
 
+    const category = getCategoryById(entry.entry_type);
     const catLabel = getCategoryLabel(entry.entry_type);
     const catColor = getCategoryColor(entry.entry_type);
+    const catBadgeBg = getCategoryBadgeBgColor(entry.entry_type);
     const preview = getEntryPreview(entry);
 
     return (
@@ -256,31 +281,44 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
         activeOpacity={0.7}
       >
         <SanctuaryCard tone="lowest" style={styles.entryCard} contentStyle={styles.entryInner} elevated>
-          <View style={styles.entryHeader}>
-            <FocusPill
-              label={catLabel}
-              icon={(() => {
-                const cat = getCategoryById(entry.entry_type);
-                return cat ? (
-                  <EntryTypeIcon svgIcon={cat.svgIcon} size={14} color={catColor} />
-                ) : null;
-              })()}
-              style={styles.entryTypeBadge}
-              labelStyle={[styles.entryTypeLabel, { color: catColor }]}
-            />
-            <Text style={[styles.entryTime, { color: colors.onSurfaceVariant }]}>
-              {timeStr}
-            </Text>
-          </View>
+          <View style={styles.entryRow}>
+            <View style={styles.entryTypeColumn}>
+              <View
+                style={[
+                  styles.entryTypeIconPill,
+                  { backgroundColor: catBadgeBg },
+                ]}
+              >
+                {category ? (
+                  <EntryTypeIcon svgIcon={category.svgIcon} size={22} color={catColor} />
+                ) : null}
+              </View>
+            </View>
+            <View style={styles.entryContentColumn}>
+              <View style={styles.entryHeader}>
+                <Text style={[styles.entryTypeLabel, { color: catColor }]}>
+                  {catLabel}
+                </Text>
+                <Text style={[styles.entryTime, { color: colors.onSurfaceVariant }]}>
+                  {timeStr}
+                </Text>
+              </View>
 
-          {preview ? (
-            <Text
-              style={[styles.entryPreview, { color: colors.onSurface, fontSize: typography.bodyFontSize - 1, lineHeight: (typography.bodyFontSize - 1) * 1.6 }]}
-              numberOfLines={3}
-            >
-              {preview}
-            </Text>
-          ) : null}
+              {preview ? (
+                <Text
+                  style={[
+                    styles.entryPreview,
+                    {
+                      color: colors.onSurface,
+                    },
+                  ]}
+                  numberOfLines={3}
+                >
+                  {preview}
+                </Text>
+              ) : null}
+            </View>
+          </View>
         </SanctuaryCard>
       </TouchableOpacity>
     );
@@ -308,9 +346,41 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
     if (item.type === "header") {
       return renderDateDivider(item.date, index);
     }
+    if (item.type === "placeholder") {
+      return (
+        <View style={styles.timelineEntryRow}>
+          <View style={styles.timelineLineColumnSegment}>
+            <View style={styles.timelineLineSegment} />
+          </View>
+          <View style={styles.timelineEntryContent}>
+            <TouchableOpacity
+              style={styles.entryCardTouchable}
+              onPress={onCreateEntry}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.placeholderCard, { borderColor: colors.outlineVariant }]}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={22}
+                  color={colors.onSurfaceVariant}
+                />
+                <Text style={[styles.placeholderTitle, { color: colors.onSurface }]}>
+                  Your day is a blank slate.
+                </Text>
+                <Text style={[styles.placeholderAction, { color: colors.primary }]}>
+                  WRITE ENTRY
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+      );
+    }
     return (
       <View style={styles.timelineEntryRow}>
-        <View style={styles.timelineLineColumn} />
+        <View style={styles.timelineLineColumnSegment}>
+          <View style={styles.timelineLineSegment} />
+        </View>
         <View style={styles.timelineEntryContent}>
           {renderEntryCard(item.data)}
         </View>
@@ -320,67 +390,44 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
 
   const keyExtractor = (item: TimelineItem, index: number) => {
     if (item.type === "header") return `header-${item.date}`;
+    if (item.type === "placeholder") return `placeholder-${item.date}`;
     return item.data.id;
   };
 
-  // ─── Render: Segmented Filter ───────────────────────────────────────────
-
-  // Short labels for filter icons
-  const filterLabels: Record<string, string> = {
-    journal: "Journal",
-    gratitude: "Gratitude",
-    spot_check: "Spot Check",
-    nightly_review: "Nightly",
-  };
-
-  const SegmentedFilter = () => (
-    <View style={styles.segmentedWrapper}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.segmentedContainer}
-      >
-        <FocusPill
-          label="All"
-          selected={categoryFilter === "all"}
-          onPress={() => onFilterChange("all")}
-          icon={<FourSquares size={14} color={colors.onSurfaceVariant} strokeWidth={2.2} />}
-          style={styles.filterPill}
-          labelStyle={styles.filterLabel}
-        />
-
-        {JOURNAL_CATEGORIES.map((cat) => {
-          const isActive = categoryFilter === cat.id;
-          const catColor = getCategoryColor(cat.id);
-          return (
-            <FocusPill
-              key={cat.id}
-              style={styles.filterPill}
-              labelStyle={[styles.filterLabel, isActive ? { color: catColor } : null]}
-              icon={
-                <EntryTypeIcon
-                  svgIcon={cat.svgIcon}
-                  size={14}
-                  color={isActive ? catColor : colors.onSurfaceVariant}
-                  strokeWidth={isActive ? 2.4 : 2.1}
-                />
-              }
-              label={filterLabels[cat.id] ?? cat.label}
-              selected={isActive}
-              onPress={() => onFilterChange(cat.id as CategoryFilter)}
-            />
-          );
-        })}
-
-      </ScrollView>
-    </View>
-  );
-
-  // ─── List Header ───────────────────────────────────────────────────────
-
   const ListHeader = () => (
-    <View style={styles.listHeader}>
-      <SegmentedFilter />
+    <View style={styles.progressRow}>
+      <View
+        style={[
+          styles.progressMetricBox,
+          {
+            backgroundColor: "#BAECE699",
+            borderColor: colors.mist,
+          },
+        ]}
+      >
+        <Text style={[styles.progressLabel, { color: colors.deepTeal }]}>
+          TOTAL ENTRIES
+        </Text>
+        <Text style={[styles.progressValue, { color: colors.deepTeal }]}>
+          {stats.total}
+        </Text>
+      </View>
+      <View
+        style={[
+          styles.progressMetricBox,
+          {
+            backgroundColor: "#BAECE699",
+            borderColor: colors.mist,
+          },
+        ]}
+      >
+        <Text style={[styles.progressLabel, { color: colors.deepTeal }]}>
+          CURRENT STREAK
+        </Text>
+        <Text style={[styles.progressValue, { color: colors.deepTeal }]}>
+          {currentStreak}
+        </Text>
+      </View>
     </View>
   );
 
@@ -463,10 +510,6 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
 
   return (
     <View style={styles.wrapper}>
-      {/* Continuous vertical timeline line */}
-      {timelineItems.length > 0 && (
-        <View style={[styles.timelineAbsoluteLine, { backgroundColor: '#D1D5DB' }]} pointerEvents="none" />
-      )}
       <FlatList
         data={timelineItems}
         renderItem={renderItem}
@@ -495,41 +538,40 @@ const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
   },
-  timelineAbsoluteLine: {
-    position: "absolute",
-    left: 36, // 16px padding + 20px (center of 40px column)
-    top: 0,
-    bottom: 0,
-    width: 1,
-    zIndex: 0,
-  },
 
   // FlatList content
   listContent: {
     paddingHorizontal: 16,
     paddingBottom: 100,
   },
-
-  // ─── List Header ──────────────────────────────────────────────────────────
-  listHeader: {
-    marginBottom: 12,
-  },
-
-  segmentedWrapper: {
-    paddingTop: 10,
-    paddingBottom: 6,
-  },
-  segmentedContainer: {
+  progressRow: {
     flexDirection: "row",
-    gap: 10,
+    gap: 20,
+    justifyContent: "center",
+    marginTop: 14,
+    marginBottom: 16,
+    paddingHorizontal: 22,
   },
-  filterPill: {
-    minHeight: 38,
+  progressMetricBox: {
+    width: "42%",
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    alignItems: "center",
   },
-  filterLabel: {
+  progressValue: {
+    fontFamily: fonts.bodyFamilyBold,
+    fontSize: 32,
+    lineHeight: 36,
+  },
+  progressLabel: {
+    marginBottom: 4,
     fontFamily: fonts.labelFamily,
     fontSize: 11,
-    lineHeight: 16,
+    lineHeight: 14,
+    letterSpacing: 0.6,
+    textAlign: "center",
   },
 
   dateDivider: {
@@ -558,8 +600,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  timelineLineColumnSegment: {
+    width: 40,
+    alignItems: "center",
+    justifyContent: "stretch",
+  },
+  timelineLineSegment: {
+    width: 1,
+    flex: 1,
+    backgroundColor: "#D1D5DB",
+  },
   timelineEntryContent: {
     flex: 1,
+    paddingLeft: 16,
+    paddingRight: 24,
   },
 
   entryCardTouchable: {
@@ -574,19 +628,38 @@ const styles = StyleSheet.create({
     paddingLeft: 18,
     paddingRight: 18,
   },
+  entryRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  entryTypeColumn: {
+    width: 44,
+    alignItems: "center",
+    paddingTop: 2,
+  },
+  entryContentColumn: {
+    flex: 1,
+  },
   entryHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 10,
+    alignItems: "center",
+    marginBottom: 6,
   },
-  entryTypeBadge: {
-    alignSelf: "flex-start",
+  entryTypeIconPill: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
   },
   entryTypeLabel: {
-    fontFamily: fonts.labelFamily,
-    fontSize: 12,
-    lineHeight: 16,
+    alignSelf: "flex-start",
+    fontFamily: typography.titleLarge.fontFamily,
+    fontSize: typography.titleLarge.fontSize,
+    lineHeight: typography.titleLarge.lineHeight,
+    letterSpacing: typography.titleLarge.letterSpacing,
   },
   entryTime: {
     fontFamily: fonts.bodyFamily,
@@ -594,9 +667,32 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   entryPreview: {
+    fontFamily: typography.bodyLarge.fontFamily,
+    fontSize: typography.bodyLarge.fontSize,
+    lineHeight: typography.bodyLarge.lineHeight,
+    letterSpacing: typography.bodyLarge.letterSpacing,
+  },
+  placeholderCard: {
+    borderWidth: 2,
+    borderStyle: "dashed",
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+  },
+  placeholderTitle: {
+    marginTop: 8,
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 15,
-    lineHeight: 24,
+    fontSize: 16,
+    lineHeight: 22,
+    textAlign: "center",
+  },
+  placeholderAction: {
+    marginTop: 8,
+    fontFamily: fonts.bodyFamilyBold,
+    fontSize: 14,
+    letterSpacing: 1.2,
   },
 
   // ─── Empty State ─────────────────────────────────────────────────────────

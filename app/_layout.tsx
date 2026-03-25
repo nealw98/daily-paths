@@ -24,6 +24,7 @@ import { hasSeenTrialEndedModal, markTrialEndedModalSeen } from "../utils/trialT
 import { LifetimeWelcomeModal } from "../components/LifetimeWelcomeModal";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { KeyboardProvider } from "react-native-keyboard-controller";
+import { AppDateProvider } from "../contexts/AppDateContext";
 
 console.log("[STARTUP] _layout.tsx module loading...");
 console.log("[STARTUP] Platform:", Platform.OS, Platform.Version);
@@ -195,43 +196,53 @@ export default function RootLayout() {
   return (
     <KeyboardProvider>
       <SettingsProvider>
-            <SubscriptionProvider>
-                <TrialExpiryPresenter />
-                <LifetimeWelcomePresenter />
-                {updateReady && (
-                  <View style={styles.updateBanner}>
-                    <Text style={styles.updateText}>
-                      Update available. Restart to apply.
+        <AppDateProvider>
+          <SubscriptionProvider>
+            <TrialExpiryPresenter />
+            <LifetimeWelcomePresenter />
+            {updateReady && (
+              <View style={styles.updateBanner}>
+                <Text style={styles.updateText}>
+                  Update available. Restart to apply.
+                </Text>
+                <View style={styles.updateActions}>
+                  <TouchableOpacity
+                    style={[
+                      styles.updateButtonPrimary,
+                      { backgroundColor: colors.seafoam },
+                    ]}
+                    onPress={handleRestart}
+                    disabled={restarting}
+                    activeOpacity={0.8}
+                  >
+                    <Text
+                      style={[
+                        styles.updateButtonPrimaryText,
+                        { color: colors.deepTeal },
+                      ]}
+                    >
+                      {restarting ? "Restarting..." : "Restart"}
                     </Text>
-                    <View style={styles.updateActions}>
-                      <TouchableOpacity
-                        style={[styles.updateButtonPrimary, { backgroundColor: colors.seafoam }]}
-                        onPress={handleRestart}
-                        disabled={restarting}
-                        activeOpacity={0.8}
-                      >
-                        <Text style={[styles.updateButtonPrimaryText, { color: colors.deepTeal }]}>
-                          {restarting ? "Restarting..." : "Restart"}
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.updateButtonSecondary}
-                        onPress={() => setUpdateReady(false)}
-                        activeOpacity={0.8}
-                        disabled={restarting}
-                      >
-                        <Text style={styles.updateButtonSecondaryText}>Later</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                )}
-                <Stack
-                  screenOptions={{
-                    headerShown: false,
-                    contentStyle: { backgroundColor: colors.pearl },
-                  }}
-                />
-            </SubscriptionProvider>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.updateButtonSecondary}
+                    onPress={() => setUpdateReady(false)}
+                    activeOpacity={0.8}
+                    disabled={restarting}
+                  >
+                    <Text style={styles.updateButtonSecondaryText}>Later</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: colors.pearl },
+              }}
+            />
+          </SubscriptionProvider>
+        </AppDateProvider>
       </SettingsProvider>
     </KeyboardProvider>
   );

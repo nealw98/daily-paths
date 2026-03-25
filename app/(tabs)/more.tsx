@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Switch,
   Linking,
   Platform,
   Modal,
@@ -18,7 +17,6 @@ import {
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import Constants from "expo-constants";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -27,7 +25,6 @@ import { useSettings, TextSize } from "../../hooks/useSettings";
 import { useAppFeedback } from "../../hooks/useAppFeedback";
 import { useAnalytics } from "../../utils/analytics";
 import { shareApp, openAppStoreForRating } from "../../utils/rateShareTracking";
-import { scheduleWeekOfNotifications } from "../../utils/notificationSync";
 import { qaLog } from "../../utils/qaLog";
 import { fonts } from "../../constants/theme";
 import { TealHeader } from "../../components/shared/TealHeader";
@@ -65,32 +62,10 @@ const textSizeStops: TextSize[] = [
   "extraLarge",
 ];
 
-function parseTimeToDate(time: string): Date {
-  const [h = "8", m = "0"] = time.split(":");
-  const d = new Date();
-  d.setHours(Number(h), Number(m), 0, 0);
-  return d;
-}
-
-function formatTimeDisplay(date: Date): string {
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
-  const suffix = hours >= 12 ? "PM" : "AM";
-  const displayHour = ((hours + 11) % 12) + 1;
-  const minuteStr = minutes.toString().padStart(2, "0");
-  return `${displayHour}:${minuteStr} ${suffix}`;
-}
-
-function formatTimeStorage(date: Date): string {
-  const h = date.getHours().toString().padStart(2, "0");
-  const m = date.getMinutes().toString().padStart(2, "0");
-  return `${h}:${m}`;
-}
-
 export default function MoreTab() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const { settings, setTextSize, setThemeId, setColorScheme, setDailyReminderEnabled, setDailyReminderTime } =
+  const { settings, setTextSize, setThemeId, setColorScheme } =
     useSettings();
   const { submitting: submittingFeedback, submitFeedback } = useAppFeedback();
   const { status, hasLifetimeAccess, loading: subLoading, refresh } = useSubscription();
@@ -99,8 +74,6 @@ export default function MoreTab() {
   const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
 
-  const [showTimePicker, setShowTimePicker] = useState(false);
-  const [tempReminderDate, setTempReminderDate] = useState<Date | null>(null);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [showRateModal, setShowRateModal] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
@@ -109,7 +82,6 @@ export default function MoreTab() {
   const [openingCustomerCenter, setOpeningCustomerCenter] = useState(false);
   const [textSizeExpanded, setTextSizeExpanded] = useState(true);
   const [defaultThemesExpanded, setDefaultThemesExpanded] = useState(false);
-  const [premiumThemesExpanded, setPremiumThemesExpanded] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -120,9 +92,6 @@ export default function MoreTab() {
   // Collapse premium themes when entitlement lapses and reset protected theme choices.
   useEffect(() => {
     const hasPaidEntitlement = hasLifetimeAccess || status.isSubscribed || status.isLegacy;
-    if (!hasPaidEntitlement) {
-      setPremiumThemesExpanded(false);
-    }
     if (!hasPaidEntitlement && EXTENDED_THEME_OPTIONS.some((t) => t.id === settings.themeId)) {
       setThemeId("ocean-light");
       updateThemeMode("light");
@@ -135,10 +104,6 @@ export default function MoreTab() {
   const iosBuildNumber =
     expoConfig.ios?.buildNumber ?? Constants.nativeBuildVersion ?? "dev";
 
-  const reminderDate = useMemo(
-    () => parseTimeToDate(settings.dailyReminderTime),
-    [settings.dailyReminderTime]
-  );
   const hasPaidEntitlement = hasLifetimeAccess || status.isSubscribed || status.isLegacy;
 
   const handleTextSizePress = async (size: TextSize) => {
@@ -167,13 +132,6 @@ export default function MoreTab() {
     } else {
       setThemeId(optionId);
       updateThemeMode(DARK_THEME_IDS.has(optionId) ? "dark" : "light");
-    }
-  };
-
-  const handleReminderToggle = async (enabled: boolean) => {
-    await setDailyReminderEnabled(enabled);
-    if (enabled) {
-      await scheduleWeekOfNotifications();
     }
   };
 
@@ -500,140 +458,9 @@ export default function MoreTab() {
             </View>
           )}
 
-          {!subLoading && hasPaidEntitlement && (
-            <>
-              <View style={[styles.cardDivider, { backgroundColor: colors.mist }]} />
-              <TouchableOpacity
-                style={styles.themeSectionHeader}
-                activeOpacity={0.7}
-                onPress={() => setPremiumThemesExpanded((current) => !current)}
-              >
-                <Text style={[styles.cardLabel, { color: colors.deepTeal, marginBottom: 0 }]}>
-                  Premium Themes
-                </Text>
-                <Ionicons
-                  name={premiumThemesExpanded ? "chevron-up" : "chevron-down"}
-                  size={18}
-                  color={colors.deepTeal}
-                />
-              </TouchableOpacity>
-              {premiumThemesExpanded && (
-                <View style={styles.themeOptions}>
-                  {EXTENDED_THEME_OPTIONS.map((option) => {
-                    const isSelected =
-                      settings.themeId === option.id && settings.colorScheme !== "system";
-                    return (
-                      <TouchableOpacity
-                        key={option.id}
-                        style={[
-                          styles.themeOption,
-                          { borderColor: colors.border },
-                          isSelected && { backgroundColor: colors.deepTeal, borderColor: colors.deepTeal },
-                        ]}
-                        onPress={() => handleThemeChange(option.id)}
-                        activeOpacity={0.8}
-                      >
-                        <Text
-                          style={[
-                            styles.themeOptionText,
-                            { color: colors.deepTeal },
-                            isSelected && { color: colors.textOnAccent },
-                          ]}
-                          numberOfLines={2}
-                        >
-                          {option.displayName}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              )}
-            </>
-          )}
         </View>
 
-        {/* ── 3. Daily Notification ────────────────────────── */}
-        <Text allowFontScaling={false} style={[styles.sectionLabel, { color: colors.deepTeal }]}>Daily Notification</Text>
-        <View style={[styles.card, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
-          <View style={styles.row}>
-            <View style={styles.rowTextWrap}>
-              <Text style={[styles.rowTitle, { color: colors.deepTeal }]}>Thought for the Day</Text>
-              <Text style={[styles.rowDescription, { color: colors.textSecondary }]}>
-                Receive today's reading as a notification
-              </Text>
-            </View>
-            <Switch
-              value={settings.dailyReminderEnabled}
-              onValueChange={handleReminderToggle}
-              trackColor={{ false: colors.mist, true: colors.deepTeal }}
-              thumbColor={settings.dailyReminderEnabled ? colors.pearl : colors.mist}
-            />
-          </View>
-
-          <View style={[styles.cardDivider, { backgroundColor: colors.mist }]} />
-
-          <View
-            style={[
-              styles.row,
-              !settings.dailyReminderEnabled && { opacity: 0.5 },
-            ]}
-          >
-            <Text style={[styles.rowTitle, { color: colors.ink }]}>Notification time</Text>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              disabled={!settings.dailyReminderEnabled}
-              onPress={() => {
-                if (settings.dailyReminderEnabled) {
-                  setTempReminderDate(reminderDate);
-                  setShowTimePicker(true);
-                }
-              }}
-            >
-              <Text style={[styles.timeValue, { color: colors.deepTeal }]}>
-                {formatTimeDisplay(reminderDate)}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {showTimePicker && settings.dailyReminderEnabled && (
-            <View style={styles.timePickerContainer}>
-              <DateTimePicker
-                value={tempReminderDate ?? reminderDate}
-                mode="time"
-                display={Platform.OS === "ios" ? "spinner" : "default"}
-                onChange={(_, selectedDate) => {
-                  if (!selectedDate) return;
-                  setTempReminderDate(selectedDate);
-                }}
-              />
-              <View style={styles.timePickerActions}>
-                <TouchableOpacity
-                  style={[styles.timePickerBtn, { backgroundColor: colors.mist }]}
-                  onPress={() => {
-                    setShowTimePicker(false);
-                    setTempReminderDate(null);
-                  }}
-                >
-                  <Text style={[styles.timePickerBtnText, { color: colors.ink }]}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.timePickerBtn, { backgroundColor: colors.deepTeal }]}
-                  onPress={async () => {
-                    const finalDate = tempReminderDate ?? reminderDate;
-                    setShowTimePicker(false);
-                    setTempReminderDate(null);
-                    await setDailyReminderTime(formatTimeStorage(finalDate));
-                    await scheduleWeekOfNotifications();
-                  }}
-                >
-                  <Text style={[styles.timePickerBtnText, { color: colors.textOnAccent }]}>Set time</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-        </View>
-
-        {/* ── 4. Support & Share ─────────────────────────── */}
+        {/* ── 3. Support & Share ─────────────────────────── */}
         <Text allowFontScaling={false} style={[styles.sectionLabel, { color: colors.deepTeal }]}>Support & Share</Text>
         <View style={[styles.card, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
           <View style={styles.buttonRow}>
