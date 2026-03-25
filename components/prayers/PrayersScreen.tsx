@@ -130,7 +130,7 @@ export const PrayersScreen: React.FC = () => {
           }}
           activeOpacity={0.7}
         >
-          <Text style={[styles.prayerTitle, { color: colors.primaryContainer }]}>
+          <Text style={[styles.prayerTitle, typography.h3, { color: colors.primaryContainer }]}>
             {prayer.title}
           </Text>
           <Ionicons
@@ -334,7 +334,7 @@ export const PrayersScreen: React.FC = () => {
           }}
           activeOpacity={0.7}
         >
-          <Text style={[styles.prayerTitle, { color: colors.primaryContainer }]}>
+          <Text style={[styles.prayerTitle, typography.h3, { color: colors.primaryContainer }]}>
             {prayer.title}
           </Text>
           <Ionicons
@@ -610,8 +610,6 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   prayerTitle: {
-    fontFamily: fonts.bodyFamilyBold,
-    fontSize: 24,
     flex: 1,
     paddingRight: 12,
     includeFontPadding: false,

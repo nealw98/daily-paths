@@ -16,7 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useTheme } from "../../hooks/useTheme";
 import { useTypography } from "../../hooks/useTypography";
-import { fonts, typography as staticTypography } from "../../constants/theme";
+import { fonts } from "../../constants/theme";
 import type { JournalEntry } from "../../hooks/useJournalStorage";
 import {
   getCategoryById,
@@ -106,7 +106,6 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
     weekday: "long",
     month: "long",
     day: "numeric",
-    year: "numeric",
   });
   const timeStr = entryDate.toLocaleTimeString("en-US", {
     hour: "numeric",
@@ -315,14 +314,11 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
             <View style={styles.gratitudeIcon}>
                 <Seedling size={16} color={catColor} />
               </View>
-            <Text style={[styles.gratitudeReadText, { color: colors.text, fontSize: typography.bodyFontSize - 2, lineHeight: typography.bodyLineHeight - 6 }]}>
+            <Text style={[styles.gratitudeReadText, typography.bodySmall, { color: colors.text }]}>
               {item}
             </Text>
           </View>
         ))}
-        <Text style={[styles.tapHint, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 8 }]}>
-          Tap to edit
-        </Text>
       </TouchableOpacity>
     );
   };
@@ -331,35 +327,35 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
     const prompts = catConfig?.guidedPrompts ?? [];
     const responses = entry.structured_content ?? {};
 
-    // Only show prompts that have answers
-    const answeredPrompts = prompts.filter((p) => {
-      const v = responses[p.id];
-      return v && typeof v === "string" && v.trim();
-    });
-
     return (
       <TouchableOpacity activeOpacity={0.8} onPress={() => setIsEditing(true)}>
-        {answeredPrompts.map((prompt) => (
-          <View key={prompt.id} style={styles.guidedReadSection}>
-            <Text style={[styles.guidedReadQuestion, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 2 }]}>
-              {prompt.question}
-            </Text>
-            <Text style={[styles.guidedReadResponse, { color: colors.text, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight }]}>
-              {responses[prompt.id]}
-            </Text>
-          </View>
-        ))}
+        {prompts.map((prompt) => {
+          const value = responses[prompt.id];
+          const hasAnswer = value && typeof value === "string" && value.trim();
+          return (
+            <View key={prompt.id} style={styles.guidedReadSection}>
+              <Text style={[styles.guidedReadQuestion, typography.bodySmall, { color: colors.textSecondary }]}>
+                {prompt.question}
+              </Text>
+              {hasAnswer ? (
+                <Text style={[styles.guidedReadResponse, typography.bodyLarge, { color: colors.text }]}>
+                  {value}
+                </Text>
+              ) : (
+                <Text style={[styles.guidedReadResponse, typography.bodyLarge, { color: colors.textSecondary + "60" }]}>
+                  No entry
+                </Text>
+              )}
+            </View>
+          );
+        })}
 
         {/* Fallback: show plain content if no structured_content */}
         {!entry.structured_content && entry.content && (
-          <Text style={[styles.contentText, { color: colors.text, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight }]}>
+          <Text style={[styles.contentText, typography.body, { color: colors.text }]}>
             {entry.content}
           </Text>
         )}
-
-        <Text style={[styles.tapHint, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 8 }]}>
-          Tap to edit
-        </Text>
       </TouchableOpacity>
     );
   };
@@ -367,11 +363,8 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
   const renderTextReadOnly = () => {
     return (
       <TouchableOpacity activeOpacity={0.8} onPress={() => setIsEditing(true)}>
-        <Text style={[styles.contentText, { color: colors.text, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight }]}>
+        <Text style={[styles.contentText, typography.body, { color: colors.text }]}>
           {entry.content}
-        </Text>
-        <Text style={[styles.tapHint, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 8 }]}>
-          Tap to edit
         </Text>
       </TouchableOpacity>
     );
@@ -383,14 +376,14 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
     <View style={styles.editContainer}>
       {catConfig?.introText && (
         <SanctuaryCard tone="low" style={styles.introWrapper} contentStyle={styles.introCardContent}>
-          <Text style={[styles.introText, { color: colors.accent, fontSize: typography.bodyFontSize, lineHeight: typography.bodyFontSize * 1.5 }]}>
+          <Text style={[styles.introText, typography.body, { color: colors.accent }]}>
             {catConfig.introText}
           </Text>
         </SanctuaryCard>
       )}
       <FieldShell style={styles.editInputShell}>
         <TextInput
-          style={[styles.editInput, { color: colors.text, fontSize: typography.bodyFontSize, lineHeight: typography.bodyLineHeight }]}
+          style={[styles.editInput, typography.body, { color: colors.text }]}
           value={editContent}
           onChangeText={setEditContent}
           multiline
@@ -422,7 +415,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
                 <Seedling size={16} color={catColor} />
               </View>
           <TextInput
-            style={[styles.gratitudeEditInput, { color: colors.text, fontSize: typography.bodyFontSize - 2, lineHeight: typography.bodyLineHeight - 6 }]}
+            style={[styles.gratitudeEditInput, typography.bodySmall, { color: colors.text }]}
             placeholder="I'm grateful for..."
             placeholderTextColor={colors.textSecondary + "60"}
             value={item}
@@ -451,7 +444,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
         onPress={handleAddGratitudeSlot}
       >
         <Ionicons name="add" size={18} color={catColor} />
-        <Text style={[styles.addSlotText, { color: catColor, fontSize: typography.bodyFontSize - 6 }]}>add another</Text>
+        <Text style={[styles.addSlotText, typography.caption, { color: catColor }]}>add another</Text>
       </TouchableOpacity>
     </View>
   );
@@ -480,40 +473,28 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <View style={[styles.gradientHeader, { backgroundColor: colors.surface }]}>
+        <View style={[styles.gradientHeader, { backgroundColor: colors.primary }]}>
           <View style={styles.headerTitleRow}>
             {catConfig ? (
-              <View style={[styles.headerIconShell, { backgroundColor: colors.primaryContainer }]}>
+              <View style={[styles.headerIconShell, { backgroundColor: colors.onPrimary + "1A" }]}>
                 <EntryTypeIcon svgIcon={catConfig.svgIcon} size={24} color={colors.onPrimary} />
               </View>
             ) : null}
             <View style={styles.headerTextBlock}>
-              <Text style={[styles.headerEyebrow, { color: colors.onSurfaceVariant }]}>Notebook entry</Text>
-              <Text style={[styles.headerTitleText, { color: colors.onSurface }]}>{catLabel}</Text>
+              <Text style={[styles.headerEyebrow, typography.label, { color: colors.secondaryContainer }]}>Notebook entry</Text>
+              <Text style={[styles.headerTitleText, typography.h2, { color: colors.onPrimary }]}>{catLabel}</Text>
             </View>
           </View>
         </View>
 
-        {/* Date & Time + Delete */}
+        {/* Date & Time */}
         <View style={[styles.dateBar, { backgroundColor: colors.surface }]}>
           <View style={styles.dateBarRow}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.dateText, { color: colors.text, fontSize: typography.bodyFontSize - 5 }]}>{dateStr}</Text>
-              <Text style={[styles.timeText, { color: colors.textSecondary, fontSize: typography.bodyFontSize - 7 }]}>
+              <Text style={[styles.dateText, typography.h1, { color: colors.text }]}>{dateStr}</Text>
+              <Text style={[styles.timeText, typography.label, { color: colors.textSecondary }]}>
                 {timeStr}
               </Text>
-            </View>
-            <View style={styles.dateBarActions}>
-              <FocusPill
-                label="Share"
-                onPress={handleShare}
-                icon={<Ionicons name="share-outline" size={14} color={colors.onSurfaceVariant} />}
-              />
-              <FocusPill
-                label="Delete"
-                onPress={handleDelete}
-                icon={<Ionicons name="trash-outline" size={14} color={colors.danger} />}
-              />
             </View>
           </View>
         </View>
@@ -525,19 +506,38 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
           extraKeyboardSpace={24}
           keyboardShouldPersistTaps="handled"
         >
-          {isEditing ? (
-            <>
-              {editorType === "text" && renderTextEdit()}
-              {editorType === "items" && renderGratitudeEdit()}
-              {editorType === "guided" && renderGuidedEdit()}
-            </>
-          ) : (
-            <>
-              {editorType === "text" && renderTextReadOnly()}
-              {editorType === "items" && renderGratitudeReadOnly()}
-              {editorType === "guided" && renderGuidedReadOnly()}
-            </>
-          )}
+          <SanctuaryCard tone="lowest" style={styles.entryCard} contentStyle={styles.entryCardContent} elevated>
+            {isEditing ? (
+              <>
+                {editorType === "text" && renderTextEdit()}
+                {editorType === "items" && renderGratitudeEdit()}
+                {editorType === "guided" && renderGuidedEdit()}
+              </>
+            ) : (
+              <>
+                <TouchableOpacity activeOpacity={0.8} onPress={() => setIsEditing(true)}>
+                  <Text style={[styles.tapHint, typography.caption, { color: colors.textSecondary, marginTop: 0, marginBottom: 16 }]}>
+                    Tap to edit
+                  </Text>
+                </TouchableOpacity>
+                {editorType === "text" && renderTextReadOnly()}
+                {editorType === "items" && renderGratitudeReadOnly()}
+                {editorType === "guided" && renderGuidedReadOnly()}
+                <View style={[styles.cardActionsRow, { borderTopColor: colors.ghostBorder }]}>
+                  <FocusPill
+                    label="Share"
+                    onPress={handleShare}
+                    icon={<Ionicons name="share-outline" size={14} color={colors.onSurfaceVariant} />}
+                  />
+                  <FocusPill
+                    label="Delete"
+                    onPress={handleDelete}
+                    icon={<Ionicons name="trash-outline" size={14} color={colors.danger} />}
+                  />
+                </View>
+              </>
+            )}
+          </SanctuaryCard>
           <View style={{ height: 100 }} />
         </KeyboardAwareScrollView>
 
@@ -564,78 +564,81 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
               />
             </>
           ) : (
-            <>
-              <TouchableOpacity
-                style={[
-                  styles.navButton,
-                  {
-                    backgroundColor: hasPrev
-                      ? colors.cardBackground
-                      : colors.border + "40",
-                  },
-                ]}
-                onPress={onPrev}
-                disabled={!hasPrev}
-              >
-                <Ionicons
-                  name="arrow-back"
-                  size={18}
-                  color={hasPrev ? colors.accent : colors.textSecondary + "40"}
-                />
-                <Text
+            <View style={styles.bottomReadOnly}>
+              <View style={styles.bottomNavRow}>
+                <TouchableOpacity
                   style={[
-                    styles.navText,
+                    styles.navButton,
                     {
-                      color: hasPrev
-                        ? colors.accent
-                        : colors.textSecondary + "40",
-                      fontSize: typography.bodyFontSize - 5,
+                      backgroundColor: hasPrev
+                        ? colors.cardBackground
+                        : colors.border + "40",
                     },
                   ]}
+                  onPress={onPrev}
+                  disabled={!hasPrev}
                 >
-                  Prev
-                </Text>
-              </TouchableOpacity>
+                  <Ionicons
+                    name="arrow-back"
+                    size={18}
+                    color={hasPrev ? colors.accent : colors.textSecondary + "40"}
+                  />
+                  <Text
+                    style={[
+                      styles.navText,
+                      {
+                        color: hasPrev
+                          ? colors.accent
+                          : colors.textSecondary + "40",
+                        ...typography.label,
+                      },
+                    ]}
+                  >
+                    Prev
+                  </Text>
+                </TouchableOpacity>
 
-              <SanctuaryButton
-                label="Done"
-                variant="secondary"
-                onPress={onBack}
-                style={styles.doneButton}
-              />
+                <SanctuaryButton
+                  label="Done"
+                  variant="secondary"
+                  onPress={onBack}
+                  style={styles.doneButton}
+                  textStyle={typography.label}
+                />
 
-              <TouchableOpacity
-                style={[
-                  styles.navButton,
-                  {
-                    backgroundColor: hasNext
-                      ? colors.cardBackground
-                      : colors.border + "40",
-                  },
-                ]}
-                onPress={onNext}
-                disabled={!hasNext}
-              >
-                <Text
+                <TouchableOpacity
                   style={[
-                    styles.navText,
+                    styles.navButton,
                     {
-                      color: hasNext
-                        ? colors.accent
-                        : colors.textSecondary + "40",
-                      fontSize: typography.bodyFontSize - 5,
+                      backgroundColor: hasNext
+                        ? colors.cardBackground
+                        : colors.border + "40",
                     },
                   ]}
+                  onPress={onNext}
+                  disabled={!hasNext}
                 >
-                  Next
-                </Text>
-                <Ionicons
-                  name="arrow-forward"
-                  size={18}
-                  color={hasNext ? colors.accent : colors.textSecondary + "40"}
-                />
-              </TouchableOpacity>
-            </>
+                  <Text
+                    style={[
+                      styles.navText,
+                      {
+                        color: hasNext
+                          ? colors.accent
+                          : colors.textSecondary + "40",
+                        ...typography.label,
+                      },
+                    ]}
+                  >
+                    Next
+                  </Text>
+                  <Ionicons
+                    name="arrow-forward"
+                    size={18}
+                    color={hasNext ? colors.accent : colors.textSecondary + "40"}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
           )}
         </View>
       </KeyboardAvoidingView>
@@ -671,21 +674,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerEyebrow: {
-    ...staticTypography.label,
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 2,
   },
   headerTitleText: {
-    ...staticTypography.h3,
   },
-  dateBarActions: {
-    flexDirection: "row",
-    alignItems: "center",
+  bottomReadOnly: {
+    flex: 1,
     gap: 10,
+  },
+  bottomNavRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
   },
   dateBar: {
     paddingHorizontal: 20,
+    paddingTop: 36,
     paddingBottom: 12,
   },
   dateBarRow: {
@@ -693,18 +700,30 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   dateText: {
-    ...staticTypography.bodySmall,
     fontFamily: fonts.bodyFamilySemiBold,
   },
   // typeBadge styles removed — type info now shown in gradient header
   timeText: {
-    ...staticTypography.caption,
     marginTop: 2,
   },
   contentScroll: {
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 16,
+  },
+  entryCard: {
+    borderRadius: 16,
+  },
+  entryCardContent: {
+    padding: 20,
+  },
+  cardActionsRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 10,
+    marginTop: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
   },
 
   // ─── Read-Only ────────────────────────────────────────
@@ -716,15 +735,12 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
   },
   introText: {
-    ...staticTypography.body,
     fontFamily: fonts.headerFamily,
     textAlign: "center",
   },
   contentText: {
-    ...staticTypography.body,
   },
   tapHint: {
-    ...staticTypography.caption,
     fontStyle: "italic",
     marginTop: 20,
     textAlign: "center",
@@ -742,7 +758,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   gratitudeReadText: {
-    ...staticTypography.bodySmall,
     flex: 1,
   },
 
@@ -751,14 +766,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   guidedReadQuestion: {
-    ...staticTypography.caption,
     fontFamily: fonts.labelFamily,
     letterSpacing: 0.3,
     textTransform: "uppercase",
     marginBottom: 6,
   },
   guidedReadResponse: {
-    ...staticTypography.bodySmall,
   },
 
   // ─── Gratitude Edit ───────────────────────────────────
@@ -778,7 +791,6 @@ const styles = StyleSheet.create({
   },
   gratitudeEditInput: {
     flex: 1,
-    ...staticTypography.bodySmall,
     minHeight: 22,
   },
   addSlotButton: {
@@ -793,7 +805,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   addSlotText: {
-    ...staticTypography.label,
     fontWeight: "500",
   },
 
@@ -805,7 +816,6 @@ const styles = StyleSheet.create({
     minHeight: 200,
   },
   editInput: {
-    ...staticTypography.body,
     minHeight: 200,
   },
 
@@ -831,10 +841,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   navText: {
-    ...staticTypography.label,
     fontWeight: "500",
   },
   doneButton: {
     flex: 1,
+    minHeight: 44,
+    height: 44,
   },
 });

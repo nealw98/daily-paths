@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
+import { useTypography } from "../../hooks/useTypography";
 import { fonts, typography as staticTypography } from "../../constants/theme";
 import type { JournalEntry } from "../../hooks/useJournalStorage";
 import type { JournalStats } from "../../hooks/useJournalStats";
@@ -65,14 +66,14 @@ function formatDateHeader(dateKey: string): string {
   });
 
   if (dateKey === todayKey) {
-    return `Today \u2014 ${monthDay}`;
+    return `Today, ${monthDay}`;
   }
   if (dateKey === yesterdayKey) {
-    return `Yesterday \u2014 ${monthDay}`;
+    return `Yesterday, ${monthDay}`;
   }
 
   const weekday = date.toLocaleDateString("en-US", { weekday: "long" });
-  return `${weekday} \u2014 ${monthDay}`;
+  return `${weekday}, ${monthDay}`;
 }
 
 /** YYYY-MM-DD key from a Date. */
@@ -200,6 +201,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
   onCreateEntry,
 }) => {
   const { colors } = useTheme();
+  const { typography } = useTypography();
   const [slowLoading, setSlowLoading] = useState(false);
 
   useEffect(() => {
@@ -296,10 +298,10 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
             </View>
             <View style={styles.entryContentColumn}>
               <View style={styles.entryHeader}>
-                <Text style={[styles.entryTypeLabel, { color: catColor }]}>
+                <Text style={[styles.entryTypeLabel, typography.h3, { color: catColor }]}>
                   {catLabel}
                 </Text>
-                <Text style={[styles.entryTime, { color: colors.onSurfaceVariant }]}>
+                <Text style={[styles.entryTime, typography.caption, { color: colors.onSurfaceVariant }]}>
                   {timeStr}
                 </Text>
               </View>
@@ -308,6 +310,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
                 <Text
                   style={[
                     styles.entryPreview,
+                    typography.body,
                     {
                       color: colors.onSurface,
                     },
@@ -333,7 +336,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
         <View style={styles.timelineLineColumn}>
           <View style={[styles.timelineDot, { backgroundColor: colors.primary }]} />
         </View>
-        <Text style={[styles.dateLabel, { color: colors.primary }]}>
+        <Text style={[styles.dateLabel, typography.h2, { color: colors.primary }]}>
           {label}
         </Text>
       </View>
@@ -364,10 +367,10 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
                   size={22}
                   color={colors.onSurfaceVariant}
                 />
-                <Text style={[styles.placeholderTitle, { color: colors.onSurface }]}>
+                <Text style={[styles.placeholderTitle, typography.bodySmall, { color: colors.onSurface }]}>
                   Your day is a blank slate.
                 </Text>
-                <Text style={[styles.placeholderAction, { color: colors.primary }]}>
+                <Text style={[styles.placeholderAction, typography.label, { color: colors.primary }]}>
                   WRITE ENTRY
                 </Text>
               </View>
@@ -405,7 +408,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
           },
         ]}
       >
-        <Text style={[styles.progressLabel, { color: colors.deepTeal }]}>
+        <Text style={[styles.progressLabel, typography.label, { color: colors.deepTeal }]}>
           TOTAL ENTRIES
         </Text>
         <Text style={[styles.progressValue, { color: colors.deepTeal }]}>
@@ -421,7 +424,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
           },
         ]}
       >
-        <Text style={[styles.progressLabel, { color: colors.deepTeal }]}>
+        <Text style={[styles.progressLabel, typography.label, { color: colors.deepTeal }]}>
           CURRENT STREAK
         </Text>
         <Text style={[styles.progressValue, { color: colors.deepTeal }]}>
@@ -442,10 +445,10 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
             size={44}
             color={colors.textSecondary + "70"}
           />
-          <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>
+          <Text style={[styles.emptyTitle, typography.h3, { color: colors.textSecondary }]}>
             Unable to load entries
           </Text>
-          <Text style={[styles.emptySubtitle, { color: colors.textSecondary + "80" }]}>
+          <Text style={[styles.emptySubtitle, typography.bodySmall, { color: colors.textSecondary + "80" }]}>
             Your entries may still be on this device. Try again to reload them.
           </Text>
           <TouchableOpacity
@@ -453,7 +456,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
             onPress={onRefresh}
             activeOpacity={0.8}
           >
-            <Text style={[styles.retryText, { color: colors.secondary }]}>Retry</Text>
+            <Text style={[styles.retryText, typography.label, { color: colors.secondary }]}>Retry</Text>
           </TouchableOpacity>
         </>
       ) : loading ? (
@@ -464,10 +467,10 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
               size={44}
               color={colors.textSecondary + "70"}
             />
-            <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>
+            <Text style={[styles.emptyTitle, typography.h3, { color: colors.textSecondary }]}>
               Still loading entries
             </Text>
-            <Text style={[styles.emptySubtitle, { color: colors.textSecondary + "80" }]}>
+            <Text style={[styles.emptySubtitle, typography.bodySmall, { color: colors.textSecondary + "80" }]}>
               This is taking longer than expected.
             </Text>
             <TouchableOpacity
@@ -475,13 +478,13 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
               onPress={onRefresh}
               activeOpacity={0.8}
             >
-              <Text style={[styles.retryText, { color: colors.secondary }]}>Retry</Text>
+              <Text style={[styles.retryText, typography.label, { color: colors.secondary }]}>Retry</Text>
             </TouchableOpacity>
           </>
         ) : (
           <>
             <ActivityIndicator size="small" color={colors.accent} />
-            <Text style={[styles.emptySubtitle, { color: colors.textSecondary + "80", marginTop: 12 }]}>
+            <Text style={[styles.emptySubtitle, typography.bodySmall, { color: colors.textSecondary + "80", marginTop: 12 }]}>
               Loading entries...
             </Text>
           </>
@@ -493,11 +496,11 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
             size={48}
             color={colors.textSecondary + "60"}
           />
-          <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>
+          <Text style={[styles.emptyTitle, typography.h3, { color: colors.textSecondary }]}>
             No entries yet
           </Text>
           <Text
-            style={[styles.emptySubtitle, { color: colors.textSecondary + "80" }]}
+            style={[styles.emptySubtitle, typography.bodySmall, { color: colors.textSecondary + "80" }]}
           >
             Start writing to capture your thoughts and reflections.
           </Text>
@@ -561,11 +564,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   progressValue: {
-    ...staticTypography.h1,
+    ...staticTypography.h2,
   },
   progressLabel: {
     marginBottom: 4,
-    ...staticTypography.label,
     textAlign: "center",
   },
 
@@ -582,7 +584,6 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   dateLabel: {
-    ...staticTypography.h3,
     marginLeft: 16,
   },
 
@@ -650,14 +651,11 @@ const styles = StyleSheet.create({
   },
   entryTypeLabel: {
     alignSelf: "flex-start",
-    ...staticTypography.h3,
   },
   entryTime: {
-    ...staticTypography.caption,
     paddingTop: 8,
   },
   entryPreview: {
-    ...staticTypography.bodyLarge,
   },
   placeholderCard: {
     borderWidth: 2,
@@ -670,12 +668,10 @@ const styles = StyleSheet.create({
   },
   placeholderTitle: {
     marginTop: 8,
-    ...staticTypography.bodySmall,
     textAlign: "center",
   },
   placeholderAction: {
     marginTop: 8,
-    ...staticTypography.label,
     letterSpacing: 1.2,
   },
 
@@ -686,12 +682,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   emptyTitle: {
-    ...staticTypography.h3,
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtitle: {
-    ...staticTypography.bodySmall,
     textAlign: "center",
   },
   retryButton: {
@@ -702,6 +696,5 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   retryText: {
-    ...staticTypography.label,
   },
 });
