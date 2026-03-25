@@ -12,7 +12,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
-import { fonts } from "../../constants/theme";
+import { fonts, layout, typography } from "../../constants/theme";
 import type { Speaker } from "../../types/speakers";
 import { FieldShell, FocusPill, SanctuaryCard } from "../ui/Sanctuary";
 
@@ -110,15 +110,36 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
       <SanctuaryCard tone="lowest" style={styles.card} contentStyle={styles.cardContent} elevated>
         <View style={styles.cardBody}>
           {/* Speaker name */}
-          <Text style={[styles.speakerName, { color: colors.text, fontSize: Math.round(16 * scale) }]}>{speaker.speaker}</Text>
+          <Text style={[styles.speakerName, { color: colors.text, fontSize: Math.round(24 * scale) }]}>{speaker.speaker}</Text>
 
           {/* Hometown */}
           {speaker.hometown && (
-            <Text style={[styles.hometown, { color: colors.textSecondary, fontSize: Math.round(12 * scale) }]}>{speaker.hometown}</Text>
+            <Text
+              style={[
+                styles.hometown,
+                {
+                  color: colors.accent,
+                  fontSize: Math.round(typography.bodySmall.fontSize * scale),
+                  lineHeight: Math.round(typography.bodySmall.lineHeight * scale),
+                },
+              ]}
+            >
+              {speaker.hometown.toUpperCase()}
+            </Text>
           )}
 
           {/* Title */}
-          <Text style={[styles.title, { color: colors.text, fontSize: Math.round(14 * scale), lineHeight: Math.round(20 * scale) }]} numberOfLines={2}>
+          <Text
+            style={[
+              styles.title,
+              {
+                color: colors.text,
+                fontSize: textMetrics.bodyFontSize,
+                lineHeight: textMetrics.bodyLineHeight,
+              },
+            ]}
+            numberOfLines={2}
+          >
             {speaker.title}
           </Text>
 
@@ -126,13 +147,27 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
           <View style={styles.badgesRow}>
             {speaker.explicit && (
               <View style={[styles.explicitBadge, { backgroundColor: colors.danger + "15" }]}>
-                <Text style={[styles.explicitText, { color: colors.danger, fontSize: Math.round(10 * scale) }]}>E</Text>
+                <Text
+                  style={[
+                    styles.explicitText,
+                    { color: colors.danger, fontSize: Math.round(typography.labelMedium.fontSize * scale) },
+                  ]}
+                >
+                  E
+                </Text>
               </View>
             )}
             {downloadedIds.has(speaker.id) && (
-              <View style={styles.downloadedBadge}>
-                <Ionicons name="checkmark-circle" size={Math.round(12 * scale)} color="#C49535" />
-                <Text style={[styles.downloadedText, { fontSize: Math.round(11 * scale) }]}>Downloaded</Text>
+              <View style={[styles.downloadedBadge, { backgroundColor: colors.secondary + "24" }]}>
+                <Ionicons name="checkmark-circle" size={Math.round(12 * scale)} color={colors.secondary} />
+                <Text
+                  style={[
+                    styles.downloadedText,
+                    { color: colors.secondary, fontSize: Math.round(typography.labelMedium.fontSize * scale) },
+                  ]}
+                >
+                  Downloaded
+                </Text>
               </View>
             )}
           </View>
@@ -279,22 +314,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: layout.spacing.md,
+    paddingTop: layout.spacing.sm,
     paddingBottom: 100,
   },
   listHeader: {
-    marginBottom: 12,
+    marginBottom: layout.spacing.sm,
   },
 
   // ─── Search ────────────────────────────────────────────────────────────────
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 12,
-    marginBottom: 8,
+    marginBottom: layout.spacing.sm,
   },
   searchIcon: {
-    marginRight: 10,
+    marginRight: layout.spacing.sm,
   },
   searchInput: {
     flex: 1,
@@ -306,9 +341,9 @@ const styles = StyleSheet.create({
   sortRow: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: 10,
-    paddingVertical: 8,
-    marginBottom: 4,
+    gap: layout.spacing.sm,
+    paddingVertical: layout.spacing.sm,
+    marginBottom: layout.spacing.xs,
   },
   sortButton: {
     minHeight: 36,
@@ -319,51 +354,52 @@ const styles = StyleSheet.create({
   },
 
   cardTouchable: {
-    marginBottom: 12,
+    marginBottom: layout.spacing.sm + layout.spacing.xs,
   },
   card: {
-    borderRadius: 16,
+    borderRadius: layout.borderRadiusLarge,
   },
   cardContent: {
     flexDirection: "row",
-    paddingTop: 16,
-    paddingBottom: 18,
-    paddingLeft: 18,
-    paddingRight: 14,
+    paddingVertical: layout.spacing.md,
+    paddingLeft: layout.spacing.md,
+    paddingRight: layout.spacing.md - 2,
   },
   cardBody: {
     flex: 1,
-    marginRight: 12,
+    marginRight: layout.spacing.sm + layout.spacing.xs,
   },
 
   // ─── Speaker Info ──────────────────────────────────────────────────────────
   speakerName: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
-    fontWeight: "600",
+    fontFamily: fonts.bodyFamilyBold,
+    fontSize: 24,
+    includeFontPadding: false,
     marginBottom: 2,
   },
   hometown: {
     fontFamily: fonts.bodyFamily,
-    fontSize: 12,
-    marginBottom: 4,
+    fontSize: typography.bodySmall.fontSize,
+    lineHeight: typography.bodySmall.lineHeight,
+    marginBottom: layout.spacing.xs,
   },
   title: {
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 17,
+    lineHeight: 28,
+    letterSpacing: -0.1,
   },
   // ─── Badges Row ──────────────────────────────────────────────────────────
   badgesRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    marginTop: 6,
+    gap: layout.spacing.xs + 2,
+    marginTop: layout.spacing.xs + 2,
   },
   explicitBadge: {
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: layout.spacing.xs,
   },
   explicitText: {
     fontFamily: fonts.bodyFamilyRegular,
@@ -374,8 +410,7 @@ const styles = StyleSheet.create({
   downloadedBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    backgroundColor: "#C49535" + "28",
+    gap: layout.spacing.xs,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 10,
@@ -384,7 +419,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 11,
     fontWeight: "700",
-    color: "#C49535",
     letterSpacing: 0.3,
   },
 
@@ -400,26 +434,27 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   playIcon: {
-    marginLeft: 3, // optical center for play triangle
+    marginLeft: 3, // Optical centering for play triangle.
   },
 
   // ─── Empty State ───────────────────────────────────────────────────────────
   emptyContainer: {
     alignItems: "center",
-    paddingTop: 60,
-    paddingHorizontal: 40,
+    paddingTop: layout.spacing.xl + layout.spacing.lgPlus,
+    paddingHorizontal: layout.spacing.xl + layout.spacing.sm,
   },
   emptyTitle: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 18,
+    fontFamily: typography.titleLarge.fontFamily,
+    fontSize: typography.titleLarge.fontSize,
+    lineHeight: typography.titleLarge.lineHeight,
     fontWeight: "600",
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: layout.spacing.md,
+    marginBottom: layout.spacing.sm,
   },
   emptySubtitle: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: 14,
+    fontFamily: typography.bodyMedium.fontFamily,
+    fontSize: typography.bodyMedium.fontSize,
+    lineHeight: typography.bodyMedium.lineHeight,
     textAlign: "center",
-    lineHeight: 20,
   },
 });
