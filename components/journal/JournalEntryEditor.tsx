@@ -30,6 +30,7 @@ import { GuidedPromptEditor } from "./GuidedPromptEditor";
 import { JournalCategoryPicker } from "./JournalCategoryPicker";
 import { EntryTypeIcon } from "../../utils/entryTypeIcon";
 import { Seedling } from "../../components/icons";
+import { QuoteWatermarkPattern } from "../shared/QuoteWatermarkPattern";
 import { FieldShell, SanctuaryButton, SanctuaryCard } from "../ui/Sanctuary";
 import { useAppDate } from "../../contexts/AppDateContext";
 
@@ -450,12 +451,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                     {categoryConfig?.introText && (
                       <View style={styles.quoteCardContent}>
                         <View pointerEvents="none" style={styles.quotePatternLayer}>
-                          <Text numberOfLines={1} style={styles.quotePatternSmall}>
-                            quote   quote   quote
-                          </Text>
-                          <Text style={styles.quotePatternLargeA}>quote</Text>
-                          <Text style={styles.quotePatternLargeB}>quote</Text>
-                          <Text style={styles.quotePatternMedium}>quote</Text>
+                          <QuoteWatermarkPattern />
                         </View>
                         <View style={styles.journalQuoteWrap}>
                           <Text
@@ -642,12 +638,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                 {!!gratitudeQuoteText && (
                   <View style={styles.quoteCardContent}>
                     <View pointerEvents="none" style={styles.quotePatternLayer}>
-                      <Text numberOfLines={1} style={styles.quotePatternSmall}>
-                        quote   quote   quote
-                      </Text>
-                      <Text style={styles.quotePatternLargeA}>quote</Text>
-                      <Text style={styles.quotePatternLargeB}>quote</Text>
-                      <Text style={styles.quotePatternMedium}>quote</Text>
+                      <QuoteWatermarkPattern />
                     </View>
                     <View style={styles.gratitudeQuoteWrap}>
                       <Text
@@ -827,12 +818,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                   {categoryConfig?.introText && (
                     <View style={styles.quoteCardContent}>
                       <View pointerEvents="none" style={styles.quotePatternLayer}>
-                        <Text numberOfLines={1} style={styles.quotePatternSmall}>
-                          quote   quote   quote
-                        </Text>
-                        <Text style={styles.quotePatternLargeA}>quote</Text>
-                        <Text style={styles.quotePatternLargeB}>quote</Text>
-                        <Text style={styles.quotePatternMedium}>quote</Text>
+                        <QuoteWatermarkPattern />
                       </View>
                       <View style={styles.journalQuoteWrap}>
                         <Text
@@ -1167,51 +1153,6 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     zIndex: 0,
   },
-  quotePatternSmall: {
-    position: "absolute",
-    left: -36,
-    right: -36,
-    top: 10,
-    fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 28,
-    lineHeight: 32,
-    letterSpacing: 1.4,
-    color: "rgba(255, 255, 255, 0.10)",
-    zIndex: 0,
-  },
-  quotePatternLargeA: {
-    position: "absolute",
-    right: -34,
-    top: -10,
-    fontFamily: fonts.bodyFamilyBold,
-    fontSize: 148,
-    lineHeight: 148,
-    color: "rgba(255, 255, 255, 0.07)",
-    transform: [{ rotate: "-8deg" }],
-    zIndex: 0,
-  },
-  quotePatternLargeB: {
-    position: "absolute",
-    left: -12,
-    bottom: -40,
-    fontFamily: fonts.bodyFamilyBold,
-    fontSize: 164,
-    lineHeight: 164,
-    color: "rgba(255, 255, 255, 0.05)",
-    transform: [{ rotate: "10deg" }],
-    zIndex: 0,
-  },
-  quotePatternMedium: {
-    position: "absolute",
-    left: 110,
-    bottom: 8,
-    fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 72,
-    lineHeight: 72,
-    color: "rgba(255, 255, 255, 0.06)",
-    transform: [{ rotate: "-90deg" }],
-    zIndex: 0,
-  },
   journalEntryFieldCard: {
     marginHorizontal: 20,
     marginTop: 18,
@@ -1316,9 +1257,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   gratitudeQuoteCardInner: {
-    paddingHorizontal: 18,
-    paddingTop: 18,
-    paddingBottom: 18,
     borderRadius: 12,
     overflow: "hidden",
   },

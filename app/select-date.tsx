@@ -13,8 +13,9 @@ import { useTheme } from "../hooks/useTheme";
 import { useAvailableDates } from "../hooks/useAvailableDates";
 import { useReading } from "../hooks/useReading";
 import { fonts, layout } from "../constants/theme";
-import { FieldShell, SanctuaryButton, SanctuaryCard } from "../components/ui/Sanctuary";
+import { FieldShell, FocusPill, SanctuaryButton, SanctuaryCard } from "../components/ui/Sanctuary";
 import { formatDateLocal, getScheduledDayOfYear, parseDateLocal } from "../utils/dateUtils";
+import { getBookmarks, type BookmarkData } from "../utils/bookmarkStorage";
 
 function startOfMonth(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), 1);
@@ -31,8 +32,21 @@ export default function SelectDateScreen() {
   const { availableDaysOfYear } = useAvailableDates();
   const [selectedDate, setSelectedDate] = useState(initialDate);
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(initialDate));
+  const [bookmarks, setBookmarks] = useState<BookmarkData[]>([]);
   const { reading } = useReading(selectedDate);
   const todayKey = formatDateLocal(new Date());
+
+  useEffect(() => {
+    (async () => {
+      const savedBookmarks = await getBookmarks();
+      setBookmarks(savedBookmarks);
+    })();
+  }, []);
+
+  const bookmarkMap = useMemo(
+    () => new Map(bookmarks.map((bookmark) => [bookmark.date, bookmark])),
+    [bookmarks]
+  );
 
   useEffect(() => {
     if (!params.selectedDate) return;
@@ -64,10 +78,11 @@ export default function SelectDateScreen() {
       const dateKey = formatDateLocal(date);
       const selected = dateKey === formatDateLocal(selectedDate);
       const isToday = dateKey === todayKey;
+      const favorite = bookmarkMap.has(dateKey);
 
-      return { date, inMonth, available, selected, isToday };
+      return { date, inMonth, available, selected, isToday, favorite };
     });
-  }, [availableDaysOfYear, currentMonth, selectedDate, todayKey]);
+  }, [availableDaysOfYear, bookmarkMap, currentMonth, selectedDate, todayKey]);
 
   const handleRevisitReading = () => {
     router.replace({
@@ -79,6 +94,8 @@ export default function SelectDateScreen() {
     });
   };
 
+  const selectedBookmark = bookmarkMap.get(formatDateLocal(selectedDate));
+
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.surface }]} edges={["top"]}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
@@ -87,9 +104,7 @@ export default function SelectDateScreen() {
             <Ionicons name="close" size={28} color={colors.onSurface} />
           </TouchableOpacity>
           <Text style={[styles.topTitle, { color: colors.onSurface }]}>Select Date</Text>
-          <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="search-outline" size={26} color={colors.onSurface} />
-          </TouchableOpacity>
+          <View style={styles.iconButton} />
         </View>
 
         <View style={styles.monthHeader}>
@@ -124,7 +139,7 @@ export default function SelectDateScreen() {
         </View>
 
         <View style={styles.calendarGrid}>
-          {calendarCells.map(({ date, inMonth, available, selected, isToday }) => {
+          {calendarCells.map(({ date, inMonth, available, selected, isToday, favorite }) => {
             const disabled = !available;
             return (
               <TouchableOpacity
@@ -137,11 +152,22 @@ export default function SelectDateScreen() {
                 <View
                   style={[
                     styles.dayInner,
-                    selected ? { backgroundColor: colors.secondary } : null,
+                    favorite
+                      ? {
+                          backgroundColor: colors.secondaryContainer,
+                        }
+                      : null,
+                    selected
+                      ? {
+                          backgroundColor: favorite ? colors.secondaryContainer : colors.secondary,
+                        }
+                      : null,
                     isToday
                       ? {
                           borderWidth: 1.5,
-                          borderColor: selected ? colors.onSecondary : colors.primaryContainer,
+                          borderColor: selected
+                            ? (favorite ? colors.secondary : colors.onSecondary)
+                            : colors.primaryContainer,
                         }
                       : null,
                     !inMonth ? { opacity: 0.28 } : null,
@@ -152,13 +178,17 @@ export default function SelectDateScreen() {
                     style={[
                       styles.dayNumber,
                       {
-                        color: selected ? colors.onSecondary : colors.onSurface,
+                        color: selected
+                          ? (favorite ? colors.onSecondaryContainer : colors.onSecondary)
+                          : favorite
+                            ? colors.primaryContainer
+                            : colors.onSurface,
                       },
                     ]}
                   >
                     {date.getDate()}
                   </Text>
-                  {available && !selected ? (
+                  {available && !selected && !favorite ? (
                     <View style={[styles.dayDot, { backgroundColor: colors.outlineVariant }]} />
                   ) : null}
                 </View>
@@ -167,14 +197,25 @@ export default function SelectDateScreen() {
           })}
         </View>
 
-        <SanctuaryCard tone="lowest" style={styles.previewCard} contentStyle={styles.previewCardContent}>
-          <Text style={[styles.previewDate, { color: colors.secondary }]}>
-            {selectedDate.toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            }).toUpperCase()}
-          </Text>
+        <SanctuaryCard tone="lowest" style={styles.previewCard} contentStyle={styles.previewCardContent} elevated>
+          <View style={styles.previewHeaderRow}>
+            <Text style={[styles.previewDate, { color: colors.secondary }]}>
+              {selectedDate.toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              }).toUpperCase()}
+            </Text>
+            {selectedBookmark ? (
+              <View style={styles.previewPillRow}>
+                <FocusPill
+                  label="Favorited"
+                  selected
+                  icon={<Ionicons name="heart" size={14} color={colors.onSecondaryContainer} />}
+                />
+              </View>
+            ) : null}
+          </View>
           <Text style={[styles.previewTitle, { color: colors.primaryContainer }]}>
             {reading?.title || "No reading available"}
           </Text>
@@ -306,12 +347,22 @@ const styles = StyleSheet.create({
   previewCardContent: {
     padding: 28,
   },
+  previewHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 20,
+  },
   previewDate: {
     fontFamily: fonts.labelFamily,
     fontSize: 14,
     lineHeight: 18,
     letterSpacing: 1.2,
-    marginBottom: 20,
+    flex: 1,
+  },
+  previewPillRow: {
+    alignSelf: "flex-start",
   },
   previewTitle: {
     fontFamily: fonts.headerFamily,

@@ -17,7 +17,6 @@ import type { EntryType } from "../../constants/journalCategories";
 import { useJournalStorage } from "../../hooks/useJournalStorage";
 import { useTrialStatus } from "../../hooks/useTrialStatus";
 import { useSubscription } from "../../hooks/useSubscription";
-import { BookmarkListModal } from "../../components/BookmarkListModal";
 import { DismissibleToast } from "../../components/DismissibleToast";
 import { BookmarkToast } from "../../components/BookmarkToast";
 import { markRatePromptShown, recordFirstUseIfNeeded, requestReview } from "../../utils/rateShareTracking";
@@ -27,7 +26,7 @@ import { useAnalytics, NavigationMethod } from "../../utils/analytics";
 import { getRequiredGate } from "../../utils/accessControl";
 import { useReading } from "../../hooks/useReading";
 import { useBookmarkManager } from "../../hooks/useBookmarkManager";
-import { hasSeenInstruction, markInstructionSeen, type BookmarkData } from "../../utils/bookmarkStorage";
+import { hasSeenInstruction, markInstructionSeen } from "../../utils/bookmarkStorage";
 import { formatDateLocal, parseDateLocal } from "../../utils/dateUtils";
 import { useTheme } from "../../hooks/useTheme";
 import * as Notifications from "expo-notifications";
@@ -63,7 +62,6 @@ export default function Index() {
   console.log("[STARTUP-INDEX] Initializing state...");
   // Start with today's date
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [showBookmarkList, setShowBookmarkList] = useState(false);
   const [showInstruction, setShowInstruction] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [navigationMethod, setNavigationMethod] = useState<NavigationMethod>('app_open');
@@ -98,11 +96,8 @@ export default function Index() {
   const { reading, loading, error } = useReading(currentDate);
   console.log("[STARTUP-INDEX] useReading returned, loading:", loading, "error:", error);
   const {
-    bookmarks,
     isBookmarked,
     toggleBookmark,
-    removeBookmark,
-    refreshBookmarks,
   } = useBookmarkManager(currentDate, reading?.id || "", reading?.title || "");
   // If the app is opened from a notification, jump to today's reading.
   const lastNotificationResponse = Notifications.useLastNotificationResponse();
@@ -238,18 +233,6 @@ export default function Index() {
     });
   };
 
-  const handleSelectBookmark = (dateStr: string) => {
-    setNavigationMethod('bookmark_list');
-    // Parse as local time to avoid timezone shift
-    const date = parseDateLocal(dateStr);
-    setCurrentDate(date);
-  };
-
-  const handleRemoveBookmark = async (bookmark: BookmarkData) => {
-    await removeBookmark(bookmark);
-    trackReadingUnfavorited(bookmark.readingId, parseDateLocal(bookmark.date));
-  };
-
   const handleGoToToday = () => {
     setCurrentDate(new Date());
   };
@@ -264,7 +247,7 @@ export default function Index() {
   };
 
   const handleOpenBookmarks = () => {
-    setShowBookmarkList(true);
+    handleOpenDatePicker();
   };
 
   // Wrapper for bookmark toggle that handles rate modal and analytics
@@ -457,13 +440,6 @@ export default function Index() {
         onClose={() => setShowJournalPicker(false)}
       />
 
-      <BookmarkListModal
-        visible={showBookmarkList}
-        bookmarks={bookmarks}
-        onClose={() => setShowBookmarkList(false)}
-        onSelectBookmark={handleSelectBookmark}
-        onRemoveBookmark={handleRemoveBookmark}
-      />
       <DismissibleToast
         visible={!!toastMessage && !!reading}
         message={toastMessage ?? ""}

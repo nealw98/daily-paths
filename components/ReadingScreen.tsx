@@ -584,14 +584,16 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
               </SanctuaryCard>
 
               <View style={styles.actionsHeader}>
-                <FocusPill
-                  label="Library"
+                <TouchableOpacity
                   onPress={onOpenBookmarks}
-                  icon={<Ionicons name="list-outline" size={14} color={colors.onSurfaceVariant} />}
-                />
+                  style={styles.pageCalendarButton}
+                  hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
+                >
+                  <Ionicons name="calendar-outline" size={28} color={colors.primaryContainer} />
+                </TouchableOpacity>
                 <View style={styles.actionsRight}>
                   <FocusPill
-                    label={localBookmarked ? "Saved" : "Save"}
+                    label={localBookmarked ? "Favorited" : "Favorite"}
                     onPress={handleBookmarkToggle}
                     selected={localBookmarked}
                     icon={

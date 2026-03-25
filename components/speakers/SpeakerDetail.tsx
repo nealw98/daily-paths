@@ -15,6 +15,8 @@ import { useTheme } from "../../hooks/useTheme";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { useAnalytics } from "../../utils/analytics";
 import { fonts, layout, shadows, typography } from "../../constants/theme";
+import { QuoteWatermarkPattern } from "../shared/QuoteWatermarkPattern";
+import { SanctuaryCard } from "../ui/Sanctuary";
 import { EqualizerBars } from "./EqualizerBars";
 import { getSpeakerAudioUrl } from "../../hooks/useSpeakers";
 import { useSpeakerDownload, resolveAudioUri } from "../../hooks/useSpeakerDownload";
@@ -47,6 +49,10 @@ function formatDate(dateStr: string): string {
     day: "numeric",
     year: "numeric",
   });
+}
+
+function normalizeQuoteText(text: string): string {
+  return text.trim().replace(/^["“”'']+|["“”'']+$/g, "");
 }
 
 const SPEED_OPTIONS = [0.75, 1, 1.25, 1.5];
@@ -197,28 +203,6 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Back row */}
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={onBack}
-        activeOpacity={0.7}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-      >
-        <Ionicons name="chevron-back" size={Math.round(20 * scale)} color={colors.secondary} />
-        <Text
-          style={[
-            styles.backLabel,
-            {
-              color: colors.secondary,
-              fontSize: scaled(typography.titleMedium.fontSize),
-              lineHeight: scaled(typography.titleMedium.lineHeight),
-            },
-          ]}
-        >
-          Back
-        </Text>
-      </TouchableOpacity>
-
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -226,45 +210,44 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
       >
         {/* Speaker info section */}
         <View style={styles.infoSection}>
-          <Text style={[styles.speakerName, { color: colors.text, fontSize: scaled(24) }]}>{speaker.speaker}</Text>
-          {speaker.hometown && (
-            <Text
-              style={[
-                styles.hometown,
-                {
-                  color: colors.textSecondary,
-                  fontSize: scaled(typography.bodySmall.fontSize),
-                  lineHeight: scaled(typography.bodySmall.lineHeight),
-                },
-              ]}
-            >
-              {speaker.hometown}
-            </Text>
-          )}
-
-          {/* Accent strip */}
-          <View style={[styles.accentStrip, { backgroundColor: colors.secondaryContainer }]} />
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={onBack}
+            activeOpacity={0.7}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="chevron-back" size={18} color={colors.primaryContainer} />
+            <Text style={[styles.backLabel, { color: colors.primaryContainer }]}>Back</Text>
+          </TouchableOpacity>
 
           <Text
             style={[
               styles.title,
               {
-                color: colors.text,
-                fontSize: scaled(typography.titleLarge.fontSize),
-                lineHeight: scaled(typography.titleLarge.lineHeight),
+                color: colors.primaryContainer,
               },
             ]}
           >
             {speaker.title}
           </Text>
+          <Text
+            style={[
+              styles.speakerMeta,
+              {
+                color: colors.textSecondary,
+              },
+            ]}
+          >
+            {speaker.speaker}
+            {speaker.hometown ? ` • ${speaker.hometown}` : ""}
+          </Text>
+
           {speaker.subtitle && (
             <Text
               style={[
                 styles.subtitle,
                 {
-                  color: colors.textSecondary,
-                  fontSize: scaled(typography.bodyMedium.fontSize),
-                  lineHeight: scaled(typography.bodyMedium.lineHeight),
+                  color: colors.text,
                 },
               ]}
             >
@@ -273,56 +256,16 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
           )}
         </View>
 
-        {/* Quote block */}
-        {speaker.quote && (
-          <View style={[styles.quoteBlock, { backgroundColor: colors.surfaceContainerLow, borderLeftColor: colors.secondary }]}>
-            <Text
-              style={[
-                styles.quoteText,
-                {
-                  color: colors.text,
-                  fontSize: scaled(typography.bodyLarge.fontSize),
-                  lineHeight: scaled(typography.bodyLarge.lineHeight),
-                },
-              ]}
-            >
-              &ldquo;{speaker.quote}&rdquo;
-            </Text>
-          </View>
-        )}
-
-        {/* Meta row */}
-        <View style={styles.metaRow}>
-          {speaker.date && (
-            <Text
-              style={[
-                styles.metaText,
-                {
-                  color: colors.textSecondary,
-                  fontSize: scaled(typography.labelMedium.fontSize),
-                  lineHeight: scaled(typography.labelMedium.lineHeight),
-                },
-              ]}
-            >
-              {formatDate(speaker.date)}
-            </Text>
-          )}
-          {speaker.explicit && (
-            <View style={[styles.explicitBadge, { backgroundColor: colors.danger + "15" }]}>
-              <Text
-                style={[
-                  styles.explicitText,
-                  { color: colors.danger, fontSize: scaled(typography.labelMedium.fontSize) },
-                ]}
-              >
-                EXPLICIT
-              </Text>
-            </View>
-          )}
-        </View>
-
         {/* Player card */}
-        <View style={[styles.playerCard, { backgroundColor: colors.cardBackground }]}>
+        <View
+          style={[
+            styles.playerCard,
+            {
+              backgroundColor: colors.surfaceContainerLowest,
+              borderColor: colors.ghostBorder,
+            },
+          ]}
+        >
           {/* Now Playing + Download indicator */}
           <View style={styles.nowPlayingRow}>
             <View style={styles.nowPlayingLeft}>
@@ -542,6 +485,66 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
           </View>
 
         </View>
+
+        {/* Quote block */}
+        {speaker.quote && (
+          <SanctuaryCard
+            tone="lowest"
+            style={styles.quoteCard}
+            contentStyle={[styles.quoteCardInner, { backgroundColor: colors.primary }]}
+            elevated
+          >
+            <View style={styles.quoteCardContent}>
+              <View pointerEvents="none" style={styles.quotePatternLayer}>
+                <QuoteWatermarkPattern />
+              </View>
+              <View style={styles.quoteWrap}>
+                <Text
+                  style={[
+                    styles.quoteText,
+                    {
+                      color: colors.onPrimary,
+                      fontSize: scaled(typography.bodyLarge.fontSize),
+                      lineHeight: scaled(typography.bodyLarge.lineHeight),
+                    },
+                  ]}
+                >
+                  &ldquo;{normalizeQuoteText(speaker.quote)}&rdquo;
+                </Text>
+              </View>
+            </View>
+          </SanctuaryCard>
+        )}
+
+        {/* Meta row */}
+        <View style={styles.metaRow}>
+          {speaker.date && (
+            <Text
+              style={[
+                styles.metaText,
+                {
+                  color: colors.textSecondary,
+                  fontSize: scaled(typography.labelMedium.fontSize),
+                  lineHeight: scaled(typography.labelMedium.lineHeight),
+                },
+              ]}
+            >
+              {formatDate(speaker.date)}
+            </Text>
+          )}
+          {speaker.explicit && (
+            <View style={[styles.explicitBadge, { backgroundColor: colors.danger + "15" }]}>
+              <Text
+                style={[
+                  styles.explicitText,
+                  { color: colors.danger, fontSize: scaled(typography.labelMedium.fontSize) },
+                ]}
+              >
+                EXPLICIT
+              </Text>
+            </View>
+          )}
+        </View>
       </ScrollView>
     </View>
   );
@@ -554,26 +557,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // ─── Back Button ───────────────────────────────────────────────────────────
-  backButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: layout.spacing.xs + 2,
-    paddingHorizontal: layout.spacing.md,
-    paddingVertical: layout.spacing.sm + 4,
-  },
-  backLabel: {
-    fontFamily: typography.titleMedium.fontFamily,
-    fontSize: typography.titleMedium.fontSize,
-    lineHeight: typography.titleMedium.lineHeight,
-    letterSpacing: typography.titleMedium.letterSpacing,
-  },
-
   // ─── Scroll ────────────────────────────────────────────────────────────────
   scrollView: {
     flex: 1,
   },
   scrollContent: {
+    paddingTop: layout.spacing.lg,
     paddingHorizontal: layout.spacing.lgPlus,
     paddingBottom: layout.spacing.xxl,
   },
@@ -582,50 +571,71 @@ const styles = StyleSheet.create({
   infoSection: {
     marginBottom: layout.spacing.md,
   },
-  speakerName: {
-    fontFamily: fonts.bodyFamilyBold,
-    fontSize: 26,
-    marginBottom: 2,
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 4,
+    marginBottom: layout.spacing.sm,
   },
-  hometown: {
-    fontFamily: typography.bodySmall.fontFamily,
-    fontSize: typography.bodySmall.fontSize,
-    lineHeight: typography.bodySmall.lineHeight,
-    letterSpacing: typography.bodySmall.letterSpacing,
-    marginBottom: layout.spacing.sm + 2,
-  },
-  accentStrip: {
-    height: 1,
-    marginBottom: layout.spacing.sm + 6,
+  backLabel: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 14,
+    lineHeight: 20,
   },
   title: {
-    fontFamily: typography.titleLarge.fontFamily,
-    fontSize: typography.titleLarge.fontSize,
-    lineHeight: typography.titleLarge.lineHeight,
-    letterSpacing: typography.titleLarge.letterSpacing,
-    marginBottom: layout.spacing.xs + 2,
+    fontFamily: fonts.headerFamilyLight,
+    fontSize: 36,
+    lineHeight: 44,
+    fontWeight: "300",
+    letterSpacing: -0.9,
+    marginBottom: 6,
+  },
+  speakerMeta: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 17,
+    lineHeight: 24,
+    marginBottom: layout.spacing.sm + 2,
   },
   subtitle: {
-    fontFamily: typography.bodyMedium.fontFamily,
-    fontSize: typography.bodyMedium.fontSize,
-    lineHeight: typography.bodyMedium.lineHeight,
-    letterSpacing: typography.bodyMedium.letterSpacing,
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 17,
+    lineHeight: 28,
+    letterSpacing: -0.1,
   },
 
   // ─── Quote Block ───────────────────────────────────────────────────────────
-  quoteBlock: {
-    borderLeftWidth: 3,
-    borderRadius: layout.borderRadius,
-    paddingVertical: layout.spacing.sm + 6,
-    paddingLeft: layout.spacing.md,
-    paddingRight: layout.spacing.sm + 6,
+  quoteCard: {
     marginBottom: layout.spacing.md,
+    borderRadius: 12,
+  },
+  quoteCardInner: {
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  quoteCardContent: {
+    position: "relative",
+    overflow: "hidden",
+    borderRadius: 12,
+  },
+  quoteWrap: {
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 18,
+    position: "relative",
   },
   quoteText: {
-    fontFamily: typography.bodyLarge.fontFamily,
-    fontSize: typography.bodyLarge.fontSize,
-    lineHeight: typography.bodyLarge.lineHeight,
-    letterSpacing: typography.bodyLarge.letterSpacing,
+    fontFamily: fonts.bodyFamilyMedium,
+    textAlign: "left",
+    fontWeight: "500",
+    paddingHorizontal: 14,
+    position: "relative",
+    zIndex: 2,
+  },
+  quotePatternLayer: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: "hidden",
+    zIndex: 0,
   },
 
   // ─── Meta Row ──────────────────────────────────────────────────────────────
@@ -659,6 +669,8 @@ const styles = StyleSheet.create({
   playerCard: {
     borderRadius: layout.borderRadiusLarge,
     padding: layout.spacing.lgPlus,
+    marginBottom: layout.spacing.lgPlus,
+    borderWidth: 1,
     ...shadows.ambient,
   },
 

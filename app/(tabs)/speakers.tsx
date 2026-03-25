@@ -1,11 +1,10 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { AppState, AppStateStatus, StyleSheet, TouchableOpacity, View, Text } from "react-native";
+import { AppState, AppStateStatus, StyleSheet, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "expo-router";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
-import { fonts, layout, typography } from "../../constants/theme";
-import { useSpeakers, getSpeakerAudioUrl } from "../../hooks/useSpeakers";
+import { useSpeakers } from "../../hooks/useSpeakers";
 import { useAudioPlayer } from "../../hooks/useAudioPlayer";
 import { useAnalytics } from "../../utils/analytics";
 import { useFeatureTimeTracker } from "../../hooks/useFeatureTimeTracker";
@@ -160,20 +159,14 @@ function SpeakersTabContent() {
   if (view === "detail" && selectedSpeaker) {
     return (
       <SafeAreaView
-        style={[styles.container, { backgroundColor: colors.background }]}
+        style={[styles.container, { backgroundColor: colors.pearl }]}
         edges={["top"]}
       >
-        <View style={[styles.detailHeader, { backgroundColor: colors.surface }]}>
-          <View style={styles.detailHeaderTitleRow}>
-            <View style={[styles.detailHeaderIconShell, { backgroundColor: colors.primaryContainer }]}>
-              <MaterialIcons name="record-voice-over" size={22} color={colors.onPrimary} />
-            </View>
-            <View style={styles.detailHeaderTextBlock}>
-              <Text style={[styles.detailHeaderEyebrow, { color: colors.onSurfaceVariant }]}>Speakers</Text>
-              <Text style={[styles.detailHeaderTitleText, { color: colors.onSurface }]}>Now Playing</Text>
-            </View>
-          </View>
-        </View>
+        <TealHeader
+          title="Audio Player"
+          leftIcon={<MaterialIcons name="record-voice-over" size={24} color={colors.textOnAccent} />}
+          onPress={handleBack}
+        />
         <SpeakerDetail
           speaker={selectedSpeaker}
           autoPlay={autoPlay}
@@ -234,38 +227,5 @@ const styles = StyleSheet.create({
     height: 40,
     alignItems: "center",
     justifyContent: "center",
-  },
-  detailHeader: {
-    paddingHorizontal: layout.spacing.md,
-    paddingTop: layout.spacing.sm,
-    paddingBottom: layout.spacing.sm + 4,
-  },
-  detailHeaderTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: layout.spacing.sm + 2,
-  },
-  detailHeaderIconShell: {
-    width: 40,
-    height: 40,
-    borderRadius: layout.borderRadius,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  detailHeaderTextBlock: {
-    flex: 1,
-  },
-  detailHeaderEyebrow: {
-    fontFamily: fonts.labelFamily,
-    fontSize: typography.labelMedium.fontSize,
-    lineHeight: typography.labelMedium.lineHeight,
-    letterSpacing: 0.5,
-    marginBottom: 2,
-  },
-  detailHeaderTitleText: {
-    fontFamily: fonts.headerFamily,
-    fontSize: typography.headlineMedium.fontSize,
-    lineHeight: typography.headlineMedium.lineHeight,
-    letterSpacing: typography.headlineMedium.letterSpacing,
   },
 });
