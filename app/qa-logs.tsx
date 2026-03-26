@@ -9,6 +9,8 @@ import {
   Alert,
   Modal,
   TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import Constants from "expo-constants";
 import { useLocalSearchParams } from "expo-router";
@@ -705,7 +707,11 @@ export default function QaLogsScreen() {
           if (!importingJson) setShowImportJsonModal(false);
         }}
       >
-        <View style={styles.modalBackdrop}>
+        <KeyboardAvoidingView
+          style={styles.modalBackdrop}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={insets.bottom + 8}
+        >
           <View style={[styles.modalCard, { backgroundColor: colors.modalBackground, borderColor: colors.modalBorder }]}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>Paste Transfer JSON</Text>
             <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
@@ -756,7 +762,7 @@ export default function QaLogsScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -915,6 +921,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 12,
     padding: 12,
+    maxHeight: "85%",
   },
   modalTitle: {
     fontFamily: fonts.headerFamily,
@@ -927,8 +934,8 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   modalInput: {
-    minHeight: 180,
-    maxHeight: 320,
+    minHeight: 140,
+    maxHeight: 240,
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 10,
