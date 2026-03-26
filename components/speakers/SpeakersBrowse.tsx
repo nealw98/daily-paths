@@ -12,6 +12,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
+import { useTypography } from "../../hooks/useTypography";
 import { fonts, layout, typography } from "../../constants/theme";
 import type { Speaker } from "../../types/speakers";
 import { FieldShell, FocusPill, SanctuaryCard } from "../ui/Sanctuary";
@@ -57,6 +58,7 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
   // Scale factor: medium bodyFontSize (18) is the baseline (1.0)
   const textMetrics = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
   const scale = textMetrics.bodyFontSize / 18;
+  const { typography: dynamicTypography } = useTypography();
 
   // ─── Filter & Sort ──────────────────────────────────────────────────────
 
@@ -119,8 +121,8 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
                 styles.hometown,
                 {
                   color: colors.accent,
-                  fontSize: Math.round(typography.bodySmall.fontSize * scale),
-                  lineHeight: Math.round(typography.bodySmall.lineHeight * scale),
+                  fontSize: dynamicTypography.label.fontSize,
+                  lineHeight: dynamicTypography.label.lineHeight,
                 },
               ]}
             >
@@ -380,8 +382,9 @@ const styles = StyleSheet.create({
   },
   hometown: {
     fontFamily: fonts.bodyFamily,
-    fontSize: typography.bodySmall.fontSize,
-    lineHeight: typography.bodySmall.lineHeight,
+    fontSize: typography.label.fontSize,
+    lineHeight: typography.label.lineHeight,
+    letterSpacing: 0.5,
     marginBottom: layout.spacing.xs,
   },
   title: {
