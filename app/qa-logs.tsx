@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Switch,
+  Alert,
 } from "react-native";
 import Constants from "expo-constants";
 import { useLocalSearchParams } from "expo-router";
@@ -14,6 +15,7 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Clipboard from "@react-native-clipboard/clipboard";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Sharing from "expo-sharing";
 import { fonts } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
 import { clearQaLogs, useQaLogs, qaLog } from "../utils/qaLog";
@@ -29,6 +31,12 @@ import {
 } from "../utils/paidAppDetector";
 import { useSubscriptionContext } from "../contexts/SubscriptionContext";
 import { useSubscription } from "../hooks/useSubscription";
+import {
+  exportQaTransferToFile,
+  importQaTransferPayload,
+  readQaTransferFromFile,
+  validateQaTransferPayload,
+} from "../utils/qaDataTransfer";
 
 export default function QaLogsScreen() {
   const { colors } = useTheme();
@@ -43,6 +51,7 @@ export default function QaLogsScreen() {
   const [updating, setUpdating] = React.useState(false);
   const [updateStatus, setUpdateStatus] = React.useState<string | null>(null);
   const [copyStatus, setCopyStatus] = React.useState<string | null>(null);
+  const [transferStatus, setTransferStatus] = React.useState<string | null>(null);
   const [isDeveloper, setIsDeveloper] = React.useState(false);
   const [deviceId, setDeviceId] = React.useState<string | null>(null);
   const [lifetimeOverride, setLifetimeOverrideState] = React.useState<boolean | null>(null);
@@ -162,6 +171,148 @@ export default function QaLogsScreen() {
     } catch (err) {
       qaLog('rate', 'Error resetting rate tracking', { error: String(err) });
       alert('Failed to reset rate tracking');
+    }
+  };
+
+  const confirmReplaceData = React.useCallback((): Promise<boolean> => {
+    return new Promise((resolve) => {
+      Alert.alert(
+        "Replace local QA data?",
+        "Importing will replace all local notebook entries and personal prayers on this device.",
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+            onPress: () => resolve(false),
+          },
+          {
+            text: "Replace",
+            style: "destructive",
+            onPress: () => resolve(true),
+          },
+        ],
+      );
+    });
+  }, []);
+
+  const handleExportQaData = async () => {
+    try {
+      setTransferStatus("Preparing export...");
+      const canShare = await Sharing.isAvailableAsync();
+      const result = await exportQaTransferToFile();
+      qaLog("qa-transfer", "Exported QA transfer file", {
+        notebookCount: result.notebookCount,
+        prayerCount: result.prayerCount,
+        fileName: result.fileName,
+      });
+
+      if (!canShare) {
+        setTransferStatus(
+          `Exported ${result.notebookCount} notebook + ${result.prayerCount} prayer records`,
+        );
+        Alert.alert("Exported", `File saved at:\n${result.fileUri}`);
+        return;
+      }
+
+      await Sharing.shareAsync(result.fileUri, {
+        mimeType: "application/json",
+        UTI: "public.json",
+        dialogTitle: "Export QA Test Data",
+      });
+      setTransferStatus(
+        `Exported ${result.notebookCount} notebook + ${result.prayerCount} prayer records`,
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      qaLog("qa-transfer", "Export failed", { error: msg });
+      setTransferStatus(`Export failed: ${msg}`);
+      Alert.alert("Export failed", msg);
+    }
+  };
+
+  const handleImportQaData = async () => {
+    const shouldImport = await confirmReplaceData();
+    if (!shouldImport) return;
+
+    try {
+      setTransferStatus("Select a transfer JSON file...");
+      let payload: unknown;
+      let source = "file";
+      let sourceName: string | undefined;
+
+      try {
+        const DocumentPicker = await import("expo-document-picker");
+        const picked = await DocumentPicker.getDocumentAsync({
+          type: ["application/json", "text/json"],
+          multiple: false,
+          copyToCacheDirectory: true,
+        });
+
+        if (picked.canceled || !picked.assets?.length) {
+          setTransferStatus("Import canceled");
+          return;
+        }
+
+        const fileAsset = picked.assets[0];
+        sourceName = fileAsset.name;
+        setTransferStatus("Importing QA data...");
+        payload = await readQaTransferFromFile(fileAsset.uri);
+      } catch (pickerErr) {
+        const pickerMsg =
+          pickerErr instanceof Error ? pickerErr.message : String(pickerErr);
+        if (!pickerMsg.includes("ExpoDocumentPicker")) {
+          throw pickerErr;
+        }
+
+        // Fallback for OTA/new JS on an old native binary:
+        // import payload JSON from clipboard so QA flow still works.
+        source = "clipboard";
+        setTransferStatus("Document picker unavailable. Trying clipboard JSON...");
+        const clipboardRaw = await Clipboard.getString();
+        if (!clipboardRaw?.trim()) {
+          throw new Error(
+            "Document picker is unavailable in this build and clipboard is empty. Copy transfer JSON to clipboard or install a new build with document picker support.",
+          );
+        }
+        payload = JSON.parse(clipboardRaw);
+      }
+
+      const validPayload = validateQaTransferPayload(payload);
+      const result = await importQaTransferPayload(validPayload);
+      if (source === "clipboard") {
+        qaLog("qa-transfer", "Imported QA transfer from clipboard", {
+          notebookCount: result.notebookCount,
+          prayerCount: result.prayerCount,
+        });
+      } else {
+        qaLog("qa-transfer", "Imported QA transfer file", {
+          notebookCount: result.notebookCount,
+          prayerCount: result.prayerCount,
+          fileName: sourceName,
+        });
+      }
+
+      setTransferStatus(
+        `Imported ${result.notebookCount} notebook + ${result.prayerCount} prayer records`,
+      );
+      Alert.alert(
+        "Import complete",
+        `Imported ${result.notebookCount} notebook entries and ${result.prayerCount} personal prayers. Reload now to refresh all screens?`,
+        [
+          { text: "Later", style: "cancel" },
+          {
+            text: "Reload now",
+            onPress: () => {
+              void Updates.reloadAsync();
+            },
+          },
+        ],
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      qaLog("qa-transfer", "Import failed", { error: msg });
+      setTransferStatus(`Import failed: ${msg}`);
+      Alert.alert("Import failed", msg);
     }
   };
 
@@ -445,6 +596,33 @@ export default function QaLogsScreen() {
               {refreshingLifetime ? "Refreshing..." : "Refresh Lifetime Check"}
             </Text>
           </TouchableOpacity>
+        </View>
+
+        <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>
+          Data Transfer (QA)
+        </Text>
+        <View style={styles.actionsRow}>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleExportQaData}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              Export Notebook + Personal Prayers
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleImportQaData}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              Import Notebook + Personal Prayers
+            </Text>
+          </TouchableOpacity>
+          {transferStatus && (
+            <Text style={[styles.meta, { width: "100%" }]}>{transferStatus}</Text>
+          )}
         </View>
 
         <View style={styles.actionsRow}>
