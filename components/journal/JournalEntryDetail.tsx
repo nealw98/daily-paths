@@ -28,7 +28,7 @@ import { useSettings } from "../../hooks/useSettings";
 import { GuidedPromptEditor } from "./GuidedPromptEditor";
 import { EntryTypeIcon } from "../../utils/entryTypeIcon";
 import { Seedling } from "../../components/icons";
-import { FieldShell, FocusPill, SanctuaryButton, SanctuaryCard } from "../ui/Sanctuary";
+import { FieldShell, SanctuaryButton, SanctuaryCard } from "../ui/Sanctuary";
 
 interface JournalEntryDetailProps {
   entry: JournalEntry;
@@ -39,10 +39,6 @@ interface JournalEntryDetailProps {
     structuredContent?: Record<string, any> | null
   ) => Promise<void>;
   onDelete: (entryId: string) => Promise<void>;
-  onPrev?: () => void;
-  onNext?: () => void;
-  hasPrev?: boolean;
-  hasNext?: boolean;
 }
 
 /** Parse markdown list content back into an array of items. */
@@ -59,10 +55,6 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
   onBack,
   onSave,
   onDelete,
-  onPrev,
-  onNext,
-  hasPrev = false,
-  hasNext = false,
 }) => {
   const { colors } = useTheme();
 
@@ -102,11 +94,8 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
   });
 
   const entryDate = new Date(entry.created_at);
-  const dateStr = entryDate.toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  });
+  const dayOfWeek = entryDate.toLocaleDateString("en-US", { weekday: "long" });
+  const monthDay = entryDate.toLocaleDateString("en-US", { month: "long", day: "numeric" });
   const timeStr = entryDate.toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
@@ -132,7 +121,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
     const lines: string[] = [];
 
     // Date
-    lines.push(dateStr);
+    lines.push(`${dayOfWeek}, ${monthDay}`);
     lines.push("");
 
     // Type label
@@ -333,8 +322,8 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
           const value = responses[prompt.id];
           const hasAnswer = value && typeof value === "string" && value.trim();
           return (
-            <View key={prompt.id} style={styles.guidedReadSection}>
-              <Text style={[styles.guidedReadQuestion, typography.bodySmall, { color: colors.textSecondary }]}>
+            <SanctuaryCard key={prompt.id} tone="lowest" style={styles.guidedCard} contentStyle={styles.guidedCardContent} elevated>
+              <Text style={[styles.guidedReadQuestion, typography.bodySmall, { color: colors.primary, fontFamily: fonts.headerFamily }]}>
                 {prompt.question}
               </Text>
               {hasAnswer ? (
@@ -346,7 +335,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
                   No entry
                 </Text>
               )}
-            </View>
+            </SanctuaryCard>
           );
         })}
 
@@ -374,13 +363,6 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
 
   const renderTextEdit = () => (
     <View style={styles.editContainer}>
-      {catConfig?.introText && (
-        <SanctuaryCard tone="low" style={styles.introWrapper} contentStyle={styles.introCardContent}>
-          <Text style={[styles.introText, typography.body, { color: colors.accent }]}>
-            {catConfig.introText}
-          </Text>
-        </SanctuaryCard>
-      )}
       <FieldShell style={styles.editInputShell}>
         <TextInput
           style={[styles.editInput, typography.body, { color: colors.text }]}
@@ -487,16 +469,33 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
           </View>
         </View>
 
+        {/* Back + Actions */}
+        <View style={[styles.backActionRow, { paddingHorizontal: 20 }]}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={onBack}
+            activeOpacity={0.7}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="chevron-back" size={18} color={colors.primaryContainer} />
+            <Text style={[styles.backLabel, { color: colors.primaryContainer }]}>Back</Text>
+          </TouchableOpacity>
+          <View style={styles.actionIcons}>
+            <TouchableOpacity onPress={handleShare} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="arrow-redo-outline" size={22} color={colors.onSurfaceVariant} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleDelete} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="trash-outline" size={22} color={colors.danger} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* Date & Time */}
         <View style={[styles.dateBar, { backgroundColor: colors.surface }]}>
-          <View style={styles.dateBarRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.dateText, typography.h1, { color: colors.text }]}>{dateStr}</Text>
-              <Text style={[styles.timeText, typography.label, { color: colors.textSecondary }]}>
-                {timeStr}
-              </Text>
-            </View>
-          </View>
+          <Text style={[styles.dateText, typography.h1, { color: colors.text }]}>{dayOfWeek}, {monthDay}</Text>
+          <Text style={[styles.timeText, typography.bodySmall, { color: colors.textSecondary }]}>
+            {timeStr}
+          </Text>
         </View>
 
         {/* Content */}
@@ -506,141 +505,54 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
           extraKeyboardSpace={24}
           keyboardShouldPersistTaps="handled"
         >
-          <SanctuaryCard tone="lowest" style={styles.entryCard} contentStyle={styles.entryCardContent} elevated>
-            {isEditing ? (
-              <>
-                {editorType === "text" && renderTextEdit()}
-                {editorType === "items" && renderGratitudeEdit()}
-                {editorType === "guided" && renderGuidedEdit()}
-              </>
-            ) : (
-              <>
-                <TouchableOpacity activeOpacity={0.8} onPress={() => setIsEditing(true)}>
-                  <Text style={[styles.tapHint, typography.caption, { color: colors.textSecondary, marginTop: 0, marginBottom: 16 }]}>
-                    Tap to edit
-                  </Text>
-                </TouchableOpacity>
-                {editorType === "text" && renderTextReadOnly()}
-                {editorType === "items" && renderGratitudeReadOnly()}
-                {editorType === "guided" && renderGuidedReadOnly()}
-                <View style={[styles.cardActionsRow, { borderTopColor: colors.ghostBorder }]}>
-                  <FocusPill
-                    label="Share"
-                    onPress={handleShare}
-                    icon={<Ionicons name="share-outline" size={14} color={colors.onSurfaceVariant} />}
-                  />
-                  <FocusPill
-                    label="Delete"
-                    onPress={handleDelete}
-                    icon={<Ionicons name="trash-outline" size={14} color={colors.danger} />}
-                  />
-                </View>
-              </>
-            )}
-          </SanctuaryCard>
+          {isEditing ? (
+            <SanctuaryCard tone="lowest" style={styles.entryCard} contentStyle={styles.entryCardContent} elevated>
+              {editorType === "text" && renderTextEdit()}
+              {editorType === "items" && renderGratitudeEdit()}
+              {editorType === "guided" && renderGuidedEdit()}
+            </SanctuaryCard>
+          ) : (
+            <>
+              <TouchableOpacity activeOpacity={0.8} onPress={() => setIsEditing(true)}>
+                <Text style={[styles.tapHint, typography.caption, { color: colors.textSecondary, marginTop: 0, marginBottom: 16 }]}>
+                  Tap to edit
+                </Text>
+              </TouchableOpacity>
+              {editorType === "guided" ? (
+                renderGuidedReadOnly()
+              ) : (
+                <SanctuaryCard tone="lowest" style={styles.entryCard} contentStyle={styles.entryCardContent} elevated>
+                  {editorType === "text" && renderTextReadOnly()}
+                  {editorType === "items" && renderGratitudeReadOnly()}
+                </SanctuaryCard>
+              )}
+            </>
+          )}
           <View style={{ height: 100 }} />
         </KeyboardAwareScrollView>
 
-        {/* Bottom Bar */}
-        <View
-          style={[
-            styles.bottomBar,
-            { backgroundColor: colors.surface, borderTopColor: colors.ghostBorder },
-          ]}
-        >
-          {isEditing ? (
-            <>
-              <SanctuaryButton
-                label="Discard"
-                variant="secondary"
-                onPress={handleDiscard}
-                style={styles.bottomButton}
-              />
-              <SanctuaryButton
-                label={saving ? "Saving..." : "Save"}
-                onPress={handleSave}
-                disabled={saving || !hasChanges}
-                style={styles.bottomButton}
-              />
-            </>
-          ) : (
-            <View style={styles.bottomReadOnly}>
-              <View style={styles.bottomNavRow}>
-                <TouchableOpacity
-                  style={[
-                    styles.navButton,
-                    {
-                      backgroundColor: hasPrev
-                        ? colors.cardBackground
-                        : colors.border + "40",
-                    },
-                  ]}
-                  onPress={onPrev}
-                  disabled={!hasPrev}
-                >
-                  <Ionicons
-                    name="arrow-back"
-                    size={18}
-                    color={hasPrev ? colors.accent : colors.textSecondary + "40"}
-                  />
-                  <Text
-                    style={[
-                      styles.navText,
-                      {
-                        color: hasPrev
-                          ? colors.accent
-                          : colors.textSecondary + "40",
-                        ...typography.label,
-                      },
-                    ]}
-                  >
-                    Prev
-                  </Text>
-                </TouchableOpacity>
-
-                <SanctuaryButton
-                  label="Done"
-                  variant="secondary"
-                  onPress={onBack}
-                  style={styles.doneButton}
-                  textStyle={typography.label}
-                />
-
-                <TouchableOpacity
-                  style={[
-                    styles.navButton,
-                    {
-                      backgroundColor: hasNext
-                        ? colors.cardBackground
-                        : colors.border + "40",
-                    },
-                  ]}
-                  onPress={onNext}
-                  disabled={!hasNext}
-                >
-                  <Text
-                    style={[
-                      styles.navText,
-                      {
-                        color: hasNext
-                          ? colors.accent
-                          : colors.textSecondary + "40",
-                        ...typography.label,
-                      },
-                    ]}
-                  >
-                    Next
-                  </Text>
-                  <Ionicons
-                    name="arrow-forward"
-                    size={18}
-                    color={hasNext ? colors.accent : colors.textSecondary + "40"}
-                  />
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-        </View>
+        {/* Bottom Bar (editing only) */}
+        {isEditing && (
+          <View
+            style={[
+              styles.bottomBar,
+              { backgroundColor: colors.surface, borderTopColor: colors.ghostBorder },
+            ]}
+          >
+            <SanctuaryButton
+              label="Discard"
+              variant="secondary"
+              onPress={handleDiscard}
+              style={styles.bottomButton}
+            />
+            <SanctuaryButton
+              label={saving ? "Saving..." : "Save"}
+              onPress={handleSave}
+              disabled={saving || !hasChanges}
+              style={styles.bottomButton}
+            />
+          </View>
+        )}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -692,7 +604,7 @@ const styles = StyleSheet.create({
   },
   dateBar: {
     paddingHorizontal: 20,
-    paddingTop: 36,
+    paddingTop: 24,
     paddingBottom: 12,
   },
   dateBarRow: {
@@ -717,27 +629,8 @@ const styles = StyleSheet.create({
   entryCardContent: {
     padding: 20,
   },
-  cardActionsRow: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 10,
-    marginTop: 20,
-    paddingTop: 16,
-    borderTopWidth: 1,
-  },
 
   // ─── Read-Only ────────────────────────────────────────
-  introWrapper: {
-    marginBottom: 16,
-  },
-  introCardContent: {
-    paddingHorizontal: 18,
-    paddingVertical: 18,
-  },
-  introText: {
-    fontFamily: fonts.headerFamily,
-    textAlign: "center",
-  },
   contentText: {
   },
   tapHint: {
@@ -762,14 +655,20 @@ const styles = StyleSheet.create({
   },
 
   // ─── Guided Read-Only ─────────────────────────────────
+  guidedCard: {
+    borderRadius: 14,
+    marginBottom: 12,
+  },
+  guidedCardContent: {
+    padding: 18,
+  },
   guidedReadSection: {
     marginBottom: 20,
   },
   guidedReadQuestion: {
-    fontFamily: fonts.labelFamily,
     letterSpacing: 0.3,
     textTransform: "uppercase",
-    marginBottom: 6,
+    marginBottom: 8,
   },
   guidedReadResponse: {
   },
@@ -832,20 +731,26 @@ const styles = StyleSheet.create({
   bottomButton: {
     flex: 1,
   },
-  navButton: {
+  backActionRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  backButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
+    gap: 4,
   },
-  navText: {
-    fontWeight: "500",
+  actionIcons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 20,
   },
-  doneButton: {
-    flex: 1,
-    minHeight: 44,
-    height: 44,
+  backLabel: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

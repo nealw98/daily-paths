@@ -203,10 +203,6 @@ function JournalTabContent() {
         onBack={handleBackToTimeline}
         onSave={handleSaveEdit}
         onDelete={handleDeleteFromDetail}
-        onPrev={handlePrev}
-        onNext={handleNext}
-        hasPrev={selectedIndex < entries.length - 1}
-        hasNext={selectedIndex > 0}
       />
     );
   }

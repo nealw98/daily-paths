@@ -27,22 +27,6 @@ export function GuidedPromptEditor({
 
   return (
     <View style={styles.container}>
-      <SanctuaryCard tone="low" style={styles.introWrapper} contentStyle={styles.introCardContent}>
-        <Text
-          style={[
-            styles.introText,
-            {
-              fontFamily: fonts.headerFamily,
-              color: colors.primaryContainer,
-              fontSize: typography.bodyFontSize,
-              lineHeight: typography.bodyFontSize * 1.5,
-            },
-          ]}
-        >
-          {introText}
-        </Text>
-      </SanctuaryCard>
-
       {/* Prompt cards */}
       {prompts.map((prompt, index) => {
         const isFocused = focusedId === prompt.id;
@@ -107,17 +91,6 @@ export function GuidedPromptEditor({
 const styles = StyleSheet.create({
   container: {
     // No scroll — parent handles scrolling
-  },
-  introWrapper: {
-    marginBottom: 20,
-  },
-  introCardContent: {
-    paddingHorizontal: 18,
-    paddingVertical: 18,
-  },
-  introText: {
-    ...staticTypography.h3,
-    textAlign: "center",
   },
   card: {
     marginBottom: 20,
