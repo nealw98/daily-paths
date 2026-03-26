@@ -86,7 +86,7 @@ async function readPersonalPrayers(): Promise<PersonalPrayer[]> {
 
 function getExportFileName(dateIso: string): string {
   const timestamp = dateIso.replace(/[:.]/g, "-");
-  return `daily-paths-qa-transfer-${timestamp}.json`;
+  return `daily-paths-qa-transfer-${timestamp}.txt`;
 }
 
 function getExportFileUri(fileName: string): string {

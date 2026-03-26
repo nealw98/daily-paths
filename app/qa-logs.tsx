@@ -229,8 +229,8 @@ export default function QaLogsScreen() {
       }
 
       await Sharing.shareAsync(result.fileUri, {
-        mimeType: "application/json",
-        UTI: "public.json",
+        mimeType: "text/plain",
+        UTI: "public.plain-text",
         dialogTitle: "Export QA Test Data",
       });
       setTransferStatus(

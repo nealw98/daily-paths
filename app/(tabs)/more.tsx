@@ -159,7 +159,7 @@ export default function MoreTab() {
     >
       <TealHeader
         title="Settings"
-        leftIcon={<MaterialIcons name="settings" size={24} color={colors.textOnAccent} />}
+        leftIcon={<MaterialIcons name="settings" size={28} color={colors.textOnAccent} />}
       />
 
       <ScrollView
@@ -439,8 +439,12 @@ export default function MoreTab() {
             Daily Paths supports your recovery with 366 original readings based on Al-Anon's
             Steps, Traditions, and Concepts. Premium features include guided notebook prompts,
             prayer customization, and speaker talks.
-            {"\n\n"}
-            The app is not affiliated with Al-Anon, AA, or any 12-step fellowship.
+          </Text>
+        </View>
+
+        <View style={[styles.card, { backgroundColor: colors.deepTeal, borderColor: colors.deepTeal, marginTop: 12 }]}>
+          <Text style={[styles.aboutText, { color: colors.textOnAccent }]}>
+            This app is not affiliated with Al-Anon, AA, or any 12-step fellowship.
           </Text>
         </View>
 

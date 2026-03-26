@@ -144,7 +144,7 @@ export const PrayersScreen: React.FC = () => {
           <Text
             style={[
               styles.prayerPreview,
-              { color: colors.ink, fontSize: typography.bodyLarge.fontSize, lineHeight: typography.bodyLarge.lineHeight },
+              { color: colors.ink, fontSize: typography.body.fontSize, lineHeight: typography.body.lineHeight },
             ]}
             numberOfLines={3}
           >
@@ -154,7 +154,7 @@ export const PrayersScreen: React.FC = () => {
 
         {isExpanded && !isEditing && (
           <View style={styles.prayerBody}>
-            <Text style={[styles.prayerText, { color: colors.ink, fontSize: typography.bodyLarge.fontSize, lineHeight: typography.bodyLarge.lineHeight }]}>
+            <Text style={[styles.prayerText, { color: colors.ink, fontSize: typography.body.fontSize, lineHeight: typography.body.lineHeight }]}>
               {renderPrayerText(prayer.text, boldPhrases)}
             </Text>
             {prayer.source && (
@@ -348,7 +348,7 @@ export const PrayersScreen: React.FC = () => {
           <Text
             style={[
               styles.prayerPreview,
-              { color: colors.ink, fontSize: typography.bodyLarge.fontSize, lineHeight: typography.bodyLarge.lineHeight },
+              { color: colors.ink, fontSize: typography.body.fontSize, lineHeight: typography.body.lineHeight },
             ]}
             numberOfLines={3}
           >
@@ -358,7 +358,7 @@ export const PrayersScreen: React.FC = () => {
 
         {isExpanded && !isEditing && (
           <View style={styles.prayerBody}>
-            <Text style={[styles.prayerText, { color: colors.ink, fontSize: typography.bodyLarge.fontSize, lineHeight: typography.bodyLarge.lineHeight }]}>
+            <Text style={[styles.prayerText, { color: colors.ink, fontSize: typography.body.fontSize, lineHeight: typography.body.lineHeight }]}>
               {prayer.text}
             </Text>
           </View>

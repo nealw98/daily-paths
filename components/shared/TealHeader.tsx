@@ -75,9 +75,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   iconShell: {
-    width: 44,
-    height: 44,
-    borderRadius: layout.borderRadius,
+    width: 50,
+    height: 50,
+    borderRadius: 0,
     alignItems: "center",
     justifyContent: "center",
   },

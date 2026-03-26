@@ -340,7 +340,7 @@ export default function Index() {
     // Application paragraphs (with heading)
     if (applicationParagraphs.length) {
       lines.push("");
-      lines.push("Application:");
+      lines.push("Practice:");
       pushParagraphs(applicationParagraphs);
     }
 
