@@ -112,7 +112,9 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
       <SanctuaryCard tone="lowest" style={styles.card} contentStyle={styles.cardContent} elevated>
         <View style={styles.cardBody}>
           {/* Speaker name */}
-          <Text style={[styles.speakerName, dynamicTypography.h3, { color: colors.text }]}>{speaker.speaker}</Text>
+          <Text style={[styles.speakerName, dynamicTypography.h3, { color: colors.primaryContainer }]}>
+            {speaker.speaker}
+          </Text>
 
           {/* Hometown */}
           {speaker.hometown && (
