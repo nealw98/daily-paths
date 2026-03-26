@@ -38,8 +38,8 @@ import { useSubscription } from "../hooks/useSubscription";
 import {
   exportQaTransferToFile,
   importQaTransferPayload,
+  parseQaTransferText,
   type QaTransferImportMode,
-  validateQaTransferPayload,
 } from "../utils/qaDataTransfer";
 
 export default function QaLogsScreen() {
@@ -295,8 +295,7 @@ export default function QaLogsScreen() {
 
     setImportingJson(true);
     try {
-      const parsed = JSON.parse(importJsonText);
-      const validPayload = validateQaTransferPayload(parsed);
+      const validPayload = parseQaTransferText(importJsonText);
       const result = await importQaTransferPayload(validPayload, pendingImportMode);
       const verb = pendingImportMode === "merge" ? "Added" : "Imported";
       qaLog("qa-transfer", "Imported QA transfer from pasted JSON", {

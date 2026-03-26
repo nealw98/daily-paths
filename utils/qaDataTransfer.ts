@@ -97,6 +97,51 @@ function getExportFileUri(fileName: string): string {
   return `${baseDir}${fileName}`;
 }
 
+function toPayload(
+  notebookEntries: JournalEntry[],
+  personalPrayers: PersonalPrayer[],
+  exportedAt?: string,
+  deviceId?: string,
+): QaTransferPayloadV1 {
+  return {
+    version: TRANSFER_VERSION,
+    exportedAt: exportedAt || new Date().toISOString(),
+    deviceId: deviceId || "imported",
+    notebookEntries,
+    personalPrayers,
+  };
+}
+
+function stripJsonCodeFence(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed.startsWith("```")) return trimmed;
+  return trimmed
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "")
+    .trim();
+}
+
+function parseJsonLoose(raw: string): unknown {
+  const cleaned = stripJsonCodeFence(raw.replace(/^\uFEFF/, ""));
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    const firstBrace = cleaned.indexOf("{");
+    const lastBrace = cleaned.lastIndexOf("}");
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+      const slice = cleaned.slice(firstBrace, lastBrace + 1);
+      return JSON.parse(slice);
+    }
+    const firstBracket = cleaned.indexOf("[");
+    const lastBracket = cleaned.lastIndexOf("]");
+    if (firstBracket !== -1 && lastBracket > firstBracket) {
+      const slice = cleaned.slice(firstBracket, lastBracket + 1);
+      return JSON.parse(slice);
+    }
+    throw new Error("JSON Parse error: Unable to parse pasted content");
+  }
+}
+
 export function validateQaTransferPayload(value: unknown): QaTransferPayloadV1 {
   if (!isObject(value)) {
     throw new Error("Payload must be a JSON object");
@@ -134,6 +179,55 @@ export function validateQaTransferPayload(value: unknown): QaTransferPayloadV1 {
     notebookEntries: value.notebookEntries as JournalEntry[],
     personalPrayers: value.personalPrayers as PersonalPrayer[],
   };
+}
+
+export function parseQaTransferText(rawText: string): QaTransferPayloadV1 {
+  const parsed = parseJsonLoose(rawText);
+
+  // Preferred schema.
+  try {
+    return validateQaTransferPayload(parsed);
+  } catch {
+    // continue to legacy/partial schema fallbacks below
+  }
+
+  // Legacy fallback: array of entries only.
+  if (Array.isArray(parsed)) {
+    if (parsed.every(isJournalEntry)) {
+      return toPayload(parsed, []);
+    }
+    if (parsed.every(isPersonalPrayer)) {
+      return toPayload([], parsed);
+    }
+  }
+
+  // Legacy fallback: object with journal/prayer arrays under different keys.
+  if (isObject(parsed)) {
+    const notebookCandidate =
+      parsed.notebookEntries ?? parsed.journalEntries ?? parsed.entries;
+    const prayersCandidate =
+      parsed.personalPrayers ?? parsed.prayers;
+
+    const notebookEntries = Array.isArray(notebookCandidate)
+      ? notebookCandidate.filter(isJournalEntry)
+      : [];
+    const personalPrayers = Array.isArray(prayersCandidate)
+      ? prayersCandidate.filter(isPersonalPrayer)
+      : [];
+
+    if (notebookEntries.length > 0 || personalPrayers.length > 0) {
+      return toPayload(
+        notebookEntries,
+        personalPrayers,
+        typeof parsed.exportedAt === "string" ? parsed.exportedAt : undefined,
+        typeof parsed.deviceId === "string" ? parsed.deviceId : undefined,
+      );
+    }
+  }
+
+  throw new Error(
+    "Unsupported import format. Paste the full exported JSON payload (or a valid entries/prayers array).",
+  );
 }
 
 export async function createQaTransferPayload(): Promise<QaTransferPayloadV1> {
