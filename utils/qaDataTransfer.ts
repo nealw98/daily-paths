@@ -31,7 +31,11 @@ export interface QaTransferExportResult {
 export interface QaTransferImportResult {
   notebookCount: number;
   prayerCount: number;
+  notebookAdded: number;
+  prayerAdded: number;
 }
+
+export type QaTransferImportMode = "replace" | "merge";
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -171,20 +175,63 @@ export async function readQaTransferFromFile(fileUri: string): Promise<QaTransfe
 
 export async function importQaTransferPayload(
   payload: QaTransferPayloadV1,
+  mode: QaTransferImportMode = "replace",
 ): Promise<QaTransferImportResult> {
+  if (mode === "replace") {
+    await Promise.all([
+      AsyncStorage.setItem(
+        NOTEBOOK_STORAGE_KEY,
+        JSON.stringify(payload.notebookEntries),
+      ),
+      AsyncStorage.setItem(
+        PERSONAL_PRAYERS_STORAGE_KEY,
+        JSON.stringify(payload.personalPrayers),
+      ),
+    ]);
+
+    return {
+      notebookCount: payload.notebookEntries.length,
+      prayerCount: payload.personalPrayers.length,
+      notebookAdded: payload.notebookEntries.length,
+      prayerAdded: payload.personalPrayers.length,
+    };
+  }
+
+  const [currentNotebook, currentPrayers] = await Promise.all([
+    readNotebookEntries(),
+    readPersonalPrayers(),
+  ]);
+
+  const notebookById = new Map(currentNotebook.map((entry) => [entry.id, entry]));
+  let notebookAdded = 0;
+  for (const entry of payload.notebookEntries) {
+    if (!notebookById.has(entry.id)) {
+      notebookById.set(entry.id, entry);
+      notebookAdded += 1;
+    }
+  }
+
+  const prayersById = new Map(currentPrayers.map((entry) => [entry.id, entry]));
+  let prayerAdded = 0;
+  for (const entry of payload.personalPrayers) {
+    if (!prayersById.has(entry.id)) {
+      prayersById.set(entry.id, entry);
+      prayerAdded += 1;
+    }
+  }
+
+  const mergedNotebook = Array.from(notebookById.values());
+  const mergedPrayers = Array.from(prayersById.values());
+
   await Promise.all([
-    AsyncStorage.setItem(
-      NOTEBOOK_STORAGE_KEY,
-      JSON.stringify(payload.notebookEntries),
-    ),
-    AsyncStorage.setItem(
-      PERSONAL_PRAYERS_STORAGE_KEY,
-      JSON.stringify(payload.personalPrayers),
-    ),
+    AsyncStorage.setItem(NOTEBOOK_STORAGE_KEY, JSON.stringify(mergedNotebook)),
+    AsyncStorage.setItem(PERSONAL_PRAYERS_STORAGE_KEY, JSON.stringify(mergedPrayers)),
   ]);
 
   return {
-    notebookCount: payload.notebookEntries.length,
-    prayerCount: payload.personalPrayers.length,
+    notebookCount: mergedNotebook.length,
+    prayerCount: mergedPrayers.length,
+    notebookAdded,
+    prayerAdded,
   };
 }

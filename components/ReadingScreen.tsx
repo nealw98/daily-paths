@@ -893,13 +893,13 @@ const styles = StyleSheet.create({
     height: 62,
   },
   applicationQuoteText: {
-    fontFamily: fonts.bodyFamilySemiBold,
+    fontFamily: fonts.bodyFamilyBold,
     fontSize: 22,
     lineHeight: 30,
     textAlign: "left",
     marginBottom: 10,
     fontStyle: "italic",
-    fontWeight: "600",
+    fontWeight: "700",
     position: "relative",
     zIndex: 1,
     alignSelf: "stretch",
@@ -907,9 +907,9 @@ const styles = StyleSheet.create({
     marginRight: 0,
   },
   quoteInlineItalic: {
-    fontFamily: fonts.bodyFamilySemiBold,
+    fontFamily: fonts.bodyFamilyBold,
     fontStyle: "italic",
-    fontWeight: "600",
+    fontWeight: "700",
   },
   applicationReference: {
     fontFamily: fonts.bodyFamilyRegular,

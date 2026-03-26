@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
+  Modal,
+  TextInput,
 } from "react-native";
 import Constants from "expo-constants";
 import { useLocalSearchParams } from "expo-router";
@@ -34,7 +36,7 @@ import { useSubscription } from "../hooks/useSubscription";
 import {
   exportQaTransferToFile,
   importQaTransferPayload,
-  readQaTransferFromFile,
+  type QaTransferImportMode,
   validateQaTransferPayload,
 } from "../utils/qaDataTransfer";
 
@@ -52,6 +54,12 @@ export default function QaLogsScreen() {
   const [updateStatus, setUpdateStatus] = React.useState<string | null>(null);
   const [copyStatus, setCopyStatus] = React.useState<string | null>(null);
   const [transferStatus, setTransferStatus] = React.useState<string | null>(null);
+  const [showImportJsonModal, setShowImportJsonModal] = React.useState(false);
+  const [importJsonText, setImportJsonText] = React.useState("");
+  const [pendingImportMode, setPendingImportMode] =
+    React.useState<QaTransferImportMode | null>(null);
+  const [importingJson, setImportingJson] = React.useState(false);
+  const importJsonInputRef = React.useRef<TextInput | null>(null);
   const [isDeveloper, setIsDeveloper] = React.useState(false);
   const [deviceId, setDeviceId] = React.useState<string | null>(null);
   const [lifetimeOverride, setLifetimeOverrideState] = React.useState<boolean | null>(null);
@@ -174,21 +182,25 @@ export default function QaLogsScreen() {
     }
   };
 
-  const confirmReplaceData = React.useCallback((): Promise<boolean> => {
+  const chooseImportMode = React.useCallback((): Promise<QaTransferImportMode | null> => {
     return new Promise((resolve) => {
       Alert.alert(
-        "Replace local QA data?",
-        "Importing will replace all local notebook entries and personal prayers on this device.",
+        "Import mode",
+        "Choose how to apply imported notebook entries and personal prayers.",
         [
           {
             text: "Cancel",
             style: "cancel",
-            onPress: () => resolve(false),
+            onPress: () => resolve(null),
+          },
+          {
+            text: "Add",
+            onPress: () => resolve("merge"),
           },
           {
             text: "Replace",
             style: "destructive",
-            onPress: () => resolve(true),
+            onPress: () => resolve("replace"),
           },
         ],
       );
@@ -231,73 +243,83 @@ export default function QaLogsScreen() {
   };
 
   const handleImportQaData = async () => {
-    const shouldImport = await confirmReplaceData();
-    if (!shouldImport) return;
+    const importMode = await chooseImportMode();
+    if (!importMode) return;
 
     try {
-      setTransferStatus("Select a transfer JSON file...");
-      let payload: unknown;
-      let source = "file";
-      let sourceName: string | undefined;
+      const clipboardRaw = await Clipboard.getString();
+      setPendingImportMode(importMode);
+      setImportJsonText(clipboardRaw ?? "");
+      setShowImportJsonModal(true);
+      setTransferStatus("Paste transfer JSON and tap Import.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      qaLog("qa-transfer", "Import failed", { error: msg });
+      setTransferStatus(`Import failed: ${msg}`);
+      Alert.alert("Import failed", msg);
+    }
+  };
 
-      try {
-        const DocumentPicker = await import("expo-document-picker");
-        const picked = await DocumentPicker.getDocumentAsync({
-          type: ["application/json", "text/json"],
-          multiple: false,
-          copyToCacheDirectory: true,
-        });
-
-        if (picked.canceled || !picked.assets?.length) {
-          setTransferStatus("Import canceled");
-          return;
-        }
-
-        const fileAsset = picked.assets[0];
-        sourceName = fileAsset.name;
-        setTransferStatus("Importing QA data...");
-        payload = await readQaTransferFromFile(fileAsset.uri);
-      } catch (pickerErr) {
-        const pickerMsg =
-          pickerErr instanceof Error ? pickerErr.message : String(pickerErr);
-        if (!pickerMsg.includes("ExpoDocumentPicker")) {
-          throw pickerErr;
-        }
-
-        // Fallback for OTA/new JS on an old native binary:
-        // import payload JSON from clipboard so QA flow still works.
-        source = "clipboard";
-        setTransferStatus("Document picker unavailable. Trying clipboard JSON...");
-        const clipboardRaw = await Clipboard.getString();
-        if (!clipboardRaw?.trim()) {
-          throw new Error(
-            "Document picker is unavailable in this build and clipboard is empty. Copy transfer JSON to clipboard or install a new build with document picker support.",
-          );
-        }
-        payload = JSON.parse(clipboardRaw);
+  const handlePasteFromClipboard = async () => {
+    try {
+      const clipboardRaw = await Clipboard.getString();
+      if (!clipboardRaw?.trim()) {
+        Alert.alert(
+          "Clipboard is empty",
+          "Copy the JSON text content (not the file itself), then tap 'Paste from Clipboard' again.",
+        );
+        return;
       }
+      setImportJsonText(clipboardRaw ?? "");
+    } catch {
+      Alert.alert("Clipboard error", "Unable to read clipboard content.");
+    }
+  };
 
-      const validPayload = validateQaTransferPayload(payload);
-      const result = await importQaTransferPayload(validPayload);
-      if (source === "clipboard") {
-        qaLog("qa-transfer", "Imported QA transfer from clipboard", {
-          notebookCount: result.notebookCount,
-          prayerCount: result.prayerCount,
-        });
-      } else {
-        qaLog("qa-transfer", "Imported QA transfer file", {
-          notebookCount: result.notebookCount,
-          prayerCount: result.prayerCount,
-          fileName: sourceName,
-        });
-      }
+  React.useEffect(() => {
+    if (!showImportJsonModal) return;
+    const timer = setTimeout(() => {
+      importJsonInputRef.current?.focus();
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [showImportJsonModal]);
+
+  const handleConfirmImportJson = async () => {
+    if (!pendingImportMode) return;
+    if (!importJsonText.trim()) {
+      Alert.alert("Import failed", "Paste transfer JSON before importing.");
+      return;
+    }
+
+    setImportingJson(true);
+    try {
+      const parsed = JSON.parse(importJsonText);
+      const validPayload = validateQaTransferPayload(parsed);
+      const result = await importQaTransferPayload(validPayload, pendingImportMode);
+      const verb = pendingImportMode === "merge" ? "Added" : "Imported";
+      qaLog("qa-transfer", "Imported QA transfer from pasted JSON", {
+        importMode: pendingImportMode,
+        notebookAdded: result.notebookAdded,
+        prayerAdded: result.prayerAdded,
+        notebookCount: result.notebookCount,
+        prayerCount: result.prayerCount,
+      });
 
       setTransferStatus(
-        `Imported ${result.notebookCount} notebook + ${result.prayerCount} prayer records`,
+        pendingImportMode === "merge"
+          ? `Added ${result.notebookAdded} notebook + ${result.prayerAdded} prayers (totals: ${result.notebookCount}/${result.prayerCount})`
+          : `Imported ${result.notebookCount} notebook + ${result.prayerCount} prayer records`,
       );
+
+      setShowImportJsonModal(false);
+      setImportJsonText("");
+      setPendingImportMode(null);
+
       Alert.alert(
         "Import complete",
-        `Imported ${result.notebookCount} notebook entries and ${result.prayerCount} personal prayers. Reload now to refresh all screens?`,
+        pendingImportMode === "merge"
+          ? `${verb} ${result.notebookAdded} notebook entries and ${result.prayerAdded} personal prayers. Reload now to refresh all screens?`
+          : `${verb} ${result.notebookCount} notebook entries and ${result.prayerCount} personal prayers. Reload now to refresh all screens?`,
         [
           { text: "Later", style: "cancel" },
           {
@@ -313,6 +335,8 @@ export default function QaLogsScreen() {
       qaLog("qa-transfer", "Import failed", { error: msg });
       setTransferStatus(`Import failed: ${msg}`);
       Alert.alert("Import failed", msg);
+    } finally {
+      setImportingJson(false);
     }
   };
 
@@ -672,6 +696,68 @@ export default function QaLogsScreen() {
           ))
         )}
       </ScrollView>
+
+      <Modal
+        visible={showImportJsonModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          if (!importingJson) setShowImportJsonModal(false);
+        }}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalCard, { backgroundColor: colors.modalBackground, borderColor: colors.modalBorder }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Paste Transfer JSON</Text>
+            <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
+              Paste exported QA JSON text (not the file), then tap Import.
+            </Text>
+            <TextInput
+              ref={importJsonInputRef}
+              style={[styles.modalInput, { color: colors.text, borderColor: colors.modalBorder }]}
+              multiline
+              value={importJsonText}
+              onChangeText={setImportJsonText}
+              autoCorrect={false}
+              autoCapitalize="none"
+              autoFocus
+              editable={!importingJson}
+              placeholder="Paste transfer JSON here..."
+              placeholderTextColor={colors.textSecondary}
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+                activeOpacity={0.8}
+                disabled={importingJson}
+                onPress={handlePasteFromClipboard}
+              >
+                <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Paste from Clipboard</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+                activeOpacity={0.8}
+                disabled={importingJson}
+                onPress={() => {
+                  setShowImportJsonModal(false);
+                  setPendingImportMode(null);
+                }}
+              >
+                <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+                activeOpacity={0.8}
+                disabled={importingJson}
+                onPress={handleConfirmImportJson}
+              >
+                <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+                  {importingJson ? "Importing..." : "Import"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -818,6 +904,44 @@ const styles = StyleSheet.create({
     fontFamily: fonts.headerFamily,
     fontSize: 16,
     marginBottom: 8,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    justifyContent: "center",
+    paddingHorizontal: 16,
+  },
+  modalCard: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+  },
+  modalTitle: {
+    fontFamily: fonts.headerFamily,
+    fontSize: 18,
+  },
+  modalSubtitle: {
+    marginTop: 4,
+    marginBottom: 8,
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 13,
+  },
+  modalInput: {
+    minHeight: 180,
+    maxHeight: 320,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    textAlignVertical: "top",
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 12,
+  },
+  modalActions: {
+    marginTop: 10,
+    flexDirection: "row",
+    gap: 8,
+    flexWrap: "wrap",
   },
 });
 
