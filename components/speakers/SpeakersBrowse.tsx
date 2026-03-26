@@ -112,19 +112,12 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
       <SanctuaryCard tone="lowest" style={styles.card} contentStyle={styles.cardContent} elevated>
         <View style={styles.cardBody}>
           {/* Speaker name */}
-          <Text style={[styles.speakerName, { color: colors.text, fontSize: Math.round(24 * scale) }]}>{speaker.speaker}</Text>
+          <Text style={[styles.speakerName, dynamicTypography.h2, { color: colors.text }]}>{speaker.speaker}</Text>
 
           {/* Hometown */}
           {speaker.hometown && (
             <Text
-              style={[
-                styles.hometown,
-                {
-                  color: colors.accent,
-                  fontSize: dynamicTypography.caption.fontSize,
-                  lineHeight: dynamicTypography.caption.lineHeight,
-                },
-              ]}
+              style={[styles.hometown, dynamicTypography.caption, { color: colors.accent }]}
             >
               {speaker.hometown.toUpperCase()}
             </Text>
@@ -132,14 +125,7 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
 
           {/* Title */}
           <Text
-            style={[
-              styles.title,
-              {
-                color: colors.text,
-                fontSize: textMetrics.bodyFontSize,
-                lineHeight: textMetrics.bodyLineHeight,
-              },
-            ]}
+            style={[styles.title, dynamicTypography.bodyLarge, { color: colors.text }]}
             numberOfLines={2}
           >
             {speaker.title}
@@ -375,22 +361,14 @@ const styles = StyleSheet.create({
 
   // ─── Speaker Info ──────────────────────────────────────────────────────────
   speakerName: {
-    fontFamily: fonts.bodyFamilyBold,
-    fontSize: 24,
     includeFontPadding: false,
     marginBottom: 2,
   },
   hometown: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: typography.caption.fontSize,
-    lineHeight: typography.caption.lineHeight,
     letterSpacing: 0.5,
     marginBottom: layout.spacing.xs,
   },
   title: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 17,
-    lineHeight: 28,
     letterSpacing: -0.1,
   },
   // ─── Badges Row ──────────────────────────────────────────────────────────
