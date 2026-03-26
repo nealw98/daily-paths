@@ -298,7 +298,13 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
             </View>
             <View style={styles.entryContentColumn}>
               <View style={styles.entryHeader}>
-                <Text style={[styles.entryTypeLabel, typography.h3, { color: catColor }]}>
+                <Text
+                  style={[
+                    styles.entryTypeLabel,
+                    typography.bodyLarge,
+                    { color: catColor, fontFamily: fonts.bodyFamilyBold },
+                  ]}
+                >
                   {catLabel}
                 </Text>
                 <Text style={[styles.entryTime, typography.caption, { color: colors.onSurfaceVariant }]}>
@@ -310,12 +316,13 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
                 <Text
                   style={[
                     styles.entryPreview,
-                    typography.body,
+                    typography.bodySmall,
                     {
                       color: colors.onSurface,
                     },
                   ]}
                   numberOfLines={3}
+                  ellipsizeMode="tail"
                 >
                   {preview}
                 </Text>
@@ -336,7 +343,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
         <View style={styles.timelineLineColumn}>
           <View style={[styles.timelineDot, { backgroundColor: colors.primary }]} />
         </View>
-        <Text style={[styles.dateLabel, typography.h2, { color: colors.primary }]}>
+        <Text style={[styles.dateLabel, typography.h3, { color: colors.primary }]}>
           {label}
         </Text>
       </View>
