@@ -121,8 +121,8 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
                 styles.hometown,
                 {
                   color: colors.accent,
-                  fontSize: dynamicTypography.caption.fontSize,
-                  lineHeight: dynamicTypography.caption.lineHeight,
+                  fontSize: dynamicTypography.label.fontSize,
+                  lineHeight: dynamicTypography.label.lineHeight,
                 },
               ]}
             >
@@ -382,8 +382,8 @@ const styles = StyleSheet.create({
   },
   hometown: {
     fontFamily: fonts.bodyFamily,
-    fontSize: typography.label.fontSize,
-    lineHeight: typography.label.lineHeight,
+    fontSize: typography.caption.fontSize,
+    lineHeight: typography.caption.lineHeight,
     letterSpacing: 0.5,
     marginBottom: layout.spacing.xs,
   },
