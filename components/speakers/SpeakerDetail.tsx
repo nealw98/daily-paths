@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
+import { useTypography } from "../../hooks/useTypography";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { useAnalytics } from "../../utils/analytics";
 import { fonts, layout, shadows, typography } from "../../constants/theme";
@@ -67,6 +68,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
   canDownload,
 }) => {
   const { colors } = useTheme();
+  const { typography: typ } = useTypography();
   const { settings } = useSettings();
   const { trackSpeakerAudioPlayed, trackSpeakerAudioPaused } = useAnalytics();
   const [trackWidth, setTrackWidth] = useState(0);
@@ -74,7 +76,6 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
   // Scale factor: medium bodyFontSize (18) is the baseline (1.0)
   const textMetrics = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
   const scale = textMetrics.bodyFontSize / 18;
-  const scaled = useCallback((size: number) => Math.round(size * scale), [scale]);
   const hasLoadedRef = useRef(false);
 
   const audioUrl = getSpeakerAudioUrl(speaker);
@@ -141,7 +142,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
       return (
         <View style={styles.dlInlineRow}>
           <ActivityIndicator size="small" color={colors.secondary} />
-          <Text style={[styles.dlInlineText, { color: colors.textSecondary, fontSize: Math.round(14 * scale) }]}>
+          <Text style={[styles.dlInlineText, { color: colors.textSecondary, fontSize: typ.label.fontSize }]}>
             {download.downloadProgress}%
           </Text>
           <TouchableOpacity
@@ -162,8 +163,8 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
           activeOpacity={0.6}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons name="checkmark-circle" size={Math.round(18 * scale)} color={colors.secondary} />
-          <Text style={[styles.dlInlineText, { color: colors.secondary, fontWeight: "600", fontSize: Math.round(14 * scale) }]}>
+          <Ionicons name="checkmark-circle" size={Math.round(14 * scale)} color={colors.secondary} />
+          <Text style={[styles.dlInlineText, { color: colors.secondary, fontWeight: "600", fontSize: typ.label.fontSize }]}>
             Downloaded
           </Text>
         </TouchableOpacity>
@@ -171,9 +172,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
     }
 
     // Not downloaded
-    const sizeLabel = speaker.file_size_mb
-      ? `Download (~${Math.round(speaker.file_size_mb)} MB)`
-      : "Download";
+    const sizeLabel = "Download";
 
     return (
       <TouchableOpacity
@@ -182,14 +181,14 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
         activeOpacity={0.6}
         hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
       >
-        <Ionicons name="download-outline" size={Math.round(18 * scale)} color={colors.onSecondaryContainer} />
+        <Ionicons name="download-outline" size={Math.round(14 * scale)} color={colors.onSecondaryContainer} />
         <Text
           style={[
             styles.dlButtonText,
             {
               color: colors.onSecondaryContainer,
-              fontSize: scaled(typography.bodySmall.fontSize),
-              lineHeight: scaled(typography.bodySmall.lineHeight),
+              fontSize: typ.label.fontSize,
+              lineHeight: typ.label.lineHeight,
             },
           ]}
         >
@@ -233,6 +232,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
           <Text
             style={[
               styles.speakerMeta,
+              typ.body,
               {
                 color: colors.textSecondary,
               },
@@ -246,6 +246,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
             <Text
               style={[
                 styles.subtitle,
+                typ.body,
                 {
                   color: colors.text,
                 },
@@ -275,8 +276,8 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
                   styles.nowPlayingLabel,
                   {
                     color: colors.textSecondary,
-                    fontSize: scaled(typography.labelMedium.fontSize),
-                    lineHeight: scaled(typography.labelMedium.lineHeight),
+                    fontSize: typ.label.fontSize,
+                    lineHeight: typ.label.lineHeight,
                   },
                 ]}
               >
@@ -295,8 +296,8 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
                   styles.loadingText,
                   {
                     color: colors.textSecondary,
-                    fontSize: scaled(typography.bodySmall.fontSize),
-                    lineHeight: scaled(typography.bodySmall.lineHeight),
+                    fontSize: typ.bodySmall.fontSize,
+                    lineHeight: typ.bodySmall.lineHeight,
                   },
                 ]}
               >
@@ -313,8 +314,8 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
                   styles.errorText,
                   {
                     color: colors.danger,
-                    fontSize: scaled(typography.bodySmall.fontSize),
-                    lineHeight: scaled(typography.bodySmall.lineHeight),
+                    fontSize: typ.bodySmall.fontSize,
+                    lineHeight: typ.bodySmall.lineHeight,
                   },
                 ]}
               >
@@ -361,8 +362,8 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
                 styles.timeText,
                 {
                   color: colors.textSecondary,
-                  fontSize: scaled(typography.labelMedium.fontSize),
-                  lineHeight: scaled(typography.labelMedium.lineHeight),
+                  fontSize: typ.label.fontSize,
+                  lineHeight: typ.label.lineHeight,
                 },
               ]}
             >
@@ -373,8 +374,8 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
                 styles.timeText,
                 {
                   color: colors.textSecondary,
-                  fontSize: scaled(typography.labelMedium.fontSize),
-                  lineHeight: scaled(typography.labelMedium.lineHeight),
+                  fontSize: typ.label.fontSize,
+                  lineHeight: typ.label.lineHeight,
                 },
               ]}
             >
@@ -396,8 +397,8 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
                   styles.skipLabel,
                   {
                     color: colors.textSecondary,
-                    fontSize: scaled(typography.labelMedium.fontSize),
-                    lineHeight: scaled(typography.labelMedium.lineHeight),
+                    fontSize: typ.label.fontSize,
+                    lineHeight: typ.label.lineHeight,
                   },
                 ]}
               >
@@ -439,8 +440,8 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
                   styles.skipLabel,
                   {
                     color: colors.textSecondary,
-                    fontSize: scaled(typography.labelMedium.fontSize),
-                    lineHeight: scaled(typography.labelMedium.lineHeight),
+                    fontSize: typ.label.fontSize,
+                    lineHeight: typ.label.lineHeight,
                   },
                 ]}
               >
@@ -472,8 +473,8 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
                       {
                         color: isActive ? colors.onSecondary : colors.textSecondary,
                         fontWeight: isActive ? "700" : "400",
-                        fontSize: scaled(typography.bodySmall.fontSize),
-                        lineHeight: scaled(typography.bodySmall.lineHeight),
+                        fontSize: typ.bodySmall.fontSize,
+                        lineHeight: typ.bodySmall.lineHeight,
                       },
                     ]}
                   >
@@ -504,8 +505,8 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
                     styles.quoteText,
                     {
                       color: colors.onPrimary,
-                      fontSize: scaled(typography.quoteBox.fontSize),
-                      lineHeight: scaled(typography.quoteBox.lineHeight),
+                      fontSize: typ.quoteBox.fontSize,
+                      lineHeight: typ.quoteBox.lineHeight,
                     },
                   ]}
                 >
@@ -524,8 +525,8 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
                 styles.metaText,
                 {
                   color: colors.textSecondary,
-                  fontSize: scaled(typography.labelMedium.fontSize),
-                  lineHeight: scaled(typography.labelMedium.lineHeight),
+                  fontSize: typ.label.fontSize,
+                  lineHeight: typ.label.lineHeight,
                 },
               ]}
             >
@@ -537,7 +538,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
               <Text
                 style={[
                   styles.explicitText,
-                  { color: colors.danger, fontSize: scaled(typography.labelMedium.fontSize) },
+                  { color: colors.danger, fontSize: typ.label.fontSize },
                 ]}
               >
                 EXPLICIT
@@ -592,16 +593,9 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   speakerMeta: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 17,
-    lineHeight: 24,
     marginBottom: layout.spacing.sm + 2,
   },
   subtitle: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 17,
-    lineHeight: 28,
-    letterSpacing: -0.1,
   },
 
   // ─── Quote Block ───────────────────────────────────────────────────────────
@@ -625,9 +619,8 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   quoteText: {
-    fontFamily: fonts.bodyFamilyMedium,
+    ...typography.quoteBox,
     textAlign: "left",
-    fontWeight: "500",
     paddingHorizontal: 14,
     position: "relative",
     zIndex: 2,
@@ -646,9 +639,7 @@ const styles = StyleSheet.create({
     marginBottom: layout.spacing.lgPlus,
   },
   metaText: {
-    fontFamily: typography.labelMedium.fontFamily,
-    fontSize: typography.labelMedium.fontSize,
-    lineHeight: typography.labelMedium.lineHeight,
+    ...typography.label,
     textTransform: "uppercase",
     letterSpacing: 0.8,
   },
@@ -658,9 +649,7 @@ const styles = StyleSheet.create({
     borderRadius: layout.spacing.xs,
   },
   explicitText: {
-    fontFamily: typography.labelMedium.fontFamily,
-    fontSize: typography.labelMedium.fontSize,
-    lineHeight: typography.labelMedium.lineHeight,
+    ...typography.label,
     fontWeight: "800",
     letterSpacing: 0.8,
   },
@@ -688,9 +677,7 @@ const styles = StyleSheet.create({
     gap: layout.spacing.sm + 2,
   },
   nowPlayingLabel: {
-    fontFamily: typography.labelMedium.fontFamily,
-    fontSize: typography.labelMedium.fontSize,
-    lineHeight: typography.labelMedium.lineHeight,
+    ...typography.label,
     fontWeight: "600",
     textTransform: "uppercase",
     letterSpacing: 0.8,
@@ -704,10 +691,7 @@ const styles = StyleSheet.create({
     marginBottom: layout.spacing.sm + 4,
   },
   loadingText: {
-    fontFamily: typography.bodySmall.fontFamily,
-    fontSize: typography.bodySmall.fontSize,
-    lineHeight: typography.bodySmall.lineHeight,
-    letterSpacing: typography.bodySmall.letterSpacing,
+    ...typography.bodySmall,
   },
   errorRow: {
     flexDirection: "row",
@@ -716,10 +700,7 @@ const styles = StyleSheet.create({
     marginBottom: layout.spacing.sm + 4,
   },
   errorText: {
-    fontFamily: typography.bodySmall.fontFamily,
-    fontSize: typography.bodySmall.fontSize,
-    lineHeight: typography.bodySmall.lineHeight,
-    letterSpacing: typography.bodySmall.letterSpacing,
+    ...typography.bodySmall,
     flex: 1,
   },
 
@@ -755,10 +736,7 @@ const styles = StyleSheet.create({
     marginBottom: layout.spacing.md,
   },
   timeText: {
-    fontFamily: typography.labelMedium.fontFamily,
-    fontSize: typography.labelMedium.fontSize,
-    lineHeight: typography.labelMedium.lineHeight,
-    letterSpacing: typography.labelMedium.letterSpacing,
+    ...typography.label,
   },
 
   // ─── Transport Controls ────────────────────────────────────────────────────
@@ -774,10 +752,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   skipLabel: {
-    fontFamily: typography.labelMedium.fontFamily,
-    fontSize: typography.labelMedium.fontSize,
-    lineHeight: typography.labelMedium.lineHeight,
-    letterSpacing: typography.labelMedium.letterSpacing,
+    ...typography.label,
   },
   playPauseButton: {
     width: 64,
@@ -803,10 +778,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   speedLabel: {
-    fontFamily: typography.bodySmall.fontFamily,
-    fontSize: typography.bodySmall.fontSize,
-    lineHeight: typography.bodySmall.lineHeight,
-    letterSpacing: typography.bodySmall.letterSpacing,
+    ...typography.bodySmall,
   },
 
   // ─── Download Indicator (inline, top-right) ──────────────────────────────────
@@ -816,10 +788,9 @@ const styles = StyleSheet.create({
     gap: layout.spacing.xs + 2,
   },
   dlInlineText: {
-    fontFamily: typography.bodySmall.fontFamily,
-    fontSize: typography.bodySmall.fontSize,
-    lineHeight: typography.bodySmall.lineHeight,
-    letterSpacing: typography.bodySmall.letterSpacing,
+    ...typography.label,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
   },
   dlButton: {
     flexDirection: "row",
@@ -831,9 +802,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   dlButtonText: {
-    fontFamily: typography.bodySmall.fontFamily,
-    fontSize: typography.bodySmall.fontSize,
-    lineHeight: typography.bodySmall.lineHeight,
-    letterSpacing: typography.bodySmall.letterSpacing,
+    ...typography.label,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
   },
 });

@@ -21,7 +21,7 @@ import Constants from "expo-constants";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTheme } from "../../hooks/useTheme";
-import { useSettings } from "../../hooks/useSettings";
+import { useSettings, type TextSize } from "../../hooks/useSettings";
 import { useAppFeedback } from "../../hooks/useAppFeedback";
 import { useAnalytics } from "../../utils/analytics";
 import { shareApp, openAppStoreForRating } from "../../utils/rateShareTracking";
@@ -57,7 +57,7 @@ const DARK_THEME_IDS = new Set(["ocean-dark", "deep-sea", "champagne"]);
 export default function MoreTab() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const { settings, setThemeId, setColorScheme } =
+  const { settings, setThemeId, setColorScheme, setTextSize } =
     useSettings();
   const { submitting: submittingFeedback, submitFeedback } = useAppFeedback();
   const { status, hasLifetimeAccess, loading: subLoading, refresh } = useSubscription();
@@ -294,7 +294,58 @@ export default function MoreTab() {
         {/* ── 2. Appearance ────────────────────────────────── */}
         <Text allowFontScaling={false} style={[styles.sectionLabel, { color: colors.deepTeal }]}>Appearance</Text>
         <View style={[styles.card, { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.ghostBorder }]}>
+          {/* Text Size */}
           <Text style={[styles.cardLabel, { color: colors.deepTeal }]}>
+            Text Size
+          </Text>
+          <View style={styles.sliderRow}>
+            <TouchableOpacity
+              onPress={() => {
+                const sizes: TextSize[] = ["extraSmall", "small", "medium", "large", "extraLarge"];
+                const idx = sizes.indexOf(settings.textSize);
+                if (idx > 0) setTextSize(sizes[idx - 1]);
+              }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={[styles.sliderEdgeLabel, { color: colors.textSecondary, fontSize: 12 }]}>A</Text>
+            </TouchableOpacity>
+            <View style={styles.sliderTrack}>
+              {(["extraSmall", "small", "medium", "large", "extraLarge"] as TextSize[]).map((size) => {
+                const isSelected = settings.textSize === size;
+                return (
+                  <TouchableOpacity
+                    key={size}
+                    style={styles.sliderStopTouch}
+                    onPress={() => setTextSize(size)}
+                    activeOpacity={0.7}
+                  >
+                    <View
+                      style={[
+                        styles.sliderStop,
+                        {
+                          borderColor: isSelected ? colors.deepTeal : colors.border,
+                          backgroundColor: isSelected ? colors.deepTeal : "transparent",
+                        },
+                      ]}
+                    />
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <TouchableOpacity
+              onPress={() => {
+                const sizes: TextSize[] = ["extraSmall", "small", "medium", "large", "extraLarge"];
+                const idx = sizes.indexOf(settings.textSize);
+                if (idx < sizes.length - 1) setTextSize(sizes[idx + 1]);
+              }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={[styles.sliderEdgeLabel, { color: colors.textSecondary, fontSize: 18 }]}>A</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Themes */}
+          <Text style={[styles.cardLabel, { color: colors.deepTeal, marginTop: 16 }]}>
             Themes
           </Text>
           <View style={styles.themeOptions}>
@@ -371,7 +422,7 @@ export default function MoreTab() {
               activeOpacity={0.8}
             >
               <View style={styles.supportActionLeft}>
-                <Ionicons name="share-social-outline" size={18} color={colors.deepTeal} />
+                <Ionicons name="arrow-redo-outline" size={18} color={colors.deepTeal} />
                 <Text style={[styles.supportActionText, { color: colors.deepTeal }]}>
                   {isSharing ? "Sharing..." : "Share App"}
                 </Text>
