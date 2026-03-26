@@ -469,7 +469,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                   key={`opening-${index}`}
                   style={[
                     styles.bodyText,
-                    { color: colors.onSurface },
+                    { color: colors.onSurface, fontSize: typography.bodyLarge.fontSize, lineHeight: typography.bodyLarge.lineHeight },
                   ]}
                 >
                   {renderInlineMarkdown(paragraph, styles.inlineItalic)}
@@ -481,7 +481,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                   key={index}
                   style={[
                     styles.bodyText,
-                    { color: colors.onSurface },
+                    { color: colors.onSurface, fontSize: typography.bodyLarge.fontSize, lineHeight: typography.bodyLarge.lineHeight },
                   ]}
                 >
                   {renderInlineMarkdown(paragraph, styles.inlineItalic)}

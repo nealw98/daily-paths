@@ -264,12 +264,6 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
   // ─── Render: Entry Card ─────────────────────────────────────────────────
 
   const renderEntryCard = (entry: JournalEntry) => {
-    const date = new Date(entry.created_at);
-    const timeStr = date.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-    });
-
     const category = getCategoryById(entry.entry_type);
     const catLabel = getCategoryLabel(entry.entry_type);
     const catColor = getCategoryColor(entry.entry_type);
@@ -306,9 +300,6 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
                   ]}
                 >
                   {catLabel}
-                </Text>
-                <Text style={[styles.entryTime, typography.caption, { color: colors.onSurfaceVariant }]}>
-                  {timeStr}
                 </Text>
               </View>
 
@@ -658,9 +649,6 @@ const styles = StyleSheet.create({
   },
   entryTypeLabel: {
     alignSelf: "flex-start",
-  },
-  entryTime: {
-    paddingTop: 8,
   },
   entryPreview: {
   },

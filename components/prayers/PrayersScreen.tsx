@@ -19,7 +19,7 @@ import { useAnalytics } from "../../utils/analytics";
 import { usePersonalPrayers, type PersonalPrayer } from "../../hooks/usePersonalPrayers";
 import { useJournalStorage } from "../../hooks/useJournalStorage";
 import type { EntryType } from "../../constants/journalCategories";
-import { fonts } from "../../constants/theme";
+import { fonts, typography as staticTypography } from "../../constants/theme";
 import { PRAYERS, type Prayer } from "../../constants/prayers";
 import { TealHeader } from "../shared/TealHeader";
 import { JournalCategoryPicker } from "../journal/JournalCategoryPicker";
@@ -144,7 +144,7 @@ export const PrayersScreen: React.FC = () => {
           <Text
             style={[
               styles.prayerPreview,
-              { color: colors.ink },
+              { color: colors.ink, fontSize: typography.bodyLarge.fontSize, lineHeight: typography.bodyLarge.lineHeight },
             ]}
             numberOfLines={3}
           >
@@ -154,7 +154,7 @@ export const PrayersScreen: React.FC = () => {
 
         {isExpanded && !isEditing && (
           <View style={styles.prayerBody}>
-            <Text style={[styles.prayerText, { color: colors.ink }]}>
+            <Text style={[styles.prayerText, { color: colors.ink, fontSize: typography.bodyLarge.fontSize, lineHeight: typography.bodyLarge.lineHeight }]}>
               {renderPrayerText(prayer.text, boldPhrases)}
             </Text>
             {prayer.source && (
@@ -348,7 +348,7 @@ export const PrayersScreen: React.FC = () => {
           <Text
             style={[
               styles.prayerPreview,
-              { color: colors.ink },
+              { color: colors.ink, fontSize: typography.bodyLarge.fontSize, lineHeight: typography.bodyLarge.lineHeight },
             ]}
             numberOfLines={3}
           >
@@ -358,7 +358,7 @@ export const PrayersScreen: React.FC = () => {
 
         {isExpanded && !isEditing && (
           <View style={styles.prayerBody}>
-            <Text style={[styles.prayerText, { color: colors.ink }]}>
+            <Text style={[styles.prayerText, { color: colors.ink, fontSize: typography.bodyLarge.fontSize, lineHeight: typography.bodyLarge.lineHeight }]}>
               {prayer.text}
             </Text>
           </View>
@@ -615,10 +615,7 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   prayerPreview: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 17,
-    lineHeight: 28,
-    letterSpacing: -0.1,
+    ...staticTypography.bodyLarge,
     marginTop: 4,
   },
   prayerBody: {
@@ -626,10 +623,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   prayerText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 17,
-    lineHeight: 28,
-    letterSpacing: -0.1,
+    ...staticTypography.bodyLarge,
   },
   prayerSource: {
     fontFamily: fonts.bodyFamilySemiBold,
