@@ -4,7 +4,7 @@ import { typography as staticTypography, fonts } from "../constants/theme";
 
 /**
  * Hook to access the unified typography system.
- * Combines static styles (H1, H2) with dynamic, user-scaled styles (H3, Body, etc.).
+ * Combines static styles (H1/H2/H3) with dynamic, user-scaled body styles.
  */
 export function useTypography() {
   const { settings } = useSettings();
@@ -19,13 +19,9 @@ export function useTypography() {
       // Static Styles (System Scaling only)
       h1: staticTypography.h1,
       h2: staticTypography.h2,
+      h3: staticTypography.h3,
 
       // Dynamic Styles (In-App + System Scaling)
-      h3: {
-        ...staticTypography.h3,
-        fontSize: dynamicMetrics.h3FontSize,
-        lineHeight: dynamicMetrics.h3LineHeight,
-      },
       bodyLarge: {
         ...staticTypography.bodyLarge,
         fontSize: dynamicMetrics.bodyLargeFontSize,
@@ -57,8 +53,8 @@ export function useTypography() {
         lineHeight: dynamicMetrics.captionLineHeight,
       },
       // Legacy metrics kept for staged migration.
-      h3FontSize: dynamicMetrics.h3FontSize,
-      h3LineHeight: dynamicMetrics.h3LineHeight,
+      h3FontSize: staticTypography.h3.fontSize,
+      h3LineHeight: staticTypography.h3.lineHeight,
       bodyLargeFontSize: dynamicMetrics.bodyLargeFontSize,
       bodyLargeLineHeight: dynamicMetrics.bodyLargeLineHeight,
       bodyFontSize: dynamicMetrics.bodyFontSize,

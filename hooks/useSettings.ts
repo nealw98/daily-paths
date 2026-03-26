@@ -229,8 +229,8 @@ export function getTextSizeMetrics(textSize: TextSize): {
   switch (textSize) {
     case "extraSmall":
       return {
-        h3FontSize: 16 + androidBump,
-        h3LineHeight: 22 + androidBump,
+        h3FontSize: 20 + androidBump,
+        h3LineHeight: 26 + androidBump,
         bodyLargeFontSize: 15 + androidBump,
         bodyLargeLineHeight: 26 + androidBump,
         bodyFontSize: 13 + androidBump,
@@ -247,8 +247,8 @@ export function getTextSizeMetrics(textSize: TextSize): {
       };
     case "small":
       return {
-        h3FontSize: 18 + androidBump,
-        h3LineHeight: 24 + androidBump,
+        h3FontSize: 22 + androidBump,
+        h3LineHeight: 28 + androidBump,
         bodyLargeFontSize: 17 + androidBump,
         bodyLargeLineHeight: 29 + androidBump,
         bodyFontSize: 15 + androidBump,
@@ -265,8 +265,8 @@ export function getTextSizeMetrics(textSize: TextSize): {
       };
     case "large":
       return {
-        h3FontSize: 24 + androidBump,
-        h3LineHeight: 32 + androidBump,
+        h3FontSize: 28 + androidBump,
+        h3LineHeight: 36 + androidBump,
         bodyLargeFontSize: 24 + androidBump,
         bodyLargeLineHeight: 40 + androidBump,
         bodyFontSize: 22 + androidBump,
@@ -283,8 +283,8 @@ export function getTextSizeMetrics(textSize: TextSize): {
       };
     case "extraLarge":
       return {
-        h3FontSize: 28 + androidBump,
-        h3LineHeight: 38 + androidBump,
+        h3FontSize: 32 + androidBump,
+        h3LineHeight: 42 + androidBump,
         bodyLargeFontSize: 28 + androidBump,
         bodyLargeLineHeight: 46 + androidBump,
         bodyFontSize: 26 + androidBump,
@@ -302,8 +302,8 @@ export function getTextSizeMetrics(textSize: TextSize): {
     case "medium":
     default:
       return {
-        h3FontSize: 20 + androidBump,
-        h3LineHeight: 26 + androidBump,
+        h3FontSize: 24 + androidBump,
+        h3LineHeight: 30 + androidBump,
         bodyLargeFontSize: 19 + androidBump,
         bodyLargeLineHeight: 32 + androidBump,
         bodyFontSize: 18 + androidBump,
