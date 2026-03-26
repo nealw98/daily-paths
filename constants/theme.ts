@@ -693,8 +693,8 @@ export const typography = {
   },
   h3: {
     fontFamily: fonts.headerFamily,
-    fontSize: 22,
-    lineHeight: 28,
+    fontSize: 21,
+    lineHeight: 27,
     letterSpacing: -0.2,
   },
   bodyLarge: {
