@@ -127,7 +127,7 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
 
           {/* Title */}
           <Text
-            style={[styles.title, dynamicTypography.bodyLarge, { color: colors.text }]}
+            style={[styles.title, dynamicTypography.body, { color: colors.text }]}
             numberOfLines={2}
           >
             {speaker.title}

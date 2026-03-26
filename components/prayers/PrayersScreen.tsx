@@ -616,7 +616,7 @@ const styles = StyleSheet.create({
   },
   prayerPreview: {
     ...staticTypography.bodyLarge,
-    marginTop: 4,
+    marginTop: 6,
   },
   prayerBody: {
     paddingTop: 6,
