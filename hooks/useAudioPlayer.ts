@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { AppState, AppStateStatus } from "react-native";
 import { Audio, AVPlaybackStatus } from "expo-av";
 import { qaLog } from "../utils/qaLog";
 
@@ -24,8 +25,10 @@ export function useAudioPlayer() {
   // Track the currently loaded URI so we can avoid reloading the same file
   const currentUriRef = useRef<string | null>(null);
 
-  // Configure audio mode on mount
-  useEffect(() => {
+  // Configure audio mode — called on mount and whenever the app resumes from
+  // background so iOS doesn't silently drop the audio session after interruptions
+  // (phone calls, Siri, etc.).
+  const applyAudioMode = useCallback(() => {
     Audio.setAudioModeAsync({
       staysActiveInBackground: true,
       playsInSilentModeIOS: true,
@@ -33,6 +36,14 @@ export function useAudioPlayer() {
       qaLog("audio", "Failed to set audio mode", { error: String(err) });
     });
   }, []);
+
+  useEffect(() => {
+    applyAudioMode();
+    const sub = AppState.addEventListener("change", (state: AppStateStatus) => {
+      if (state === "active") applyAudioMode();
+    });
+    return () => sub.remove();
+  }, [applyAudioMode]);
 
   const onStatusUpdate = useCallback((status: AVPlaybackStatus) => {
     if (!status.isLoaded) {

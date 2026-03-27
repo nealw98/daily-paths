@@ -20,7 +20,8 @@
       "buildNumber": "31",
       "appStoreUrl": "https://apps.apple.com/app/id6755981862",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": ["audio"]
       }
     },
     "android": {
