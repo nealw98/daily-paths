@@ -9,6 +9,7 @@ import {
   Pressable,
   Alert,
   LayoutChangeEvent,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
@@ -586,8 +587,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: fonts.headerFamilyLight,
-    fontSize: 36,
-    lineHeight: 44,
+    fontSize: 36 + (Platform.OS === "android" ? 2 : 0),
+    lineHeight: 44 + (Platform.OS === "android" ? 2 : 0),
     fontWeight: "300",
     letterSpacing: -0.9,
     marginBottom: 6,

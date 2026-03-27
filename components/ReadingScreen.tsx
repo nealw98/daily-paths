@@ -756,8 +756,8 @@ const styles = StyleSheet.create({
   pageTitle: {
     // Preserve the original editorial hero title treatment for Today.
     fontFamily: fonts.headerFamilyLight,
-    fontSize: 36,
-    lineHeight: 44,
+    fontSize: 36 + (Platform.OS === "android" ? 2 : 0),
+    lineHeight: 44 + (Platform.OS === "android" ? 2 : 0),
     letterSpacing: -0.9,
     fontWeight: "300",
     marginBottom: 6,
