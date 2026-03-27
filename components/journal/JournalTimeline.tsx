@@ -401,7 +401,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
         style={[
           styles.progressMetricBox,
           {
-            backgroundColor: "#BAECE699",
+            backgroundColor: colors.surfaceContainerHigh,
             borderColor: colors.mist,
           },
         ]}
@@ -417,7 +417,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
         style={[
           styles.progressMetricBox,
           {
-            backgroundColor: "#BAECE699",
+            backgroundColor: colors.surfaceContainerHigh,
             borderColor: colors.mist,
           },
         ]}

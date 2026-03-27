@@ -387,7 +387,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
               activeOpacity={0.7}
               style={styles.headerAdd}
             >
-              <Ionicons name="add" size={24} color={colors.onPrimary} />
+              <Ionicons name="add" size={24} color={colors.primary} />
             </TouchableOpacity>
           </View>
         </View>
