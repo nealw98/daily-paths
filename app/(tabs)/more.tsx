@@ -432,37 +432,11 @@ export default function MoreTab() {
           </View>
         </View>
 
-        {/* ── About ────────────────────────────────────── */}
-        <Text allowFontScaling={false} style={[styles.sectionLabel, { color: colors.deepTeal }]}>About</Text>
-        <View style={[styles.card, { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.ghostBorder }]}>
-          <Text style={[styles.aboutText, { color: colors.ink }]}>
-            Daily Paths supports your recovery with 366 original readings based on Al-Anon's
-            Steps, Traditions, and Concepts. Premium features include guided notebook prompts,
-            prayer customization, and speaker talks.
-          </Text>
-        </View>
-
-        <View style={[styles.card, { backgroundColor: colors.deepTeal, borderColor: colors.deepTeal, marginTop: 12 }]}>
-          <Text style={[styles.aboutText, { color: colors.textOnAccent }]}>
-            This app is not affiliated with Al-Anon, AA, or any 12-step fellowship.
-          </Text>
-        </View>
-
         {/* Spacer pushes legal links to bottom */}
         <View style={{ flex: 1 }} />
 
         {/* ── Footer ─────────────────────────────────────── */}
-        <View style={[styles.footerSection, { paddingBottom: 8 + insets.bottom }]}>
-          <View style={styles.legalRow}>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => Linking.openURL("https://dailypaths.org/support")}
-            >
-              <Text style={[styles.legalLink, { color: colors.deepTeal }]} allowFontScaling={false}>
-                Support
-              </Text>
-            </TouchableOpacity>
-          </View>
+        <View style={[styles.footerSection, { paddingBottom: 4 + insets.bottom }]}>
           <View style={styles.legalRow}>
             <TouchableOpacity
               activeOpacity={0.7}
@@ -475,6 +449,15 @@ export default function MoreTab() {
             <Text style={[styles.legalDot, { color: colors.textSecondary }]}>·</Text>
             <TouchableOpacity
               activeOpacity={0.7}
+              onPress={() => Linking.openURL("https://dailypaths.org/support")}
+            >
+              <Text style={[styles.legalLink, { color: colors.deepTeal }]} allowFontScaling={false}>
+                Support
+              </Text>
+            </TouchableOpacity>
+            <Text style={[styles.legalDot, { color: colors.textSecondary }]}>·</Text>
+            <TouchableOpacity
+              activeOpacity={0.7}
               onPress={() => Linking.openURL("https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")}
             >
               <Text style={[styles.legalLink, { color: colors.deepTeal }]} allowFontScaling={false}>
@@ -482,6 +465,10 @@ export default function MoreTab() {
               </Text>
             </TouchableOpacity>
           </View>
+
+          <Text style={[styles.legalLink, { color: colors.textSecondary, textAlign: 'center', marginTop: 4 }]} allowFontScaling={false}>
+            Not affiliated with Al-Anon, AA, or any 12-step fellowship.
+          </Text>
 
           <TouchableOpacity
             activeOpacity={0.7}
@@ -583,7 +570,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 20,
     paddingTop: 14,
-    paddingBottom: 48,
+    paddingBottom: 4,
   },
 
   /* ── Section Labels ────────────────────────────── */
@@ -789,7 +776,7 @@ const styles = StyleSheet.create({
   footerSection: {
     alignItems: "center",
     paddingHorizontal: 8,
-    paddingTop: 24,
+    paddingTop: 16,
   },
   aboutText: {
     fontFamily: fonts.bodyFamilyRegular,
@@ -814,6 +801,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 12,
     textAlign: "center",
+    paddingVertical: 12,
   },
 
   /* ── Feedback Modal ────────────────────────────── */
