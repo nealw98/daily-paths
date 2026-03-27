@@ -67,6 +67,28 @@ export function isLeapYear(year: number): boolean {
  * non‑leap years; `day_of_year = 60` is only ever used on Feb 29
  * in leap years.
  */
+/**
+ * Returns the most recent Sunday on or before the given date.
+ * Used to anchor the weekly journal quote — Mon–Sat all map to the
+ * same Sunday so the quote stays consistent for the whole week.
+ */
+export function getSundayOfWeek(date: Date): Date {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  d.setDate(d.getDate() - d.getDay()); // getDay() returns 0 for Sunday
+  return d;
+}
+
+/**
+ * Returns the week-of-year number (1–53) for a given date, where
+ * weeks start on Sunday.  All days in the same Sun–Sat window share
+ * the same week number, so the journal quote changes every Sunday.
+ */
+export function getWeekOfYear(date: Date): number {
+  const sunday = getSundayOfWeek(date);
+  const dayOfYear = getScheduledDayOfYear(sunday);
+  return Math.floor((dayOfYear - 1) / 7) + 1;
+}
+
 export function getScheduledDayOfYear(date: Date): number {
   const real = getDayOfYear(date);
   const year = date.getFullYear();  if (isLeapYear(year) || real <= 59) {

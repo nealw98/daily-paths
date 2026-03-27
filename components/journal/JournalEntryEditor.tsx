@@ -20,6 +20,7 @@ import { useTheme } from "../../hooks/useTheme";
 import { useTypography } from "../../hooks/useTypography";
 import { fonts, typography as staticTypography } from "../../constants/theme";
 import { useDailyGratitudeQuote } from "../../hooks/useDailyGratitudeQuote";
+import { useWeeklyJournalQuote } from "../../hooks/useWeeklyJournalQuote";
 import {
   getCategoryById,
   getCategoryLabel,
@@ -130,6 +131,9 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
   const { today } = useAppDate();
   const { quote: dailyGratitudeQuoteData } = useDailyGratitudeQuote({
     enabled: entryType === "gratitude",
+  });
+  const { quote: weeklyJournalQuoteData } = useWeeklyJournalQuote({
+    enabled: entryType === "journal",
   });
 
   // ─── Computed State ────────────────────────────────────
@@ -465,9 +469,13 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                               },
                             ]}
                           >
-                            {journalIntroQuote}
+                            {entryType === "journal" && weeklyJournalQuoteData
+                              ? weeklyJournalQuoteData.quote
+                              : journalIntroQuote}
                           </Text>
-                          {!!journalIntroReference && (
+                          {!!(entryType === "journal"
+                            ? weeklyJournalQuoteData?.author
+                            : journalIntroReference) && (
                             <Text
                               style={[
                                 styles.journalQuoteReference,
@@ -477,7 +485,9 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                                 },
                               ]}
                             >
-                              {journalIntroReference}
+                              {entryType === "journal"
+                                ? weeklyJournalQuoteData?.author
+                                : journalIntroReference}
                             </Text>
                           )}
                         </View>
