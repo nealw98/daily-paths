@@ -40,7 +40,7 @@ function normalizeQuoteRow(data: any): JournalQuote {
 
   return {
     id: String(data?.id ?? `week-${data?.week_of_year ?? "quote"}`),
-    week_of_year: Number(data?.week_of_year ?? 0),
+    week_of_year: Number(data?.week_number ?? 0),
     quote: quoteText,
     author: authorText || null,
     updatedAt: data?.updated_at ? String(data.updated_at) : null,
@@ -90,7 +90,7 @@ async function fetchRemoteJournalQuote(
     const { data, error } = await supabase
       .from("journal_quotes")
       .select("*")
-      .eq("week_of_year", weekOfYear)
+      .eq("week_number", weekOfYear)
       .maybeSingle();
 
     if (error) {
