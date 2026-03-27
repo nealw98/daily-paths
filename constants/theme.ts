@@ -538,8 +538,8 @@ export const COLOR_SCHEMES: ColorSchemeDef[] = [
       surfaceContainer: "#202B2A",
       surfaceContainerHigh: "#263231",
       surfaceContainerHighest: "#31403E",
-      primary: "#163531",
-      primaryContainer: "#214743",
+      primary: "#6EA59F",
+      primaryContainer: "#A0B5B1",
       secondary: "#6EA59F",
       secondaryContainer: "#23423F",
       onSecondaryContainer: "#D7EBE7",
@@ -560,13 +560,19 @@ export const COLOR_SCHEMES: ColorSchemeDef[] = [
     id: "forest-dark",
     name: "Forest (Dark)",
     dark: true,
-    colors: buildPalette(forestDarkSemantic),
+    colors: buildPalette(forestDarkSemantic, {
+      primary: "#7EBD7E",
+      primaryContainer: "#A8D4A8",
+    }),
   },
   {
     id: "deep-sea",
     name: "Deep Sea",
     dark: true,
-    colors: buildPalette(deepSeaSemantic),
+    colors: buildPalette(deepSeaSemantic, {
+      primary: "#748CAB",
+      primaryContainer: "#A8B8CC",
+    }),
   },
   {
     id: "burgundy-rose",
@@ -590,7 +596,10 @@ export const COLOR_SCHEMES: ColorSchemeDef[] = [
     id: "champagne",
     name: "Coffee Break",
     dark: true,
-    colors: buildPalette(champagneSemantic),
+    colors: buildPalette(champagneSemantic, {
+      primary: "#A88E78",
+      primaryContainer: "#C4AE9A",
+    }),
   },
   {
     id: "peach-blossom",

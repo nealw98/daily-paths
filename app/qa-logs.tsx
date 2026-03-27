@@ -427,6 +427,7 @@ export default function QaLogsScreen() {
         { backgroundColor: colors.pearl, paddingTop: insets.top || 16, paddingBottom: insets.bottom || 16 },
       ]}
     >
+      <ScrollView contentContainerStyle={styles.scrollContent}>
       <View style={[styles.header, { borderBottomColor: colors.mist }]}>
         <View style={styles.headerRow}>
           <Text style={[styles.title, { color: colors.deepTeal }]}>QA Diagnostics</Text>
@@ -675,10 +676,7 @@ export default function QaLogsScreen() {
         </View>
       </View>
 
-      <ScrollView
-        style={styles.logContainer}
-        contentContainerStyle={styles.logContent}
-      >
+        <View style={[styles.logContainer, styles.logContent]}>
         <Text style={[styles.sectionHeader, { marginTop: 12, color: colors.deepTeal }]}>QA Logs</Text>
         {logs.length === 0 ? (
           <Text style={styles.emptyText}>No QA log entries yet.</Text>
@@ -696,6 +694,7 @@ export default function QaLogsScreen() {
             </View>
           ))
         )}
+        </View>
       </ScrollView>
 
       <Modal
@@ -770,6 +769,9 @@ export default function QaLogsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 24,
   },
   header: {
     paddingHorizontal: 16,

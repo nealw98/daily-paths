@@ -494,7 +494,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                     <View style={styles.practiceAccent} />
                     <View style={styles.practiceBodyRow}>
                       <View style={styles.practiceBadge}>
-                        <Ionicons name="checkmark-circle-outline" size={24} color="#2E6F69" />
+                        <Ionicons name="checkmark-circle-outline" size={24} color={colors.deepTeal} />
                       </View>
                       <View style={styles.practiceBodyCopy}>
                         <Text
@@ -503,7 +503,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                             {
                               fontSize: typography.label.fontSize,
                               lineHeight: typography.label.lineHeight,
-                              color: "#2E6F69",
+                              color: colors.deepTeal,
                             },
                           ]}
                         >
@@ -517,6 +517,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                               {
                                 fontSize: typography.body.fontSize,
                                 lineHeight: typography.quoteBox.lineHeight,
+                                color: colors.onSurfaceVariant,
                               },
                               index === applicationParagraphs.length - 1 ? styles.practiceTextLast : null,
                             ]}
@@ -550,8 +551,8 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                   style={[
                     styles.thoughtText,
                     {
-                      fontSize: typography.h3.fontSize,
-                      lineHeight: typography.h3.lineHeight,
+                      fontSize: typography.h2.fontSize,
+                      lineHeight: typography.h2.lineHeight,
                       color: colors.onPrimary,
                     },
                   ]}
