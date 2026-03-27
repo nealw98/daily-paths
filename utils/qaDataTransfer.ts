@@ -251,7 +251,14 @@ export async function exportQaTransferToFile(): Promise<QaTransferExportResult> 
   const fileName = getExportFileName(payload.exportedAt);
   const fileUri = getExportFileUri(fileName);
 
-  await writeAsStringAsync(fileUri, JSON.stringify(payload, null, 2));
+  // Escape non-ASCII characters to \uXXXX so the file is pure ASCII.
+  // This prevents UTF-8 mojibake (e.g. smart quotes → â€™) when the file
+  // is transferred cross-platform via clipboard or plain-text sharing.
+  const json = JSON.stringify(payload, null, 2).replace(
+    /[^\x00-\x7F]/g,
+    (c) => `\\u${c.codePointAt(0)!.toString(16).padStart(4, "0")}`,
+  );
+  await writeAsStringAsync(fileUri, json);
 
   return {
     fileUri,

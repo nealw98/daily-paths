@@ -551,8 +551,8 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                   style={[
                     styles.thoughtText,
                     {
-                      fontSize: typography.h2.fontSize,
-                      lineHeight: typography.h2.lineHeight,
+                      fontSize: Platform.OS === "android" ? typography.h2.fontSize : typography.h3.fontSize,
+                      lineHeight: Platform.OS === "android" ? typography.h2.lineHeight : typography.h3.lineHeight,
                       color: colors.onPrimary,
                     },
                   ]}
@@ -756,8 +756,8 @@ const styles = StyleSheet.create({
   pageTitle: {
     // Preserve the original editorial hero title treatment for Today.
     fontFamily: fonts.headerFamilyLight,
-    fontSize: 36 + (Platform.OS === "android" ? 2 : 0),
-    lineHeight: 44 + (Platform.OS === "android" ? 2 : 0),
+    fontSize: 36 + (Platform.OS === "android" ? 4 : 0),
+    lineHeight: 44 + (Platform.OS === "android" ? 4 : 0),
     letterSpacing: -0.9,
     fontWeight: "300",
     marginBottom: 6,
