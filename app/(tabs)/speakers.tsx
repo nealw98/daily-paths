@@ -133,11 +133,18 @@ function SpeakersTabContent() {
   );
 
   const handleBack = useCallback(() => {
-    setSelectedSpeaker(null);
+    // Keep selectedSpeaker so browse list can show now-playing indicator
     setView("browse");
     // Refresh download IDs when returning to browse so badge reflects any changes
     refreshDownloads();
   }, [refreshDownloads]);
+
+  const handleStop = useCallback(() => {
+    player.unload();
+    setSelectedSpeaker(null);
+    setView("browse");
+    refreshDownloads();
+  }, [player, refreshDownloads]);
 
   if (journalEntryType) {
     return (
@@ -171,6 +178,7 @@ function SpeakersTabContent() {
           speaker={selectedSpeaker}
           autoPlay={autoPlay}
           onBack={handleBack}
+          onStop={handleStop}
           player={player}
           canDownload={canDownload}
         />
@@ -205,6 +213,8 @@ function SpeakersTabContent() {
         onSelectSpeaker={handleSelectSpeaker}
         onRefresh={refresh}
         downloadedIds={downloadedIds}
+        nowPlayingSpeakerId={player.isLoaded ? selectedSpeaker?.id ?? null : null}
+        isPlaying={player.isPlaying}
       />
       <JournalCategoryPicker
         visible={showJournalPicker}

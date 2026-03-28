@@ -327,11 +327,11 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
                 {prompt.question}
               </Text>
               {hasAnswer ? (
-                <Text style={[styles.guidedReadResponse, typography.bodyLarge, { color: colors.text }]}>
+                <Text style={[styles.guidedReadResponse, typography.body, { color: colors.text }]}>
                   {value}
                 </Text>
               ) : (
-                <Text style={[styles.guidedReadResponse, typography.bodyLarge, { color: colors.textSecondary + "60" }]}>
+                <Text style={[styles.guidedReadResponse, typography.body, { color: colors.textSecondary + "60" }]}>
                   No entry
                 </Text>
               )}

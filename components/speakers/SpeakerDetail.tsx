@@ -19,7 +19,7 @@ import { useAnalytics } from "../../utils/analytics";
 import { fonts, layout, shadows, typography } from "../../constants/theme";
 import { QuoteWatermarkPattern } from "../shared/QuoteWatermarkPattern";
 import { SanctuaryCard } from "../ui/Sanctuary";
-import { EqualizerBars } from "./EqualizerBars";
+// EqualizerBars removed — status indicator moved to browse list
 import { getSpeakerAudioUrl } from "../../hooks/useSpeakers";
 import { useSpeakerDownload, resolveAudioUri } from "../../hooks/useSpeakerDownload";
 import type { Speaker } from "../../types/speakers";
@@ -31,6 +31,7 @@ interface SpeakerDetailProps {
   speaker: Speaker;
   autoPlay: boolean;
   onBack: () => void;
+  onStop: () => void;
   player: AudioPlayer;
   canDownload: boolean;
 }
@@ -65,6 +66,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
   speaker,
   autoPlay,
   onBack,
+  onStop,
   player,
   canDownload,
 }) => {
@@ -268,10 +270,15 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
             },
           ]}
         >
-          {/* Now Playing + Download indicator */}
+          {/* Stop + Download indicator */}
           <View style={styles.nowPlayingRow}>
-            <View style={styles.nowPlayingLeft}>
-              <EqualizerBars isPlaying={player.isPlaying} color={colors.secondary} />
+            <TouchableOpacity
+              onPress={onStop}
+              style={styles.stopButton}
+              activeOpacity={0.6}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="stop" size={Math.round(14 * scale)} color={colors.textSecondary} />
               <Text
                 style={[
                   styles.nowPlayingLabel,
@@ -282,9 +289,9 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
                   },
                 ]}
               >
-                {player.isPlaying ? "Now Playing" : player.isLoaded ? "Paused" : ""}
+                Stop
               </Text>
-            </View>
+            </TouchableOpacity>
             {renderDownloadIndicator()}
           </View>
 
@@ -664,7 +671,7 @@ const styles = StyleSheet.create({
     ...shadows.ambient,
   },
 
-  // ─── Now Playing ───────────────────────────────────────────────────────────
+  // ─── Stop / Status Row ────────────────────────────────────────────────────
   nowPlayingRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -672,10 +679,10 @@ const styles = StyleSheet.create({
     marginBottom: layout.spacing.md,
     minHeight: layout.spacing.lgPlus,
   },
-  nowPlayingLeft: {
+  stopButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: layout.spacing.sm + 2,
+    gap: layout.spacing.sm,
   },
   nowPlayingLabel: {
     ...typography.label,

@@ -16,6 +16,7 @@ import { useTypography } from "../../hooks/useTypography";
 import { fonts, layout, typography } from "../../constants/theme";
 import type { Speaker } from "../../types/speakers";
 import { FieldShell, FocusPill, SanctuaryCard } from "../ui/Sanctuary";
+import { EqualizerBars } from "./EqualizerBars";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -28,6 +29,8 @@ interface SpeakersBrowseProps {
   onSelectSpeaker: (speaker: Speaker, autoPlay: boolean) => void;
   onRefresh: () => void;
   downloadedIds: Set<string>;
+  nowPlayingSpeakerId?: string | null;
+  isPlaying?: boolean;
 }
 
 // ─── Component ─────────────────────────────────────────────────────────────
@@ -39,6 +42,8 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
   onSelectSpeaker,
   onRefresh,
   downloadedIds,
+  nowPlayingSpeakerId,
+  isPlaying,
 }) => {
   const { colors } = useTheme();
   const { settings } = useSettings();
@@ -109,12 +114,48 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
       onPress={() => onSelectSpeaker(speaker, false)}
       activeOpacity={0.7}
     >
-      <SanctuaryCard tone="lowest" style={styles.card} contentStyle={styles.cardContent} elevated>
+      <SanctuaryCard
+        tone="lowest"
+        style={[
+          styles.card,
+          nowPlayingSpeakerId === speaker.id && { backgroundColor: colors.secondaryContainer + "60" },
+        ]}
+        contentStyle={styles.cardContent}
+        elevated
+      >
+        {/* Decorative headphone watermark (inactive cards only) */}
+        {nowPlayingSpeakerId !== speaker.id && (
+          <Ionicons
+            name="headset"
+            size={56}
+            color={colors.textSecondary + "12"}
+            style={styles.headphoneWatermark}
+          />
+        )}
         <View style={styles.cardBody}>
-          {/* Speaker name */}
-          <Text style={[styles.speakerName, dynamicTypography.h3, { color: colors.primaryContainer }]}>
-            {speaker.speaker}
-          </Text>
+          {/* Speaker name + now-playing indicator */}
+          <View style={styles.nameRow}>
+            <Text style={[styles.speakerName, dynamicTypography.h3, { color: colors.primaryContainer, flex: 1 }]}>
+              {speaker.speaker}
+            </Text>
+            {nowPlayingSpeakerId === speaker.id && (
+              <View style={styles.nowPlayingBadge}>
+                <EqualizerBars isPlaying={!!isPlaying} color={colors.secondary} />
+                <Text
+                  style={[
+                    styles.nowPlayingBadgeLabel,
+                    {
+                      color: colors.textSecondary,
+                      fontSize: dynamicTypography.caption.fontSize,
+                      lineHeight: dynamicTypography.caption.lineHeight,
+                    },
+                  ]}
+                >
+                  {isPlaying ? "Now Playing" : "Paused"}
+                </Text>
+              </View>
+            )}
+          </View>
 
           {/* Hometown */}
           {speaker.hometown && (
@@ -163,17 +204,6 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
           </View>
         </View>
 
-        {/* Play button */}
-        <TouchableOpacity
-          onPress={() => onSelectSpeaker(speaker, true)}
-          style={styles.playButton}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          activeOpacity={0.6}
-        >
-          <View style={[styles.playCircle, { backgroundColor: colors.secondaryContainer, width: Math.round(44 * scale), height: Math.round(44 * scale), borderRadius: Math.round(22 * scale) }]}>
-            <Ionicons name="play" size={Math.round(20 * scale)} color={colors.onSecondaryContainer} style={styles.playIcon} />
-          </View>
-        </TouchableOpacity>
       </SanctuaryCard>
     </TouchableOpacity>
   );
@@ -406,20 +436,32 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  // ─── Play Button ───────────────────────────────────────────────────────────
-  playButton: {
-    alignSelf: "center",
+  // ─── Headphone Watermark ───────────────────────────────────────────────────
+  headphoneWatermark: {
+    position: "absolute",
+    top: 10,
+    right: 12,
+    zIndex: 0,
   },
-  playCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+
+  // ─── Now-Playing Badge ─────────────────────────────────────────────────────
+  nameRow: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "space-between",
   },
-  playIcon: {
-    marginLeft: 3, // Optical centering for play triangle.
+  nowPlayingBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: layout.spacing.sm,
+    marginLeft: layout.spacing.sm,
   },
+  nowPlayingBadgeLabel: {
+    ...typography.caption,
+    fontWeight: "600",
+    textTransform: "uppercase",
+  },
+
 
   // ─── Empty State ───────────────────────────────────────────────────────────
   emptyContainer: {
