@@ -222,9 +222,9 @@ export function getTextSizeMetrics(textSize: TextSize): {
   favoriteLineHeight: number;
   favoriteDateFontSize: number;
 } {
-  // Android renders fonts visually smaller than iOS at the same point size
-  // Add a bump to compensate
-  const androidBump = Platform.OS === "android" ? 2 : 0;
+  // Android renders fonts visually smaller than iOS at the same point size.
+  // Set to 2 to compensate if needed; 0 for identical sizing across platforms.
+  const androidBump = 0;
   
   switch (textSize) {
     case "extraSmall":
