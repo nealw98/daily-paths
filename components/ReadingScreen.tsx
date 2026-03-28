@@ -16,7 +16,7 @@ import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import * as Haptics from "expo-haptics";
-import { fonts, typography as staticTypography } from "../constants/theme";
+import { fonts, layout, typography as staticTypography } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
 import { useSettings } from "../hooks/useSettings";
 import { useTypography } from "../hooks/useTypography";
@@ -740,7 +740,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#f9fafb",
   },
   contentContainer: {
-    padding: 20,
+    paddingHorizontal: layout.spacing.xl,
+    paddingTop: 20,
     paddingBottom: 40,
   },
   pageIntro: {

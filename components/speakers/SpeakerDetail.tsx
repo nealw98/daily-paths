@@ -572,7 +572,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: layout.spacing.lg,
-    paddingHorizontal: layout.spacing.lgPlus,
+    paddingHorizontal: layout.spacing.xl,
     paddingBottom: layout.spacing.xxl,
   },
 
