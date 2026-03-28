@@ -116,13 +116,17 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
     >
       <SanctuaryCard
         tone="lowest"
-        style={[
-          styles.card,
-          nowPlayingSpeakerId === speaker.id && { backgroundColor: colors.secondaryContainer + "60" },
-        ]}
+        style={styles.card}
         contentStyle={styles.cardContent}
         elevated
       >
+        {/* Active speaker tint overlay (opaque-safe for Android elevation) */}
+        {nowPlayingSpeakerId === speaker.id && (
+          <View
+            style={[StyleSheet.absoluteFill, { backgroundColor: colors.secondaryContainer + "60", borderRadius: layout.borderRadiusLarge }]}
+            pointerEvents="none"
+          />
+        )}
         {/* Decorative headphone watermark (inactive cards only) */}
         {nowPlayingSpeakerId !== speaker.id && (
           <Ionicons
