@@ -892,6 +892,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                               color: colors.text,
                               fontSize: typography.bodyFontSize - 2,
                               lineHeight: (typography.bodyFontSize - 2) * 1.35,
+                              textTransform: 'uppercase',
                             },
                           ]}
                         >

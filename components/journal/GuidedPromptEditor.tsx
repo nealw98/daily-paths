@@ -42,7 +42,7 @@ export function GuidedPromptEditor({
             <Text
               style={[
                 styles.questionText,
-                { color: colors.text, fontSize: typography.bodyFontSize - 2, lineHeight: (typography.bodyFontSize - 2) * 1.35 },
+                { color: colors.text, fontSize: typography.bodyFontSize - 2, lineHeight: (typography.bodyFontSize - 2) * 1.35, textTransform: 'uppercase' },
               ]}
             >
               {prompt.question}
