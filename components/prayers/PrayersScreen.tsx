@@ -19,7 +19,7 @@ import { useAnalytics } from "../../utils/analytics";
 import { usePersonalPrayers, type PersonalPrayer } from "../../hooks/usePersonalPrayers";
 import { useJournalStorage } from "../../hooks/useJournalStorage";
 import type { EntryType } from "../../constants/journalCategories";
-import { fonts, typography as staticTypography } from "../../constants/theme";
+import { fonts, layout, typography as staticTypography } from "../../constants/theme";
 import { PRAYERS, type Prayer } from "../../constants/prayers";
 import { TealHeader } from "../shared/TealHeader";
 import { JournalCategoryPicker } from "../journal/JournalCategoryPicker";
@@ -118,7 +118,7 @@ export const PrayersScreen: React.FC = () => {
     if (prayer.id === "just-for-tonight") boldPhrases.push("Just for tonight");
 
     return (
-      <SanctuaryCard key={prayer.id} tone="lowest" style={styles.prayerSection} contentStyle={styles.prayerSectionContent}>
+      <SanctuaryCard key={prayer.id} tone="lowest" style={styles.prayerSection} contentStyle={styles.prayerSectionContent} elevated>
         <TouchableOpacity
           style={styles.prayerHeader}
           onPress={() => {
@@ -323,9 +323,14 @@ export const PrayersScreen: React.FC = () => {
       <SanctuaryCard
         key={prayer.id}
         tone="lowest"
-        style={[styles.prayerSection, { backgroundColor: "#BAECE699" }]}
+        style={styles.prayerSection}
         contentStyle={styles.prayerSectionContent}
+        elevated
       >
+        <View
+          style={[StyleSheet.absoluteFill, { backgroundColor: "#BAECE699", borderRadius: layout.borderRadiusLarge }]}
+          pointerEvents="none"
+        />
         <TouchableOpacity
           style={styles.prayerHeader}
           onPress={() => {
@@ -487,10 +492,15 @@ export const PrayersScreen: React.FC = () => {
       >
         {/* Add New Prayer */}
         <SanctuaryCard
-          tone="low"
-          style={[styles.prayerSection, { backgroundColor: "#BAECE699" }]}
+          tone="lowest"
+          style={styles.prayerSection}
           contentStyle={styles.prayerSectionContent}
+          elevated
         >
+          <View
+            style={[StyleSheet.absoluteFill, { backgroundColor: "#BAECE699", borderRadius: layout.borderRadiusLarge }]}
+            pointerEvents="none"
+          />
           <TouchableOpacity
             style={styles.prayerHeader}
             onPress={() => {
