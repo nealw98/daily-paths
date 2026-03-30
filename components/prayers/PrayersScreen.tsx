@@ -339,7 +339,7 @@ export const PrayersScreen: React.FC = () => {
           }}
           activeOpacity={0.7}
         >
-          <Text style={[styles.prayerTitle, typography.h3, { color: colors.primaryContainer }]}>
+          <Text style={[styles.prayerTitle, typography.h3, { color: colors.ink }]}>
             {prayer.title}
           </Text>
           <Ionicons
@@ -514,15 +514,15 @@ export const PrayersScreen: React.FC = () => {
             activeOpacity={0.7}
           >
             <View style={styles.addPrayerLeft}>
-              <Ionicons name="add" size={20} color={colors.primaryContainer} style={{ marginRight: 6 }} />
-              <Text style={[styles.prayerTitle, { color: colors.primaryContainer, fontSize: 17, fontFamily: fonts.bodyFamilyMedium, fontWeight: undefined }]}>
+              <Ionicons name="add" size={20} color={colors.ink} style={{ marginRight: 6 }} />
+              <Text style={[styles.prayerTitle, { color: colors.ink, fontSize: 17, fontFamily: fonts.bodyFamilyMedium, fontWeight: undefined }]}>
                 Create a New Prayer
               </Text>
             </View>
             <Ionicons
               name={showAddForm ? "chevron-up" : "chevron-down"}
               size={18}
-              color={colors.primaryContainer}
+              color={colors.ink}
             />
           </TouchableOpacity>
 

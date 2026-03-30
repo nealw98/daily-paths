@@ -29,7 +29,6 @@ import { getTrialStatus, resetTrial, expireTrial } from "../utils/trialTimer";
 import {
   setLifetimeOverride,
   getLifetimeOverride,
-  clearLifetimeAccessCache,
   getLifetimeAccessDiagnostics,
   type LifetimeAccessDiagnostics,
 } from "../utils/paidAppDetector";
@@ -67,11 +66,22 @@ export default function QaLogsScreen() {
   const [lifetimeOverride, setLifetimeOverrideState] = React.useState<boolean | null>(null);
   const [lifetimeDiagnostics, setLifetimeDiagnostics] =
     React.useState<LifetimeAccessDiagnostics | null>(null);
-  const [refreshingLifetime, setRefreshingLifetime] = React.useState(false);
 
   const loadLifetimeDiagnostics = React.useCallback(async () => {
     const diagnostics = await getLifetimeAccessDiagnostics();
     setLifetimeDiagnostics(diagnostics);
+    qaLog("lifetime", "Lifetime access diagnostics", {
+      source: diagnostics?.source,
+      effectiveAccess: diagnostics?.effectiveStatus.hasLifetimeAccess,
+      detectionMethod: diagnostics?.effectiveStatus.detectionMethod,
+      originalAppVersion: diagnostics?.effectiveStatus.originalAppVersion,
+      originalPurchaseDate: diagnostics?.effectiveStatus.originalPurchaseDate,
+      firstFreeBuild: diagnostics?.firstFreeBuildNumber,
+      nativeAvailable: diagnostics?.nativeInfo?.available,
+      nativeVerified: diagnostics?.nativeInfo?.verified,
+      nativeReason: diagnostics?.nativeInfo?.reason ?? diagnostics?.nativeError,
+      cachedStatusPresent: !!diagnostics?.cachedStatus,
+    });
   }, []);
 
   // Load developer mode, device ID, and lifetime override on mount
@@ -402,17 +412,6 @@ export default function QaLogsScreen() {
     await loadLifetimeDiagnostics();
   };
 
-  const handleRefreshLifetimeDiagnostics = async () => {
-    setRefreshingLifetime(true);
-    try {
-      await clearLifetimeAccessCache();
-      await refreshLifetimeAccess();
-      await loadLifetimeDiagnostics();
-    } finally {
-      setRefreshingLifetime(false);
-    }
-  };
-
   const lifetimeOverrideLabel =
     lifetimeOverride === true
       ? "Forced ON"
@@ -447,7 +446,7 @@ export default function QaLogsScreen() {
           {deviceId && `\nDevice ID: ${deviceId.slice(0, 8)}...`}
         </Text>
         
-        <View style={[styles.developerRow, { borderColor: colors.mist }]}>
+        <View style={[styles.developerRow, { borderColor: colors.mist, backgroundColor: colors.surfaceContainerLowest }]}>
           <Text style={[styles.developerLabel, { color: colors.ink }]}>Developer Mode (exclude from analytics)</Text>
           <Switch
             value={isDeveloper}
@@ -513,7 +512,7 @@ export default function QaLogsScreen() {
 
         <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>Access States</Text>
 
-        <View style={[styles.stateBox, { backgroundColor: "#fff", borderColor: colors.mist }]}>
+        <View style={[styles.stateBox, { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.mist }]}>
           <View style={styles.stateRow}>
             <Text style={[styles.stateIndicator, { color: hasLifetimeAccess ? "#16a34a" : colors.textSecondary }]}>
               {hasLifetimeAccess ? "\u2713" : "\u2717"}
@@ -558,7 +557,7 @@ export default function QaLogsScreen() {
 
         <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>Freemium Testing</Text>
 
-        <View style={[styles.developerRow, { borderColor: colors.mist }]}>
+        <View style={[styles.developerRow, { borderColor: colors.mist, backgroundColor: colors.surfaceContainerLowest }]}>
           <View style={{ flex: 1, marginRight: 8 }}>
             <Text style={[styles.developerLabel, { color: colors.ink }]}>Lifetime Access Override</Text>
             <Text style={[styles.meta, { marginTop: 2 }]}>{lifetimeOverrideLabel}</Text>
@@ -570,56 +569,6 @@ export default function QaLogsScreen() {
           >
             <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
               {lifetimeOverride === true ? "Force OFF" : lifetimeOverride === false ? "Clear" : "Force ON"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>
-          Lifetime Receipt Diagnostics
-        </Text>
-
-        <View style={[styles.stateBox, { backgroundColor: "#fff", borderColor: colors.mist }]}>
-          <Text style={[styles.stateLabel, { color: colors.ink }]}>
-            Source: {lifetimeDiagnostics?.source ?? "loading"}
-          </Text>
-          <Text style={[styles.stateLabel, { color: colors.ink }]}>
-            Effective access: {lifetimeDiagnostics?.effectiveStatus.hasLifetimeAccess ? "true" : "false"}
-          </Text>
-          <Text style={[styles.stateLabel, { color: colors.ink }]}>
-            Detection method: {lifetimeDiagnostics?.effectiveStatus.detectionMethod ?? "loading"}
-          </Text>
-          <Text style={[styles.stateLabel, { color: colors.ink }]}>
-            Original app version: {lifetimeDiagnostics?.effectiveStatus.originalAppVersion ?? "null"}
-          </Text>
-          <Text style={[styles.stateLabel, { color: colors.ink }]}>
-            Original purchase date: {lifetimeDiagnostics?.effectiveStatus.originalPurchaseDate ?? "null"}
-          </Text>
-          <Text style={[styles.stateLabel, { color: colors.ink }]}>
-            First free build: {lifetimeDiagnostics?.firstFreeBuildNumber ?? "null"}
-          </Text>
-          <Text style={[styles.stateLabel, { color: colors.ink }]}>
-            Native available: {lifetimeDiagnostics?.nativeInfo ? String(lifetimeDiagnostics.nativeInfo.available) : "n/a"}
-          </Text>
-          <Text style={[styles.stateLabel, { color: colors.ink }]}>
-            Native verified: {lifetimeDiagnostics?.nativeInfo ? String(lifetimeDiagnostics.nativeInfo.verified) : "n/a"}
-          </Text>
-          <Text style={[styles.stateLabel, { color: colors.ink }]}>
-            Native reason: {lifetimeDiagnostics?.nativeInfo?.reason ?? lifetimeDiagnostics?.nativeError ?? "null"}
-          </Text>
-          <Text style={[styles.stateLabel, { color: colors.ink }]}>
-            Cached status present: {lifetimeDiagnostics?.cachedStatus ? "true" : "false"}
-          </Text>
-        </View>
-
-        <View style={styles.actionsRow}>
-          <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
-            activeOpacity={0.8}
-            onPress={handleRefreshLifetimeDiagnostics}
-            disabled={refreshingLifetime}
-          >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
-              {refreshingLifetime ? "Refreshing..." : "Refresh Lifetime Check"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -682,7 +631,7 @@ export default function QaLogsScreen() {
           <Text style={styles.emptyText}>No QA log entries yet.</Text>
         ) : (
           logs.map((entry) => (
-            <View key={entry.id} style={styles.logEntry}>
+            <View key={entry.id} style={[styles.logEntry, { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.mist }]}>
               <Text style={styles.logMeta}>
                 [{new Date(entry.timestamp).toLocaleTimeString()}]{" "}
                 {entry.scope}
@@ -809,7 +758,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    backgroundColor: "#fff",
     borderRadius: 8,
     borderWidth: 1,
   },
@@ -863,9 +811,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     padding: 10,
     borderRadius: 8,
-    backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#e5e7eb",
   },
   logMeta: {
     fontFamily: fonts.bodyFamilyRegular,

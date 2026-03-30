@@ -209,13 +209,18 @@ export async function requestReview(): Promise<boolean> {
 
 export async function openAppStoreForRating(): Promise<boolean> {
   try {
-    // Use action=write-review to open directly to the rating/review section
-    const storeUrl =
-      Platform.OS === "ios"
-        ? "itms-apps://apps.apple.com/app/id6755981862?action=write-review"
-        : "market://details?id=com.nealw98.dailypaths";
-
-    await Linking.openURL(storeUrl);
+    if (Platform.OS === "android") {
+      // On Android, use the native in-app review dialog if available
+      if (await StoreReview.hasAction()) {
+        await StoreReview.requestReview();
+        return true;
+      }
+      // Fallback: open Play Store listing
+      await Linking.openURL("market://details?id=com.nealw98.dailypaths");
+      return true;
+    }
+    // iOS: open directly to the write-review section
+    await Linking.openURL("itms-apps://apps.apple.com/app/id6755981862?action=write-review");
     return true;
   } catch (error) {
     console.error("Error opening App Store:", error);
