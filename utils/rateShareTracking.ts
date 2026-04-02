@@ -15,8 +15,7 @@ const STORAGE_KEYS = {
 };
 
 // Strategic timing: prompt after engagement milestones
-const MIN_READINGS_FOR_PROMPT = 1; // After 1 favorite or 1 thumbs up
-const MIN_DAYS_FOR_PROMPT = 5; // Or after 5 days of use
+const MIN_DAYS_FOR_PROMPT = 10; // 10 days since first use
 const FIRST_DECLINE_COOLDOWN = 5; // After first "Not Now", wait 5 days
 const SECOND_DECLINE_COOLDOWN = 30; // After second "Not Now", wait 30 days
 const ONGOING_DECLINE_COOLDOWN = 90; // After 2+ declines, wait 90 days (repeating)
@@ -106,6 +105,33 @@ async function hasAnyFeatureTimeThreshold(): Promise<boolean> {
   }
 }
 
+async function checkSubscribedOrLifetime(): Promise<boolean> {
+  try {
+    // Check cached subscription status
+    const subCache = await AsyncStorage.getItem(
+      "@daily_paths_subscription_status_v1"
+    );
+    if (subCache) {
+      const status = JSON.parse(subCache);
+      if (status.isSubscribed || status.isLegacy) return true;
+    }
+
+    // Check cached lifetime access (paid app download)
+    const lifetimeCache = await AsyncStorage.getItem(
+      "@daily_paths_lifetime_access_v1"
+    );
+    if (lifetimeCache) {
+      const lifetime = JSON.parse(lifetimeCache);
+      if (lifetime.hasLifetimeAccess) return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.error("Error checking subscription for rate prompt:", error);
+    return false;
+  }
+}
+
 export async function shouldShowRatePrompt(): Promise<boolean> {
   try {
     // Check if they've already rated
@@ -137,16 +163,11 @@ export async function shouldShowRatePrompt(): Promise<boolean> {
       if (daysSince < cooldownDays) return false;
     }
 
-    // Must have at least 1 positive engagement (favorite, thumbs up, or 10+ min in a feature)
-    const readingsStr = await AsyncStorage.getItem(
-      STORAGE_KEYS.READINGS_COMPLETED
-    );
-    const readings = readingsStr ? parseInt(readingsStr, 10) : 0;
-    const hasFeatureTime = await hasAnyFeatureTimeThreshold();
-    if (readings < MIN_READINGS_FOR_PROMPT && !hasFeatureTime) return false;
+    // Must be on a subscription or lifetime plan
+    const isSubscribedOrLifetime = await checkSubscribedOrLifetime();
+    if (!isSubscribedOrLifetime) return false;
 
-    // For new users: also require 5+ days of use
-    // For existing users: recordFirstUseIfNeeded() backdates their first use date
+    // Require 10+ days since first use
     const firstUseStr = await AsyncStorage.getItem(STORAGE_KEYS.FIRST_USE_DATE);
     if (firstUseStr) {
       const firstUse = new Date(firstUseStr);
