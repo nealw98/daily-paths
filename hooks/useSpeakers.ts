@@ -31,7 +31,8 @@ export function useSpeakers() {
       const { data, error: fetchError } = await supabase
         .from("speakers")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("date", { ascending: true, nullsFirst: true })
+        .order("created_at", { ascending: true });
 
       if (fetchError) {
         qaLog("speakers", "Error fetching speakers", {
