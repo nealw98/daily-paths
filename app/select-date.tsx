@@ -88,7 +88,7 @@ export default function SelectDateScreen() {
 
   const handleRevisitReading = () => {
     router.replace({
-      pathname: "/(tabs)/today",
+      pathname: "/(tabs)/reading",
       params: {
         selectedDate: formatDateLocal(selectedDate),
         ts: String(Date.now()),

@@ -1,21 +1,37 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
+import { useRouter } from "expo-router";
 import { useTheme } from "../../hooks/useTheme";
 import { fonts, layout, typography as staticTypography } from "../../constants/theme";
 
 interface TealHeaderProps {
   title: string;
+  /** @deprecated — icon is now the app logo. Kept for compat but ignored. */
   leftIcon?: React.ReactNode;
   onPress?: () => void;
   rightAction?: React.ReactNode;
+  /** If true, tapping the icon navigates home. Defaults to true. */
+  navigateHome?: boolean;
 }
 
 /**
  * Shared structural header for top-level screens.
- * Keeps the legacy export name so existing imports do not change.
+ * The left icon is always the app logo; tapping it returns to the home tab.
  */
-export const TealHeader: React.FC<TealHeaderProps> = ({ title, leftIcon, onPress, rightAction }) => {
+export const TealHeader: React.FC<TealHeaderProps> = ({
+  title,
+  onPress,
+  rightAction,
+  navigateHome = true,
+}) => {
   const { colors } = useTheme();
+  const router = useRouter();
+
+  const handleIconPress = () => {
+    if (navigateHome) {
+      router.push("/(tabs)/home");
+    }
+  };
 
   return (
     <View
@@ -28,29 +44,27 @@ export const TealHeader: React.FC<TealHeaderProps> = ({ title, leftIcon, onPress
     >
       <View style={styles.row}>
         <TouchableOpacity
+          onPress={handleIconPress}
+          activeOpacity={0.7}
+          style={styles.iconShell}
+        >
+          <Image
+            source={require("../../assets/adaptive-icon.png")}
+            style={styles.iconImage}
+            resizeMode="cover"
+          />
+          <View style={styles.iconOverlay} pointerEvents="none" />
+        </TouchableOpacity>
+        <TouchableOpacity
           disabled={!onPress}
           onPress={onPress}
           activeOpacity={onPress ? 0.8 : 1}
-          style={styles.inner}
+          style={styles.textBlock}
         >
-          {leftIcon ? (
-            <View
-              style={[
-                styles.iconShell,
-                {
-                  backgroundColor: colors.onPrimary + "1A",
-                },
-              ]}
-            >
-              {leftIcon}
-            </View>
-          ) : null}
-          <View style={styles.textBlock}>
-            <Text style={[styles.eyebrow, { color: colors.secondaryContainer }]}>
-              Daily Paths
-            </Text>
-            <Text style={[styles.title, { color: colors.onPrimary }]}>{title}</Text>
-          </View>
+          <Text style={[styles.eyebrow, { color: colors.secondaryContainer }]}>
+            Daily Paths
+          </Text>
+          <Text style={[styles.title, { color: colors.onPrimary }]}>{title}</Text>
         </TouchableOpacity>
         {rightAction ?? null}
       </View>
@@ -67,31 +81,39 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-  },
-  inner: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
     gap: 12,
   },
   iconShell: {
-    width: 50,
-    height: 50,
-    borderRadius: 0,
+    width: 44,
+    height: 44,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+  iconImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+  },
+  iconOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255, 255, 255, 0.20)",
+    borderRadius: 10,
   },
   textBlock: {
     flex: 1,
   },
   eyebrow: {
-    ...staticTypography.label,
-    letterSpacing: 0.5,
+    fontFamily: fonts.labelFamily,
+    fontSize: 10,
+    lineHeight: 14,
+    letterSpacing: 0.6,
     textTransform: "uppercase",
     marginBottom: 2,
   },
   title: {
-    ...staticTypography.h2,
-    fontFamily: fonts.headerFamilyBoldItalic,
+    ...staticTypography.h3,
+    fontFamily: fonts.bodyFamilySemiBold,
   },
 });

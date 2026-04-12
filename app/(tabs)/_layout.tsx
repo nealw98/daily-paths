@@ -180,14 +180,14 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="today"
+        name="home"
         options={{
           title: "Today",
           tabBarLabel: ({ focused }) => renderTabLabel("Today", focused),
           tabBarIcon: ({ focused }) => (
             renderTabIcon(
               <MaterialIcons
-                name="today"
+                name="home"
                 size={24}
                 color={focused ? activeIconColor : inactiveColor}
               />,
@@ -205,30 +205,6 @@ export default function TabLayout() {
             renderTabIcon(
               <MaterialIcons
                 name="edit-note"
-                size={24}
-                color={
-                  premiumLocked
-                    ? lockedColor
-                    : focused
-                      ? activeIconColor
-                      : inactiveColor
-                }
-              />,
-              premiumLocked,
-            )
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="prayers"
-        listeners={premiumTabListeners}
-        options={{
-          title: "Prayers",
-          tabBarLabel: ({ focused }) => renderTabLabel("Prayers", focused, premiumLocked),
-          tabBarIcon: ({ focused }) => (
-            renderTabIcon(
-              <MaterialCommunityIcons
-                name="hands-pray"
                 size={24}
                 color={
                   premiumLocked
@@ -268,6 +244,30 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="prayers"
+        listeners={premiumTabListeners}
+        options={{
+          title: "Prayers",
+          tabBarLabel: ({ focused }) => renderTabLabel("Prayers", focused, premiumLocked),
+          tabBarIcon: ({ focused }) => (
+            renderTabIcon(
+              <MaterialCommunityIcons
+                name="hands-pray"
+                size={24}
+                color={
+                  premiumLocked
+                    ? lockedColor
+                    : focused
+                      ? activeIconColor
+                      : inactiveColor
+                }
+              />,
+              premiumLocked,
+            )
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="more"
         options={{
           title: "Settings",
@@ -281,6 +281,13 @@ export default function TabLayout() {
               />,
             )
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="reading"
+        options={{
+          href: null,
+          title: "Reflection",
         }}
       />
     </Tabs>

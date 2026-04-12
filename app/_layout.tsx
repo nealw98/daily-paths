@@ -136,7 +136,7 @@ export default function RootLayout() {
     try {
       const sub = Notifications.addNotificationResponseReceivedListener(() => {
         console.log("[STARTUP] Notification response received");
-        router.push(`/?jump=today&ts=${Date.now()}`);
+        router.push(`/(tabs)/reading?jump=today&ts=${Date.now()}`);
       });
       console.log("[STARTUP] Notification listener added successfully");
       return () => sub.remove();

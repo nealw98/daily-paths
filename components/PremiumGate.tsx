@@ -59,7 +59,7 @@ export const PremiumGate: React.FC<PremiumGateProps> = ({ children }) => {
         } else {
           trackPaywallDismissed();
           setDismissed(true);
-          setTimeout(() => router.navigate("/(tabs)/today"), 50);
+          setTimeout(() => router.navigate("/(tabs)/home"), 50);
         }
       } catch (err) {
         qaLog("paywall", "Paywall error", { error: String(err) });
@@ -68,7 +68,7 @@ export const PremiumGate: React.FC<PremiumGateProps> = ({ children }) => {
           "The subscription page couldn't be loaded. Please try again.",
         );
         setDismissed(true);
-        setTimeout(() => router.navigate("/(tabs)/today"), 50);
+        setTimeout(() => router.navigate("/(tabs)/home"), 50);
       } finally {
         presentingPaywall.current = false;
       }

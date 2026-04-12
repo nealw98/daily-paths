@@ -8,7 +8,6 @@ import {
   AppState,
   AppStateStatus,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ReadingScreen } from "../../components/ReadingScreen";
 import { JournalCategoryPicker } from "../../components/journal/JournalCategoryPicker";
@@ -18,7 +17,6 @@ import { useJournalStorage } from "../../hooks/useJournalStorage";
 import { useTrialStatus } from "../../hooks/useTrialStatus";
 import { useSubscription } from "../../hooks/useSubscription";
 import { DismissibleToast } from "../../components/DismissibleToast";
-import { BookmarkToast } from "../../components/BookmarkToast";
 import { markRatePromptShown, recordFirstUseIfNeeded, requestReview } from "../../utils/rateShareTracking";
 import { recordDailyActivity, recordReadingView } from "../../utils/deviceIdentity";
 import { qaLog } from "../../utils/qaLog";
@@ -32,34 +30,11 @@ import { useTheme } from "../../hooks/useTheme";
 import * as Notifications from "expo-notifications";
 import { SanctuaryButton } from "../../components/ui/Sanctuary";
 
-console.log("[STARTUP] index.tsx module loading...");
-
-export default function Index() {
-  console.log("[STARTUP] Index function called");
-  
+export default function ReadingDetail() {
   const { colors, colorScheme, isDark } = useTheme();
+  const router = useRouter();
+  const params = useLocalSearchParams<{ jump?: string; ts?: string; selectedDate?: string }>();
 
-  let router;
-  try {
-    console.log("[STARTUP-INDEX] Getting router...");
-    router = useRouter();
-    console.log("[STARTUP-INDEX] Router obtained");
-  } catch (err) {
-    console.error("[STARTUP-INDEX] ERROR getting router:", err);
-    throw err;
-  }
-
-  let params;
-  try {
-    console.log("[STARTUP-INDEX] Getting params...");
-    params = useLocalSearchParams<{ jump?: string; ts?: string; selectedDate?: string }>();
-    console.log("[STARTUP-INDEX] Params obtained:", params);
-  } catch (err) {
-    console.error("[STARTUP-INDEX] ERROR getting params:", err);
-    throw err;
-  }
-
-  console.log("[STARTUP-INDEX] Initializing state...");
   // Start with today's date
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showInstruction, setShowInstruction] = useState(false);
@@ -68,9 +43,8 @@ export default function Index() {
   const [showJournalPicker, setShowJournalPicker] = useState(false);
   const [journalEntryType, setJournalEntryType] = useState<EntryType | null>(null);
   const handledJumpTokenRef = useRef<string | null>(null);
-  console.log("[STARTUP-INDEX] State initialized");
 
-  // Journal entry creation from Today page (local AsyncStorage)
+  // Journal entry creation
   const { createEntry } = useJournalStorage();
 
   const trialStatus = useTrialStatus();
@@ -83,29 +57,24 @@ export default function Index() {
     !subscriptionLoading &&
     !trialStatus.loading &&
     getRequiredGate(subStatus, trialStatus, hasLifetimeAccess) === "paywall";
-  
+
   // Analytics
   const { trackAppOpened, startReadingView, trackReadingFavorited, trackReadingUnfavorited, updateThemeMode } = useAnalytics();
-  
-  // Keep analytics in sync with theme preference
+
   useEffect(() => {
     updateThemeMode(colorScheme);
   }, [colorScheme, updateThemeMode]);
-  
-  console.log("[STARTUP-INDEX] Calling useReading...");
+
   const { reading, loading, error } = useReading(currentDate);
-  console.log("[STARTUP-INDEX] useReading returned, loading:", loading, "error:", error);
   const {
     isBookmarked,
     toggleBookmark,
   } = useBookmarkManager(currentDate, reading?.id || "", reading?.title || "");
-  // If the app is opened from a notification, jump to today's reading.
+
   const lastNotificationResponse = Notifications.useLastNotificationResponse();
 
   useEffect(() => {
     if (!lastNotificationResponse) return;
-
-    // For this app, any notification tap should bring us to today's reading.
     if (
       lastNotificationResponse.actionIdentifier ===
       Notifications.DEFAULT_ACTION_IDENTIFIER
@@ -115,34 +84,25 @@ export default function Index() {
     }
   }, [lastNotificationResponse]);
 
-  // Handle navigation params (e.g., from notification tap) to jump to today.
   useEffect(() => {
     if (params?.jump !== "today") return;
-
     const token = params?.ts ?? "__no_ts__";
     if (handledJumpTokenRef.current === token) return;
     handledJumpTokenRef.current = token;
-
     setCurrentDate(new Date());
-
-    // Best-effort clear. Even if router params don't clear immediately,
-    // handledJumpTokenRef prevents repeat resets that break date navigation.
     router.setParams({ jump: undefined, ts: undefined });
   }, [params?.jump, params?.ts, router]);
 
   useEffect(() => {
     if (!params?.selectedDate) return;
-
     const token = `${params.selectedDate}:${params?.ts ?? "__no_ts__"}`;
     if (handledJumpTokenRef.current === token) return;
     handledJumpTokenRef.current = token;
-
     setNavigationMethod("date_picker");
     setCurrentDate(parseDateLocal(params.selectedDate));
     router.setParams({ selectedDate: undefined, ts: undefined });
   }, [params?.selectedDate, params?.ts, router]);
 
-  // Surface non-blocking errors only when we still have content onscreen.
   useEffect(() => {
     if (error && reading) {
       setToastMessage(error);
@@ -152,7 +112,6 @@ export default function Index() {
     }
   }, [error, reading]);
 
-  // Check if instruction should be shown on mount
   useEffect(() => {
     async function checkInstruction() {
       const seen = await hasSeenInstruction();
@@ -161,24 +120,18 @@ export default function Index() {
     checkInstruction();
   }, []);
 
-  // Record first use date for rate prompt timing
   useEffect(() => {
     recordFirstUseIfNeeded();
   }, []);
 
-  // Record daily activity for analytics (once per day)
   useEffect(() => {
     recordDailyActivity();
   }, []);
 
-  // Track app opened event
   useEffect(() => {
     trackAppOpened();
   }, []);
 
-  // Notification scheduling is handled by useReading after prefetch completes
-
-  // Refs for AppState listener so foreground handler sees latest reading/date/navigation
   const readingRef = useRef(reading);
   const currentDateRef = useRef(currentDate);
   const navigationMethodRef = useRef(navigationMethod);
@@ -186,16 +139,13 @@ export default function Index() {
   currentDateRef.current = currentDate;
   navigationMethodRef.current = navigationMethod;
 
-  // Record reading view for analytics (unique viewers per reading)
   useEffect(() => {
     if (reading?.id) {
       recordReadingView(reading.id);
-      // Start tracking reading view (event fires when user navigates away or app goes to background)
       startReadingView(reading.id, currentDate, reading.title, navigationMethod);
     }
   }, [reading?.id]);
 
-  // Foreground = new session: when app returns to active, start a new reading view session for current reading
   useEffect(() => {
     const isSameLocalDay = (a: Date, b: Date) =>
       a.getFullYear() === b.getFullYear() &&
@@ -250,11 +200,8 @@ export default function Index() {
     handleOpenDatePicker();
   };
 
-  // Wrapper for bookmark toggle that handles rate modal and analytics
   const handleBookmarkToggle = async () => {
     const result = await toggleBookmark();
-
-    // Track favorite/unfavorite in analytics
     if (reading?.id) {
       if (result.newState) {
         trackReadingFavorited(reading.id, currentDate);
@@ -262,9 +209,7 @@ export default function Index() {
         trackReadingUnfavorited(reading.id, currentDate);
       }
     }
-    
     if (result.shouldShowRatePrompt) {
-      // Brief delay for the bookmark toast to appear first, then show native review
       qaLog("rate", "Bookmark triggered rate prompt - requesting native review");
       await markRatePromptShown();
       setTimeout(async () => {
@@ -309,19 +254,15 @@ export default function Index() {
       paras.forEach((p, idx) => {
         lines.push(p);
         if (idx < paras.length - 1) {
-          lines.push(""); // blank line between paragraphs
+          lines.push("");
         }
       });
     };
 
-    // Date
     lines.push(dateLabel);
-
-    // Title (all caps)
     lines.push("");
     lines.push(reading.title.toUpperCase());
 
-    // Quote (standalone paragraph; optionally includes reference on next line)
     if (applicationQuote) {
       lines.push("");
       lines.push(applicationQuote);
@@ -330,21 +271,17 @@ export default function Index() {
       }
     }
 
-    // Body
     if (bodyParagraphs.length) {
       lines.push("");
-      // Collapse body into a single paragraph with spaces instead of line breaks.
       lines.push(bodyParagraphs.join(" "));
     }
 
-    // Application paragraphs (with heading)
     if (applicationParagraphs.length) {
       lines.push("");
       lines.push("Practice:");
       pushParagraphs(applicationParagraphs);
     }
 
-    // Thought for the Day
     if (reading.thoughtForDay) {
       lines.push("");
       lines.push("Thought for the Day:");
@@ -365,7 +302,6 @@ export default function Index() {
   };
 
   let content: React.ReactNode = null;
-  // Show loading only on initial load, not when navigating
   if (loading && !reading) {
     content = (
       <View style={[styles.centerContainer, { backgroundColor: colors.pearl }]}>
@@ -410,7 +346,6 @@ export default function Index() {
     );
   }
 
-  // If user picked a journal type, show the editor full-screen
   if (journalEntryType) {
     return (
       <JournalEntryEditor
@@ -466,11 +401,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     textAlign: "center",
     lineHeight: 26,
-  },
-  errorHint: {
-    fontSize: 14,
-    textAlign: "center",
-    fontStyle: "italic",
   },
   buttonRow: {
     width: "100%",

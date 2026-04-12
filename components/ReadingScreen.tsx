@@ -111,6 +111,8 @@ interface ReadingScreenProps {
   onHighlight?: () => void;
   onShare?: () => void;
   onNewJournalEntry?: () => void;
+  /** Header title — defaults to "Reflection". */
+  headerTitle?: string;
   // Legacy instruction modal props kept for possible future use:
   showInstruction?: boolean;
   onDismissInstruction?: () => void;
@@ -127,6 +129,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   onHighlight,
   onShare,
   onNewJournalEntry,
+  headerTitle = "Reflection",
   showInstruction = false,
   onDismissInstruction,
   onShowInstruction,
@@ -384,8 +387,8 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.surface }]} edges={["top", "left", "right"]}>
       <View style={[styles.container, { backgroundColor: colors.surface }]}>
         <TealHeader
-          title="Today"
-          leftIcon={<MaterialIcons name="today" size={24} color={colors.textOnAccent} />}
+          title={headerTitle}
+          leftIcon={<MaterialIcons name="menu-book" size={24} color={colors.textOnAccent} />}
           onPress={onHeaderPress}
           rightAction={
             onNewJournalEntry ? (

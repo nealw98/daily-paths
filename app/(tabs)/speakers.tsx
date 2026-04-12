@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { AppState, AppStateStatus, StyleSheet, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "expo-router";
+import { useNavigation, useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { useSpeakers } from "../../hooks/useSpeakers";
@@ -35,6 +35,8 @@ export default function SpeakersTab() {
 function SpeakersTabContent() {
   const { colors } = useTheme();
   const navigation = useNavigation();
+  const router = useRouter();
+  const params = useLocalSearchParams<{ speakerId?: string }>();
   const { speakers, loading, error, refresh } = useSpeakers();
   const { trackSpeakerAudioCompleted } = useAnalytics();
   const { status: subscriptionStatus, hasLifetimeAccess } = useSubscription();
@@ -60,6 +62,20 @@ function SpeakersTabContent() {
 
   const [selectedSpeaker, setSelectedSpeaker] = useState<Speaker | null>(null);
   const [autoPlay, setAutoPlay] = useState(false);
+  const handledSpeakerIdRef = useRef<string | null>(null);
+
+  // Deep-link: open a specific speaker from the home page
+  useEffect(() => {
+    if (!params?.speakerId || speakers.length === 0) return;
+    if (handledSpeakerIdRef.current === params.speakerId) return;
+    handledSpeakerIdRef.current = params.speakerId;
+    const match = speakers.find((s) => s.id === params.speakerId);
+    if (match) {
+      setSelectedSpeaker(match);
+      setView("detail");
+    }
+    router.setParams({ speakerId: undefined });
+  }, [params?.speakerId, speakers]);
 
   // Track speaker audio completion
   useEffect(() => {
