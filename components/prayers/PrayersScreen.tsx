@@ -328,7 +328,7 @@ export const PrayersScreen: React.FC = () => {
         elevated
       >
         <View
-          style={[StyleSheet.absoluteFill, { backgroundColor: "#BAECE699", borderRadius: layout.borderRadiusLarge }]}
+          style={[StyleSheet.absoluteFill, { backgroundColor: colors.secondaryContainer + "80", borderRadius: layout.borderRadiusLarge }]}
           pointerEvents="none"
         />
         <TouchableOpacity
@@ -498,7 +498,7 @@ export const PrayersScreen: React.FC = () => {
           elevated
         >
           <View
-            style={[StyleSheet.absoluteFill, { backgroundColor: "#BAECE699", borderRadius: layout.borderRadiusLarge }]}
+            style={[StyleSheet.absoluteFill, { backgroundColor: colors.secondaryContainer + "80", borderRadius: layout.borderRadiusLarge }]}
             pointerEvents="none"
           />
           <TouchableOpacity
