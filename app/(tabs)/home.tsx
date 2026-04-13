@@ -14,11 +14,15 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { useReading } from "../../hooks/useReading";
+import { useAppDate } from "../../contexts/AppDateContext";
 import { useSpeakers } from "../../hooks/useSpeakers";
 import { usePersonalPrayers } from "../../hooks/usePersonalPrayers";
 import { fonts, layout, typography, shadows } from "../../constants/theme";
-import { JOURNAL_CATEGORIES } from "../../constants/journalCategories";
+import { JOURNAL_CATEGORIES, type EntryType } from "../../constants/journalCategories";
+import { JournalEntryEditor } from "../../components/journal/JournalEntryEditor";
+import { useJournalStorage } from "../../hooks/useJournalStorage";
 import { TealHeader } from "../../components/shared/TealHeader";
+import { useFeaturedSpeaker } from "../../hooks/useFeaturedSpeaker";
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -30,11 +34,29 @@ function getGreeting(): string {
 export default function HomeTab() {
   const { colors, isDark } = useTheme();
   const router = useRouter();
-  const [today] = useState(() => new Date());
+  const { today } = useAppDate();
   const { reading, loading: readingLoading } = useReading(today);
   const { speakers } = useSpeakers();
   const { prayers } = usePersonalPrayers();
-  const featuredSpeaker = speakers.length > 0 ? speakers[0] : null;
+  const { speaker: featuredSpeaker, isStarted: speakerIsStarted, isListenAgain } = useFeaturedSpeaker(speakers);
+  const { createEntry } = useJournalStorage();
+  const [journalEntryType, setJournalEntryType] = useState<EntryType | null>(null);
+
+  // If user picked a journal type, show the editor full-screen
+  if (journalEntryType) {
+    return (
+      <JournalEntryEditor
+        key={journalEntryType}
+        entryType={journalEntryType}
+        onSave={async (entryType, content, structuredContent) => {
+          await createEntry(entryType, content, structuredContent);
+          setJournalEntryType(null);
+        }}
+        onCancel={() => setJournalEntryType(null)}
+        onSwitchEntryType={setJournalEntryType}
+      />
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={["top"]}>
@@ -128,7 +150,7 @@ export default function HomeTab() {
             <TouchableOpacity
               key={cat.id}
               activeOpacity={0.8}
-              onPress={() => router.push("/(tabs)/journal")}
+              onPress={() => setJournalEntryType(cat.id)}
               style={[
                 styles.notebookCard,
                 {
@@ -203,7 +225,7 @@ export default function HomeTab() {
               </Text>
               <View style={styles.ctaRow}>
                 <Text style={[styles.readMore, { color: colors.secondaryContainer }]}>
-                  Listen
+                  {isListenAgain ? "Listen again" : speakerIsStarted ? "Continue" : "Listen"}
                 </Text>
                 <MaterialIcons name="chevron-right" size={20} color={colors.secondaryContainer} />
               </View>
@@ -397,14 +419,14 @@ const styles = StyleSheet.create({
   },
   notebookLabel: {
     fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 17,
+    lineHeight: 22,
     marginTop: 6,
   },
   notebookTag: {
     fontFamily: fonts.bodyFamily,
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 14,
+    lineHeight: 19,
   },
 
   // Prayers
@@ -429,14 +451,14 @@ const styles = StyleSheet.create({
   },
   prayersTitle: {
     fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 17,
+    lineHeight: 22,
     marginTop: 6,
   },
   prayersSubtitle: {
     fontFamily: fonts.bodyFamily,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 19,
     marginTop: 2,
   },
   prayersCount: {
@@ -487,8 +509,8 @@ const styles = StyleSheet.create({
   },
   speakerTitle: {
     fontFamily: fonts.bodyFamilyMedium,
-    fontSize: 18,
-    lineHeight: 24,
+    fontSize: 16,
+    lineHeight: 22,
   },
   speakerThemes: {
     fontFamily: fonts.bodyFamily,

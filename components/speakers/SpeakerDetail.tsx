@@ -89,7 +89,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
     if (!hasLoadedRef.current) {
       hasLoadedRef.current = true;
       resolveAudioUri(speaker.id, audioUrl).then((uri) => {
-        player.load(uri, autoPlay);
+        player.load(uri, autoPlay, speaker.id);
       });
     }
   }, [speaker.id]); // eslint-disable-line react-hooks/exhaustive-deps

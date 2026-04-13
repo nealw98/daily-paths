@@ -87,10 +87,10 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
     const sorted = [...result];
     switch (sortMode) {
       case "newest":
-        sorted.sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
+        sorted.sort((a, b) => (b.date || b.created_at || "").localeCompare(a.date || a.created_at || ""));
         break;
       case "oldest":
-        sorted.sort((a, b) => (a.created_at || "").localeCompare(b.created_at || ""));
+        sorted.sort((a, b) => (a.date || a.created_at || "").localeCompare(b.date || b.created_at || ""));
         break;
       case "az":
         sorted.sort((a, b) => a.speaker.localeCompare(b.speaker));
