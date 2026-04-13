@@ -12,11 +12,12 @@ import {
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useTheme } from "../../hooks/useTheme";
 import { useTypography } from "../../hooks/useTypography";
-import { fonts } from "../../constants/theme";
+import { fonts, typography as staticTypography } from "../../constants/theme";
 import type { JournalEntry } from "../../hooks/useJournalStorage";
 import {
   getCategoryById,
@@ -57,6 +58,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
   onDelete,
 }) => {
   const { colors } = useTheme();
+  const router = useRouter();
 
   const { settings } = useSettings();
   const { typography } = useTypography();
@@ -457,14 +459,16 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
       >
         <View style={[styles.gradientHeader, { backgroundColor: colors.primary }]}>
           <View style={styles.headerTitleRow}>
-            {catConfig ? (
-              <View style={[styles.headerIconShell, { backgroundColor: colors.onPrimary + "1A" }]}>
-                <EntryTypeIcon svgIcon={catConfig.svgIcon} size={24} color={colors.onPrimary} />
-              </View>
-            ) : null}
+            <TouchableOpacity
+              onPress={onBack}
+              activeOpacity={0.7}
+              style={[styles.headerIconShell, { backgroundColor: colors.onPrimary + "1A" }]}
+            >
+              <MaterialIcons name="edit-note" size={26} color={colors.onPrimary} />
+            </TouchableOpacity>
             <View style={styles.headerTextBlock}>
-              <Text style={[styles.headerEyebrow, typography.label, { color: colors.secondaryContainer }]}>Notebook entry</Text>
-              <Text style={[styles.headerTitleText, typography.h2, { color: colors.onPrimary }]}>{catLabel}</Text>
+              <Text style={[styles.headerEyebrow, { color: colors.secondaryContainer }]}>Notebook entry</Text>
+              <Text style={[styles.headerTitleText, { color: colors.onPrimary }]}>{catLabel}</Text>
             </View>
           </View>
         </View>
@@ -586,11 +590,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerEyebrow: {
+    fontFamily: fonts.labelFamily,
+    fontSize: 10,
+    lineHeight: 14,
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
     marginBottom: 2,
   },
   headerTitleText: {
+    ...staticTypography.h3,
+    fontFamily: fonts.bodyFamilySemiBold,
   },
   bottomReadOnly: {
     flex: 1,

@@ -13,9 +13,9 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
-import { useNavigation } from "expo-router";
+import { useNavigation, useRouter } from "expo-router";
 import { useTheme } from "../../hooks/useTheme";
 import { useTypography } from "../../hooks/useTypography";
 import { fonts, typography as staticTypography } from "../../constants/theme";
@@ -61,6 +61,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
 }) => {
   const { colors } = useTheme();
   const navigation = useNavigation();
+  const router = useRouter();
   const { width: screenWidth } = useWindowDimensions();
 
   const { settings } = useSettings();
@@ -373,13 +374,15 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
       >
         <View style={[styles.gradientHeader, { backgroundColor: colors.surface }]}>
           <View style={styles.headerTitleRow}>
-            <View style={[styles.headerIconShell, { backgroundColor: colors.primaryContainer }]}>
-              {categoryConfig && (
-                <EntryTypeIcon svgIcon={categoryConfig.svgIcon} size={24} color={colors.onPrimary} />
-              )}
-            </View>
+            <TouchableOpacity
+              onPress={handleCancel}
+              activeOpacity={0.7}
+              style={[styles.headerIconShell, { backgroundColor: colors.primaryContainer }]}
+            >
+              <MaterialIcons name="edit-note" size={26} color={colors.onPrimary} />
+            </TouchableOpacity>
             <View style={styles.headerTextBlock}>
-              <Text style={[styles.headerEyebrow, { color: colors.onSurfaceVariant }]}>
+              <Text style={[styles.headerEyebrow, { color: "#7BCEC4" }]}>
                 {isEditing ? "Edit entry" : "New entry"}
               </Text>
               <Text style={[styles.headerTitleText, { color: colors.onSurface }]}>
@@ -1065,13 +1068,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerEyebrow: {
-    ...staticTypography.label,
+    fontFamily: fonts.labelFamily,
+    fontSize: 10,
+    lineHeight: 14,
     textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
     marginBottom: 2,
   },
   headerTitleText: {
     ...staticTypography.h3,
+    fontFamily: fonts.bodyFamilySemiBold,
   },
   dateBar: {
     paddingHorizontal: 20,

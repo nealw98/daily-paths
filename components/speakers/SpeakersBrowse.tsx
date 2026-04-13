@@ -131,9 +131,9 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
         {nowPlayingSpeakerId !== speaker.id && (
           <Ionicons
             name="headset"
-            size={56}
-            color={colors.textSecondary + "12"}
-            style={styles.headphoneWatermark}
+            size={160}
+            color="#BAECE626"
+            style={[styles.headphoneWatermark, { transform: [{ rotate: "30deg" }] }]}
           />
         )}
         <View style={styles.cardBody}>
@@ -172,7 +172,7 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
 
           {/* Title */}
           <Text
-            style={[styles.title, dynamicTypography.body, { color: colors.text }]}
+            style={[dynamicTypography.body, styles.title, { color: colors.text }]}
             numberOfLines={2}
           >
             {speaker.title}
@@ -402,10 +402,11 @@ const styles = StyleSheet.create({
   },
   hometown: {
     letterSpacing: 0.5,
-    marginBottom: layout.spacing.xs,
+    marginBottom: layout.spacing.md,
   },
   title: {
     letterSpacing: -0.1,
+    lineHeight: 22,
   },
   // ─── Badges Row ──────────────────────────────────────────────────────────
   badgesRow: {
@@ -443,8 +444,8 @@ const styles = StyleSheet.create({
   // ─── Headphone Watermark ───────────────────────────────────────────────────
   headphoneWatermark: {
     position: "absolute",
-    top: 10,
-    right: 12,
+    bottom: -8,
+    right: 4,
     zIndex: 0,
   },
 

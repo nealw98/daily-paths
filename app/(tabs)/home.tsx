@@ -61,7 +61,7 @@ export default function HomeTab() {
           <View style={styles.heroClip}>
           {/* Top half: hero image with label + title */}
           <ImageBackground
-            source={require("../../assets/steps-hero.jpg")}
+            source={require("../../assets/home-page.jpg")}
             resizeMode="cover"
             style={styles.heroTop}
             imageStyle={styles.heroTopImage}
@@ -101,7 +101,7 @@ export default function HomeTab() {
                   style={[styles.heroBody, { color: colors.onSurface }]}
                   numberOfLines={3}
                 >
-                  {reading.thoughtForDay}
+                  {`"${reading.thoughtForDay}"`}
                 </Text>
                 <View style={styles.ctaRow}>
                   <Text style={[styles.readMore, { color: colors.accent }]}>
@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   heroBody: {
-    fontFamily: fonts.bodyFamily,
+    fontFamily: fonts.headerFamilyLight,
     fontSize: 16,
     lineHeight: 24,
     letterSpacing: -0.08,
