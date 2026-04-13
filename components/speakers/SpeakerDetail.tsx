@@ -201,16 +201,6 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
       >
         {/* Speaker info section */}
         <View style={styles.infoSection}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={onBack}
-            activeOpacity={0.7}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Ionicons name="chevron-back" size={18} color={colors.primaryContainer} />
-            <Text style={[styles.backLabel, { color: colors.primaryContainer }]}>Back</Text>
-          </TouchableOpacity>
-
           <Text
             style={[
               styles.title,
@@ -249,13 +239,22 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
           )}
         </View>
 
+        {/* Quote block */}
+        {speaker.quote && (
+          <View style={styles.quoteBox}>
+            <Text style={styles.quoteBoxText}>
+              &ldquo;{normalizeQuoteText(speaker.quote)}&rdquo;
+            </Text>
+          </View>
+        )}
+
         {/* Player card */}
         <View
           style={[
             styles.playerCard,
             {
-              backgroundColor: colors.surfaceContainerLowest,
-              borderColor: colors.ghostBorder,
+              backgroundColor: "#e8f4f3",
+              borderColor: "#c5dedd",
             },
           ]}
         >
@@ -405,7 +404,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
 
             {/* Play/Pause */}
             <TouchableOpacity
-              style={[styles.playPauseButton, { backgroundColor: colors.secondary, width: Math.round(64 * scale), height: Math.round(64 * scale), borderRadius: Math.round(32 * scale) }]}
+              style={[styles.playPauseButton, { backgroundColor: colors.secondary, width: Math.round(50 * scale), height: Math.round(50 * scale), borderRadius: Math.round(25 * scale) }]}
               onPress={() => {
                 if (player.isPlaying) {
                   trackSpeakerAudioPaused(speaker.id, speaker.speaker, player.positionMs, player.durationMs);
@@ -419,7 +418,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
             >
               <Ionicons
                 name={player.isPlaying ? "pause" : "play"}
-                size={Math.round(32 * scale)}
+                size={Math.round(24 * scale)}
                 color={colors.onSecondary}
                 style={!player.isPlaying ? styles.playIconOffset : undefined}
               />
@@ -470,8 +469,8 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
                       {
                         color: isActive ? colors.onSecondary : colors.textSecondary,
                         fontWeight: isActive ? "700" : "400",
-                        fontSize: typ.bodySmall.fontSize,
-                        lineHeight: typ.bodySmall.lineHeight,
+                        fontSize: 11,
+                        lineHeight: 15,
                       },
                     ]}
                   >
@@ -483,36 +482,6 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
           </View>
 
         </View>
-
-        {/* Quote block */}
-        {speaker.quote && (
-          <SanctuaryCard
-            tone="lowest"
-            style={styles.quoteCard}
-            contentStyle={[styles.quoteCardInner, { backgroundColor: colors.primary }]}
-            elevated
-          >
-            <View style={styles.quoteCardContent}>
-              <View pointerEvents="none" style={styles.quotePatternLayer}>
-                <QuoteWatermarkPattern />
-              </View>
-              <View style={styles.quoteWrap}>
-                <Text
-                  style={[
-                    styles.quoteText,
-                    {
-                      color: colors.onPrimary,
-                      fontSize: typ.quoteBox.fontSize,
-                      lineHeight: typ.quoteBox.lineHeight,
-                    },
-                  ]}
-                >
-                  &ldquo;{normalizeQuoteText(speaker.quote)}&rdquo;
-                </Text>
-              </View>
-            </View>
-          </SanctuaryCard>
-        )}
 
         {/* Meta row */}
         <View style={styles.metaRow}>
@@ -560,14 +529,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingTop: layout.spacing.lg,
+    paddingTop: layout.spacing.md,
     paddingHorizontal: layout.spacing.xl,
     paddingBottom: layout.spacing.xxl,
   },
 
   // ─── Info Section ──────────────────────────────────────────────────────────
   infoSection: {
-    marginBottom: layout.spacing.md,
+    marginBottom: layout.spacing.sm,
   },
   backButton: {
     flexDirection: "row",
@@ -583,51 +552,32 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: fonts.headerFamilyLight,
-    fontSize: 26 + (Platform.OS === "android" ? 2 : 0),
-    lineHeight: 32 + (Platform.OS === "android" ? 2 : 0),
+    fontSize: 24 + (Platform.OS === "android" ? 2 : 0),
+    lineHeight: 30 + (Platform.OS === "android" ? 2 : 0),
     fontWeight: "300",
-    letterSpacing: -0.5,
-    marginBottom: 6,
+    letterSpacing: -0.4,
+    marginBottom: 4,
   },
   speakerMeta: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: layout.spacing.sm + 2,
+    fontSize: 12,
+    lineHeight: 17,
+    marginBottom: layout.spacing.sm,
   },
   subtitle: {
   },
 
   // ─── Quote Block ───────────────────────────────────────────────────────────
-  quoteCard: {
-    marginBottom: layout.spacing.md,
-    borderRadius: 12,
+  quoteBox: {
+    paddingTop: 0,
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+    marginBottom: layout.spacing.md + 8,
   },
-  quoteCardInner: {
-    borderRadius: 12,
-    overflow: "hidden",
-  },
-  quoteCardContent: {
-    position: "relative",
-    overflow: "hidden",
-    borderRadius: 12,
-  },
-  quoteWrap: {
-    paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 18,
-    position: "relative",
-  },
-  quoteText: {
-    ...typography.quoteBox,
-    textAlign: "left",
-    paddingHorizontal: 14,
-    position: "relative",
-    zIndex: 2,
-  },
-  quotePatternLayer: {
-    ...StyleSheet.absoluteFillObject,
-    overflow: "hidden",
-    zIndex: 0,
+  quoteBoxText: {
+    fontFamily: fonts.bodyFamily,
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#2C5F5D",
   },
 
   // ─── Meta Row ──────────────────────────────────────────────────────────────
@@ -656,8 +606,8 @@ const styles = StyleSheet.create({
   // ─── Player Card ───────────────────────────────────────────────────────────
   playerCard: {
     borderRadius: layout.borderRadiusLarge,
-    padding: layout.spacing.lgPlus,
-    marginBottom: layout.spacing.lgPlus,
+    padding: layout.spacing.md,
+    marginBottom: layout.spacing.md,
     borderWidth: 1,
     ...shadows.ambient,
   },
@@ -667,7 +617,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: layout.spacing.md,
+    marginBottom: layout.spacing.sm,
     minHeight: layout.spacing.lgPlus,
   },
   stopButton: {
@@ -732,7 +682,7 @@ const styles = StyleSheet.create({
   timeRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: layout.spacing.md,
+    marginBottom: layout.spacing.sm,
   },
   timeText: {
     ...typography.label,
@@ -743,8 +693,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: layout.spacing.xl,
-    marginBottom: layout.spacing.lgPlus,
+    gap: layout.spacing.xxl,
+    marginBottom: layout.spacing.xl,
   },
   skipButton: {
     alignItems: "center",
@@ -761,18 +711,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   playIconOffset: {
-    marginLeft: 4, // optical center for play triangle
+    marginLeft: 3, // optical center for play triangle
   },
 
   // ─── Speed Selector ────────────────────────────────────────────────────────
   speedRow: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: layout.spacing.sm + 2,
+    gap: layout.spacing.xs + 2,
   },
   speedPill: {
-    paddingHorizontal: layout.spacing.md,
-    paddingVertical: layout.spacing.sm,
+    paddingHorizontal: layout.spacing.sm,
+    paddingVertical: layout.spacing.xs,
     borderRadius: layout.borderRadiusFull,
     borderWidth: 1,
   },

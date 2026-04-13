@@ -159,7 +159,6 @@ export default function MoreTab() {
     >
       <TealHeader
         title="Settings"
-        leftIcon={<MaterialIcons name="settings" size={28} color={colors.textOnAccent} />}
       />
 
       <ScrollView

@@ -463,7 +463,6 @@ export const PrayersScreen: React.FC = () => {
       {/* Teal Gradient Header */}
       <TealHeader
         title="Prayers"
-        leftIcon={<MaterialCommunityIcons name="hands-pray" size={24} color={colors.textOnAccent} />}
         rightAction={
           <TouchableOpacity
             onPress={() => setShowJournalPicker(true)}

@@ -380,7 +380,6 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
       <View style={[styles.container, { backgroundColor: colors.surface }]}>
         <TealHeader
           title={headerTitle}
-          leftIcon={<MaterialIcons name="menu-book" size={24} color={colors.textOnAccent} />}
           onPress={onHeaderPress}
           rightAction={
             onNewJournalEntry ? (

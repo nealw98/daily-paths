@@ -215,7 +215,6 @@ function JournalTabContent() {
     >
       <TealHeader
         title="Notebook"
-        leftIcon={<MaterialIcons name="edit-note" size={28} color={colors.textOnAccent} />}
         rightAction={
           <TouchableOpacity onPress={handleNewEntry} activeOpacity={0.7} style={styles.headerAdd}>
             <Ionicons name="add" size={26} color={colors.onPrimary} />

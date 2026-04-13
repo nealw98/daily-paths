@@ -57,7 +57,6 @@ export const GratitudeHistory: React.FC<GratitudeHistoryProps> = ({
     <View style={styles.container}>
       <TealHeader
         title="Gratitude History"
-        leftIcon={<Ionicons name="heart-outline" size={28} color={colors.textOnAccent} />}
       />
 
       <View style={[styles.actionRow, { borderBottomColor: colors.border }]}>

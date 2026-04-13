@@ -187,8 +187,7 @@ function SpeakersTabContent() {
       >
         <TealHeader
           title="Audio Player"
-          leftIcon={<MaterialIcons name="record-voice-over" size={28} color={colors.textOnAccent} />}
-          onPress={handleBack}
+          onBack={handleBack}
         />
         <SpeakerDetail
           speaker={selectedSpeaker}
@@ -211,7 +210,6 @@ function SpeakersTabContent() {
     >
       <TealHeader
         title="Speakers"
-        leftIcon={<MaterialIcons name="record-voice-over" size={28} color={colors.textOnAccent} />}
         rightAction={
           <TouchableOpacity
             onPress={() => setShowJournalPicker(true)}

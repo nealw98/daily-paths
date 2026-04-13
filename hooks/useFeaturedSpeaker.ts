@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
-import { getAllSpeakerProgress, type SpeakerProgress } from "../utils/speakerProgress";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getAllSpeakerProgress } from "../utils/speakerProgress";
 import type { Speaker } from "../types/speakers";
+
+const FEATURED_IDS_KEY = "@daily_paths_featured_speaker_ids";
 
 export interface FeaturedSpeakerResult {
   speaker: Speaker | null;
@@ -19,26 +22,31 @@ function sortNewest(speakers: Speaker[]): Speaker[] {
   );
 }
 
-/**
- * Determine which "week index" we're in since epoch, rolling every 7 days.
- * Uses a fixed epoch so the rotation is consistent for all users.
- */
-function getWeekIndex(): number {
-  const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
-  // Epoch: Jan 1, 2024 — arbitrary fixed start
-  const epoch = new Date("2024-01-01T00:00:00Z").getTime();
-  return Math.floor((Date.now() - epoch) / MS_PER_WEEK);
+async function getFeaturedIds(): Promise<Set<string>> {
+  const raw = await AsyncStorage.getItem(FEATURED_IDS_KEY);
+  if (!raw) return new Set();
+  try {
+    return new Set(JSON.parse(raw));
+  } catch {
+    return new Set();
+  }
+}
+
+async function saveFeaturedIds(ids: Set<string>): Promise<void> {
+  await AsyncStorage.setItem(FEATURED_IDS_KEY, JSON.stringify([...ids]));
 }
 
 /**
  * Pick the featured speaker for the home page.
  *
  * Logic:
- * 1. Sort speakers newest-first by date (null date falls back to created_at).
- * 2. Filter out any speakers the user has finished.
- * 3. Rotate through the remaining unfinished speakers weekly (rolling 7 days).
- * 4. If all are finished, cycle through finished speakers starting from the
- *    one finished least recently (earliest updatedAt), using the same weekly rotation.
+ * 1. Sort speakers newest-first.
+ * 2. Find the first speaker that is both un-featured and unfinished.
+ * 3. If that speaker is started (has progress) → show "Continue".
+ * 4. Mark the picked speaker as featured.
+ * 5. If all speakers have been featured or finished, reset the featured
+ *    list and start over from the newest unfinished speaker.
+ * 6. If all are finished → show least-recently-finished with "Listen again".
  */
 export function useFeaturedSpeaker(speakers: Speaker[]): FeaturedSpeakerResult {
   const [result, setResult] = useState<FeaturedSpeakerResult>({
@@ -56,40 +64,49 @@ export function useFeaturedSpeaker(speakers: Speaker[]): FeaturedSpeakerResult {
     let cancelled = false;
 
     (async () => {
-      const progressMap = await getAllSpeakerProgress();
+      const [progressMap, featuredIds] = await Promise.all([
+        getAllSpeakerProgress(),
+        getFeaturedIds(),
+      ]);
       if (cancelled) return;
 
       const sorted = sortNewest(speakers);
-      const weekIndex = getWeekIndex();
 
-      // Separate finished vs unfinished
-      const unfinished = sorted.filter((s) => !progressMap[s.id]?.didFinish);
-      const finished = sorted.filter((s) => progressMap[s.id]?.didFinish);
+      // Find the first speaker that is un-featured AND unfinished
+      let picked = sorted.find(
+        (s) => !featuredIds.has(s.id) && !progressMap[s.id]?.didFinish
+      );
 
-      let picked: Speaker;
+      if (!picked) {
+        // All have been featured or finished — reset featured list
+        // and find the newest unfinished speaker
+        featuredIds.clear();
+        picked = sorted.find((s) => !progressMap[s.id]?.didFinish);
+      }
+
       let isListenAgain = false;
 
-      if (unfinished.length > 0) {
-        // Rotate through unfinished speakers weekly
-        const idx = weekIndex % unfinished.length;
-        picked = unfinished[idx];
-      } else {
-        // All finished — cycle through by least-recently-finished first
-        const sortedByFinishTime = [...finished].sort((a, b) => {
+      if (!picked) {
+        // All are finished — pick least-recently-finished
+        const sortedByFinishTime = [...sorted].sort((a, b) => {
           const aTime = progressMap[a.id]?.updatedAt ?? "";
           const bTime = progressMap[b.id]?.updatedAt ?? "";
-          return aTime.localeCompare(bTime); // oldest finish first
+          return aTime.localeCompare(bTime);
         });
-        const idx = weekIndex % sortedByFinishTime.length;
-        picked = sortedByFinishTime[idx];
+        picked = sortedByFinishTime[0];
         isListenAgain = true;
       }
 
-      // Check if the picked speaker has been started (has position > 0 but not finished)
+      // Mark this speaker as featured
+      featuredIds.add(picked.id);
+      await saveFeaturedIds(featuredIds);
+
       const progress = progressMap[picked.id];
       const isStarted = !!(progress && progress.positionMs > 0 && !progress.didFinish);
 
-      setResult({ speaker: picked, isStarted, isListenAgain });
+      if (!cancelled) {
+        setResult({ speaker: picked, isStarted, isListenAgain });
+      }
     })();
 
     return () => {

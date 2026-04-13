@@ -15,6 +15,8 @@ interface TealHeaderProps {
   eyebrow?: string;
   /** Custom back handler. Falls back to router.back(). */
   onBack?: () => void;
+  /** @deprecated No longer used. */
+  leftIcon?: React.ReactNode;
 }
 
 /**
