@@ -15,7 +15,7 @@ import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { useTypography } from "../../hooks/useTypography";
 import { fonts, layout, typography } from "../../constants/theme";
 import type { Speaker } from "../../types/speakers";
-import { FieldShell, FocusPill, SanctuaryCard } from "../ui/Sanctuary";
+import { FieldShell } from "../ui/Sanctuary";
 import { EqualizerBars } from "./EqualizerBars";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
@@ -112,94 +112,49 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
     <TouchableOpacity
       style={styles.cardTouchable}
       onPress={() => onSelectSpeaker(speaker, false)}
-      activeOpacity={0.7}
+      activeOpacity={0.8}
     >
-      <SanctuaryCard
-        tone="lowest"
-        style={styles.card}
-        contentStyle={styles.cardContent}
-        elevated
-      >
-        {/* Active speaker tint overlay (opaque-safe for Android elevation) */}
-        {nowPlayingSpeakerId === speaker.id && (
-          <View
-            style={[StyleSheet.absoluteFill, { backgroundColor: colors.secondaryContainer + "60", borderRadius: layout.borderRadiusLarge }]}
-            pointerEvents="none"
-          />
-        )}
+      <View style={[
+        styles.card,
+        nowPlayingSpeakerId === speaker.id && { backgroundColor: colors.secondaryContainer + "40" },
+      ]}>
+        <View style={styles.cardIconPip}>
+          <Ionicons name="headset-outline" size={18} color="#FFFFFF" />
+        </View>
         <View style={styles.cardBody}>
-          {/* Speaker name + now-playing indicator */}
           <View style={styles.nameRow}>
-            <Text style={[styles.speakerName, dynamicTypography.h3, { color: colors.primaryContainer, flex: 1 }]}>
+            <Text style={[styles.speakerName, { color: colors.onSurface, fontSize: Math.round(17 * scale), lineHeight: Math.round(22 * scale) }]}>
               {speaker.speaker}
             </Text>
             {nowPlayingSpeakerId === speaker.id && (
               <View style={styles.nowPlayingBadge}>
                 <EqualizerBars isPlaying={!!isPlaying} color={colors.secondary} />
-                <Text
-                  style={[
-                    styles.nowPlayingBadgeLabel,
-                    {
-                      color: colors.textSecondary,
-                      fontSize: dynamicTypography.caption.fontSize,
-                      lineHeight: dynamicTypography.caption.lineHeight,
-                    },
-                  ]}
-                >
+                <Text style={[styles.nowPlayingBadgeLabel, { color: colors.textSecondary }]}>
                   {isPlaying ? "Now Playing" : "Paused"}
                 </Text>
               </View>
             )}
           </View>
-
-          {/* Hometown */}
-          {speaker.hometown && (
-            <Text
-              style={[styles.hometown, dynamicTypography.caption, { color: colors.accent }]}
-            >
-              {speaker.hometown.toUpperCase()}
-            </Text>
-          )}
-
-          {/* Title */}
-          <Text
-            style={[dynamicTypography.body, styles.title, { color: colors.text }]}
-            numberOfLines={2}
-          >
+          <Text style={[styles.title, { color: colors.onSurfaceVariant, fontSize: Math.round(14 * scale), lineHeight: Math.round(19 * scale) }]} numberOfLines={2}>
             {speaker.title}
           </Text>
-
           {/* Badges row */}
           <View style={styles.badgesRow}>
             {speaker.explicit && (
               <View style={[styles.explicitBadge, { backgroundColor: colors.danger + "15" }]}>
-                <Text
-                  style={[
-                    styles.explicitText,
-                    { color: colors.danger, fontSize: Math.round(typography.labelMedium.fontSize * scale) },
-                  ]}
-                >
-                  E
-                </Text>
+                <Text style={[styles.explicitText, { color: colors.danger }]}>E</Text>
               </View>
             )}
             {downloadedIds.has(speaker.id) && (
               <View style={[styles.downloadedBadge, { backgroundColor: colors.secondary + "24" }]}>
-                <Ionicons name="checkmark-circle" size={Math.round(12 * scale)} color={colors.secondary} />
-                <Text
-                  style={[
-                    styles.downloadedText,
-                    { color: colors.secondary, fontSize: Math.round(typography.labelMedium.fontSize * scale) },
-                  ]}
-                >
-                  Downloaded
-                </Text>
+                <Ionicons name="checkmark-circle" size={12} color={colors.secondary} />
+                <Text style={[styles.downloadedText, { color: colors.secondary }]}>Downloaded</Text>
               </View>
             )}
           </View>
         </View>
-
-      </SanctuaryCard>
+        <Ionicons name="chevron-forward" size={18} color="#B0B0B0" />
+      </View>
     </TouchableOpacity>
   );
 
@@ -282,14 +237,22 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
         {sortOptions.map(({ key, label }) => {
           const isActive = sortMode === key;
           return (
-            <FocusPill
+            <TouchableOpacity
               key={key}
-              label={label}
-              selected={isActive}
               onPress={() => setSortMode(key)}
-              style={styles.sortButton}
-              labelStyle={[styles.sortLabel, { fontSize: Math.round(13 * scale) }]}
-            />
+              activeOpacity={0.7}
+              style={[
+                styles.sortButton,
+                isActive && styles.sortButtonActive,
+              ]}
+            >
+              <Text style={[
+                styles.sortLabel,
+                { color: isActive ? "#FFFFFF" : colors.onSurfaceVariant },
+              ]}>
+                {label}
+              </Text>
+            </TouchableOpacity>
           );
         })}
       </View>
@@ -362,42 +325,58 @@ const styles = StyleSheet.create({
     marginBottom: layout.spacing.xs,
   },
   sortButton: {
-    minHeight: 36,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  sortButtonActive: {
+    backgroundColor: "#2C5F5D",
   },
   sortLabel: {
     fontFamily: fonts.labelFamily,
+    fontSize: 13,
     letterSpacing: 0.3,
   },
 
   cardTouchable: {
-    marginBottom: layout.spacing.sm + layout.spacing.xs,
+    marginBottom: layout.spacing.sm,
   },
   card: {
-    borderRadius: layout.borderRadiusLarge,
-  },
-  cardContent: {
     flexDirection: "row",
-    paddingVertical: layout.spacing.md,
-    paddingLeft: layout.spacing.md,
-    paddingRight: layout.spacing.md - 2,
+    alignItems: "center",
+    backgroundColor: "#e8f4f3",
+    borderColor: "#c5dedd",
+    borderWidth: 0.5,
+    borderRadius: 10,
+    padding: 10,
+    paddingHorizontal: 11,
+    gap: 11,
+  },
+  cardIconPip: {
+    width: 34,
+    height: 34,
+    borderRadius: 9,
+    backgroundColor: "#2C5F5D",
+    alignItems: "center",
+    justifyContent: "center",
   },
   cardBody: {
     flex: 1,
-    marginRight: layout.spacing.sm + layout.spacing.xs,
+    gap: 1,
   },
 
   // ─── Speaker Info ──────────────────────────────────────────────────────────
   speakerName: {
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 17,
+    lineHeight: 22,
     includeFontPadding: false,
-    marginBottom: 2,
-  },
-  hometown: {
-    letterSpacing: 0.5,
-    marginBottom: layout.spacing.md,
   },
   title: {
+    fontFamily: fonts.bodyFamily,
+    fontSize: 14,
+    lineHeight: 19,
     letterSpacing: -0.1,
-    lineHeight: 22,
   },
   // ─── Badges Row ──────────────────────────────────────────────────────────
   badgesRow: {
@@ -453,9 +432,11 @@ const styles = StyleSheet.create({
     marginLeft: layout.spacing.sm,
   },
   nowPlayingBadgeLabel: {
-    ...typography.caption,
-    fontWeight: "600",
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 10,
+    lineHeight: 14,
     textTransform: "uppercase",
+    letterSpacing: 0.4,
   },
 
 

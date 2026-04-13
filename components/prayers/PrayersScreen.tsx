@@ -130,7 +130,7 @@ export const PrayersScreen: React.FC = () => {
           }}
           activeOpacity={0.7}
         >
-          <Text style={[styles.prayerTitle, typography.h3, { color: colors.primaryContainer }]}>
+          <Text style={[styles.prayerTitle, typography.h3, { color: colors.primaryContainer, fontSize: 17, lineHeight: 22 }]}>
             {prayer.title}
           </Text>
           <Ionicons
@@ -144,7 +144,7 @@ export const PrayersScreen: React.FC = () => {
           <Text
             style={[
               styles.prayerPreview,
-              { color: colors.ink, fontSize: typography.body.fontSize, lineHeight: typography.body.lineHeight },
+              { color: colors.ink, fontSize: 14, lineHeight: 19 },
             ]}
             numberOfLines={3}
           >
@@ -154,7 +154,7 @@ export const PrayersScreen: React.FC = () => {
 
         {isExpanded && !isEditing && (
           <View style={styles.prayerBody}>
-            <Text style={[styles.prayerText, { color: colors.ink, fontSize: typography.body.fontSize, lineHeight: typography.body.lineHeight }]}>
+            <Text style={[styles.prayerText, { color: colors.ink, fontSize: 14, lineHeight: 19 }]}>
               {renderPrayerText(prayer.text, boldPhrases)}
             </Text>
             {prayer.source && (
@@ -339,7 +339,7 @@ export const PrayersScreen: React.FC = () => {
           }}
           activeOpacity={0.7}
         >
-          <Text style={[styles.prayerTitle, typography.h3, { color: colors.primaryContainer }]}>
+          <Text style={[styles.prayerTitle, typography.h3, { color: colors.primaryContainer, fontSize: 17, lineHeight: 22 }]}>
             {prayer.title}
           </Text>
           <Ionicons
@@ -353,7 +353,7 @@ export const PrayersScreen: React.FC = () => {
           <Text
             style={[
               styles.prayerPreview,
-              { color: colors.ink, fontSize: typography.body.fontSize, lineHeight: typography.body.lineHeight },
+              { color: colors.ink, fontSize: 14, lineHeight: 19 },
             ]}
             numberOfLines={3}
           >
@@ -363,7 +363,7 @@ export const PrayersScreen: React.FC = () => {
 
         {isExpanded && !isEditing && (
           <View style={styles.prayerBody}>
-            <Text style={[styles.prayerText, { color: colors.ink, fontSize: typography.body.fontSize, lineHeight: typography.body.lineHeight }]}>
+            <Text style={[styles.prayerText, { color: colors.ink, fontSize: 14, lineHeight: 19 }]}>
               {prayer.text}
             </Text>
           </View>
@@ -624,7 +624,9 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   prayerPreview: {
-    ...staticTypography.bodyLarge,
+    fontFamily: fonts.bodyFamily,
+    fontSize: 14,
+    lineHeight: 19,
     marginTop: 6,
   },
   prayerBody: {
@@ -632,7 +634,9 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   prayerText: {
-    ...staticTypography.bodyLarge,
+    fontFamily: fonts.bodyFamily,
+    fontSize: 14,
+    lineHeight: 19,
   },
   prayerSource: {
     fontFamily: fonts.bodyFamilySemiBold,

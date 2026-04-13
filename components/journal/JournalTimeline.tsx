@@ -296,7 +296,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
                   style={[
                     styles.entryTypeLabel,
                     typography.bodyLarge,
-                    { color: catColor, fontFamily: fonts.bodyFamilyBold },
+                    { color: catColor, fontFamily: fonts.bodyFamilyBold, fontSize: 15, lineHeight: 20 },
                   ]}
                 >
                   {catLabel}
@@ -334,7 +334,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
         <View style={styles.timelineLineColumn}>
           <View style={[styles.timelineDot, { backgroundColor: colors.primary }]} />
         </View>
-        <Text style={[styles.dateLabel, typography.h3, { color: colors.primary }]}>
+        <Text style={[styles.dateLabel, typography.h3, { color: colors.primary, fontSize: 17, lineHeight: 22 }]}>
           {label}
         </Text>
       </View>
@@ -563,6 +563,8 @@ const styles = StyleSheet.create({
   },
   progressValue: {
     ...staticTypography.h2,
+    fontSize: 24,
+    lineHeight: 30,
   },
   progressLabel: {
     marginBottom: 4,
