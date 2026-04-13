@@ -167,7 +167,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <Ionicons name="checkmark-circle" size={Math.round(14 * scale)} color={colors.secondary} />
-          <Text style={[styles.dlInlineText, { color: colors.secondary, fontWeight: "600", fontSize: typ.label.fontSize }]}>
+          <Text style={[styles.nowPlayingLabel, { color: colors.secondary, fontSize: typ.label.fontSize, lineHeight: typ.label.lineHeight }]}>
             Downloaded
           </Text>
         </TouchableOpacity>
@@ -175,27 +175,16 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
     }
 
     // Not downloaded
-    const sizeLabel = "Download";
-
     return (
       <TouchableOpacity
-        style={[styles.dlButton, { backgroundColor: colors.secondaryContainer, borderColor: colors.ghostBorder }]}
+        style={styles.dlInlineRow}
         onPress={handleDownloadPress}
         activeOpacity={0.6}
-        hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        <Ionicons name="download-outline" size={Math.round(14 * scale)} color={colors.onSecondaryContainer} />
-        <Text
-          style={[
-            styles.dlButtonText,
-            {
-              color: colors.onSecondaryContainer,
-              fontSize: typ.label.fontSize,
-              lineHeight: typ.label.lineHeight,
-            },
-          ]}
-        >
-          {sizeLabel}
+        <Ionicons name="download-outline" size={Math.round(14 * scale)} color={colors.textSecondary} />
+        <Text style={[styles.nowPlayingLabel, { color: colors.textSecondary, fontSize: typ.label.fontSize, lineHeight: typ.label.lineHeight }]}>
+          Download
         </Text>
       </TouchableOpacity>
     );
