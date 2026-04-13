@@ -30,6 +30,7 @@ import { GuidedPromptEditor } from "./GuidedPromptEditor";
 import { EntryTypeIcon } from "../../utils/entryTypeIcon";
 import { Seedling } from "../../components/icons";
 import { FieldShell, SanctuaryButton, SanctuaryCard } from "../ui/Sanctuary";
+import { TealHeader } from "../shared/TealHeader";
 
 interface JournalEntryDetailProps {
   entry: JournalEntry;
@@ -457,42 +458,20 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <View style={[styles.gradientHeader, { backgroundColor: colors.primary }]}>
-          <View style={styles.headerTitleRow}>
-            <TouchableOpacity
-              onPress={onBack}
-              activeOpacity={0.7}
-              style={[styles.headerIconShell, { backgroundColor: colors.onPrimary + "1A" }]}
-            >
-              <MaterialIcons name="edit-note" size={26} color={colors.onPrimary} />
-            </TouchableOpacity>
-            <View style={styles.headerTextBlock}>
-              <Text style={[styles.headerEyebrow, { color: colors.secondaryContainer }]}>Notebook entry</Text>
-              <Text style={[styles.headerTitleText, { color: colors.onPrimary }]}>{catLabel}</Text>
+        <TealHeader
+          title={catLabel}
+          onBack={onBack}
+          rightAction={
+            <View style={styles.actionIcons}>
+              <TouchableOpacity onPress={handleShare} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name="arrow-redo-outline" size={22} color={colors.onPrimary} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleDelete} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name="trash-outline" size={22} color={colors.onPrimary} />
+              </TouchableOpacity>
             </View>
-          </View>
-        </View>
-
-        {/* Back + Actions */}
-        <View style={[styles.backActionRow, { paddingHorizontal: 20 }]}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={onBack}
-            activeOpacity={0.7}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Ionicons name="chevron-back" size={18} color={colors.primaryContainer} />
-            <Text style={[styles.backLabel, { color: colors.primaryContainer }]}>Back</Text>
-          </TouchableOpacity>
-          <View style={styles.actionIcons}>
-            <TouchableOpacity onPress={handleShare} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons name="arrow-redo-outline" size={22} color={colors.onSurfaceVariant} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleDelete} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons name="trash-outline" size={22} color={colors.danger} />
-            </TouchableOpacity>
-          </View>
-        </View>
+          }
+        />
 
         {/* Date & Time */}
         <View style={[styles.dateBar, { backgroundColor: colors.surface }]}>

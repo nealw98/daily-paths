@@ -1,37 +1,36 @@
 import React from "react";
-import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { fonts, layout, typography as staticTypography } from "../../constants/theme";
 
 interface TealHeaderProps {
   title: string;
-  /** @deprecated — icon is now the app logo. Kept for compat but ignored. */
-  leftIcon?: React.ReactNode;
   onPress?: () => void;
   rightAction?: React.ReactNode;
-  /** If true, tapping the icon navigates home. Defaults to true. */
-  navigateHome?: boolean;
+  /** If true, hides the back arrow (used on home screen). */
+  hideIcon?: boolean;
+  /** Optional eyebrow text above the title. */
+  eyebrow?: string;
+  /** Custom back handler. Falls back to router.back(). */
+  onBack?: () => void;
 }
 
 /**
  * Shared structural header for top-level screens.
- * The left icon is always the app logo; tapping it returns to the home tab.
+ * Shows a back arrow by default; home screen hides it via hideIcon.
  */
 export const TealHeader: React.FC<TealHeaderProps> = ({
   title,
   onPress,
   rightAction,
-  navigateHome = true,
+  hideIcon = false,
+  eyebrow,
+  onBack,
 }) => {
   const { colors } = useTheme();
   const router = useRouter();
-
-  const handleIconPress = () => {
-    if (navigateHome) {
-      router.push("/(tabs)/home");
-    }
-  };
 
   return (
     <View
@@ -43,27 +42,26 @@ export const TealHeader: React.FC<TealHeaderProps> = ({
       ]}
     >
       <View style={styles.row}>
-        <TouchableOpacity
-          onPress={handleIconPress}
-          activeOpacity={0.7}
-          style={styles.iconShell}
-        >
-          <Image
-            source={require("../../assets/adaptive-icon.png")}
-            style={styles.iconImage}
-            resizeMode="cover"
-          />
-          <View style={styles.iconOverlay} pointerEvents="none" />
-        </TouchableOpacity>
+        {!hideIcon && (
+          <TouchableOpacity
+            onPress={onBack ?? (() => router.back())}
+            activeOpacity={0.7}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={24} color={colors.onPrimary} />
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           disabled={!onPress}
           onPress={onPress}
           activeOpacity={onPress ? 0.8 : 1}
           style={styles.textBlock}
         >
-          <Text style={[styles.eyebrow, { color: colors.secondaryContainer }]}>
-            Daily Paths
-          </Text>
+          {eyebrow ? (
+            <Text style={[styles.eyebrow, { color: colors.secondaryContainer }]}>
+              {eyebrow}
+            </Text>
+          ) : null}
           <Text style={[styles.title, { color: colors.onPrimary }]}>{title}</Text>
         </TouchableOpacity>
         {rightAction ?? null}
@@ -83,23 +81,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
-  iconShell: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
+  backButton: {
+    width: 40,
+    height: 40,
     alignItems: "center",
     justifyContent: "center",
-    overflow: "hidden",
-  },
-  iconImage: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-  },
-  iconOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(255, 255, 255, 0.20)",
-    borderRadius: 10,
   },
   textBlock: {
     flex: 1,

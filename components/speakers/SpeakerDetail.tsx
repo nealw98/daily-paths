@@ -583,13 +583,15 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: fonts.headerFamilyLight,
-    fontSize: 36 + (Platform.OS === "android" ? 2 : 0),
-    lineHeight: 44 + (Platform.OS === "android" ? 2 : 0),
+    fontSize: 26 + (Platform.OS === "android" ? 2 : 0),
+    lineHeight: 32 + (Platform.OS === "android" ? 2 : 0),
     fontWeight: "300",
-    letterSpacing: -0.9,
+    letterSpacing: -0.5,
     marginBottom: 6,
   },
   speakerMeta: {
+    fontSize: 14,
+    lineHeight: 20,
     marginBottom: layout.spacing.sm + 2,
   },
   subtitle: {

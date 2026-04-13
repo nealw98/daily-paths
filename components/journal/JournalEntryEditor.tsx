@@ -34,6 +34,7 @@ import { EntryTypeIcon } from "../../utils/entryTypeIcon";
 import { Seedling } from "../../components/icons";
 import { QuoteWatermarkPattern } from "../shared/QuoteWatermarkPattern";
 import { FieldShell, SanctuaryButton, SanctuaryCard } from "../ui/Sanctuary";
+import { TealHeader } from "../shared/TealHeader";
 import { useAppDate } from "../../contexts/AppDateContext";
 
 interface JournalEntryEditorProps {
@@ -372,32 +373,10 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={0}
       >
-        <View style={[styles.gradientHeader, { backgroundColor: colors.surface }]}>
-          <View style={styles.headerTitleRow}>
-            <TouchableOpacity
-              onPress={handleCancel}
-              activeOpacity={0.7}
-              style={[styles.headerIconShell, { backgroundColor: colors.primaryContainer }]}
-            >
-              <MaterialIcons name="edit-note" size={26} color={colors.onPrimary} />
-            </TouchableOpacity>
-            <View style={styles.headerTextBlock}>
-              <Text style={[styles.headerEyebrow, { color: "#7BCEC4" }]}>
-                {isEditing ? "Edit entry" : "New entry"}
-              </Text>
-              <Text style={[styles.headerTitleText, { color: colors.onSurface }]}>
-                {categoryLabel}
-              </Text>
-            </View>
-            <TouchableOpacity
-              onPress={() => setShowCategoryPicker(true)}
-              activeOpacity={0.7}
-              style={styles.headerAdd}
-            >
-              <Ionicons name="add" size={24} color={colors.primary} />
-            </TouchableOpacity>
-          </View>
-        </View>
+        <TealHeader
+          title={categoryLabel}
+          onBack={handleCancel}
+        />
 
         {entryType !== "journal" &&
         entryType !== "gratitude" &&

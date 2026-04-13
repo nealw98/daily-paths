@@ -127,15 +127,6 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
             pointerEvents="none"
           />
         )}
-        {/* Decorative headphone watermark (inactive cards only) */}
-        {nowPlayingSpeakerId !== speaker.id && (
-          <Ionicons
-            name="headset"
-            size={160}
-            color="#BAECE626"
-            style={[styles.headphoneWatermark, { transform: [{ rotate: "30deg" }] }]}
-          />
-        )}
         <View style={styles.cardBody}>
           {/* Speaker name + now-playing indicator */}
           <View style={styles.nameRow}>

@@ -61,8 +61,14 @@ export default function HomeTab() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={["top"]}>
       <TealHeader
-        title="Today"
-        navigateHome={false}
+        title={new Date().toLocaleDateString("en-US", {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        })}
+        eyebrow="Daily Paths"
+        hideIcon
       />
       <ScrollView
         style={[styles.scroll, { backgroundColor: colors.surface }]}
@@ -141,47 +147,33 @@ export default function HomeTab() {
           </View>
         </TouchableOpacity>
 
-        {/* ── Notebook 2×2 Grid ── */}
+        {/* ── Daily Tools List ── */}
         <Text style={[styles.sectionTitle, { color: colors.onSurface, marginTop: 56 }]}>
-          Notebook
+          Daily Tools
         </Text>
-        <View style={styles.grid}>
+        <View style={styles.toolsList}>
           {JOURNAL_CATEGORIES.map((cat) => (
             <TouchableOpacity
               key={cat.id}
               activeOpacity={0.8}
               onPress={() => setJournalEntryType(cat.id)}
-              style={[
-                styles.notebookCard,
-                {
-                  backgroundColor: isDark
-                    ? colors.surfaceContainerHigh
-                    : cat.bgColor,
-                },
-              ]}
+              style={styles.toolRow}
             >
-              <Ionicons
-                name={cat.icon as any}
-                size={24}
-                color={cat.color}
-              />
-              <Text
-                style={[
-                  styles.notebookLabel,
-                  { color: colors.onSurface },
-                ]}
-              >
-                {cat.label}
-              </Text>
-              <Text
-                style={[
-                  styles.notebookTag,
-                  { color: colors.onSurfaceVariant },
-                ]}
-                numberOfLines={2}
-              >
-                {cat.description}
-              </Text>
+              <View style={styles.toolIconPip}>
+                <Ionicons name={cat.icon as any} size={18} color="#FFFFFF" />
+              </View>
+              <View style={styles.toolText}>
+                <Text style={[styles.notebookLabel, { color: colors.onSurface }]}>
+                  {cat.label}
+                </Text>
+                <Text
+                  style={[styles.notebookTag, { color: colors.onSurfaceVariant }]}
+                  numberOfLines={2}
+                >
+                  {cat.description}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#B0B0B0" />
             </TouchableOpacity>
           ))}
         </View>
@@ -247,40 +239,26 @@ export default function HomeTab() {
         <Text style={[styles.sectionTitle, { color: colors.onSurface, marginTop: 56 }]}>
           Prayers
         </Text>
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={() => router.push("/(tabs)/prayers")}
-          style={[
-            styles.prayersCard,
-            {
-              backgroundColor: colors.surfaceContainerLowest,
-              overflow: "hidden",
-            },
-          ]}
-        >
-          <View
-            style={[StyleSheet.absoluteFill, { backgroundColor: colors.secondaryContainer + "80", borderRadius: layout.borderRadius }]}
-            pointerEvents="none"
-          />
-          <MaterialCommunityIcons
-            name="hands-pray"
-            size={24}
-            color={colors.secondary}
-            style={{ opacity: 0.7 }}
-          />
-          <Text style={[styles.prayersTitle, { color: colors.onSurface }]}>
-            Your Prayers
-          </Text>
-          <Text style={[styles.prayersSubtitle, { color: colors.onSurfaceVariant }]}>
-            A collection of prayers — and a place to add your own.
-          </Text>
-          <View style={styles.ctaRow}>
-            <Text style={[styles.readMore, { color: colors.accent }]}>
-              Open
-            </Text>
-            <MaterialIcons name="chevron-right" size={20} color={colors.accent} />
-          </View>
-        </TouchableOpacity>
+        <View style={styles.toolsList}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => router.push("/(tabs)/prayers")}
+            style={styles.toolRow}
+          >
+            <View style={styles.toolIconPip}>
+              <MaterialCommunityIcons name="hands-pray" size={18} color="#FFFFFF" />
+            </View>
+            <View style={styles.toolText}>
+              <Text style={[styles.notebookLabel, { color: colors.onSurface }]}>
+                Your Prayers
+              </Text>
+              <Text style={[styles.notebookTag, { color: colors.onSurfaceVariant }]} numberOfLines={2}>
+                A collection of prayers — and a place to add your own.
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#B0B0B0" />
+          </TouchableOpacity>
+        </View>
 
         {/* Bottom spacing */}
         <View style={{ height: 32 }} />
@@ -397,25 +375,33 @@ const styles = StyleSheet.create({
     marginHorizontal: layout.spacing.lgPlus,
   },
 
-  // Notebook 2×2
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 16,
+  // Daily Tools list
+  toolsList: {
     paddingHorizontal: layout.spacing.md,
+    gap: 24,
   },
-  notebookCard: {
-    borderRadius: layout.borderRadius,
-    padding: 14,
-    gap: 4,
-    flexGrow: 1,
-    flexShrink: 0,
-    flexBasis: "40%",
-    shadowColor: "#000000",
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
+  toolRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#e8f4f3",
+    borderColor: "#c5dedd",
+    borderWidth: 0.5,
+    borderRadius: 10,
+    padding: 10,
+    paddingHorizontal: 11,
+    gap: 11,
+  },
+  toolIconPip: {
+    width: 34,
+    height: 34,
+    borderRadius: 9,
+    backgroundColor: "#2C5F5D",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  toolText: {
+    flex: 1,
+    gap: 1,
   },
   notebookLabel: {
     fontFamily: fonts.bodyFamilySemiBold,
