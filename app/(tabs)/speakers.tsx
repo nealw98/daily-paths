@@ -182,7 +182,7 @@ function SpeakersTabContent() {
   if (view === "detail" && selectedSpeaker) {
     return (
       <SafeAreaView
-        style={[styles.container, { backgroundColor: colors.pearl }]}
+        style={[styles.container, { backgroundColor: colors.surface }]}
         edges={["top"]}
       >
         <TealHeader
@@ -205,7 +205,7 @@ function SpeakersTabContent() {
 
   return (
     <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={[styles.container, { backgroundColor: colors.surface }]}
       edges={["top"]}
     >
       <TealHeader

@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
   },
 
   cardTouchable: {
-    marginBottom: layout.spacing.sm,
+    marginBottom: layout.spacing.md,
   },
   card: {
     flexDirection: "row",

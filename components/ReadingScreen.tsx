@@ -463,7 +463,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                   key={`opening-${index}`}
                   style={[
                     styles.bodyText,
-                    { color: colors.onSurface, fontSize: 14, lineHeight: 20 },
+                    { color: colors.onSurface, fontSize: typography.body.fontSize, lineHeight: typography.body.lineHeight },
                   ]}
                 >
                   {renderInlineMarkdown(paragraph, styles.inlineItalic)}
@@ -475,7 +475,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                   key={index}
                   style={[
                     styles.bodyText,
-                    { color: colors.onSurface, fontSize: 14, lineHeight: 20 },
+                    { color: colors.onSurface, fontSize: typography.body.fontSize, lineHeight: typography.body.lineHeight },
                   ]}
                 >
                   {renderInlineMarkdown(paragraph, styles.inlineItalic)}
@@ -509,8 +509,8 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                             style={[
                               styles.practiceText,
                               {
-                                fontSize: 14,
-                                lineHeight: 20,
+                                fontSize: typography.body.fontSize,
+                                lineHeight: typography.quoteBox.lineHeight,
                                 color: colors.onSurfaceVariant,
                               },
                               index === applicationParagraphs.length - 1 ? styles.practiceTextLast : null,
@@ -851,9 +851,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   bodyText: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: 14,
-    lineHeight: 20,
+    ...staticTypography.bodyLarge,
     marginBottom: 18,
   },
   inlineItalic: {

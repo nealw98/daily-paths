@@ -210,7 +210,7 @@ function JournalTabContent() {
   // Default: Timeline view
   return (
     <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={[styles.container, { backgroundColor: colors.surface }]}
       edges={["top"]}
     >
       <TealHeader
