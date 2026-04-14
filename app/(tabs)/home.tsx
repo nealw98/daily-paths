@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -7,22 +7,26 @@ import {
   StyleSheet,
   ActivityIndicator,
   ImageBackground,
+  Platform,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
+import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
 import { useTheme } from "../../hooks/useTheme";
 import { useReading } from "../../hooks/useReading";
 import { useAppDate } from "../../contexts/AppDateContext";
 import { useSpeakers } from "../../hooks/useSpeakers";
 import { usePersonalPrayers } from "../../hooks/usePersonalPrayers";
+import { useSubscriptionContext } from "../../contexts/SubscriptionContext";
 import { fonts, layout, typography, shadows } from "../../constants/theme";
 import { JOURNAL_CATEGORIES, type EntryType } from "../../constants/journalCategories";
 import { JournalEntryEditor } from "../../components/journal/JournalEntryEditor";
 import { useJournalStorage } from "../../hooks/useJournalStorage";
 import { TealHeader } from "../../components/shared/TealHeader";
 import { useFeaturedSpeaker } from "../../hooks/useFeaturedSpeaker";
+import { qaLog } from "../../utils/qaLog";
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -34,6 +38,7 @@ function getGreeting(): string {
 export default function HomeTab() {
   const { colors, isDark } = useTheme();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { today } = useAppDate();
   const { reading, loading: readingLoading } = useReading(today);
   const { speakers } = useSpeakers();
@@ -41,6 +46,32 @@ export default function HomeTab() {
   const { speaker: featuredSpeaker, isStarted: speakerIsStarted, isListenAgain } = useFeaturedSpeaker(speakers);
   const { createEntry } = useJournalStorage();
   const [journalEntryType, setJournalEntryType] = useState<EntryType | null>(null);
+
+  const { gate, refresh: refreshSub } = useSubscriptionContext();
+  const isFree = gate === "paywall";
+  const presentingPaywall = useRef(false);
+
+  const presentPaywall = useCallback(async () => {
+    if (presentingPaywall.current) return;
+    presentingPaywall.current = true;
+    qaLog("paywall", "Home free-state presenting paywall");
+    try {
+      const result = await RevenueCatUI.presentPaywall();
+      qaLog("paywall", "Home free-state paywall result", { result });
+      if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) {
+        await refreshSub();
+        await new Promise((resolve) => setTimeout(resolve, 350));
+        await refreshSub();
+      }
+    } catch (err) {
+      qaLog("paywall", "Home free-state paywall error", { error: String(err) });
+    } finally {
+      presentingPaywall.current = false;
+    }
+  }, [refreshSub]);
+
+  // The home tab's container is rendered inside the tab content area, so
+  // bottom: 0 is already flush with the top edge of the tab bar.
 
   // If user picked a journal type, show the editor full-screen
   if (journalEntryType) {
@@ -148,7 +179,13 @@ export default function HomeTab() {
         </TouchableOpacity>
 
         {/* ── Daily Tools List ── */}
-        <Text style={[styles.sectionTitle, { color: colors.onSurface, marginTop: 56 }]}>
+        <Text
+          style={[
+            styles.sectionTitle,
+            { color: colors.onSurface, marginTop: 56 },
+            isFree && styles.sectionTitleToolsFree,
+          ]}
+        >
           Daily Tools
         </Text>
         <View style={styles.toolsList}>
@@ -156,11 +193,21 @@ export default function HomeTab() {
             <TouchableOpacity
               key={cat.id}
               activeOpacity={0.8}
-              onPress={() => setJournalEntryType(cat.id)}
-              style={styles.toolRow}
+              onPress={() => {
+                if (isFree) {
+                  void presentPaywall();
+                } else {
+                  setJournalEntryType(cat.id);
+                }
+              }}
+              style={[styles.toolRow, isFree && styles.toolRowFree]}
             >
-              <View style={styles.toolIconPip}>
-                <Ionicons name={cat.icon as any} size={18} color="#FFFFFF" />
+              <View style={[styles.toolIconPip, isFree && styles.toolIconPipFree]}>
+                <Ionicons
+                  name={cat.icon as any}
+                  size={18}
+                  color={isFree ? "#aaa" : "#FFFFFF"}
+                />
               </View>
               <View style={styles.toolText}>
                 <Text style={[styles.notebookLabel, { color: colors.onSurface }]}>
@@ -179,14 +226,26 @@ export default function HomeTab() {
         </View>
 
         {/* ── Speaker Feature Card ── */}
-        <Text style={[styles.sectionTitle, { color: colors.onSurface, marginTop: 56 }]}>
+        <Text
+          style={[
+            styles.sectionTitle,
+            { color: colors.onSurface, marginTop: 56 },
+            isFree && styles.sectionTitleSpeakersFree,
+          ]}
+        >
           Speakers
         </Text>
         {featuredSpeaker ? (
           <TouchableOpacity
             activeOpacity={0.85}
-            onPress={() => router.push({ pathname: "/(tabs)/speakers", params: { speakerId: featuredSpeaker.id } })}
-            style={styles.speakerCard}
+            onPress={() => {
+              if (isFree) {
+                void presentPaywall();
+              } else {
+                router.push({ pathname: "/(tabs)/speakers", params: { speakerId: featuredSpeaker.id } });
+              }
+            }}
+            style={[styles.speakerCard, isFree && styles.speakerSectionFree]}
           >
             <LinearGradient
               colors={[colors.primary, colors.primaryContainer]}
@@ -226,8 +285,14 @@ export default function HomeTab() {
         ) : null}
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={() => router.push("/(tabs)/speakers")}
-          style={styles.exploreRow}
+          onPress={() => {
+            if (isFree) {
+              void presentPaywall();
+            } else {
+              router.push("/(tabs)/speakers");
+            }
+          }}
+          style={[styles.exploreRow, isFree && styles.speakerSectionFree]}
         >
           <Text style={[styles.exploreText, { color: colors.secondary }]}>
             Explore all speakers
@@ -236,17 +301,33 @@ export default function HomeTab() {
         </TouchableOpacity>
 
         {/* ── Prayers Card ── */}
-        <Text style={[styles.sectionTitle, { color: colors.onSurface, marginTop: 56 }]}>
+        <Text
+          style={[
+            styles.sectionTitle,
+            { color: colors.onSurface, marginTop: 56 },
+            isFree && styles.sectionTitleToolsFree,
+          ]}
+        >
           Prayers
         </Text>
         <View style={styles.toolsList}>
           <TouchableOpacity
             activeOpacity={0.8}
-            onPress={() => router.push("/(tabs)/prayers")}
-            style={styles.toolRow}
+            onPress={() => {
+              if (isFree) {
+                void presentPaywall();
+              } else {
+                router.push("/(tabs)/prayers");
+              }
+            }}
+            style={[styles.toolRow, isFree && styles.toolRowFree]}
           >
-            <View style={styles.toolIconPip}>
-              <MaterialCommunityIcons name="hands-pray" size={18} color="#FFFFFF" />
+            <View style={[styles.toolIconPip, isFree && styles.toolIconPipFree]}>
+              <MaterialCommunityIcons
+                name="hands-pray"
+                size={18}
+                color={isFree ? "#aaa" : "#FFFFFF"}
+              />
             </View>
             <View style={styles.toolText}>
               <Text style={[styles.notebookLabel, { color: colors.onSurface }]}>
@@ -260,9 +341,28 @@ export default function HomeTab() {
           </TouchableOpacity>
         </View>
 
-        {/* Bottom spacing */}
-        <View style={{ height: 32 }} />
+        {/* Bottom spacing — extra room so the persistent pill doesn't cover content */}
+        <View style={{ height: isFree ? 96 : 32 }} />
       </ScrollView>
+
+      {/* ── Persistent unlock pill (free users only) ── */}
+      {isFree ? (
+        <View
+          pointerEvents="box-none"
+          style={styles.unlockPillWrapper}
+        >
+          <View style={styles.unlockPill}>
+            <Text style={styles.unlockPillText}>Unlock the full experience</Text>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => void presentPaywall()}
+              style={styles.unlockPillButton}
+            >
+              <Text style={styles.unlockPillButtonText}>Subscribe</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -459,11 +559,6 @@ const styles = StyleSheet.create({
   speakerCard: {
     marginHorizontal: layout.spacing.md,
     borderRadius: layout.borderRadius,
-    shadowColor: "#000000",
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
   },
   speakerWatermark: {
     position: "absolute",
@@ -517,5 +612,60 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyFamilySemiBold,
     fontSize: 15,
     letterSpacing: 0.1,
+  },
+
+  // Free-user faded states
+  toolRowFree: {
+    opacity: 0.5,
+  },
+  toolIconPipFree: {
+    backgroundColor: "#ebe8e4",
+  },
+  speakerSectionFree: {
+    opacity: 0.45,
+  },
+  sectionTitleToolsFree: {
+    opacity: 0.5,
+  },
+  sectionTitleSpeakersFree: {
+    opacity: 0.45,
+  },
+
+  // Persistent unlock pill (free users)
+  unlockPillWrapper: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: "stretch",
+    paddingHorizontal: 8,
+    paddingBottom: 8,
+  },
+  unlockPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#A86858",
+    borderRadius: 50,
+    padding: 8,
+    ...shadows.ambient,
+  },
+  unlockPillText: {
+    color: "#FFFFFF",
+    fontFamily: fonts.bodyFamilyMedium,
+    fontSize: 14,
+    marginLeft: 12,
+  },
+  unlockPillButton: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  unlockPillButtonText: {
+    color: "#C58B7B",
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 14,
+    fontWeight: "600",
   },
 });
