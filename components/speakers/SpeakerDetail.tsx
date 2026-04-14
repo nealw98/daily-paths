@@ -231,6 +231,8 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
                 typ.body,
                 {
                   color: colors.text,
+                  fontSize: 14,
+                  lineHeight: 20,
                 },
               ]}
             >

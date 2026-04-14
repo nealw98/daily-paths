@@ -347,8 +347,8 @@ const styles = StyleSheet.create({
   },
   heroBody: {
     fontFamily: fonts.headerFamilyLight,
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 14,
+    lineHeight: 20,
     letterSpacing: -0.08,
   },
   ctaRow: {
