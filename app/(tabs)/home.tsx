@@ -346,10 +346,11 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   heroBody: {
-    fontFamily: fonts.headerFamilyLight,
+    fontFamily: fonts.bodyFamily,
     fontSize: 14,
     lineHeight: 20,
-    letterSpacing: -0.08,
+    textAlign: "center",
+    paddingHorizontal: 24,
   },
   ctaRow: {
     flexDirection: "row",

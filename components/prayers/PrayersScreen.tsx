@@ -625,7 +625,6 @@ const styles = StyleSheet.create({
   },
   prayerPreview: {
     ...staticTypography.bodyLarge,
-    fontFamily: fonts.bodyFamily,
     marginTop: 6,
   },
   prayerBody: {
@@ -634,7 +633,6 @@ const styles = StyleSheet.create({
   },
   prayerText: {
     ...staticTypography.bodyLarge,
-    fontFamily: fonts.bodyFamily,
   },
   prayerSource: {
     fontFamily: fonts.bodyFamilySemiBold,
