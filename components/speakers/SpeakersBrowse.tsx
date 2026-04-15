@@ -110,16 +110,13 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
 
   const renderCard = ({ item: speaker }: { item: Speaker }) => (
     <TouchableOpacity
-      style={styles.cardTouchable}
+      style={[styles.cardTouchable]}
       onPress={() => onSelectSpeaker(speaker, false)}
       activeOpacity={0.8}
     >
-      <View style={[
-        styles.card,
-        nowPlayingSpeakerId === speaker.id && { backgroundColor: colors.secondaryContainer + "40" },
-      ]}>
+      <View style={styles.cardInner}>
         <View style={styles.cardIconPip}>
-          <Ionicons name="headset-outline" size={18} color="#FFFFFF" />
+          <Ionicons name="play-circle" size={38} color="#FFFFFF" />
         </View>
         <View style={styles.cardBody}>
           <View style={styles.nameRow}>
@@ -339,30 +336,49 @@ const styles = StyleSheet.create({
   },
 
   cardTouchable: {
-    marginBottom: layout.spacing.md,
+    marginBottom: layout.spacing.lg,
+    borderRadius: 10,
+    shadowColor: "#000000",
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
-  card: {
+  cardInner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#e8f4f3",
+    backgroundColor: "#FFFFFF",
     borderColor: "#c5dedd",
     borderWidth: 0.5,
     borderRadius: 10,
-    padding: 10,
-    paddingHorizontal: 11,
-    gap: 11,
+    paddingRight: 16,
+    paddingLeft: 0,
+    paddingVertical: 0,
+    minHeight: 100,
+    overflow: "hidden",
   },
   cardIconPip: {
-    width: 34,
-    height: 34,
-    borderRadius: 9,
+    width: 90,
+    alignSelf: "stretch",
+    borderTopLeftRadius: 9,
+    borderBottomLeftRadius: 9,
+    borderTopRightRadius: 0,
+    borderBottomRightRadius: 0,
     backgroundColor: "#2C5F5D",
     alignItems: "center",
     justifyContent: "center",
+    marginRight: 16,
+  },
+  cardInitials: {
+    fontFamily: fonts.headerFamilyBoldItalic,
+    fontSize: 48,
+    color: "rgba(255, 255, 255, 0.2)",
+    letterSpacing: 0,
   },
   cardBody: {
     flex: 1,
-    gap: 1,
+    gap: 3,
+    paddingVertical: 16,
   },
 
   // ─── Speaker Info ──────────────────────────────────────────────────────────

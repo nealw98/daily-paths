@@ -202,25 +202,28 @@ export default function HomeTab() {
               }}
               style={[styles.toolRow, isFree && styles.toolRowFree]}
             >
-              <View style={[styles.toolIconPip, isFree && styles.toolIconPipFree]}>
-                <Ionicons
-                  name={cat.icon as any}
-                  size={18}
-                  color={isFree ? "#aaa" : "#FFFFFF"}
-                />
+              <View style={styles.toolRowInner}>
+                <View style={[styles.toolIconPip, isFree && styles.toolIconPipFree]}>
+                  <Ionicons
+                    name={cat.icon as any}
+                    size={38}
+                    color={isFree ? "#aaa" : "#FFFFFF"}
+                    style={{ fontWeight: "900" }}
+                  />
+                </View>
+                <View style={styles.toolText}>
+                  <Text style={[styles.notebookLabel, { color: colors.onSurface }]}>
+                    {cat.label}
+                  </Text>
+                  <Text
+                    style={[styles.notebookTag, { color: colors.onSurfaceVariant }]}
+                    numberOfLines={2}
+                  >
+                    {cat.description}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#B0B0B0" />
               </View>
-              <View style={styles.toolText}>
-                <Text style={[styles.notebookLabel, { color: colors.onSurface }]}>
-                  {cat.label}
-                </Text>
-                <Text
-                  style={[styles.notebookTag, { color: colors.onSurfaceVariant }]}
-                  numberOfLines={2}
-                >
-                  {cat.description}
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="#B0B0B0" />
             </TouchableOpacity>
           ))}
         </View>
@@ -322,22 +325,25 @@ export default function HomeTab() {
             }}
             style={[styles.toolRow, isFree && styles.toolRowFree]}
           >
-            <View style={[styles.toolIconPip, isFree && styles.toolIconPipFree]}>
-              <MaterialCommunityIcons
-                name="hands-pray"
-                size={18}
-                color={isFree ? "#aaa" : "#FFFFFF"}
-              />
+            <View style={[styles.toolRowInner, styles.prayersTile]}>
+              <View style={[styles.toolIconPip, isFree && styles.toolIconPipFree]}>
+                <MaterialCommunityIcons
+                  name="hands-pray"
+                  size={38}
+                  color={isFree ? "#aaa" : "#FFFFFF"}
+                  style={{ fontWeight: "900" }}
+                />
+              </View>
+              <View style={styles.toolText}>
+                <Text style={[styles.notebookLabel, { color: colors.onSurface }]}>
+                  Your Prayers
+                </Text>
+                <Text style={[styles.notebookTag, { color: colors.onSurfaceVariant }]} numberOfLines={2}>
+                  A collection of prayers — and a place to add your own.
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#B0B0B0" />
             </View>
-            <View style={styles.toolText}>
-              <Text style={[styles.notebookLabel, { color: colors.onSurface }]}>
-                Your Prayers
-              </Text>
-              <Text style={[styles.notebookTag, { color: colors.onSurfaceVariant }]} numberOfLines={2}>
-                A collection of prayers — and a place to add your own.
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="#B0B0B0" />
           </TouchableOpacity>
         </View>
 
@@ -351,14 +357,18 @@ export default function HomeTab() {
           pointerEvents="box-none"
           style={styles.unlockPillWrapper}
         >
-          <View style={styles.unlockPill}>
-            <Text style={styles.unlockPillText}>Unlock the full experience</Text>
+          <View style={[styles.unlockPill, { backgroundColor: colors.subscriptionBar }]}>
+            <Text style={[styles.unlockPillText, { color: colors.subscriptionOnBar }]}>
+              Unlock the full experience
+            </Text>
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={() => void presentPaywall()}
-              style={styles.unlockPillButton}
+              style={[styles.unlockPillButton, { backgroundColor: colors.subscriptionOnBar }]}
             >
-              <Text style={styles.unlockPillButtonText}>Subscribe</Text>
+              <Text style={[styles.unlockPillButtonText, { color: colors.subscriptionAccent }]}>
+                Subscribe
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -472,7 +482,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     letterSpacing: -0.1,
     marginTop: layout.spacing.lg,
-    marginBottom: layout.spacing.sm,
+    marginBottom: layout.spacing.lg,
     marginHorizontal: layout.spacing.lgPlus,
   },
 
@@ -482,33 +492,47 @@ const styles = StyleSheet.create({
     gap: 24,
   },
   toolRow: {
+    borderRadius: 10,
+    shadowColor: "#000000",
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  toolRowInner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#e8f4f3",
+    backgroundColor: "#FFFFFF",
     borderColor: "#c5dedd",
     borderWidth: 0.5,
     borderRadius: 10,
-    padding: 10,
-    paddingHorizontal: 11,
-    gap: 11,
+    paddingRight: 16,
+    paddingLeft: 0,
+    paddingVertical: 0,
+    minHeight: 100,
+    overflow: "hidden",
   },
   toolIconPip: {
-    width: 34,
-    height: 34,
-    borderRadius: 9,
+    width: 90,
+    alignSelf: "stretch",
+    borderTopLeftRadius: 9,
+    borderBottomLeftRadius: 9,
+    borderTopRightRadius: 0,
+    borderBottomRightRadius: 0,
     backgroundColor: "#2C5F5D",
     alignItems: "center",
     justifyContent: "center",
+    marginRight: 16,
   },
   toolText: {
     flex: 1,
-    gap: 1,
+    gap: 3,
+    paddingVertical: 16,
   },
   notebookLabel: {
     fontFamily: fonts.bodyFamilySemiBold,
     fontSize: 17,
     lineHeight: 22,
-    marginTop: 6,
   },
   notebookTag: {
     fontFamily: fonts.bodyFamily,
@@ -517,6 +541,10 @@ const styles = StyleSheet.create({
   },
 
   // Prayers
+  prayersTile: {
+    padding: 16,
+    paddingHorizontal: 16,
+  },
   prayersCard: {
     marginHorizontal: layout.spacing.md,
     borderRadius: layout.borderRadius,
@@ -559,6 +587,11 @@ const styles = StyleSheet.create({
   speakerCard: {
     marginHorizontal: layout.spacing.md,
     borderRadius: layout.borderRadius,
+    shadowColor: "#000000",
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
   speakerWatermark: {
     position: "absolute",
@@ -645,25 +678,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#8F5546",
     borderRadius: 50,
     padding: 8,
     ...shadows.ambient,
   },
   unlockPillText: {
-    color: "#FFFFFF",
     fontFamily: fonts.bodyFamilyMedium,
     fontSize: 14,
     marginLeft: 12,
   },
   unlockPillButton: {
-    backgroundColor: "#FFFFFF",
     borderRadius: 999,
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
   unlockPillButtonText: {
-    color: "#C58B7B",
     fontFamily: fonts.bodyFamilySemiBold,
     fontSize: 14,
     fontWeight: "600",

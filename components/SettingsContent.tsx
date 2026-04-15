@@ -17,7 +17,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import Constants from "expo-constants";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { fonts, fallbackColors as lightColors } from "../constants/theme";
+import { fonts, fallbackColors as lightColors, shadows } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSettings, TextSize } from "../hooks/useSettings";
@@ -198,7 +198,7 @@ export const SettingsContent: React.FC<{
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.mainContent}>
-          <View style={[styles.sectionCard, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
+          <View style={[styles.sectionCard, { backgroundColor: colors.cloud }]}>
             <View style={[styles.sectionHeader, { borderBottomColor: colors.mist }]}>
               <Ionicons
                 name="information-circle-outline"
@@ -223,7 +223,7 @@ export const SettingsContent: React.FC<{
             </View>
           </View>
 
-          <View style={[styles.sectionCard, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
+          <View style={[styles.sectionCard, { backgroundColor: colors.cloud }]}>
             <View style={[styles.sectionHeader, { borderBottomColor: colors.mist }]}>
               <Ionicons name="star-outline" size={22} color={colors.deepTeal} />
               <View style={styles.sectionHeaderText}>
@@ -258,7 +258,7 @@ export const SettingsContent: React.FC<{
             </View>
           </View>
 
-          <View style={[styles.sectionCard, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
+          <View style={[styles.sectionCard, { backgroundColor: colors.cloud }]}>
             <View style={[styles.sectionHeader, { borderBottomColor: colors.mist }]}>
               <Ionicons name="chatbubbles-outline" size={22} color={colors.deepTeal} />
               <View style={styles.sectionHeaderText}>
@@ -418,16 +418,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   sectionCard: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
+    ...shadows.homeSurface,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
   },
   sectionHeader: {
     flexDirection: "row",

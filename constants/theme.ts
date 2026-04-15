@@ -79,7 +79,39 @@ export interface SanctuaryRoles {
   ambientShadow: string;
 }
 
-export type ColorPalette = SemanticPalette & LegacyColorNames & SanctuaryRoles;
+function withAlpha(hex: string, alpha: string): string {
+  if (!hex.startsWith("#")) return hex;
+  const normalized = hex.length === 4
+    ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`
+    : hex;
+  return `${normalized}${alpha}`;
+}
+
+/**
+ * Terracotta subscription palette — same across color schemes so paywall / trial
+ * UI stays visually consistent (home unlock pill, trial sheet, etc.).
+ */
+const SUBSCRIPTION_BAR_HEX = "#8F5546";
+
+export const subscriptionTerracottaColors = {
+  /** Wide subscription CTA bar (e.g. home unlock pill). */
+  subscriptionBar: SUBSCRIPTION_BAR_HEX,
+  /** Lighter terracotta — chip text, secondary accents on subscription UI. */
+  subscriptionAccent: "#C58B7B",
+  /** Text on `subscriptionBar` (and inverse surfaces like the Subscribe chip). */
+  subscriptionOnBar: "#FFFFFF",
+  /** Headlines on subscription / trial sheets (deep terracotta). */
+  subscriptionTitle: "#6B3D2E",
+  /** Same hue as `subscriptionBar` at ~10% opacity (8‑digit hex) for secondary CTAs. */
+  subscriptionSecondaryPill: withAlpha(SUBSCRIPTION_BAR_HEX, "1A"),
+  /** Body / footer copy on light subscription sheets (e.g. trial end modal). */
+  subscriptionSheetText: "#1A1A1A",
+} as const;
+
+export type ColorPalette = SemanticPalette &
+  LegacyColorNames &
+  SanctuaryRoles &
+  typeof subscriptionTerracottaColors;
 
 export interface ColorSchemeDef {
   id: string;
@@ -87,14 +119,6 @@ export interface ColorSchemeDef {
   /** Used for BlurView tint, status bar, etc. */
   dark: boolean;
   colors: ColorPalette;
-}
-
-function withAlpha(hex: string, alpha: string): string {
-  if (!hex.startsWith("#")) return hex;
-  const normalized = hex.length === 4
-    ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`
-    : hex;
-  return `${normalized}${alpha}`;
 }
 
 function buildPalette(
@@ -133,6 +157,7 @@ function buildPalette(
   return {
     ...semantic,
     ...sanctuary,
+    ...subscriptionTerracottaColors,
     deepTeal: semantic.accent,
     ocean: semantic.textSecondary,
     seafoam: semantic.highlight,
@@ -802,5 +827,16 @@ export const shadows = {
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 10 },
     elevation: 5,
+  },
+  /** Elevated `SanctuaryCard` — same lift + edge as Daily Tools on home */
+  homeSurface: {
+    borderRadius: 10,
+    borderWidth: 0.5,
+    borderColor: "#c5dedd",
+    shadowColor: "#000000",
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
 };

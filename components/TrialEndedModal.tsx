@@ -1,7 +1,16 @@
-import React from "react";
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import React, { useEffect, useRef } from "react";
+import {
+  Modal,
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Animated,
+  Pressable,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../hooks/useTheme";
-import { fonts } from "../constants/theme";
+import { fonts, layout } from "../constants/theme";
 
 interface TrialEndedModalProps {
   visible: boolean;
@@ -9,79 +18,152 @@ interface TrialEndedModalProps {
   onNotNow: () => void;
 }
 
+const SHEET_ANIM_OFFSET = 48;
+
 export const TrialEndedModal: React.FC<TrialEndedModalProps> = ({
   visible,
   onSubscribeNow,
   onNotNow,
 }) => {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const slide = useRef(new Animated.Value(SHEET_ANIM_OFFSET)).current;
+
+  useEffect(() => {
+    if (!visible) {
+      slide.setValue(SHEET_ANIM_OFFSET);
+      return;
+    }
+    slide.setValue(SHEET_ANIM_OFFSET);
+    Animated.spring(slide, {
+      toValue: 0,
+      damping: 26,
+      stiffness: 260,
+      mass: 0.9,
+      useNativeDriver: true,
+    }).start();
+  }, [visible, slide]);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onNotNow}>
-      <View style={[styles.backdrop, { backgroundColor: colors.backdrop }]}>
-        <View style={[styles.card, { backgroundColor: colors.background }]}>
-          <Text style={[styles.title, { color: colors.text }]}>Trial Ended</Text>
-          <Text style={[styles.message, { color: colors.textSecondary }]}>
-            Your trial has ended. Subscribe to continue using premium features.
+      <View style={[styles.root, { backgroundColor: colors.backdrop }]}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onNotNow} accessibilityRole="button" accessibilityLabel="Dismiss" />
+        <Animated.View
+          style={[
+            styles.sheet,
+            {
+              /* modalBackground — typically pure white on light themes */
+              backgroundColor: colors.modalBackground,
+              paddingBottom: layout.spacing.xl + insets.bottom,
+              transform: [{ translateY: slide }],
+            },
+          ]}
+        >
+          <View style={styles.handleWrap} accessibilityElementsHidden>
+            <View style={[styles.handle, { backgroundColor: colors.outlineVariant }]} />
+          </View>
+
+          <Text style={[styles.title, { color: colors.subscriptionTitle }]}>Continue the path</Text>
+          <Text style={[styles.body, { color: colors.subscriptionSheetText }]}>
+            The daily reading will always be here for free. If the tools have been useful, consider keeping them
+            {" \u2014 "}they're here to support your practice.
           </Text>
 
           <TouchableOpacity
-            style={[styles.primaryButton, { backgroundColor: colors.buttonPrimary }]}
+            style={[styles.primaryButton, { backgroundColor: colors.subscriptionBar }]}
             onPress={onSubscribeNow}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
-            <Text style={[styles.primaryText, { color: colors.textOnAccent }]}>Subscribe Now</Text>
+            <Text style={[styles.primaryLabel, { color: colors.subscriptionOnBar }]}>I'm ready</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.secondaryButton} onPress={onNotNow} activeOpacity={0.8}>
-            <Text style={[styles.secondaryText, { color: colors.textSecondary }]}>Not Now</Text>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { backgroundColor: colors.subscriptionSecondaryPill }]}
+            onPress={onNotNow}
+            activeOpacity={0.85}
+          >
+            <Text style={[styles.secondaryLabel, { color: colors.subscriptionAccent }]}>Maybe later</Text>
           </TouchableOpacity>
-        </View>
+
+          <Text style={[styles.footerNote, { color: colors.subscriptionSheetText }]}>
+            Cancel anytime. Restore on any device.
+          </Text>
+        </Animated.View>
       </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  backdrop: {
+  root: {
     flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 24,
+    justifyContent: "flex-end",
   },
-  card: {
-    borderRadius: 18,
-    padding: 24,
+  sheet: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: layout.spacing.xl,
+    paddingTop: layout.spacing.md,
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 24,
+  },
+  handleWrap: {
+    alignItems: "center",
+    paddingVertical: layout.spacing.sm,
+    marginBottom: layout.spacing.sm,
+  },
+  handle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
   },
   title: {
     fontFamily: fonts.headerFamilyItalic,
-    fontSize: 28,
+    fontSize: 26,
+    lineHeight: 32,
+    letterSpacing: -0.3,
+    marginBottom: layout.spacing.lg,
     textAlign: "center",
-    marginBottom: 10,
   },
-  message: {
-    fontFamily: fonts.bodyFamilyRegular,
+  body: {
+    fontFamily: fonts.bodyFamily,
     fontSize: 16,
+    lineHeight: 24,
+    marginBottom: layout.spacing.xl,
+    marginHorizontal: layout.spacing.xl,
     textAlign: "center",
-    lineHeight: 22,
-    marginBottom: 20,
   },
   primaryButton: {
+    alignSelf: "stretch",
     borderRadius: 12,
-    paddingVertical: 14,
+    paddingVertical: layout.spacing.md,
     alignItems: "center",
+    marginTop: layout.spacing.sm,
   },
-  primaryText: {
-    fontFamily: fonts.bodyFamilyRegular,
+  primaryLabel: {
+    fontFamily: fonts.bodyFamilySemiBold,
     fontSize: 16,
-    fontWeight: "600",
   },
   secondaryButton: {
-    paddingVertical: 12,
+    alignSelf: "stretch",
+    borderRadius: 12,
+    paddingVertical: layout.spacing.md,
     alignItems: "center",
-    marginTop: 4,
+    marginTop: layout.spacing.md,
   },
-  secondaryText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 15,
+  secondaryLabel: {
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 16,
+  },
+  footerNote: {
+    fontFamily: fonts.bodyFamily,
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: "center",
+    marginTop: layout.spacing.lg,
+    paddingHorizontal: layout.spacing.lg,
   },
 });

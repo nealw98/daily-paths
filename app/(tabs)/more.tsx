@@ -26,7 +26,7 @@ import { useAppFeedback } from "../../hooks/useAppFeedback";
 import { useAnalytics } from "../../utils/analytics";
 import { shareApp, openAppStoreForRating } from "../../utils/rateShareTracking";
 import { qaLog } from "../../utils/qaLog";
-import { fonts, typography } from "../../constants/theme";
+import { fonts, typography, shadows } from "../../constants/theme";
 import { TealHeader } from "../../components/shared/TealHeader";
 import { useSubscription } from "../../hooks/useSubscription";
 import { useSubscriptionContext } from "../../contexts/SubscriptionContext";
@@ -170,7 +170,7 @@ export default function MoreTab() {
         {/* ── 1. Subscription ────────────────────────────────── */}
         <Text allowFontScaling={false} style={[styles.sectionLabel, styles.firstSectionLabel, { color: colors.deepTeal }]}>Subscription</Text>
         {subLoading ? (
-          <View style={[styles.subscriptionRow, { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.ghostBorder }]}>
+          <View style={[styles.subscriptionRow, { backgroundColor: colors.surfaceContainerLowest }]}>
             <View style={styles.subscriptionLeft}>
               <ActivityIndicator size="small" color={colors.deepTeal} />
               <Text style={[styles.subscriptionText, { color: colors.text }]}>Checking Access...</Text>
@@ -178,7 +178,7 @@ export default function MoreTab() {
           </View>
         ) : status.isSubscribed ? (
           <TouchableOpacity
-            style={[styles.subscriptionRow, { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.ghostBorder }]}
+            style={[styles.subscriptionRow, { backgroundColor: colors.surfaceContainerLowest }]}
             disabled={openingCustomerCenter}
             onPress={async () => {
               if (openingCustomerCenter) return;
@@ -239,7 +239,7 @@ export default function MoreTab() {
             )}
           </TouchableOpacity>
         ) : hasLifetimeAccess || status.isLegacy ? (
-          <View style={[styles.subscriptionRow, { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.ghostBorder }]}>
+          <View style={[styles.subscriptionRow, { backgroundColor: colors.surfaceContainerLowest }]}>
             <View style={styles.subscriptionLeft}>
               <Ionicons name="star" size={22} color={colors.deepTeal} />
               <Text style={[styles.subscriptionText, { color: colors.deepTeal }]}>Lifetime Access</Text>
@@ -247,7 +247,7 @@ export default function MoreTab() {
           </View>
         ) : trialStatus.isInTrial ? (
           <TouchableOpacity
-            style={[styles.subscriptionRow, { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.ghostBorder }]}
+            style={[styles.subscriptionRow, { backgroundColor: colors.surfaceContainerLowest }]}
             onPress={async () => {
               try {
                 const result = await RevenueCatUI.presentPaywall();
@@ -270,7 +270,7 @@ export default function MoreTab() {
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
-            style={[styles.subscriptionRow, { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.ghostBorder }]}
+            style={[styles.subscriptionRow, { backgroundColor: colors.surfaceContainerLowest }]}
             onPress={async () => {
               try {
                 const result = await RevenueCatUI.presentPaywall();
@@ -292,7 +292,7 @@ export default function MoreTab() {
 
         {/* ── 2. Appearance ────────────────────────────────── */}
         <Text allowFontScaling={false} style={[styles.sectionLabel, { color: colors.deepTeal }]}>Appearance</Text>
-        <View style={[styles.card, { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.ghostBorder }]}>
+        <View style={[styles.card, { backgroundColor: colors.surfaceContainerLowest }]}>
           {/* Text Size */}
           <Text style={[styles.cardLabel, { color: colors.deepTeal }]}>
             Text Size
@@ -390,7 +390,7 @@ export default function MoreTab() {
 
         {/* ── 3. Support & Share ─────────────────────────── */}
         <Text allowFontScaling={false} style={[styles.sectionLabel, { color: colors.deepTeal }]}>Support & Share</Text>
-        <View style={[styles.card, { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.ghostBorder }]}>
+        <View style={[styles.card, { backgroundColor: colors.surfaceContainerLowest }]}>
           <View style={styles.supportActions}>
             <TouchableOpacity
               style={[styles.supportAction, { borderColor: colors.ghostBorder, backgroundColor: colors.surfaceContainerLowest }]}
@@ -587,15 +587,9 @@ const styles = StyleSheet.create({
 
   /* ── Cards ─────────────────────────────────────── */
   card: {
-    borderRadius: 16,
-    borderWidth: 1,
+    ...shadows.homeSurface,
     padding: 16,
     marginBottom: 18,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.06,
-    shadowRadius: 32,
-    elevation: 6,
   },
   cardLabel: {
     fontFamily: fonts.bodyFamilySemiBold,
@@ -746,19 +740,13 @@ const styles = StyleSheet.create({
 
   /* ── Subscription Row ──────────────────────────── */
   subscriptionRow: {
+    ...shadows.homeSurface,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     padding: 14,
-    borderRadius: 14,
-    borderWidth: 1,
     marginBottom: 10,
     marginTop: 0,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.06,
-    shadowRadius: 32,
-    elevation: 6,
   },
   subscriptionLeft: {
     flexDirection: "row",

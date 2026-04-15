@@ -19,7 +19,7 @@ import { useAnalytics } from "../../utils/analytics";
 import { usePersonalPrayers, type PersonalPrayer } from "../../hooks/usePersonalPrayers";
 import { useJournalStorage } from "../../hooks/useJournalStorage";
 import type { EntryType } from "../../constants/journalCategories";
-import { fonts, layout, typography as staticTypography } from "../../constants/theme";
+import { fonts, typography as staticTypography } from "../../constants/theme";
 import { PRAYERS, type Prayer } from "../../constants/prayers";
 import { TealHeader } from "../shared/TealHeader";
 import { JournalCategoryPicker } from "../journal/JournalCategoryPicker";
@@ -118,7 +118,13 @@ export const PrayersScreen: React.FC = () => {
     if (prayer.id === "just-for-tonight") boldPhrases.push("Just for tonight");
 
     return (
-      <SanctuaryCard key={prayer.id} tone="lowest" style={styles.prayerSection} contentStyle={styles.prayerSectionContent} elevated>
+      <SanctuaryCard
+        key={prayer.id}
+        tone="lowest"
+        style={styles.prayerSection}
+        contentStyle={styles.prayerSectionContent}
+        elevated
+      >
         <TouchableOpacity
           style={styles.prayerHeader}
           onPress={() => {
@@ -328,7 +334,7 @@ export const PrayersScreen: React.FC = () => {
         elevated
       >
         <View
-          style={[StyleSheet.absoluteFill, { backgroundColor: colors.secondaryContainer + "80", borderRadius: layout.borderRadiusLarge }]}
+          style={[StyleSheet.absoluteFill, { backgroundColor: colors.secondaryContainer + "80", borderRadius: 10 }]}
           pointerEvents="none"
         />
         <TouchableOpacity
@@ -497,7 +503,7 @@ export const PrayersScreen: React.FC = () => {
           elevated
         >
           <View
-            style={[StyleSheet.absoluteFill, { backgroundColor: colors.secondaryContainer + "80", borderRadius: layout.borderRadiusLarge }]}
+            style={[StyleSheet.absoluteFill, { backgroundColor: colors.secondaryContainer + "80", borderRadius: 10 }]}
             pointerEvents="none"
           />
           <TouchableOpacity

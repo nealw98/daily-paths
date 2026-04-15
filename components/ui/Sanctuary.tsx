@@ -52,7 +52,7 @@ export function SanctuaryCard({
       style={[
         styles.card,
         { backgroundColor: toneToColor(tone, colors) },
-        elevated ? shadows.ambient : null,
+        elevated ? shadows.homeSurface : null,
         style,
       ]}
     >
