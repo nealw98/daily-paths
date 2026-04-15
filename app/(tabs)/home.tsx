@@ -37,6 +37,34 @@ function getGreeting(): string {
   return "Good evening";
 }
 
+// Reflection hero images cycled once per day. Auto-discovered from the
+// assets/reflections folder via require.context — drop in new files named
+// reflections-<N>.webp and the rotation picks them up on next build. Sorted
+// numerically so reflections-10 comes after reflections-9, not after -1.
+const reflectionsContext = (require as any).context(
+  "../../assets/reflections",
+  false,
+  /reflections-\d+\.webp$/
+);
+const REFLECTION_IMAGES = reflectionsContext
+  .keys()
+  .slice()
+  .sort((a: string, b: string) => {
+    const numA = parseInt(a.match(/reflections-(\d+)/)?.[1] ?? "0", 10);
+    const numB = parseInt(b.match(/reflections-(\d+)/)?.[1] ?? "0", 10);
+    return numA - numB;
+  })
+  .map((key: string) => reflectionsContext(key));
+
+function getReflectionImageForDate(date: Date) {
+  // Epoch-day index so the image advances exactly once per calendar day and
+  // wraps back to the first image after the last one.
+  if (REFLECTION_IMAGES.length === 0) return null;
+  const dayIndex = Math.floor(date.getTime() / 86400000);
+  const idx = ((dayIndex % REFLECTION_IMAGES.length) + REFLECTION_IMAGES.length) % REFLECTION_IMAGES.length;
+  return REFLECTION_IMAGES[idx];
+}
+
 export default function HomeTab() {
   const { colors } = useTheme();
   const { settings } = useSettings();
@@ -51,6 +79,9 @@ export default function HomeTab() {
   const { speaker: featuredSpeaker, isStarted: speakerIsStarted, isListenAgain } = useFeaturedSpeaker(speakers);
   const { createEntry } = useJournalStorage();
   const [journalEntryType, setJournalEntryType] = useState<EntryType | null>(null);
+
+  // TEMP: preview cycling through reflection images
+  const [previewIdx, setPreviewIdx] = useState<number | null>(null);
 
   const { gate, refresh: refreshSub } = useSubscriptionContext();
   const isFree = gate === "paywall";
@@ -243,7 +274,7 @@ export default function HomeTab() {
           <View style={styles.heroClip}>
           {/* Top half: hero image with label + title */}
           <ImageBackground
-            source={require("../../assets/home-page.jpg")}
+            source={previewIdx !== null ? REFLECTION_IMAGES[previewIdx] : getReflectionImageForDate(today)}
             resizeMode="cover"
             style={styles.heroTop}
             imageStyle={styles.heroTopImage}
@@ -299,6 +330,31 @@ export default function HomeTab() {
             )}
           </View>
           </View>
+        </TouchableOpacity>
+
+        {/* TEMP: cycle through reflection images */}
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => {
+            setPreviewIdx((prev) => {
+              if (prev === null) return 0;
+              return (prev + 1) % REFLECTION_IMAGES.length;
+            });
+          }}
+          style={{
+            alignSelf: "center",
+            backgroundColor: "#2C5F5D",
+            borderRadius: 8,
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            marginTop: 12,
+          }}
+        >
+          <Text style={{ color: "#FFF", fontFamily: fonts.bodyFamilySemiBold, fontSize: 14 }}>
+            {previewIdx !== null
+              ? `Image ${previewIdx + 1} / ${REFLECTION_IMAGES.length} — Tap for next`
+              : `Preview images (${REFLECTION_IMAGES.length} total)`}
+          </Text>
         </TouchableOpacity>
 
         {/* ── Daily Tools List ── */}
