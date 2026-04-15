@@ -16,9 +16,7 @@ import { useTheme } from "../../hooks/useTheme";
 import { useTypography } from "../../hooks/useTypography";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { useAnalytics } from "../../utils/analytics";
-import { fonts, layout, shadows, typography } from "../../constants/theme";
-import { QuoteWatermarkPattern } from "../shared/QuoteWatermarkPattern";
-import { SanctuaryCard } from "../ui/Sanctuary";
+import { fonts, layout, typography } from "../../constants/theme";
 // EqualizerBars removed — status indicator moved to browse list
 import { getSpeakerAudioUrl } from "../../hooks/useSpeakers";
 import { useSpeakerDownload, resolveAudioUri } from "../../hooks/useSpeakerDownload";
@@ -80,6 +78,17 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
   const textMetrics = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
   const scale = textMetrics.bodyFontSize / 18;
   const hasLoadedRef = useRef(false);
+
+  const titleType = useMemo(
+    () => ({
+      fontFamily: fonts.headerFamilyLight,
+      fontSize: textMetrics.h3FontSize + (Platform.OS === "android" ? 2 : 0),
+      lineHeight: textMetrics.h3LineHeight + (Platform.OS === "android" ? 2 : 0),
+      fontWeight: "300" as const,
+      letterSpacing: -0.4,
+    }),
+    [textMetrics.h3FontSize, textMetrics.h3LineHeight],
+  );
 
   const audioUrl = getSpeakerAudioUrl(speaker);
   const download = useSpeakerDownload(speaker.id, audioUrl);
@@ -203,7 +212,8 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
         <View style={styles.infoSection}>
           <Text
             style={[
-              styles.title,
+              styles.titleLayout,
+              titleType,
               {
                 color: colors.primaryContainer,
               },
@@ -225,41 +235,64 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
           </Text>
 
           {speaker.subtitle && (
-            <Text
-              style={[
-                styles.subtitle,
-                typ.body,
-                {
-                  color: colors.text,
-                  fontSize: 14,
-                  lineHeight: 20,
-                },
-              ]}
-            >
+            <Text style={[styles.subtitle, typ.bodySmall, { color: colors.text }]}>
               {speaker.subtitle}
             </Text>
           )}
         </View>
 
-        {/* Quote block */}
+        {/* Quote card (mirrors daily reading Practice block) */}
         {speaker.quote && (
-          <View style={styles.quoteBox}>
-            <Text style={styles.quoteBoxText}>
-              &ldquo;{normalizeQuoteText(speaker.quote)}&rdquo;
-            </Text>
+          <View style={styles.quoteCardSection}>
+            <View style={styles.speakerElevatedShadowShell}>
+              <View
+                style={[
+                  styles.quoteCardInner,
+                  { backgroundColor: colors.surfaceContainerLowest },
+                ]}
+              >
+                <View style={[styles.quoteAccent, { backgroundColor: colors.deepTeal }]} />
+                <View style={styles.quoteBodyCopy}>
+                  <Text
+                    style={[
+                      styles.quoteEyebrow,
+                      {
+                        fontSize: typ.label.fontSize,
+                        lineHeight: typ.label.lineHeight,
+                        color: colors.textSecondary,
+                        letterSpacing: 0,
+                      },
+                    ]}
+                  >
+                    QUOTE
+                  </Text>
+                  <Text
+                    style={[
+                      typ.bodySmall,
+                      {
+                        color: colors.text,
+                        letterSpacing: 0,
+                      },
+                    ]}
+                  >
+                    &ldquo;{normalizeQuoteText(speaker.quote)}&rdquo;
+                  </Text>
+                </View>
+              </View>
+            </View>
           </View>
         )}
 
-        {/* Player card */}
-        <View
-          style={[
-            styles.playerCard,
-            {
-              backgroundColor: "#e8f4f3",
-              borderColor: "#c5dedd",
-            },
-          ]}
-        >
+        {/* Player card — shadow on outer shell only (same pattern as Daily Tools on home) */}
+        <View style={[styles.speakerElevatedShadowShell, styles.playerCardShellMargin]}>
+          <View
+            style={[
+              styles.playerCardInner,
+              {
+                backgroundColor: "#e8f4f3",
+              },
+            ]}
+          >
           {/* Stop + Download indicator */}
           <View style={styles.nowPlayingRow}>
             <TouchableOpacity
@@ -467,12 +500,10 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
                 >
                   <Text
                     style={[
-                      styles.speedLabel,
+                      typ.caption,
                       {
                         color: isActive ? colors.onSecondary : colors.textSecondary,
                         fontWeight: isActive ? "700" : "400",
-                        fontSize: 11,
-                        lineHeight: 15,
                       },
                     ]}
                   >
@@ -483,6 +514,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
             })}
           </View>
 
+          </View>
         </View>
 
         {/* Meta row */}
@@ -552,36 +584,49 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
-  title: {
-    fontFamily: fonts.headerFamilyLight,
-    fontSize: 24 + (Platform.OS === "android" ? 2 : 0),
-    lineHeight: 30 + (Platform.OS === "android" ? 2 : 0),
-    fontWeight: "300",
-    letterSpacing: -0.4,
+  titleLayout: {
     marginBottom: 4,
   },
   speakerMeta: {
-    fontSize: 12,
-    lineHeight: 17,
     marginBottom: layout.spacing.sm,
   },
   subtitle: {
   },
 
-  // ─── Quote Block ───────────────────────────────────────────────────────────
-  quoteBox: {
-    paddingTop: 0,
-    paddingHorizontal: 12,
-    paddingBottom: 12,
+  // ─── Quote / player elevation — matches home Daily Tools (toolRow + toolRowInner)
+  speakerElevatedShadowShell: {
+    borderRadius: 10,
+    shadowColor: "#000000",
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  quoteCardSection: {
     marginBottom: layout.spacing.md + 8,
   },
-  quoteBoxText: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: 14,
-    lineHeight: 20,
-    color: "#2C5F5D",
+  quoteCardInner: {
+    borderRadius: 10,
+    borderWidth: 0.5,
+    borderColor: "#c5dedd",
+    overflow: "hidden",
+    padding: 20,
   },
-
+  quoteAccent: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+  },
+  quoteEyebrow: {
+    fontFamily: fonts.labelFamily,
+    textTransform: "uppercase",
+    marginBottom: 8,
+  },
+  quoteBodyCopy: {
+    minWidth: 0,
+  },
   // ─── Meta Row ──────────────────────────────────────────────────────────────
   metaRow: {
     flexDirection: "row",
@@ -605,13 +650,15 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
   },
 
-  // ─── Player Card ───────────────────────────────────────────────────────────
-  playerCard: {
-    borderRadius: layout.borderRadiusLarge,
-    padding: layout.spacing.md,
+  playerCardShellMargin: {
     marginBottom: layout.spacing.md,
-    borderWidth: 1,
-    ...shadows.ambient,
+  },
+  playerCardInner: {
+    borderRadius: 10,
+    borderWidth: 0.5,
+    borderColor: "#c5dedd",
+    overflow: "hidden",
+    padding: layout.spacing.md,
   },
 
   // ─── Stop / Status Row ────────────────────────────────────────────────────
@@ -728,10 +775,6 @@ const styles = StyleSheet.create({
     borderRadius: layout.borderRadiusFull,
     borderWidth: 1,
   },
-  speedLabel: {
-    ...typography.bodySmall,
-  },
-
   // ─── Download Indicator (inline, top-right) ──────────────────────────────────
   dlInlineRow: {
     flexDirection: "row",

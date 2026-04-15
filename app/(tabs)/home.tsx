@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -15,6 +15,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
 import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
 import { useTheme } from "../../hooks/useTheme";
+import { useTypography } from "../../hooks/useTypography";
+import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { useReading } from "../../hooks/useReading";
 import { useAppDate } from "../../contexts/AppDateContext";
 import { useSpeakers } from "../../hooks/useSpeakers";
@@ -36,7 +38,10 @@ function getGreeting(): string {
 }
 
 export default function HomeTab() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
+  const { settings } = useSettings();
+  const { typography } = useTypography();
+  const textMetrics = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { today } = useAppDate();
@@ -50,6 +55,123 @@ export default function HomeTab() {
   const { gate, refresh: refreshSub } = useSubscriptionContext();
   const isFree = gate === "paywall";
   const presentingPaywall = useRef(false);
+
+  const greetingType = useMemo(
+    () => ({
+      fontFamily: fonts.headerFamilyBoldItalic,
+      fontSize: Math.max(26, Math.round(textMetrics.h3FontSize * (32 / 24))),
+      lineHeight: Math.max(32, Math.round(textMetrics.h3FontSize * (32 / 24) * (38 / 32))),
+      letterSpacing: -0.5,
+    }),
+    [textMetrics.h3FontSize],
+  );
+
+  const heroLabelType = useMemo(
+    () => ({
+      fontFamily: fonts.labelFamily,
+      fontSize: textMetrics.labelFontSize,
+      lineHeight: textMetrics.labelLineHeight,
+      letterSpacing: 0.4,
+      textTransform: "uppercase" as const,
+    }),
+    [textMetrics.labelFontSize, textMetrics.labelLineHeight],
+  );
+
+  const heroTitleType = useMemo(
+    () => ({
+      fontFamily: fonts.headerFamily,
+      fontSize: textMetrics.h3FontSize,
+      lineHeight: textMetrics.h3LineHeight,
+      letterSpacing: -0.3,
+    }),
+    [textMetrics.h3FontSize, textMetrics.h3LineHeight],
+  );
+
+  const notebookLabelType = useMemo(() => {
+    const fontSize = Math.max(14, Math.round(textMetrics.bodyFontSize * (17 / 18)));
+    return {
+      fontFamily: fonts.bodyFamilySemiBold,
+      fontSize,
+      lineHeight: Math.round(fontSize * (22 / 17)),
+      letterSpacing: 0,
+    };
+  }, [textMetrics.bodyFontSize]);
+
+  const notebookTagType = useMemo(
+    () => [
+      typography.bodySmall,
+      styles.notebookTagExtras,
+    ],
+    [typography.bodySmall],
+  );
+
+  const sectionTitleType = useMemo(
+    () => ({
+      fontFamily: fonts.headerFamily,
+      fontSize: typography.bodyLarge.fontSize,
+      lineHeight: typography.bodyLarge.lineHeight,
+      letterSpacing: -0.1,
+    }),
+    [typography.bodyLarge.fontSize, typography.bodyLarge.lineHeight],
+  );
+
+  const readMoreType = useMemo(
+    () => ({
+      fontFamily: fonts.bodyFamily,
+      fontSize: textMetrics.labelFontSize,
+      lineHeight: textMetrics.labelLineHeight,
+      letterSpacing: 0.1,
+    }),
+    [textMetrics.labelFontSize, textMetrics.labelLineHeight],
+  );
+
+  const speakerNameType = useMemo(
+    () => ({
+      fontFamily: fonts.headerFamily,
+      fontSize: textMetrics.h3FontSize,
+      lineHeight: textMetrics.h3LineHeight,
+      letterSpacing: -0.3,
+    }),
+    [textMetrics.h3FontSize, textMetrics.h3LineHeight],
+  );
+
+  const speakerTitleType = useMemo(
+    () => ({
+      ...typography.bodySmall,
+      fontFamily: fonts.bodyFamilyMedium,
+      letterSpacing: 0,
+    }),
+    [typography.bodySmall],
+  );
+
+  const exploreTextType = useMemo(
+    () => ({
+      fontFamily: fonts.bodyFamilySemiBold,
+      fontSize: typography.bodySmall.fontSize,
+      lineHeight: typography.bodySmall.lineHeight,
+      letterSpacing: 0.1,
+    }),
+    [typography.bodySmall.fontSize, typography.bodySmall.lineHeight],
+  );
+
+  const unlockPillTextType = useMemo(() => {
+    const fontSize = Math.max(12, Math.round(textMetrics.bodySmallFontSize * (14 / 15)));
+    return {
+      fontFamily: fonts.bodyFamilyMedium,
+      fontSize,
+      lineHeight: Math.round(fontSize * (20 / 14)),
+    };
+  }, [textMetrics.bodySmallFontSize]);
+
+  const unlockPillButtonTextType = useMemo(() => {
+    const fontSize = Math.max(12, Math.round(textMetrics.bodySmallFontSize * (14 / 15)));
+    return {
+      fontFamily: fonts.bodyFamilySemiBold,
+      fontSize,
+      lineHeight: Math.round(fontSize * (20 / 14)),
+      fontWeight: "600" as const,
+    };
+  }, [textMetrics.bodySmallFontSize]);
 
   const presentPaywall = useCallback(async () => {
     if (presentingPaywall.current) return;
@@ -107,7 +229,7 @@ export default function HomeTab() {
         showsVerticalScrollIndicator={false}
       >
         {/* ── Welcome Greeting ── */}
-        <Text style={[styles.greeting, { color: colors.onSurface }]}>
+        <Text style={[styles.greetingLayout, greetingType, { color: colors.onSurface }]}>
           {getGreeting()}
         </Text>
 
@@ -134,7 +256,7 @@ export default function HomeTab() {
             >
               <View style={styles.heroIconRow}>
                 <MaterialIcons name="menu-book" size={18} color="#FFFFFFCC" />
-                <Text style={[styles.heroLabel, { color: "#FFFFFFBB" }]}>
+                <Text style={[heroLabelType, { color: "#FFFFFFBB" }]}>
                   Today's Reflection
                 </Text>
               </View>
@@ -145,7 +267,7 @@ export default function HomeTab() {
                   style={{ marginVertical: 16 }}
                 />
               ) : reading ? (
-                <Text style={[styles.heroTitle, { color: "#FFFFFF" }]}>
+                <Text style={[styles.heroTitleLayout, heroTitleType, { color: "#FFFFFF" }]}>
                   {reading.title}
                 </Text>
               ) : null}
@@ -157,20 +279,20 @@ export default function HomeTab() {
             {reading ? (
               <>
                 <Text
-                  style={[styles.notebookTag, styles.heroThoughtForDay, { color: colors.onSurface }]}
+                  style={[...notebookTagType, styles.heroThoughtForDay, { color: colors.onSurface }]}
                   numberOfLines={3}
                 >
                   {`"${reading.thoughtForDay}"`}
                 </Text>
                 <View style={styles.ctaRow}>
-                  <Text style={[styles.readMore, { color: colors.accent }]}>
+                  <Text style={[readMoreType, { color: colors.accent }]}>
                     Read more
                   </Text>
                   <MaterialIcons name="chevron-right" size={20} color={colors.accent} />
                 </View>
               </>
             ) : (
-              <Text style={[styles.notebookTag, styles.heroThoughtForDay, { color: colors.onSurfaceVariant }]}>
+              <Text style={[...notebookTagType, styles.heroThoughtForDay, { color: colors.onSurfaceVariant }]}>
                 No reading available today.
               </Text>
             )}
@@ -181,7 +303,8 @@ export default function HomeTab() {
         {/* ── Daily Tools List ── */}
         <Text
           style={[
-            styles.sectionTitle,
+            styles.sectionTitleLayout,
+            sectionTitleType,
             { color: colors.onSurface, marginTop: 56 },
             isFree && styles.sectionTitleToolsFree,
           ]}
@@ -212,11 +335,11 @@ export default function HomeTab() {
                   />
                 </View>
                 <View style={styles.toolText}>
-                  <Text style={[styles.notebookLabel, { color: colors.onSurface }]}>
+                  <Text style={[notebookLabelType, { color: colors.onSurface }]}>
                     {cat.label}
                   </Text>
                   <Text
-                    style={[styles.notebookTag, { color: colors.onSurfaceVariant }]}
+                    style={[...notebookTagType, { color: colors.onSurfaceVariant }]}
                     numberOfLines={2}
                   >
                     {cat.description}
@@ -231,7 +354,8 @@ export default function HomeTab() {
         {/* ── Speaker Feature Card ── */}
         <Text
           style={[
-            styles.sectionTitle,
+            styles.sectionTitleLayout,
+            sectionTitleType,
             { color: colors.onSurface, marginTop: 56 },
             isFree && styles.sectionTitleSpeakersFree,
           ]}
@@ -264,21 +388,21 @@ export default function HomeTab() {
               />
               <View style={styles.heroIconRow}>
                 <MaterialIcons name="record-voice-over" size={18} color="#FFFFFFCC" />
-                <Text style={[styles.heroLabel, { color: "#FFFFFFBB" }]}>
+                <Text style={[heroLabelType, { color: "#FFFFFFBB" }]}>
                   Featured Speaker
                 </Text>
               </View>
-              <Text style={[styles.speakerName, { color: colors.onPrimary, marginTop: 12 }]}>
+              <Text style={[styles.speakerNameLayout, speakerNameType, { color: colors.onPrimary, marginTop: 12 }]}>
                 {featuredSpeaker.speaker}
               </Text>
               <Text
-                style={[styles.speakerTitle, { color: colors.onPrimary + "CC" }]}
+                style={[speakerTitleType, { color: colors.onPrimary + "CC" }]}
                 numberOfLines={2}
               >
                 {featuredSpeaker.title}
               </Text>
               <View style={styles.ctaRow}>
-                <Text style={[styles.readMore, { color: colors.secondaryContainer }]}>
+                <Text style={[readMoreType, { color: colors.secondaryContainer }]}>
                   {isListenAgain ? "Listen again" : speakerIsStarted ? "Continue" : "Listen"}
                 </Text>
                 <MaterialIcons name="chevron-right" size={20} color={colors.secondaryContainer} />
@@ -297,7 +421,7 @@ export default function HomeTab() {
           }}
           style={[styles.exploreRow, isFree && styles.speakerSectionFree]}
         >
-          <Text style={[styles.exploreText, { color: colors.secondary }]}>
+          <Text style={[exploreTextType, { color: colors.secondary }]}>
             Explore all speakers
           </Text>
           <MaterialIcons name="arrow-forward" size={18} color={colors.secondary} />
@@ -306,7 +430,8 @@ export default function HomeTab() {
         {/* ── Prayers Card ── */}
         <Text
           style={[
-            styles.sectionTitle,
+            styles.sectionTitleLayout,
+            sectionTitleType,
             { color: colors.onSurface, marginTop: 56 },
             isFree && styles.sectionTitleToolsFree,
           ]}
@@ -335,10 +460,10 @@ export default function HomeTab() {
                 />
               </View>
               <View style={styles.toolText}>
-                <Text style={[styles.notebookLabel, { color: colors.onSurface }]}>
+                <Text style={[notebookLabelType, { color: colors.onSurface }]}>
                   Your Prayers
                 </Text>
-                <Text style={[styles.notebookTag, { color: colors.onSurfaceVariant }]} numberOfLines={2}>
+                <Text style={[...notebookTagType, { color: colors.onSurfaceVariant }]} numberOfLines={2}>
                   A collection of prayers — and a place to add your own.
                 </Text>
               </View>
@@ -358,7 +483,7 @@ export default function HomeTab() {
           style={styles.unlockPillWrapper}
         >
           <View style={[styles.unlockPill, { backgroundColor: colors.subscriptionBar }]}>
-            <Text style={[styles.unlockPillText, { color: colors.subscriptionOnBar }]}>
+            <Text style={[unlockPillTextType, styles.unlockPillTextLayout, { color: colors.subscriptionOnBar }]}>
               Unlock the full experience
             </Text>
             <TouchableOpacity
@@ -366,7 +491,7 @@ export default function HomeTab() {
               onPress={() => void presentPaywall()}
               style={[styles.unlockPillButton, { backgroundColor: colors.subscriptionOnBar }]}
             >
-              <Text style={[styles.unlockPillButtonText, { color: colors.subscriptionAccent }]}>
+              <Text style={[unlockPillButtonTextType, { color: colors.subscriptionAccent }]}>
                 Subscribe
               </Text>
             </TouchableOpacity>
@@ -389,11 +514,7 @@ const styles = StyleSheet.create({
   },
 
   // Welcome greeting
-  greeting: {
-    fontFamily: fonts.headerFamilyBoldItalic,
-    fontSize: 32,
-    lineHeight: 38,
-    letterSpacing: -0.5,
+  greetingLayout: {
     marginHorizontal: layout.spacing.lgPlus,
     marginTop: layout.spacing.lg,
     marginBottom: layout.spacing.lgPlus,
@@ -442,17 +563,7 @@ const styles = StyleSheet.create({
     gap: 6,
     marginBottom: 4,
   },
-  heroLabel: {
-    fontFamily: fonts.labelFamily,
-    fontSize: 11,
-    letterSpacing: 0.4,
-    textTransform: "uppercase",
-  },
-  heroTitle: {
-    fontFamily: fonts.headerFamily,
-    fontSize: 24,
-    lineHeight: 30,
-    letterSpacing: -0.3,
+  heroTitleLayout: {
     marginBottom: 4,
   },
   /** Centered quote; horizontal inset comes only from `heroBottom` padding (matches tool text width). */
@@ -466,19 +577,8 @@ const styles = StyleSheet.create({
     gap: 2,
     marginTop: 16,
   },
-  readMore: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: 13,
-    letterSpacing: 0.1,
-  },
-
   // Section titles
-  sectionTitle: {
-    fontFamily: fonts.headerFamily,
-    fontSize: 19,
-    lineHeight: 24,
-    letterSpacing: -0.1,
-    marginTop: layout.spacing.lg,
+  sectionTitleLayout: {
     marginBottom: layout.spacing.lg,
     marginHorizontal: layout.spacing.lgPlus,
   },
@@ -526,16 +626,7 @@ const styles = StyleSheet.create({
     gap: 3,
     paddingVertical: 16,
   },
-  notebookLabel: {
-    fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 17,
-    lineHeight: 22,
-    letterSpacing: 0,
-  },
-  notebookTag: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: 14,
-    lineHeight: 19,
+  notebookTagExtras: {
     letterSpacing: 0,
     ...(Platform.OS === "android" ? { includeFontPadding: false } : {}),
   },
@@ -615,17 +706,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 8,
   },
-  speakerName: {
-    fontFamily: fonts.headerFamily,
-    fontSize: 24,
-    lineHeight: 30,
-    letterSpacing: -0.3,
+  speakerNameLayout: {
     marginBottom: 12,
-  },
-  speakerTitle: {
-    fontFamily: fonts.bodyFamilyMedium,
-    fontSize: 16,
-    lineHeight: 22,
   },
   speakerThemes: {
     fontFamily: fonts.bodyFamily,
@@ -640,11 +722,6 @@ const styles = StyleSheet.create({
     gap: 4,
     marginHorizontal: layout.spacing.lgPlus,
     marginTop: 10,
-  },
-  exploreText: {
-    fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 15,
-    letterSpacing: 0.1,
   },
 
   // Free-user faded states
@@ -682,19 +759,12 @@ const styles = StyleSheet.create({
     padding: 8,
     ...shadows.ambient,
   },
-  unlockPillText: {
-    fontFamily: fonts.bodyFamilyMedium,
-    fontSize: 14,
+  unlockPillTextLayout: {
     marginLeft: 12,
   },
   unlockPillButton: {
     borderRadius: 999,
     paddingHorizontal: 16,
     paddingVertical: 8,
-  },
-  unlockPillButtonText: {
-    fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 14,
-    fontWeight: "600",
   },
 });
