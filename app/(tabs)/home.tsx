@@ -20,7 +20,7 @@ import { useAppDate } from "../../contexts/AppDateContext";
 import { useSpeakers } from "../../hooks/useSpeakers";
 import { usePersonalPrayers } from "../../hooks/usePersonalPrayers";
 import { useSubscriptionContext } from "../../contexts/SubscriptionContext";
-import { fonts, layout, typography, shadows } from "../../constants/theme";
+import { fonts, layout, shadows } from "../../constants/theme";
 import { JOURNAL_CATEGORIES, type EntryType } from "../../constants/journalCategories";
 import { JournalEntryEditor } from "../../components/journal/JournalEntryEditor";
 import { useJournalStorage } from "../../hooks/useJournalStorage";
@@ -157,7 +157,7 @@ export default function HomeTab() {
             {reading ? (
               <>
                 <Text
-                  style={[styles.heroBody, { color: colors.onSurface }]}
+                  style={[styles.notebookTag, styles.heroThoughtForDay, { color: colors.onSurface }]}
                   numberOfLines={3}
                 >
                   {`"${reading.thoughtForDay}"`}
@@ -170,7 +170,7 @@ export default function HomeTab() {
                 </View>
               </>
             ) : (
-              <Text style={[styles.heroBody, { color: colors.onSurfaceVariant }]}>
+              <Text style={[styles.notebookTag, styles.heroThoughtForDay, { color: colors.onSurfaceVariant }]}>
                 No reading available today.
               </Text>
             )}
@@ -455,12 +455,9 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
     marginBottom: 4,
   },
-  heroBody: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: 14,
-    lineHeight: 20,
+  /** Centered quote; horizontal inset comes only from `heroBottom` padding (matches tool text width). */
+  heroThoughtForDay: {
     textAlign: "center",
-    paddingHorizontal: 24,
   },
   ctaRow: {
     flexDirection: "row",
@@ -533,11 +530,14 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyFamilySemiBold,
     fontSize: 17,
     lineHeight: 22,
+    letterSpacing: 0,
   },
   notebookTag: {
     fontFamily: fonts.bodyFamily,
     fontSize: 14,
     lineHeight: 19,
+    letterSpacing: 0,
+    ...(Platform.OS === "android" ? { includeFontPadding: false } : {}),
   },
 
   // Prayers
