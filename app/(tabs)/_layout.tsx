@@ -29,7 +29,7 @@ export default function TabLayout() {
   const inactiveColor = colors.onSurfaceVariant;
   const lockedColor = colors.onSurfaceVariant;
   const lockedOpacity = isDark ? 0.68 : 0.82;
-  const badgeBackground = "#A86858";
+  const badgeBackground = "#8F5546";
   const badgeIconColor = "#FFFFFF";
   const activeIconColor = colors.secondary;
   const premiumLocked = !loading

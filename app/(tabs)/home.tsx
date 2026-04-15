@@ -645,7 +645,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#A86858",
+    backgroundColor: "#8F5546",
     borderRadius: 50,
     padding: 8,
     ...shadows.ambient,
