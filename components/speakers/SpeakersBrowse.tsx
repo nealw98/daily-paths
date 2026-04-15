@@ -114,9 +114,14 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
       onPress={() => onSelectSpeaker(speaker, false)}
       activeOpacity={0.8}
     >
-      <View style={styles.cardInner}>
-        <View style={styles.cardIconPip}>
-          <Ionicons name="play-circle" size={38} color="#FFFFFF" />
+      <View
+        style={[
+          styles.cardInner,
+          { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.mist },
+        ]}
+      >
+        <View style={[styles.cardIconPip, { backgroundColor: colors.secondary }]}>
+          <Ionicons name="play-circle" size={38} color={colors.onSecondary} />
         </View>
         <View style={styles.cardBody}>
           <View style={styles.nameRow}>
@@ -150,7 +155,7 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
             )}
           </View>
         </View>
-        <Ionicons name="chevron-forward" size={18} color="#B0B0B0" />
+        <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceVariant} />
       </View>
     </TouchableOpacity>
   );
@@ -238,15 +243,14 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
               key={key}
               onPress={() => setSortMode(key)}
               activeOpacity={0.7}
-              style={[
-                styles.sortButton,
-                isActive && styles.sortButtonActive,
-              ]}
+              style={[styles.sortButton, isActive && { backgroundColor: colors.secondary }]}
             >
-              <Text style={[
-                styles.sortLabel,
-                { color: isActive ? "#FFFFFF" : colors.onSurfaceVariant },
-              ]}>
+              <Text
+                style={[
+                  styles.sortLabel,
+                  { color: isActive ? colors.onSecondary : colors.onSurfaceVariant },
+                ]}
+              >
                 {label}
               </Text>
             </TouchableOpacity>
@@ -326,9 +330,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 999,
   },
-  sortButtonActive: {
-    backgroundColor: "#2C5F5D",
-  },
   sortLabel: {
     fontFamily: fonts.labelFamily,
     fontSize: 13,
@@ -347,8 +348,6 @@ const styles = StyleSheet.create({
   cardInner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderColor: "#c5dedd",
     borderWidth: 0.5,
     borderRadius: 10,
     paddingRight: 16,
@@ -364,7 +363,6 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 9,
     borderTopRightRadius: 0,
     borderBottomRightRadius: 0,
-    backgroundColor: "#2C5F5D",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 16,

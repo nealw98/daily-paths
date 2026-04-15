@@ -104,8 +104,12 @@ export const subscriptionTerracottaColors = {
   subscriptionTitle: "#6B3D2E",
   /** Same hue as `subscriptionBar` at ~10% opacity (8‑digit hex) for secondary CTAs. */
   subscriptionSecondaryPill: withAlpha(SUBSCRIPTION_BAR_HEX, "1A"),
-  /** Body / footer copy on light subscription sheets (e.g. trial end modal). */
+  /** Body copy on subscription sheets; use `onSurface` in components when the sheet is dark. */
   subscriptionSheetText: "#1A1A1A",
+  /** Cream CTA surface (home unlock chip, trial sheet primary). */
+  subscriptionCtaCream: "#E8D8D0",
+  /** Text on cream CTA — dark for contrast on the light chip. */
+  subscriptionOnCream: "#1C2524",
 } as const;
 
 export type ColorPalette = SemanticPalette &

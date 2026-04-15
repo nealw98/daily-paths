@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { View, Text, StyleSheet, Alert, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation, useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
+import { useNavigation } from "expo-router";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { useJournalStorage, type JournalEntry, type EntryType } from "../../hooks/useJournalStorage";
@@ -39,6 +40,13 @@ function JournalTabContent() {
     refreshEntries,
   } = useJournalStorage();
   const stats = useJournalStats(entries);
+
+  // Reload from storage when the tab is focused so entries created elsewhere (e.g. Home) appear.
+  useFocusEffect(
+    useCallback(() => {
+      void refreshEntries({ silent: true });
+    }, [refreshEntries])
+  );
 
   const [view, setView] = useState<JournalView>("timeline");
   const viewRef = useRef(view);

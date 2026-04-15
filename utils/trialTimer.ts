@@ -143,3 +143,12 @@ export async function markTrialEndedModalSeen(): Promise<void> {
     // Non-critical
   }
 }
+
+/** QA / design review: allow the post-trial sheet to show again on next check. */
+export async function clearTrialEndedModalSeen(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(TRIAL_ENDED_MODAL_SEEN_KEY);
+  } catch {
+    // Non-critical
+  }
+}

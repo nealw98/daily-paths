@@ -81,16 +81,21 @@ export function useLocalJournalEntries() {
   const { todayKey } = useAppDate();
 
   // ── Fetch ────────────────────────────────────────────────────────────
-  const fetchEntries = useCallback(async () => {
+  const fetchEntries = useCallback(async (opts?: { silent?: boolean }) => {
+    const silent = opts?.silent ?? false;
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
       setError(null);
       const data = await readEntries();
       if (mounted.current) setEntries(data);
     } catch (err) {
       if (mounted.current) setError(String(err));
     } finally {
-      if (mounted.current) setLoading(false);
+      if (mounted.current && !silent) {
+        setLoading(false);
+      }
     }
   }, []);
 

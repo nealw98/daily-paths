@@ -167,6 +167,7 @@ function SpeakersTabContent() {
       <JournalEntryEditor
         key={journalEntryType}
         entryType={journalEntryType}
+        navigateToNotebookAfterSave
         onSave={async (entryType, content, structuredContent) => {
           await createEntry(entryType, content, structuredContent);
           setJournalEntryType(null);

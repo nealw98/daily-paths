@@ -201,6 +201,7 @@ export default function HomeTab() {
       <JournalEntryEditor
         key={journalEntryType}
         entryType={journalEntryType}
+        navigateToNotebookAfterSave
         onSave={async (entryType, content, structuredContent) => {
           await createEntry(entryType, content, structuredContent);
           setJournalEntryType(null);
@@ -325,8 +326,18 @@ export default function HomeTab() {
               }}
               style={[styles.toolRow, isFree && styles.toolRowFree]}
             >
-              <View style={styles.toolRowInner}>
-                <View style={[styles.toolIconPip, isFree && styles.toolIconPipFree]}>
+              <View
+                style={[
+                  styles.toolRowInner,
+                  { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.mist },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.toolIconPip,
+                    { backgroundColor: isFree ? colors.surfaceContainer : colors.secondary },
+                  ]}
+                >
                   <Ionicons
                     name={cat.icon as any}
                     size={38}
@@ -345,7 +356,7 @@ export default function HomeTab() {
                     {cat.description}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color="#B0B0B0" />
+                <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceVariant} />
               </View>
             </TouchableOpacity>
           ))}
@@ -450,8 +461,19 @@ export default function HomeTab() {
             }}
             style={[styles.toolRow, isFree && styles.toolRowFree]}
           >
-            <View style={[styles.toolRowInner, styles.prayersTile]}>
-              <View style={[styles.toolIconPip, isFree && styles.toolIconPipFree]}>
+            <View
+              style={[
+                styles.toolRowInner,
+                styles.prayersTile,
+                { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.mist },
+              ]}
+            >
+              <View
+                style={[
+                  styles.toolIconPip,
+                  { backgroundColor: isFree ? colors.surfaceContainer : colors.secondary },
+                ]}
+              >
                 <MaterialCommunityIcons
                   name="hands-pray"
                   size={38}
@@ -467,7 +489,7 @@ export default function HomeTab() {
                   A collection of prayers — and a place to add your own.
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="#B0B0B0" />
+              <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceVariant} />
             </View>
           </TouchableOpacity>
         </View>
@@ -489,10 +511,10 @@ export default function HomeTab() {
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={() => void presentPaywall()}
-              style={[styles.unlockPillButton, { backgroundColor: colors.subscriptionOnBar }]}
+              style={[styles.unlockPillButton, { backgroundColor: colors.subscriptionCtaCream }]}
             >
-              <Text style={[unlockPillButtonTextType, { color: colors.subscriptionAccent }]}>
-                Subscribe
+              <Text style={[unlockPillButtonTextType, { color: colors.subscriptionOnCream }]}>
+                Continue
               </Text>
             </TouchableOpacity>
           </View>
@@ -599,8 +621,6 @@ const styles = StyleSheet.create({
   toolRowInner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderColor: "#c5dedd",
     borderWidth: 0.5,
     borderRadius: 10,
     paddingRight: 16,
@@ -616,7 +636,6 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 9,
     borderTopRightRadius: 0,
     borderBottomRightRadius: 0,
-    backgroundColor: "#2C5F5D",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 16,
@@ -727,9 +746,6 @@ const styles = StyleSheet.create({
   // Free-user faded states
   toolRowFree: {
     opacity: 0.5,
-  },
-  toolIconPipFree: {
-    backgroundColor: "#ebe8e4",
   },
   speakerSectionFree: {
     opacity: 0.45,

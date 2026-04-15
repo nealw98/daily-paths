@@ -25,7 +25,7 @@ export const TrialEndedModal: React.FC<TrialEndedModalProps> = ({
   onSubscribeNow,
   onNotNow,
 }) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const slide = useRef(new Animated.Value(SHEET_ANIM_OFFSET)).current;
 
@@ -63,18 +63,25 @@ export const TrialEndedModal: React.FC<TrialEndedModalProps> = ({
             <View style={[styles.handle, { backgroundColor: colors.outlineVariant }]} />
           </View>
 
-          <Text style={[styles.title, { color: colors.subscriptionTitle }]}>Continue the path</Text>
-          <Text style={[styles.body, { color: colors.subscriptionSheetText }]}>
+          <Text
+            style={[
+              styles.title,
+              { color: isDark ? colors.subscriptionAccent : colors.subscriptionTitle },
+            ]}
+          >
+            Continue the path
+          </Text>
+          <Text style={[styles.body, { color: colors.onSurface }]}>
             The daily reading will always be here for free. If the tools have been useful, consider keeping them
             {" \u2014 "}they're here to support your practice.
           </Text>
 
           <TouchableOpacity
-            style={[styles.primaryButton, { backgroundColor: colors.subscriptionBar }]}
+            style={[styles.primaryButton, { backgroundColor: colors.subscriptionCtaCream }]}
             onPress={onSubscribeNow}
             activeOpacity={0.85}
           >
-            <Text style={[styles.primaryLabel, { color: colors.subscriptionOnBar }]}>I'm ready</Text>
+            <Text style={[styles.primaryLabel, { color: colors.subscriptionOnCream }]}>Continue</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -85,7 +92,7 @@ export const TrialEndedModal: React.FC<TrialEndedModalProps> = ({
             <Text style={[styles.secondaryLabel, { color: colors.subscriptionAccent }]}>Maybe later</Text>
           </TouchableOpacity>
 
-          <Text style={[styles.footerNote, { color: colors.subscriptionSheetText }]}>
+          <Text style={[styles.footerNote, { color: colors.onSurfaceVariant }]}>
             Cancel anytime. Restore on any device.
           </Text>
         </Animated.View>

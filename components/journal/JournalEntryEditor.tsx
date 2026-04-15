@@ -49,6 +49,8 @@ interface JournalEntryEditorProps {
   initialStructuredContent?: Record<string, any> | null;
   isEditing?: boolean;
   onSwitchEntryType?: (entryType: EntryType) => void;
+  /** When true, footer Save navigates to the Notebook tab after a successful save. */
+  navigateToNotebookAfterSave?: boolean;
 }
 
 export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
@@ -59,6 +61,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
   initialStructuredContent = null,
   isEditing = false,
   onSwitchEntryType,
+  navigateToNotebookAfterSave = false,
 }) => {
   const { colors } = useTheme();
   const navigation = useNavigation();
@@ -216,7 +219,10 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
   ]);
 
   const handleSave = async () => {
-    await saveEntry();
+    const ok = await saveEntry();
+    if (ok && navigateToNotebookAfterSave) {
+      router.push("/(tabs)/journal");
+    }
   };
 
   const confirmExit = useCallback(
@@ -412,7 +418,11 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                   <View
                     style={[
                       styles.journalDatePill,
-                      { backgroundColor: "rgba(255, 255, 255, 0.90)" },
+                      {
+                        backgroundColor: colors.surfaceContainerLowest,
+                        borderWidth: 0.5,
+                        borderColor: colors.mist,
+                      },
                     ]}
                   >
                     <Text
@@ -606,7 +616,11 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
               <View
                 style={[
                   styles.gratitudeDatePill,
-                  { backgroundColor: "rgba(255, 255, 255, 0.90)" },
+                  {
+                    backgroundColor: colors.surfaceContainerLowest,
+                    borderWidth: 0.5,
+                    borderColor: colors.mist,
+                  },
                 ]}
               >
                 <Text
@@ -786,7 +800,11 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                 <View
                   style={[
                     styles.spotCheckDatePill,
-                    { backgroundColor: "rgba(255, 255, 255, 0.90)" },
+                    {
+                      backgroundColor: colors.surfaceContainerLowest,
+                      borderWidth: 0.5,
+                      borderColor: colors.mist,
+                    },
                   ]}
                 >
                   <Text

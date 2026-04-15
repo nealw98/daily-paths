@@ -31,6 +31,7 @@ import { EntryTypeIcon } from "../../utils/entryTypeIcon";
 import { Seedling } from "../../components/icons";
 import { FieldShell, SanctuaryButton, SanctuaryCard } from "../ui/Sanctuary";
 import { TealHeader } from "../shared/TealHeader";
+import { buildJournalEntryShareMessage, parseGratitudeItems } from "../../utils/journalShare";
 
 interface JournalEntryDetailProps {
   entry: JournalEntry;
@@ -41,15 +42,6 @@ interface JournalEntryDetailProps {
     structuredContent?: Record<string, any> | null
   ) => Promise<void>;
   onDelete: (entryId: string) => Promise<void>;
-}
-
-/** Parse markdown list content back into an array of items. */
-function parseGratitudeItems(content: string | null): string[] {
-  if (!content) return [];
-  return content
-    .split("\n")
-    .map((line) => line.replace(/^-\s*/, "").trim())
-    .filter(Boolean);
 }
 
 export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
@@ -121,43 +113,8 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
   };
 
   const handleShare = async () => {
-    const lines: string[] = [];
-
-    // Date
-    lines.push(`${dayOfWeek}, ${monthDay}`);
-    lines.push("");
-
-    // Type label
-    lines.push(catLabel.toUpperCase());
-    lines.push("");
-
-    // Content by type
-    if (editorType === "text") {
-      if (entry.content) lines.push(entry.content.trim());
-    } else if (editorType === "items") {
-      const items = entry.structured_content?.items
-        ? (entry.structured_content.items as string[])
-        : parseGratitudeItems(entry.content);
-      items.filter(Boolean).forEach((item) => lines.push(`• ${item}`));
-    } else if (editorType === "guided") {
-      const prompts = catConfig?.guidedPrompts ?? [];
-      const responses = entry.structured_content ?? {};
-      prompts.forEach((prompt) => {
-        const value = responses[prompt.id];
-        if (value && typeof value === "string" && value.trim()) {
-          lines.push(prompt.question);
-          lines.push(value.trim());
-          lines.push("");
-        }
-      });
-    }
-
-    lines.push("");
-    lines.push("-----");
-    lines.push("Shared from Daily Paths");
-
     try {
-      await Share.share({ message: lines.join("\n") });
+      await Share.share({ message: buildJournalEntryShareMessage(entry) });
     } catch (err) {
       console.error("Error sharing entry:", err);
     }
@@ -464,7 +421,11 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
           rightAction={
             <View style={styles.actionIcons}>
               <TouchableOpacity onPress={handleShare} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Ionicons name="arrow-redo-outline" size={22} color={colors.onPrimary} />
+                {Platform.OS === "ios" ? (
+                  <MaterialIcons name="ios-share" size={22} color={colors.onPrimary} />
+                ) : (
+                  <MaterialIcons name="share" size={22} color={colors.onPrimary} />
+                )}
               </TouchableOpacity>
               <TouchableOpacity onPress={handleDelete} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <Ionicons name="trash-outline" size={22} color={colors.onPrimary} />

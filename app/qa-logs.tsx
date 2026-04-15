@@ -25,7 +25,12 @@ import { useTheme } from "../hooks/useTheme";
 import { clearQaLogs, useQaLogs, qaLog } from "../utils/qaLog";
 import { resetRateShareTracking } from "../utils/rateShareTracking";
 import { isDeveloperDevice, setDeveloperDevice, getOrCreateDeviceId } from "../utils/deviceIdentity";
-import { getTrialStatus, resetTrial, expireTrial } from "../utils/trialTimer";
+import {
+  getTrialStatus,
+  resetTrial,
+  expireTrial,
+  clearTrialEndedModalSeen,
+} from "../utils/trialTimer";
 import {
   setLifetimeOverride,
   getLifetimeOverride,
@@ -384,6 +389,23 @@ export default function QaLogsScreen() {
     }
   };
 
+  /** Clears “already saw” flag + expires trial so `TrialEndedModal` can show (not subscribed / not legacy / no lifetime). */
+  const handlePreviewTrialEndedModal = async () => {
+    try {
+      await clearTrialEndedModalSeen();
+      await expireTrial();
+      await trialStatus.refresh();
+      qaLog("freemium", "Trial ended modal preview prepared");
+      Alert.alert(
+        "Trial ended modal",
+        "Dismissed this alert. The trial-ended sheet should appear if you are not subscribed, not a legacy user, and have no lifetime access. If it does not, go back to the main tabs or send the app to background and return.",
+      );
+    } catch (err) {
+      qaLog("freemium", "Error preparing trial ended modal", { error: String(err) });
+      Alert.alert("Error", "Could not reset trial-ended modal state.");
+    }
+  };
+
   const handleToggleLifetimeOverride = async () => {
     if (lifetimeOverride === true) {
       // Currently forced on → turn off
@@ -672,6 +694,15 @@ export default function QaLogsScreen() {
             onPress={handleExpireTrial}
           >
             <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Expire Trial</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={() => void handlePreviewTrialEndedModal()}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              Show Trial Ended Modal
+            </Text>
           </TouchableOpacity>
         </View>
       </View>

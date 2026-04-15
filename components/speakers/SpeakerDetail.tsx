@@ -590,7 +590,8 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   quoteCardSection: {
-    marginBottom: layout.spacing.md + 8,
+    marginTop: layout.spacing.sm,
+    marginBottom: layout.spacing.xxl,
   },
   quoteCardInner: {
     borderRadius: 10,
