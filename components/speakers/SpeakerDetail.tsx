@@ -255,19 +255,6 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
                 <View style={styles.quoteBodyCopy}>
                   <Text
                     style={[
-                      styles.quoteEyebrow,
-                      {
-                        fontSize: typ.label.fontSize,
-                        lineHeight: typ.label.lineHeight,
-                        color: colors.textSecondary,
-                        letterSpacing: 0,
-                      },
-                    ]}
-                  >
-                    QUOTE
-                  </Text>
-                  <Text
-                    style={[
                       typ.bodySmall,
                       {
                         color: colors.text,
@@ -618,11 +605,6 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: 4,
-  },
-  quoteEyebrow: {
-    fontFamily: fonts.labelFamily,
-    textTransform: "uppercase",
-    marginBottom: 8,
   },
   quoteBodyCopy: {
     minWidth: 0,
