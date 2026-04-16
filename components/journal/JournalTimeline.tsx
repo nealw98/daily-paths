@@ -25,6 +25,7 @@ import {
 import { EntryTypeIcon } from "../../utils/entryTypeIcon";
 import { SanctuaryCard } from "../ui/Sanctuary";
 import { buildJournalEntryShareMessage } from "../../utils/journalShare";
+import { computeJournalStreak } from "../../utils/journalStreak";
 
 // ─── Timeline item union (date headers + entries) ───────────────────────────
 
@@ -251,24 +252,7 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
     }
   }, []);
 
-  const currentStreak = useMemo(() => {
-    if (entries.length === 0) return 0;
-
-    const entryDays = new Set<string>(
-      entries.map((entry) => toDateKey(new Date(entry.created_at)))
-    );
-
-    const cursor = new Date();
-    cursor.setHours(0, 0, 0, 0);
-
-    let streak = 0;
-    while (entryDays.has(toDateKey(cursor))) {
-      streak += 1;
-      cursor.setDate(cursor.getDate() - 1);
-    }
-
-    return streak;
-  }, [entries]);
+  const currentStreak = useMemo(() => computeJournalStreak(entries), [entries]);
 
   // Build timeline items (headers + entries), always anchored to a Today section.
   const timelineItems = useMemo(() => {

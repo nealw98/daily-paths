@@ -27,7 +27,9 @@ import { JOURNAL_CATEGORIES, type EntryType } from "../../constants/journalCateg
 import { JournalEntryEditor } from "../../components/journal/JournalEntryEditor";
 import { useJournalStorage } from "../../hooks/useJournalStorage";
 import { TealHeader } from "../../components/shared/TealHeader";
+import { CollectionLinkRow } from "../../components/shared/CollectionLinkRow";
 import { useFeaturedSpeaker } from "../../hooks/useFeaturedSpeaker";
+import { computeJournalStreak } from "../../utils/journalStreak";
 import { qaLog } from "../../utils/qaLog";
 
 function getGreeting(): string {
@@ -77,8 +79,33 @@ export default function HomeTab() {
   const { speakers } = useSpeakers();
   const { prayers } = usePersonalPrayers();
   const { speaker: featuredSpeaker, isStarted: speakerIsStarted, isListenAgain } = useFeaturedSpeaker(speakers);
-  const { createEntry } = useJournalStorage();
+  const { entries: journalEntries, createEntry } = useJournalStorage();
   const [journalEntryType, setJournalEntryType] = useState<EntryType | null>(null);
+
+  // Notebook row metadata — reuses the same entries array the Notebook tab
+  // renders, and the same pure streak util, so numbers are guaranteed to
+  // match what the Notebook screen displays.
+  const notebookRowMetadata = useMemo(() => {
+    const total = journalEntries.length;
+    if (total === 0) return null;
+    const streak = computeJournalStreak(journalEntries);
+    const entriesLabel = `${total} ${total === 1 ? "entry" : "entries"}`;
+    if (streak < 2) return entriesLabel;
+    return `${entriesLabel} · ${streak} day streak`;
+  }, [journalEntries]);
+
+  // Speakers row metadata — derived from the already-loaded speakers list
+  // (no extra query). Blank when there are no new speakers in the last 7 days.
+  const speakersNewThisWeekLabel = useMemo(() => {
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    let count = 0;
+    for (const s of speakers) {
+      const ts = s.created_at ? Date.parse(s.created_at) : NaN;
+      if (!Number.isNaN(ts) && ts >= cutoff) count += 1;
+    }
+    if (count === 0) return null;
+    return `${count} new this week`;
+  }, [speakers]);
 
   // TEMP: preview cycling through reflection images
   const [previewIdx, setPreviewIdx] = useState<number | null>(null);
@@ -173,16 +200,6 @@ export default function HomeTab() {
       letterSpacing: 0,
     }),
     [typography.bodySmall],
-  );
-
-  const exploreTextType = useMemo(
-    () => ({
-      fontFamily: fonts.bodyFamilySemiBold,
-      fontSize: typography.bodySmall.fontSize,
-      lineHeight: typography.bodySmall.lineHeight,
-      letterSpacing: 0.1,
-    }),
-    [typography.bodySmall.fontSize, typography.bodySmall.lineHeight],
   );
 
   const unlockPillTextType = useMemo(() => {
@@ -411,12 +428,30 @@ export default function HomeTab() {
                   >
                     {cat.description}
                   </Text>
+                  <View style={styles.ctaRow}>
+                    <Text style={[readMoreType, { color: colors.accent }]}>
+                      Open
+                    </Text>
+                    <MaterialIcons name="chevron-right" size={20} color={colors.accent} />
+                  </View>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceVariant} />
               </View>
             </TouchableOpacity>
           ))}
         </View>
+
+        <CollectionLinkRow
+          metadata={notebookRowMetadata}
+          linkLabel="Open your notebook →"
+          onPress={() => {
+            if (isFree) {
+              void presentPaywall();
+            } else {
+              router.push("/(tabs)/journal");
+            }
+          }}
+          style={[styles.notebookLinkRow, isFree && styles.toolRowFree]}
+        />
 
         {/* ── Speaker Feature Card ── */}
         <Text
@@ -441,12 +476,7 @@ export default function HomeTab() {
             }}
             style={[styles.speakerCard, isFree && styles.speakerSectionFree]}
           >
-            <LinearGradient
-              colors={[colors.primary, colors.primaryContainer]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.speakerCardInner}
-            >
+            <View style={[styles.speakerCardInner, { backgroundColor: colors.secondary }]}>
               <Ionicons
                 name="headset"
                 size={220}
@@ -459,11 +489,11 @@ export default function HomeTab() {
                   Featured Speaker
                 </Text>
               </View>
-              <Text style={[styles.speakerNameLayout, speakerNameType, { color: colors.onPrimary, marginTop: 12 }]}>
+              <Text style={[styles.speakerNameLayout, speakerNameType, { color: colors.onSecondary, marginTop: 12 }]}>
                 {featuredSpeaker.speaker}
               </Text>
               <Text
-                style={[speakerTitleType, { color: colors.onPrimary + "CC" }]}
+                style={[speakerTitleType, { color: colors.onSecondary + "CC" }]}
                 numberOfLines={2}
               >
                 {featuredSpeaker.title}
@@ -474,11 +504,12 @@ export default function HomeTab() {
                 </Text>
                 <MaterialIcons name="chevron-right" size={20} color={colors.secondaryContainer} />
               </View>
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         ) : null}
-        <TouchableOpacity
-          activeOpacity={0.7}
+        <CollectionLinkRow
+          metadata={speakersNewThisWeekLabel}
+          linkLabel="Explore all speakers →"
           onPress={() => {
             if (isFree) {
               void presentPaywall();
@@ -486,13 +517,8 @@ export default function HomeTab() {
               router.push("/(tabs)/speakers");
             }
           }}
-          style={[styles.exploreRow, isFree && styles.speakerSectionFree]}
-        >
-          <Text style={[exploreTextType, { color: colors.secondary }]}>
-            Explore all speakers
-          </Text>
-          <MaterialIcons name="arrow-forward" size={18} color={colors.secondary} />
-        </TouchableOpacity>
+          style={[styles.speakersLinkRow, isFree && styles.speakerSectionFree]}
+        />
 
         {/* ── Prayers Card ── */}
         <Text
@@ -544,8 +570,13 @@ export default function HomeTab() {
                 <Text style={[...notebookTagType, { color: colors.onSurfaceVariant }]} numberOfLines={2}>
                   A collection of prayers — and a place to add your own.
                 </Text>
+                <View style={styles.ctaRow}>
+                  <Text style={[readMoreType, { color: colors.accent }]}>
+                    Open
+                  </Text>
+                  <MaterialIcons name="chevron-right" size={20} color={colors.accent} />
+                </View>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceVariant} />
             </View>
           </TouchableOpacity>
         </View>
@@ -791,11 +822,12 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     marginTop: 4,
   },
-  exploreRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginHorizontal: layout.spacing.lgPlus,
+  // Row below Daily Tools pointing into the Notebook tab.
+  notebookLinkRow: {
+    marginTop: 12,
+  },
+  // Replacement for the former "Explore all speakers →" link.
+  speakersLinkRow: {
     marginTop: 10,
   },
 
