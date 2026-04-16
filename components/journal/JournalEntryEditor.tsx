@@ -32,7 +32,6 @@ import { GuidedPromptEditor } from "./GuidedPromptEditor";
 import { JournalCategoryPicker } from "./JournalCategoryPicker";
 import { EntryTypeIcon } from "../../utils/entryTypeIcon";
 import { Seedling } from "../../components/icons";
-import { QuoteWatermarkPattern } from "../shared/QuoteWatermarkPattern";
 import { FieldShell, SanctuaryButton, SanctuaryCard } from "../ui/Sanctuary";
 import { TealHeader } from "../shared/TealHeader";
 import { useAppDate } from "../../contexts/AppDateContext";
@@ -131,7 +130,6 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
     }
     return {};
   });
-  const [focusedPromptId, setFocusedPromptId] = useState<string | null>(null);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const { today } = useAppDate();
   const { quote: dailyGratitudeQuoteData } = useDailyGratitudeQuote({
@@ -415,41 +413,25 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                     ]}
                     resizeMode="contain"
                   />
-                  <View
+                  <Text
                     style={[
-                      styles.journalDatePill,
-                      {
-                        backgroundColor: colors.surfaceContainerLowest,
-                        borderWidth: 0.5,
-                        borderColor: colors.mist,
-                      },
+                      styles.journalDateText,
+                      { color: colors.onSurfaceVariant },
                     ]}
                   >
-                    <Text
-                      style={[
-                        styles.journalDatePillText,
-                        {
-                          color: colors.onSurface,
-                        },
-                      ]}
-                    >
-                      {isEditing ? "Editing Entry" : dateStr}
-                    </Text>
-                  </View>
+                    {isEditing ? "Editing Entry" : dateStr}
+                  </Text>
                   <SanctuaryCard
                     tone="lowest"
                     style={styles.journalQuoteCard}
                     contentStyle={[
                       styles.journalQuoteCardInner,
-                      { backgroundColor: colors.primary },
+                      { backgroundColor: colors.secondary },
                     ]}
                     elevated
                   >
                     {categoryConfig?.introText && (
                       <View style={styles.quoteCardContent}>
-                        <View pointerEvents="none" style={styles.quotePatternLayer}>
-                          <QuoteWatermarkPattern />
-                        </View>
                         <View style={styles.journalQuoteWrap}>
                           <Text
                             style={[
@@ -458,6 +440,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                                 color: colors.onPrimary,
                                 fontSize: journalQuoteFontSize,
                                 lineHeight: journalQuoteLineHeight,
+                                fontFamily: fonts.loraItalic,
                               },
                             ]}
                           >
@@ -491,7 +474,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                     style={styles.journalEntryFieldCard}
                     contentStyle={[
                       styles.journalEntryFieldCardInner,
-                      { backgroundColor: colors.surfaceContainerLowest },
+                      { backgroundColor: "#e8f4f3" },
                     ]}
                     elevated
                   >
@@ -501,12 +484,12 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                         styles.journalTextInput,
                         {
                           color: colors.text,
-                          fontSize: typography.bodyFontSize,
-                          lineHeight: typography.bodyLineHeight,
+                          fontSize: 16,
+                          lineHeight: 21,
                         },
                       ]}
                       placeholder="What's on your mind..."
-                      placeholderTextColor={colors.textSecondary + "60"}
+                      placeholderTextColor={colors.textSecondary + "50"}
                       value={content}
                       onChangeText={setContent}
                       multiline
@@ -587,7 +570,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                         },
                       ]}
                       placeholder="What's on your mind..."
-                      placeholderTextColor={colors.textSecondary + "60"}
+                      placeholderTextColor={colors.textSecondary + "50"}
                       value={content}
                       onChangeText={setContent}
                       multiline
@@ -613,40 +596,26 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                 ]}
                 resizeMode="contain"
               />
-              <View
+              <Text
                 style={[
-                  styles.gratitudeDatePill,
-                  {
-                    backgroundColor: colors.surfaceContainerLowest,
-                    borderWidth: 0.5,
-                    borderColor: colors.mist,
-                  },
+                  styles.journalDateText,
+                  { color: colors.onSurfaceVariant },
                 ]}
               >
-                <Text
-                  style={[
-                    styles.gratitudeDatePillText,
-                    { color: colors.onSurface },
-                  ]}
-                >
-                  {isEditing ? "Editing Entry" : dateStr}
-                </Text>
-              </View>
+                {isEditing ? "Editing Entry" : dateStr}
+              </Text>
 
               <SanctuaryCard
                 tone="lowest"
                 style={styles.gratitudeQuoteCard}
                 contentStyle={[
                   styles.gratitudeQuoteCardInner,
-                  { backgroundColor: colors.primary },
+                  { backgroundColor: colors.secondary },
                 ]}
                 elevated
               >
                 {!!gratitudeQuoteText && (
                   <View style={styles.quoteCardContent}>
-                    <View pointerEvents="none" style={styles.quotePatternLayer}>
-                      <QuoteWatermarkPattern />
-                    </View>
                     <View style={styles.gratitudeQuoteWrap}>
                       <Text
                         style={[
@@ -655,6 +624,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                             color: colors.onPrimary,
                             fontSize: journalQuoteFontSize,
                             lineHeight: journalQuoteLineHeight,
+                            fontFamily: fonts.loraItalic,
                           },
                         ]}
                       >
@@ -680,7 +650,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                 style={styles.gratitudeEntryCard}
                 contentStyle={[
                   styles.gratitudeEntryCardInner,
-                  { backgroundColor: colors.surfaceContainerLowest },
+                  { backgroundColor: "#e8f4f3" },
                 ]}
                 elevated
               >
@@ -700,10 +670,10 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                       <TextInput
                         style={[
                           styles.gratitudeInput,
-                          { color: colors.text, fontSize: typography.bodyFontSize - 2, lineHeight: typography.bodyLineHeight - 6 },
+                          { color: colors.text, fontSize: 16, lineHeight: 21 },
                         ]}
                         placeholder="I'm grateful for..."
-                        placeholderTextColor={colors.textSecondary + "60"}
+                        placeholderTextColor={colors.textSecondary + "50"}
                         value={item}
                         onChangeText={(text) =>
                           handleGratitudeItemChange(index, text)
@@ -797,40 +767,26 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                   ]}
                   resizeMode="contain"
                 />
-                <View
+                <Text
                   style={[
-                    styles.spotCheckDatePill,
-                    {
-                      backgroundColor: colors.surfaceContainerLowest,
-                      borderWidth: 0.5,
-                      borderColor: colors.mist,
-                    },
+                    styles.journalDateText,
+                    { color: colors.onSurfaceVariant },
                   ]}
                 >
-                  <Text
-                    style={[
-                      styles.spotCheckDatePillText,
-                      { color: colors.onSurface },
-                    ]}
-                  >
-                    {isEditing ? "Editing Entry" : dateStr}
-                  </Text>
-                </View>
+                  {isEditing ? "Editing Entry" : dateStr}
+                </Text>
 
                 <SanctuaryCard
                   tone="lowest"
                   style={styles.spotCheckQuoteCard}
                   contentStyle={[
                     styles.spotCheckQuoteCardInner,
-                    { backgroundColor: colors.primary },
+                    { backgroundColor: colors.secondary },
                   ]}
                   elevated
                 >
                   {categoryConfig?.introText && (
                     <View style={styles.quoteCardContent}>
-                      <View pointerEvents="none" style={styles.quotePatternLayer}>
-                        <QuoteWatermarkPattern />
-                      </View>
                       <View style={styles.journalQuoteWrap}>
                         <Text
                           style={[
@@ -839,6 +795,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                               color: colors.onPrimary,
                               fontSize: journalQuoteFontSize,
                               lineHeight: journalQuoteLineHeight,
+                              fontFamily: fonts.loraItalic,
                             },
                           ]}
                         >
@@ -872,8 +829,6 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                   elevated
                 >
                   {categoryConfig.guidedPrompts.map((prompt, index) => {
-                    const isFocused = focusedPromptId === prompt.id;
-
                     return (
                       <View
                         key={prompt.id}
@@ -889,56 +844,42 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                           style={[
                             styles.spotCheckPromptQuestion,
                             {
-                              color: colors.text,
-                              fontSize: typography.bodyFontSize - 2,
-                              lineHeight: (typography.bodyFontSize - 2) * 1.35,
-                              textTransform: 'uppercase',
+                              color: colors.primary,
+                              fontSize: 22,
+                              lineHeight: 28,
                             },
                           ]}
                         >
                           {prompt.question}
                         </Text>
 
-                        <FieldShell focused={isFocused} style={styles.spotCheckFieldShell}>
-                          <TextInput
-                            style={[
-                              styles.spotCheckPromptInput,
-                              {
-                                color: colors.text,
-                                fontSize: typography.bodyFontSize,
-                                lineHeight: typography.bodyLineHeight,
-                              },
-                            ]}
-                            value={guidedResponses[prompt.id] ?? ""}
-                            onChangeText={(text) =>
-                              handleGuidedResponseChange(prompt.id, text)
-                            }
-                            placeholder={prompt.placeholder}
-                            placeholderTextColor={colors.textSecondary + "60"}
-                            multiline
-                            textAlignVertical="top"
-                            autoCorrect
-                            autoCapitalize="sentences"
-                            scrollEnabled={false}
-                            selectionColor={colors.secondary}
-                            onFocus={() => setFocusedPromptId(prompt.id)}
-                            onBlur={() => setFocusedPromptId(null)}
-                          />
-                        </FieldShell>
-
-                        {prompt.hint ? (
-                          <Text
-                            style={[
-                              styles.spotCheckPromptHint,
-                              {
-                                color: colors.textSecondary,
-                                fontSize: typography.bodyFontSize - 8,
-                              },
-                            ]}
-                          >
-                            {prompt.hint}
-                          </Text>
-                        ) : null}
+                        <TextInput
+                          style={[
+                            styles.spotCheckPromptInput,
+                            {
+                              color: colors.text,
+                              fontSize: 16,
+                              lineHeight: 21,
+                              backgroundColor: "#e8f4f3",
+                            },
+                          ]}
+                          value={guidedResponses[prompt.id] ?? ""}
+                          onChangeText={(text) =>
+                            handleGuidedResponseChange(prompt.id, text)
+                          }
+                          placeholder={
+                            prompt.hint
+                              ? `${prompt.placeholder} ${prompt.hint}`
+                              : prompt.placeholder
+                          }
+                          placeholderTextColor={colors.textSecondary + "50"}
+                          multiline
+                          textAlignVertical="top"
+                          autoCorrect
+                          autoCapitalize="sentences"
+                          scrollEnabled={false}
+                          selectionColor={colors.secondary}
+                        />
                       </View>
                     );
                   })}
@@ -1098,23 +1039,12 @@ const styles = StyleSheet.create({
     width: "100%",
     aspectRatio: 3,
   },
-  journalDatePill: {
-    alignSelf: "flex-start",
-    marginLeft: 20,
-    marginTop: -22,
-    minHeight: 44,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    justifyContent: "center",
-    shadowColor: "#191C1C",
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 4,
-  },
-  journalDatePillText: {
+  journalDateText: {
     ...staticTypography.caption,
-    letterSpacing: 0.2,
+    textTransform: "uppercase",
+    letterSpacing: 1.2,
+    marginLeft: 20,
+    marginTop: 14,
   },
   journalQuoteCard: {
     marginHorizontal: 20,
@@ -1133,8 +1063,8 @@ const styles = StyleSheet.create({
   },
   journalQuoteWrap: {
     paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 18,
+    paddingTop: 14,
+    paddingBottom: 14,
     position: "relative",
   },
   journalQuoteText: {
@@ -1155,11 +1085,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     position: "relative",
     zIndex: 2,
-  },
-  quotePatternLayer: {
-    ...StyleSheet.absoluteFillObject,
-    overflow: "hidden",
-    zIndex: 0,
   },
   journalEntryFieldCard: {
     marginHorizontal: 20,
@@ -1233,24 +1158,6 @@ const styles = StyleSheet.create({
     width: "100%",
     aspectRatio: 3,
   },
-  gratitudeDatePill: {
-    alignSelf: "flex-start",
-    marginLeft: 20,
-    marginTop: -22,
-    minHeight: 44,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    justifyContent: "center",
-    shadowColor: "#191C1C",
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 4,
-  },
-  gratitudeDatePillText: {
-    ...staticTypography.caption,
-    letterSpacing: 0.2,
-  },
   gratitudeQuoteCard: {
     marginHorizontal: 20,
     marginTop: 18,
@@ -1271,8 +1178,8 @@ const styles = StyleSheet.create({
   },
   gratitudeQuoteWrap: {
     paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 18,
+    paddingTop: 14,
+    paddingBottom: 14,
     position: "relative",
   },
   gratitudeDailyReference: {
@@ -1354,24 +1261,6 @@ const styles = StyleSheet.create({
     width: "100%",
     aspectRatio: 3,
   },
-  spotCheckDatePill: {
-    alignSelf: "flex-start",
-    marginLeft: 20,
-    marginTop: -22,
-    minHeight: 44,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    justifyContent: "center",
-    shadowColor: "#191C1C",
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 4,
-  },
-  spotCheckDatePillText: {
-    ...staticTypography.caption,
-    letterSpacing: 0.2,
-  },
   spotCheckQuoteCard: {
     marginHorizontal: 20,
     marginTop: 18,
@@ -1394,29 +1283,24 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   spotCheckPromptBlock: {
-    paddingVertical: 16,
-    borderBottomWidth: 1,
+    paddingVertical: 20,
   },
   spotCheckPromptBlockLast: {
-    borderBottomWidth: 0,
+    paddingBottom: 16,
   },
   spotCheckPromptQuestion: {
     ...staticTypography.bodySmall,
-    fontFamily: fonts.bodyFamilySemiBold,
+    fontFamily: fonts.cormorantGaramondSemiBold,
     marginBottom: 10,
   },
-  spotCheckFieldShell: {
-    marginTop: 0,
-  },
   spotCheckPromptInput: {
-    minHeight: 80,
+    minHeight: 120,
     ...staticTypography.body,
-    paddingVertical: 0,
-  },
-  spotCheckPromptHint: {
-    ...staticTypography.caption,
-    fontStyle: "italic",
-    marginTop: 8,
+    fontFamily: fonts.bodyFamily,
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 14,
+    borderRadius: 10,
   },
 
   // ─── Guided Prompts ───────────────────────────────────

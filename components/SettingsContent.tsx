@@ -351,7 +351,7 @@ export const SettingsContent: React.FC<{
               <TextInput
                 style={[styles.feedbackInput, styles.feedbackInputMultiline]}
                 placeholder="Share your thoughts or suggestions..."
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor={colors.textSecondary + "50"}
                 multiline
                 numberOfLines={5}
                 value={feedbackText}
@@ -360,7 +360,7 @@ export const SettingsContent: React.FC<{
               <TextInput
                 style={styles.feedbackInput}
                 placeholder="Optional: your email if you'd like a reply"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor={colors.textSecondary + "50"}
                 value={feedbackContact}
                 onChangeText={setFeedbackContact}
                 keyboardType="email-address"

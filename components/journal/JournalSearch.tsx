@@ -157,7 +157,7 @@ export const JournalSearch: React.FC<JournalSearchProps> = ({
             ref={inputRef}
             style={[styles.input, { color: colors.text }]}
             placeholder="Search entries..."
-            placeholderTextColor={colors.textSecondary + "80"}
+            placeholderTextColor={colors.textSecondary + "50"}
             value={query}
             onChangeText={handleSearch}
             autoFocus

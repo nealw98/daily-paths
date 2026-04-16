@@ -505,7 +505,7 @@ export default function MoreTab() {
               <TextInput
                 style={[styles.feedbackInput, styles.feedbackInputMultiline, { borderColor: colors.mist, color: colors.ink }]}
                 placeholder="Share your thoughts or suggestions..."
-                placeholderTextColor={colors.ocean}
+                placeholderTextColor={colors.textSecondary + "50"}
                 multiline
                 numberOfLines={5}
                 value={feedbackText}
@@ -514,7 +514,7 @@ export default function MoreTab() {
               <TextInput
                 style={[styles.feedbackInput, { borderColor: colors.mist, color: colors.ink }]}
                 placeholder="Optional: your email if you'd like a reply"
-                placeholderTextColor={colors.ocean}
+                placeholderTextColor={colors.textSecondary + "50"}
                 value={feedbackContact}
                 onChangeText={setFeedbackContact}
                 keyboardType="email-address"

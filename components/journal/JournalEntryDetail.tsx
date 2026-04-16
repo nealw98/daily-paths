@@ -263,7 +263,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
             <View style={styles.gratitudeIcon}>
                 <Seedling size={16} color={catColor} />
               </View>
-            <Text style={[styles.gratitudeReadText, typography.bodySmall, { color: colors.text }]}>
+            <Text style={[styles.gratitudeReadText, { color: colors.text }]}>
               {item}
             </Text>
           </View>
@@ -282,26 +282,26 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
           const value = responses[prompt.id];
           const hasAnswer = value && typeof value === "string" && value.trim();
           return (
-            <SanctuaryCard key={prompt.id} tone="lowest" style={styles.guidedCard} contentStyle={styles.guidedCardContent} elevated>
-              <Text style={[styles.guidedReadQuestion, typography.bodySmall, { color: colors.primary, fontFamily: fonts.headerFamily }]}>
+            <View key={prompt.id} style={styles.guidedReadBlock}>
+              <Text style={[styles.guidedReadQuestion, { color: colors.primary }]}>
                 {prompt.question}
               </Text>
               {hasAnswer ? (
-                <Text style={[styles.guidedReadResponse, typography.body, { color: colors.text }]}>
+                <Text style={[styles.guidedReadResponse, { color: colors.text }]}>
                   {value}
                 </Text>
               ) : (
-                <Text style={[styles.guidedReadResponse, typography.body, { color: colors.textSecondary + "60" }]}>
+                <Text style={[styles.guidedReadResponse, { color: colors.textSecondary + "60" }]}>
                   No entry
                 </Text>
               )}
-            </SanctuaryCard>
+            </View>
           );
         })}
 
         {/* Fallback: show plain content if no structured_content */}
         {!entry.structured_content && entry.content && (
-          <Text style={[styles.contentText, typography.body, { color: colors.text }]}>
+          <Text style={[styles.contentText, { color: colors.text, fontSize: 17, lineHeight: 28 }]}>
             {entry.content}
           </Text>
         )}
@@ -323,20 +323,27 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
 
   const renderTextEdit = () => (
     <View style={styles.editContainer}>
-      <FieldShell style={styles.editInputShell}>
-        <TextInput
-          style={[styles.editInput, typography.body, { color: colors.text }]}
-          value={editContent}
-          onChangeText={setEditContent}
-          multiline
-          textAlignVertical="top"
-          autoFocus
-          autoCorrect
-          autoCapitalize="sentences"
-          scrollEnabled={false}
-          selectionColor={colors.secondary}
-        />
-      </FieldShell>
+      <TextInput
+        style={[
+          styles.editInput,
+          {
+            color: colors.text,
+            backgroundColor: "#e8f4f3",
+            fontFamily: fonts.bodyFamily,
+            fontSize: 16,
+            lineHeight: 21,
+          },
+        ]}
+        value={editContent}
+        onChangeText={setEditContent}
+        multiline
+        textAlignVertical="top"
+        autoFocus
+        autoCorrect
+        autoCapitalize="sentences"
+        scrollEnabled={false}
+        selectionColor={colors.secondary}
+      />
     </View>
   );
 
@@ -347,19 +354,24 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
           key={index}
           style={[
             styles.gratitudeEditCard,
-            {
-              backgroundColor: colors.cardBackground,
-              borderColor: colors.border,
-            },
+            { backgroundColor: "#e8f4f3" },
           ]}
         >
           <View style={styles.gratitudeIcon}>
-                <Seedling size={16} color={catColor} />
-              </View>
+            <Seedling size={16} color={catColor} />
+          </View>
           <TextInput
-            style={[styles.gratitudeEditInput, typography.bodySmall, { color: colors.text }]}
+            style={[
+              styles.gratitudeEditInput,
+              {
+                color: colors.text,
+                fontFamily: fonts.bodyFamily,
+                fontSize: 16,
+                lineHeight: 21,
+              },
+            ]}
             placeholder="I'm grateful for..."
-            placeholderTextColor={colors.textSecondary + "60"}
+            placeholderTextColor={colors.textSecondary + "50"}
             value={item}
             onChangeText={(text) => handleGratitudeItemChange(index, text)}
             multiline
@@ -436,9 +448,8 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
 
         {/* Date & Time */}
         <View style={[styles.dateBar, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.dateText, typography.h1, { color: colors.text }]}>{dayOfWeek}, {monthDay}</Text>
-          <Text style={[styles.timeText, typography.bodySmall, { color: colors.textSecondary }]}>
-            {timeStr}
+          <Text style={[styles.dateText, { color: colors.onSurfaceVariant }]}>
+            {dayOfWeek}, {monthDay} · {timeStr}
           </Text>
         </View>
 
@@ -553,19 +564,18 @@ const styles = StyleSheet.create({
   },
   dateBar: {
     paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 12,
+    paddingTop: 16,
+    paddingBottom: 8,
   },
   dateBarRow: {
     flexDirection: "row",
     alignItems: "center",
   },
   dateText: {
-    fontFamily: fonts.bodyFamilySemiBold,
-  },
-  // typeBadge styles removed — type info now shown in gradient header
-  timeText: {
-    marginTop: 2,
+    ...staticTypography.caption,
+    fontFamily: fonts.labelFamily,
+    textTransform: "uppercase",
+    letterSpacing: 1.2,
   },
   contentScroll: {
     flex: 1,
@@ -601,25 +611,25 @@ const styles = StyleSheet.create({
   },
   gratitudeReadText: {
     flex: 1,
+    fontFamily: fonts.bodyFamily,
+    fontSize: 16,
+    lineHeight: 21,
   },
 
   // ─── Guided Read-Only ─────────────────────────────────
-  guidedCard: {
-    borderRadius: 14,
-    marginBottom: 12,
-  },
-  guidedCardContent: {
-    padding: 18,
-  },
-  guidedReadSection: {
-    marginBottom: 20,
+  guidedReadBlock: {
+    paddingVertical: 20,
   },
   guidedReadQuestion: {
-    letterSpacing: 0.3,
-    textTransform: "uppercase",
-    marginBottom: 8,
+    fontFamily: fonts.cormorantGaramondSemiBold,
+    fontSize: 22,
+    lineHeight: 28,
+    marginBottom: 10,
   },
   guidedReadResponse: {
+    fontFamily: fonts.bodyFamily,
+    fontSize: 16,
+    lineHeight: 21,
   },
 
   // ─── Gratitude Edit ───────────────────────────────────
@@ -628,8 +638,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: 10,
     padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 10,
     marginBottom: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
@@ -660,11 +669,12 @@ const styles = StyleSheet.create({
   editContainer: {
     minHeight: 200,
   },
-  editInputShell: {
-    minHeight: 200,
-  },
   editInput: {
     minHeight: 200,
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 14,
+    borderRadius: 10,
   },
 
   // ─── Bottom Bar ───────────────────────────────────────

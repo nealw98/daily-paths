@@ -17,6 +17,8 @@ import {
 } from "@expo-google-fonts/lora";
 import {
   CormorantGaramond_500Medium,
+  CormorantGaramond_500Medium_Italic,
+  CormorantGaramond_600SemiBold,
   CormorantGaramond_700Bold,
 } from "@expo-google-fonts/cormorant-garamond";
 import { fallbackColors } from "../constants/theme";
@@ -102,6 +104,8 @@ export default function RootLayout() {
       Lora_500Medium,
       Lora_700Bold,
       CormorantGaramond_500Medium,
+      CormorantGaramond_500Medium_Italic,
+      CormorantGaramond_600SemiBold,
       CormorantGaramond_700Bold,
     });
     console.log("[STARTUP] useFonts called, fontsLoaded:", fontsLoaded);

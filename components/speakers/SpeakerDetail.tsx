@@ -81,13 +81,14 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
 
   const titleType = useMemo(
     () => ({
-      fontFamily: fonts.headerFamilyLight,
-      fontSize: textMetrics.h3FontSize + (Platform.OS === "android" ? 2 : 0),
-      lineHeight: textMetrics.h3LineHeight + (Platform.OS === "android" ? 2 : 0),
-      fontWeight: "300" as const,
-      letterSpacing: -0.4,
+      // Matches the reading-page title treatment.
+      fontFamily: fonts.loraRegular,
+      fontSize: 36 + (Platform.OS === "android" ? 4 : 0),
+      lineHeight: 44 + (Platform.OS === "android" ? 4 : 0),
+      fontWeight: "400" as const,
+      letterSpacing: -0.9,
     }),
-    [textMetrics.h3FontSize, textMetrics.h3LineHeight],
+    [],
   );
 
   const audioUrl = getSpeakerAudioUrl(speaker);

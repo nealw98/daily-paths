@@ -700,6 +700,8 @@ export const fonts = {
   loraMedium: "Lora_500Medium",
   loraBold: "Lora_700Bold",
   cormorantGaramondMedium: "CormorantGaramond_500Medium",
+  cormorantGaramondMediumItalic: "CormorantGaramond_500Medium_Italic",
+  cormorantGaramondSemiBold: "CormorantGaramond_600SemiBold",
   cormorantGaramondBold: "CormorantGaramond_700Bold",
   labelFamily: "Manrope_600SemiBold",
 };

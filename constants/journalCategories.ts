@@ -120,14 +120,10 @@ export const JOURNAL_CATEGORIES: JournalCategory[] = [
         hint: "Where is my fear hiding in this?",
       },
       {
-        id: "control",
-        question: "Where am I trying to control this?",
-        placeholder: "What am I afraid will happen if I let go?",
-      },
-      {
         id: "my_part",
         question: "What's my part?",
         placeholder: "Am I responding or reacting?",
+        hint: "Where am I trying to control this?",
       },
       {
         id: "next_right_thing",

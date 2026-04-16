@@ -131,7 +131,7 @@ export const NegativeFeedbackModal: React.FC<NegativeFeedbackModalProps> = ({
                 multiline
                 numberOfLines={3}
                 textAlignVertical="top"
-                placeholderTextColor={colors.ocean}
+                placeholderTextColor={colors.textSecondary + "50"}
               />
             </View>
           </ScrollView>

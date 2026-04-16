@@ -152,7 +152,7 @@ export const PrayersScreen: React.FC = () => {
               styles.prayerPreview,
               { color: colors.ink, fontSize: typography.body.fontSize, lineHeight: typography.body.lineHeight },
             ]}
-            numberOfLines={3}
+            numberOfLines={2}
           >
             {getPrayerPreview(prayer.text)}
           </Text>
@@ -179,7 +179,7 @@ export const PrayersScreen: React.FC = () => {
                 value={editTitle}
                 onChangeText={setEditTitle}
                 placeholder="Prayer title"
-                placeholderTextColor={colors.textSecondary}
+                placeholderTextColor={colors.textSecondary + "50"}
               />
             </FieldShell>
             <FieldShell style={styles.inputShell}>
@@ -188,7 +188,7 @@ export const PrayersScreen: React.FC = () => {
                 value={editText}
                 onChangeText={setEditText}
                 placeholder="Prayer text"
-                placeholderTextColor={colors.textSecondary}
+                placeholderTextColor={colors.textSecondary + "50"}
                 multiline
                 textAlignVertical="top"
               />
@@ -333,10 +333,6 @@ export const PrayersScreen: React.FC = () => {
         contentStyle={styles.prayerSectionContent}
         elevated
       >
-        <View
-          style={[StyleSheet.absoluteFill, { backgroundColor: colors.secondaryContainer + "80", borderRadius: 10 }]}
-          pointerEvents="none"
-        />
         <TouchableOpacity
           style={styles.prayerHeader}
           onPress={() => {
@@ -361,7 +357,7 @@ export const PrayersScreen: React.FC = () => {
               styles.prayerPreview,
               { color: colors.ink, fontSize: typography.body.fontSize, lineHeight: typography.body.lineHeight },
             ]}
-            numberOfLines={3}
+            numberOfLines={2}
           >
             {getPrayerPreview(prayer.text)}
           </Text>
@@ -383,7 +379,7 @@ export const PrayersScreen: React.FC = () => {
                 value={editTitle}
                 onChangeText={setEditTitle}
                 placeholder="Prayer title"
-                placeholderTextColor={colors.textSecondary}
+                placeholderTextColor={colors.textSecondary + "50"}
               />
             </FieldShell>
             <FieldShell style={styles.inputShell}>
@@ -392,7 +388,7 @@ export const PrayersScreen: React.FC = () => {
                 value={editText}
                 onChangeText={setEditText}
                 placeholder="Prayer text"
-                placeholderTextColor={colors.textSecondary}
+                placeholderTextColor={colors.textSecondary + "50"}
                 multiline
                 textAlignVertical="top"
               />
@@ -501,12 +497,7 @@ export const PrayersScreen: React.FC = () => {
           tone="lowest"
           style={styles.prayerSection}
           contentStyle={styles.prayerSectionContent}
-          elevated
         >
-          <View
-            style={[StyleSheet.absoluteFill, { backgroundColor: colors.secondaryContainer + "80", borderRadius: 10 }]}
-            pointerEvents="none"
-          />
           <TouchableOpacity
             style={styles.prayerHeader}
             onPress={() => {
@@ -520,15 +511,15 @@ export const PrayersScreen: React.FC = () => {
             activeOpacity={0.7}
           >
             <View style={styles.addPrayerLeft}>
-              <Ionicons name="add" size={20} color={colors.primaryContainer} style={{ marginRight: 6 }} />
-              <Text style={[styles.prayerTitle, { color: colors.primaryContainer, fontSize: 17, fontFamily: fonts.bodyFamilyMedium, fontWeight: undefined }]}>
-                Create a New Prayer
+              <Ionicons name="add" size={16} color={colors.onSurfaceVariant} style={{ marginRight: 6 }} />
+              <Text style={[styles.prayerTitle, { color: colors.onSurfaceVariant, fontSize: 14, fontFamily: fonts.bodyFamilyMedium, fontWeight: undefined, letterSpacing: 0.3 }]}>
+                Create a new prayer
               </Text>
             </View>
             <Ionicons
               name={showAddForm ? "chevron-up" : "chevron-down"}
-              size={18}
-              color={colors.primaryContainer}
+              size={16}
+              color={colors.onSurfaceVariant}
             />
           </TouchableOpacity>
 
@@ -540,7 +531,7 @@ export const PrayersScreen: React.FC = () => {
                   value={newTitle}
                   onChangeText={setNewTitle}
                   placeholder="Prayer title"
-                  placeholderTextColor={colors.textSecondary}
+                  placeholderTextColor={colors.textSecondary + "50"}
                 />
               </FieldShell>
               <FieldShell style={styles.inputShell}>
@@ -549,7 +540,7 @@ export const PrayersScreen: React.FC = () => {
                   value={newText}
                   onChangeText={setNewText}
                   placeholder="Prayer text"
-                  placeholderTextColor={colors.textSecondary}
+                  placeholderTextColor={colors.textSecondary + "50"}
                   multiline
                   textAlignVertical="top"
                 />
@@ -575,8 +566,16 @@ export const PrayersScreen: React.FC = () => {
           )}
         </SanctuaryCard>
 
-        {/* Built-in Prayers */}
+        {personalPrayers.length > 0 ? (
+          <Text style={[styles.sectionEyebrow, { color: colors.onSurfaceVariant }]}>
+            My Prayers
+          </Text>
+        ) : null}
         {personalPrayers.map(renderPersonalPrayer)}
+
+        <Text style={[styles.sectionEyebrow, { color: colors.onSurfaceVariant }]}>
+          Daily Prayers
+        </Text>
         {builtInPrayers.map(renderPrayer)}
         <View style={{ height: 100 }} />
       </KeyboardAwareScrollView>
@@ -611,7 +610,17 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   prayerSection: {
-    marginBottom: 12,
+    marginBottom: 20,
+  },
+  sectionEyebrow: {
+    fontFamily: fonts.labelFamily,
+    fontSize: 11,
+    lineHeight: 16,
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+    marginTop: 16,
+    marginBottom: 10,
+    paddingLeft: 4,
   },
   prayerSectionContent: {
     paddingHorizontal: 22,
@@ -632,6 +641,7 @@ const styles = StyleSheet.create({
   },
   prayerPreview: {
     ...staticTypography.bodyLarge,
+    fontFamily: fonts.loraRegular,
     marginTop: 6,
   },
   prayerBody: {
@@ -640,6 +650,7 @@ const styles = StyleSheet.create({
   },
   prayerText: {
     ...staticTypography.bodyLarge,
+    fontFamily: fonts.loraRegular,
   },
   prayerSource: {
     fontFamily: fonts.bodyFamilySemiBold,

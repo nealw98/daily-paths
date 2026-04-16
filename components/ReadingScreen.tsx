@@ -891,13 +891,13 @@ const styles = StyleSheet.create({
     height: 62,
   },
   applicationQuoteText: {
-    fontFamily: fonts.bodyFamilyBold,
+    fontFamily: fonts.bodyFamilySemiBold,
     fontSize: 22,
     lineHeight: 27,
     textAlign: "left",
     marginBottom: 10,
     fontStyle: "italic",
-    fontWeight: "700",
+    fontWeight: "600",
     position: "relative",
     zIndex: 1,
     alignSelf: "stretch",
@@ -905,9 +905,9 @@ const styles = StyleSheet.create({
     marginRight: 0,
   },
   quoteInlineItalic: {
-    fontFamily: fonts.bodyFamilyBold,
+    fontFamily: fonts.bodyFamilySemiBold,
     fontStyle: "italic",
-    fontWeight: "700",
+    fontWeight: "600",
   },
   applicationReference: {
     fontFamily: fonts.bodyFamilyRegular,
@@ -992,7 +992,8 @@ const styles = StyleSheet.create({
   },
   thoughtText: {
     ...staticTypography.h3,
-    fontWeight: "500",
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontWeight: "600",
     textAlign: "center",
   },
 });

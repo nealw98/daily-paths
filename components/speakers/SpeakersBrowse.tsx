@@ -215,7 +215,7 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
             },
           ]}
           placeholder="Search speakers..."
-          placeholderTextColor={colors.textSecondary + "80"}
+          placeholderTextColor={colors.textSecondary + "50"}
           value={searchQuery}
           onChangeText={setSearchQuery}
           returnKeyType="search"
