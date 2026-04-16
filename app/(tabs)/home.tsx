@@ -539,7 +539,7 @@ export default function HomeTab() {
                 }
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={[styles.toolIconPip, styles.prayersIconPip]}
+                style={styles.toolIconPip}
               >
                 <MaterialCommunityIcons
                   name="hands-pray"
@@ -675,10 +675,6 @@ const styles = StyleSheet.create({
   toolCtaRow: {
     marginTop: 0,
   },
-  // Temporary — widen the Prayers card teal band so it reads more square.
-  prayersIconPip: {
-    width: 115,
-  },
   // Section titles
   sectionTitleLayout: {
     marginBottom: layout.spacing.lg,
@@ -710,7 +706,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   toolIconPip: {
-    width: 90,
+    width: 115,
     alignSelf: "stretch",
     borderTopLeftRadius: 9,
     borderBottomLeftRadius: 9,
