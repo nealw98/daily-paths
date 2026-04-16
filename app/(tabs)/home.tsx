@@ -107,9 +107,6 @@ export default function HomeTab() {
     return `${count} new this week`;
   }, [speakers]);
 
-  // TEMP: preview cycling through reflection images
-  const [previewIdx, setPreviewIdx] = useState<number | null>(null);
-
   const { gate, refresh: refreshSub } = useSubscriptionContext();
   const isFree = gate === "paywall";
   const presentingPaywall = useRef(false);
@@ -291,7 +288,7 @@ export default function HomeTab() {
           <View style={styles.heroClip}>
           {/* Top half: hero image with label + title */}
           <ImageBackground
-            source={previewIdx !== null ? REFLECTION_IMAGES[previewIdx] : getReflectionImageForDate(today)}
+            source={getReflectionImageForDate(today)}
             resizeMode="cover"
             style={styles.heroTop}
             imageStyle={styles.heroTopImage}
@@ -349,31 +346,6 @@ export default function HomeTab() {
           </View>
         </TouchableOpacity>
 
-        {/* TEMP: cycle through reflection images */}
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => {
-            setPreviewIdx((prev) => {
-              if (prev === null) return 0;
-              return (prev + 1) % REFLECTION_IMAGES.length;
-            });
-          }}
-          style={{
-            alignSelf: "center",
-            backgroundColor: "#2C5F5D",
-            borderRadius: 8,
-            paddingHorizontal: 16,
-            paddingVertical: 10,
-            marginTop: 12,
-          }}
-        >
-          <Text style={{ color: "#FFF", fontFamily: fonts.bodyFamilySemiBold, fontSize: 14 }}>
-            {previewIdx !== null
-              ? `Image ${previewIdx + 1} / ${REFLECTION_IMAGES.length} — Tap for next`
-              : `Preview images (${REFLECTION_IMAGES.length} total)`}
-          </Text>
-        </TouchableOpacity>
-
         {/* ── Daily Tools List ── */}
         <Text
           style={[
@@ -405,11 +377,15 @@ export default function HomeTab() {
                   { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.mist },
                 ]}
               >
-                <View
-                  style={[
-                    styles.toolIconPip,
-                    { backgroundColor: isFree ? colors.surfaceContainer : colors.secondary },
-                  ]}
+                <LinearGradient
+                  colors={
+                    isFree
+                      ? [colors.surfaceContainer, colors.surfaceContainer]
+                      : [colors.primary, colors.primaryContainer]
+                  }
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.toolIconPip}
                 >
                   <Ionicons
                     name={cat.icon as any}
@@ -417,7 +393,7 @@ export default function HomeTab() {
                     color={isFree ? "#aaa" : "#FFFFFF"}
                     style={{ fontWeight: "900" }}
                   />
-                </View>
+                </LinearGradient>
                 <View style={styles.toolText}>
                   <Text style={[notebookLabelType, { color: colors.onSurface }]}>
                     {cat.label}
@@ -428,7 +404,7 @@ export default function HomeTab() {
                   >
                     {cat.description}
                   </Text>
-                  <View style={styles.ctaRow}>
+                  <View style={[styles.ctaRow, styles.toolCtaRow]}>
                     <Text style={[readMoreType, { color: colors.accent }]}>
                       Open
                     </Text>
@@ -476,7 +452,12 @@ export default function HomeTab() {
             }}
             style={[styles.speakerCard, isFree && styles.speakerSectionFree]}
           >
-            <View style={[styles.speakerCardInner, { backgroundColor: colors.secondary }]}>
+            <LinearGradient
+              colors={[colors.primary, colors.primaryContainer]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.speakerCardInner}
+            >
               <Ionicons
                 name="headset"
                 size={220}
@@ -489,11 +470,11 @@ export default function HomeTab() {
                   Featured Speaker
                 </Text>
               </View>
-              <Text style={[styles.speakerNameLayout, speakerNameType, { color: colors.onSecondary, marginTop: 12 }]}>
+              <Text style={[styles.speakerNameLayout, speakerNameType, { color: colors.onPrimary, marginTop: 12 }]}>
                 {featuredSpeaker.speaker}
               </Text>
               <Text
-                style={[speakerTitleType, { color: colors.onSecondary + "CC" }]}
+                style={[speakerTitleType, { color: colors.onPrimary + "CC" }]}
                 numberOfLines={2}
               >
                 {featuredSpeaker.title}
@@ -504,7 +485,7 @@ export default function HomeTab() {
                 </Text>
                 <MaterialIcons name="chevron-right" size={20} color={colors.secondaryContainer} />
               </View>
-            </View>
+            </LinearGradient>
           </TouchableOpacity>
         ) : null}
         <CollectionLinkRow
@@ -550,11 +531,15 @@ export default function HomeTab() {
                 { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.mist },
               ]}
             >
-              <View
-                style={[
-                  styles.toolIconPip,
-                  { backgroundColor: isFree ? colors.surfaceContainer : colors.secondary },
-                ]}
+              <LinearGradient
+                colors={
+                  isFree
+                    ? [colors.surfaceContainer, colors.surfaceContainer]
+                    : [colors.primary, colors.primaryContainer]
+                }
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[styles.toolIconPip, styles.prayersIconPip]}
               >
                 <MaterialCommunityIcons
                   name="hands-pray"
@@ -562,7 +547,7 @@ export default function HomeTab() {
                   color={isFree ? "#aaa" : "#FFFFFF"}
                   style={{ fontWeight: "900" }}
                 />
-              </View>
+              </LinearGradient>
               <View style={styles.toolText}>
                 <Text style={[notebookLabelType, { color: colors.onSurface }]}>
                   Your Prayers
@@ -570,7 +555,7 @@ export default function HomeTab() {
                 <Text style={[...notebookTagType, { color: colors.onSurfaceVariant }]} numberOfLines={2}>
                   A collection of prayers — and a place to add your own.
                 </Text>
-                <View style={styles.ctaRow}>
+                <View style={[styles.ctaRow, styles.toolCtaRow]}>
                   <Text style={[readMoreType, { color: colors.accent }]}>
                     Open
                   </Text>
@@ -685,6 +670,14 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     gap: 2,
     marginTop: 16,
+  },
+  // Tool/prayer cards: tighter spacing so the teal icon band stays square.
+  toolCtaRow: {
+    marginTop: 0,
+  },
+  // Temporary — widen the Prayers card teal band so it reads more square.
+  prayersIconPip: {
+    width: 115,
   },
   // Section titles
   sectionTitleLayout: {
