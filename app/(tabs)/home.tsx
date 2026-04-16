@@ -113,7 +113,7 @@ export default function HomeTab() {
 
   const greetingType = useMemo(
     () => ({
-      fontFamily: fonts.headerFamilyBoldItalic,
+      fontFamily: fonts.cormorantGaramondMedium,
       fontSize: Math.max(26, Math.round(textMetrics.h3FontSize * (32 / 24))),
       lineHeight: Math.max(32, Math.round(textMetrics.h3FontSize * (32 / 24) * (38 / 32))),
       letterSpacing: -0.5,
@@ -145,7 +145,7 @@ export default function HomeTab() {
   const notebookLabelType = useMemo(() => {
     const fontSize = Math.max(14, Math.round(textMetrics.bodyFontSize * (17 / 18)));
     return {
-      fontFamily: fonts.bodyFamilySemiBold,
+      fontFamily: fonts.bodyFamilyMedium,
       fontSize,
       lineHeight: Math.round(fontSize * (22 / 17)),
       letterSpacing: 0,
@@ -160,15 +160,18 @@ export default function HomeTab() {
     [typography.bodySmall],
   );
 
-  const sectionTitleType = useMemo(
-    () => ({
-      fontFamily: fonts.headerFamily,
-      fontSize: typography.bodyLarge.fontSize,
-      lineHeight: typography.bodyLarge.lineHeight,
+  const sectionTitleType = useMemo(() => {
+    // Cormorant Garamond reads noticeably smaller than Manrope at the same
+    // point size. Bump ~30% to match the visual weight of the previous
+    // Manrope_700Bold treatment at bodyLarge.
+    const fontSize = Math.round(typography.bodyLarge.fontSize * 1.3);
+    return {
+      fontFamily: fonts.cormorantGaramondMedium,
+      fontSize,
+      lineHeight: Math.round(fontSize * 1.2),
       letterSpacing: -0.1,
-    }),
-    [typography.bodyLarge.fontSize, typography.bodyLarge.lineHeight],
-  );
+    };
+  }, [typography.bodyLarge.fontSize]);
 
   const readMoreType = useMemo(
     () => ({
@@ -325,7 +328,11 @@ export default function HomeTab() {
             {reading ? (
               <>
                 <Text
-                  style={[...notebookTagType, styles.heroThoughtForDay, { color: colors.onSurface }]}
+                  style={[
+                    ...notebookTagType,
+                    styles.heroThoughtForDay,
+                    { color: colors.onSurface, fontFamily: fonts.loraRegular },
+                  ]}
                   numberOfLines={3}
                 >
                   {`"${reading.thoughtForDay}"`}
@@ -377,15 +384,11 @@ export default function HomeTab() {
                   { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.mist },
                 ]}
               >
-                <LinearGradient
-                  colors={
-                    isFree
-                      ? [colors.surfaceContainer, colors.surfaceContainer]
-                      : [colors.primary, colors.primaryContainer]
-                  }
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.toolIconPip}
+                <View
+                  style={[
+                    styles.toolIconPip,
+                    { backgroundColor: isFree ? colors.surfaceContainer : colors.secondary },
+                  ]}
                 >
                   <Ionicons
                     name={cat.icon as any}
@@ -393,7 +396,7 @@ export default function HomeTab() {
                     color={isFree ? "#aaa" : "#FFFFFF"}
                     style={{ fontWeight: "900" }}
                   />
-                </LinearGradient>
+                </View>
                 <View style={styles.toolText}>
                   <Text style={[notebookLabelType, { color: colors.onSurface }]}>
                     {cat.label}
@@ -452,12 +455,7 @@ export default function HomeTab() {
             }}
             style={[styles.speakerCard, isFree && styles.speakerSectionFree]}
           >
-            <LinearGradient
-              colors={[colors.primary, colors.primaryContainer]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.speakerCardInner}
-            >
+            <View style={[styles.speakerCardInner, { backgroundColor: colors.secondary }]}>
               <Ionicons
                 name="headset"
                 size={220}
@@ -470,11 +468,11 @@ export default function HomeTab() {
                   Featured Speaker
                 </Text>
               </View>
-              <Text style={[styles.speakerNameLayout, speakerNameType, { color: colors.onPrimary, marginTop: 12 }]}>
+              <Text style={[styles.speakerNameLayout, speakerNameType, { color: colors.onSecondary, marginTop: 12 }]}>
                 {featuredSpeaker.speaker}
               </Text>
               <Text
-                style={[speakerTitleType, { color: colors.onPrimary + "CC" }]}
+                style={[speakerTitleType, { color: colors.onSecondary + "CC" }]}
                 numberOfLines={2}
               >
                 {featuredSpeaker.title}
@@ -485,7 +483,7 @@ export default function HomeTab() {
                 </Text>
                 <MaterialIcons name="chevron-right" size={20} color={colors.secondaryContainer} />
               </View>
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         ) : null}
         <CollectionLinkRow
@@ -531,15 +529,11 @@ export default function HomeTab() {
                 { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.mist },
               ]}
             >
-              <LinearGradient
-                colors={
-                  isFree
-                    ? [colors.surfaceContainer, colors.surfaceContainer]
-                    : [colors.primary, colors.primaryContainer]
-                }
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.toolIconPip}
+              <View
+                style={[
+                  styles.toolIconPip,
+                  { backgroundColor: isFree ? colors.surfaceContainer : colors.secondary },
+                ]}
               >
                 <MaterialCommunityIcons
                   name="hands-pray"
@@ -547,7 +541,7 @@ export default function HomeTab() {
                   color={isFree ? "#aaa" : "#FFFFFF"}
                   style={{ fontWeight: "900" }}
                 />
-              </LinearGradient>
+              </View>
               <View style={styles.toolText}>
                 <Text style={[notebookLabelType, { color: colors.onSurface }]}>
                   Your Prayers

@@ -695,9 +695,12 @@ export const fonts = {
   bodyFamilyMedium: "Manrope_500Medium",
   bodyFamilySemiBold: "Manrope_600SemiBold",
   bodyFamilyBold: "Manrope_700Bold",
-  loraRegular: "Manrope_400Regular",
-  loraItalic: "Manrope_500Medium",
-  loraBold: "Manrope_700Bold",
+  loraRegular: "Lora_400Regular",
+  loraItalic: "Lora_400Regular_Italic",
+  loraMedium: "Lora_500Medium",
+  loraBold: "Lora_700Bold",
+  cormorantGaramondMedium: "CormorantGaramond_500Medium",
+  cormorantGaramondBold: "CormorantGaramond_700Bold",
   labelFamily: "Manrope_600SemiBold",
 };
 

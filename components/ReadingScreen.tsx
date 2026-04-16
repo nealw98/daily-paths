@@ -749,12 +749,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   pageTitle: {
-    // Preserve the original editorial hero title treatment for Today.
-    fontFamily: fonts.headerFamilyLight,
+    // Lora regular (the family's lightest available weight) for an
+    // editorial, serif title treatment.
+    fontFamily: fonts.loraRegular,
     fontSize: 36 + (Platform.OS === "android" ? 4 : 0),
     lineHeight: 44 + (Platform.OS === "android" ? 4 : 0),
     letterSpacing: -0.9,
-    fontWeight: "300",
+    fontWeight: "400",
     marginBottom: 6,
   },
   pageDate: {
@@ -852,10 +853,11 @@ const styles = StyleSheet.create({
   },
   bodyText: {
     ...staticTypography.bodyLarge,
+    fontFamily: fonts.loraRegular,
     marginBottom: 18,
   },
   inlineItalic: {
-    fontFamily: fonts.bodyFamilyRegular,
+    fontFamily: fonts.loraItalic,
     fontStyle: "italic",
   },
   section: {

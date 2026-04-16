@@ -9,6 +9,16 @@ import {
   Manrope_700Bold,
   Manrope_800ExtraBold,
 } from "@expo-google-fonts/manrope";
+import {
+  Lora_400Regular,
+  Lora_400Regular_Italic,
+  Lora_500Medium,
+  Lora_700Bold,
+} from "@expo-google-fonts/lora";
+import {
+  CormorantGaramond_500Medium,
+  CormorantGaramond_700Bold,
+} from "@expo-google-fonts/cormorant-garamond";
 import { fallbackColors } from "../constants/theme";
 import { SettingsProvider } from "../hooks/useSettings";
 import { SubscriptionProvider, useSubscriptionContext } from "../contexts/SubscriptionContext";
@@ -87,6 +97,12 @@ export default function RootLayout() {
       Manrope_600SemiBold,
       Manrope_700Bold,
       Manrope_800ExtraBold,
+      Lora_400Regular,
+      Lora_400Regular_Italic,
+      Lora_500Medium,
+      Lora_700Bold,
+      CormorantGaramond_500Medium,
+      CormorantGaramond_700Bold,
     });
     console.log("[STARTUP] useFonts called, fontsLoaded:", fontsLoaded);
   } catch (err) {

@@ -39,7 +39,7 @@ export const TealHeader: React.FC<TealHeaderProps> = ({
       style={[
         styles.container,
         {
-          backgroundColor: colors.primary,
+          backgroundColor: colors.secondary,
         },
       ]}
     >
@@ -50,7 +50,7 @@ export const TealHeader: React.FC<TealHeaderProps> = ({
             activeOpacity={0.7}
             style={styles.backButton}
           >
-            <Ionicons name="arrow-back" size={24} color={colors.onPrimary} />
+            <Ionicons name="arrow-back" size={24} color={colors.onSecondary} />
           </TouchableOpacity>
         )}
         <TouchableOpacity
@@ -64,7 +64,7 @@ export const TealHeader: React.FC<TealHeaderProps> = ({
               {eyebrow}
             </Text>
           ) : null}
-          <Text style={[styles.title, { color: colors.onPrimary }]}>{title}</Text>
+          <Text style={[styles.title, { color: colors.onSecondary }]}>{title}</Text>
         </TouchableOpacity>
         {rightAction ?? null}
       </View>
