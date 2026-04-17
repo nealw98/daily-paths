@@ -20,7 +20,7 @@ import { useTheme } from "../../hooks/useTheme";
 import { useTypography } from "../../hooks/useTypography";
 import { fonts, typography as staticTypography } from "../../constants/theme";
 import { useDailyGratitudeQuote } from "../../hooks/useDailyGratitudeQuote";
-import { useWeeklyJournalQuote } from "../../hooks/useWeeklyJournalQuote";
+import { useDailyJournalQuote } from "../../hooks/useDailyJournalQuote";
 import {
   getCategoryById,
   getCategoryLabel,
@@ -135,7 +135,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
   const { quote: dailyGratitudeQuoteData } = useDailyGratitudeQuote({
     enabled: entryType === "gratitude",
   });
-  const { quote: weeklyJournalQuoteData } = useWeeklyJournalQuote({
+  const { quote: dailyJournalQuoteData } = useDailyJournalQuote({
     enabled: entryType === "journal",
   });
 
@@ -444,12 +444,12 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                               },
                             ]}
                           >
-                            {entryType === "journal" && weeklyJournalQuoteData
-                              ? weeklyJournalQuoteData.quote
+                            {entryType === "journal" && dailyJournalQuoteData
+                              ? dailyJournalQuoteData.quote
                               : journalIntroQuote}
                           </Text>
                           {!!(entryType === "journal"
-                            ? weeklyJournalQuoteData?.author
+                            ? dailyJournalQuoteData?.author
                             : journalIntroReference) && (
                             <Text
                               style={[
@@ -461,7 +461,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                               ]}
                             >
                               {entryType === "journal"
-                                ? weeklyJournalQuoteData?.author
+                                ? dailyJournalQuoteData?.author
                                 : journalIntroReference}
                             </Text>
                           )}

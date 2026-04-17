@@ -123,7 +123,7 @@ export const JOURNAL_CATEGORIES: JournalCategory[] = [
         id: "my_part",
         question: "What's my part?",
         placeholder: "Am I responding or reacting?",
-        hint: "Where am I trying to control this?",
+        hint: "What am I trying to control?",
       },
       {
         id: "next_right_thing",

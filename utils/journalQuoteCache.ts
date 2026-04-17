@@ -1,9 +1,11 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "../lib/supabase";
-import { formatDateLocal, getSundayOfWeek, getWeekOfYear } from "./dateUtils";
+import { getScheduledDayOfYear } from "./dateUtils";
 import { qaLog } from "./qaLog";
 
-const JOURNAL_QUOTE_CACHE_PREFIX = "@daily_paths_journal_quote_v1_";
+// One cache key holds the full list of journal quotes. The per-day pick is
+// computed client-side from this list, so we only need a single fetch.
+const JOURNAL_QUOTES_LIST_CACHE_KEY = "@daily_paths_journal_quotes_list_v1";
 
 export interface JournalQuote {
   id: string;
@@ -13,23 +15,18 @@ export interface JournalQuote {
   updatedAt: string | null;
 }
 
-export interface CachedJournalQuote {
-  quote: JournalQuote;
+export interface CachedJournalQuotes {
+  quotes: JournalQuote[];
   fetchedAt: string;
 }
 
-const inFlightFetches = new Map<string, Promise<CachedJournalQuote | null>>();
-
-/** Cache key is the Sunday date string so Mon–Sat reuse the same entry. */
-function getCacheKey(date: Date): string {
-  const sunday = getSundayOfWeek(date);
-  return `${JOURNAL_QUOTE_CACHE_PREFIX}${formatDateLocal(sunday)}`;
-}
+let inFlightListFetch: Promise<CachedJournalQuotes | null> | null = null;
 
 function normalizeQuoteRow(data: any): JournalQuote {
   let quoteText = String(data?.quote ?? "").trim();
   let authorText = data?.author ? String(data.author).trim() : "";
 
+  // Keep quote/author formatting consistent anywhere this quote is shown.
   const parentheticalMatch = quoteText.match(/^(.*?)(\s*\(([^()]*)\))\s*$/);
   if (parentheticalMatch) {
     quoteText = parentheticalMatch[1].trim();
@@ -39,7 +36,7 @@ function normalizeQuoteRow(data: any): JournalQuote {
   }
 
   return {
-    id: String(data?.id ?? `week-${data?.week_of_year ?? "quote"}`),
+    id: String(data?.id ?? `week-${data?.week_number ?? "quote"}`),
     week_of_year: Number(data?.week_number ?? 0),
     quote: quoteText,
     author: authorText || null,
@@ -47,108 +44,104 @@ function normalizeQuoteRow(data: any): JournalQuote {
   };
 }
 
-export async function getCachedJournalQuote(
-  date: Date
-): Promise<CachedJournalQuote | null> {
+export async function getCachedJournalQuotes(): Promise<CachedJournalQuotes | null> {
   try {
-    const raw = await AsyncStorage.getItem(getCacheKey(date));
+    const raw = await AsyncStorage.getItem(JOURNAL_QUOTES_LIST_CACHE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as CachedJournalQuote;
+    return JSON.parse(raw) as CachedJournalQuotes;
   } catch (error) {
-    qaLog("journal-quote", "Failed to read cached quote", {
-      date: formatDateLocal(date),
+    qaLog("journal-quote", "Failed to read cached quotes list", {
       message: error instanceof Error ? error.message : String(error),
     });
     return null;
   }
 }
 
-async function setCachedJournalQuote(
-  date: Date,
-  payload: CachedJournalQuote
+async function setCachedJournalQuotes(
+  payload: CachedJournalQuotes
 ): Promise<void> {
   try {
-    await AsyncStorage.setItem(getCacheKey(date), JSON.stringify(payload));
+    await AsyncStorage.setItem(
+      JOURNAL_QUOTES_LIST_CACHE_KEY,
+      JSON.stringify(payload)
+    );
   } catch (error) {
-    qaLog("journal-quote", "Failed to persist cached quote", {
-      date: formatDateLocal(date),
+    qaLog("journal-quote", "Failed to persist cached quotes list", {
       message: error instanceof Error ? error.message : String(error),
     });
   }
 }
 
-async function fetchRemoteJournalQuote(
-  date: Date
-): Promise<CachedJournalQuote | null> {
-  const sunday = getSundayOfWeek(date);
-  const weekOfYear = getWeekOfYear(date);
-  const sundayStr = formatDateLocal(sunday);
-
-  qaLog("journal-quote", "Fetching remote quote", { sundayStr, weekOfYear });
-
+async function fetchRemoteJournalQuotes(): Promise<CachedJournalQuotes | null> {
+  qaLog("journal-quote", "Fetching all journal quotes");
   try {
     const { data, error } = await supabase
       .from("journal_quotes")
       .select("*")
-      .eq("week_number", weekOfYear)
-      .maybeSingle();
+      // Stable order so the day→quote mapping is identical across devices.
+      .order("week_number", { ascending: true });
 
     if (error) {
-      qaLog("journal-quote", "Remote quote fetch error", {
-        sundayStr,
-        weekOfYear,
+      qaLog("journal-quote", "Remote quotes fetch error", {
         code: (error as any).code,
         message: error.message,
       });
       return null;
     }
 
-    if (!data) {
-      qaLog("journal-quote", "No quote found for week", {
-        sundayStr,
-        weekOfYear,
-      });
+    if (!data || data.length === 0) {
+      qaLog("journal-quote", "No quotes returned from remote");
       return null;
     }
 
-    const payload: CachedJournalQuote = {
-      quote: normalizeQuoteRow(data),
+    const payload: CachedJournalQuotes = {
+      quotes: data.map(normalizeQuoteRow),
       fetchedAt: new Date().toISOString(),
     };
 
-    await setCachedJournalQuote(date, payload);
+    await setCachedJournalQuotes(payload);
 
-    qaLog("journal-quote", "Remote quote fetched and cached", {
-      sundayStr,
-      weekOfYear,
-      id: payload.quote.id,
-      author: payload.quote.author,
+    qaLog("journal-quote", "Remote quotes fetched and cached", {
+      count: payload.quotes.length,
     });
 
     return payload;
   } catch (error) {
-    qaLog("journal-quote", "Unexpected quote fetch error", {
-      sundayStr,
-      weekOfYear,
+    qaLog("journal-quote", "Unexpected quotes fetch error", {
       message: error instanceof Error ? error.message : String(error),
     });
     return null;
   }
 }
 
-export async function fetchAndCacheJournalQuote(
-  date: Date
-): Promise<CachedJournalQuote | null> {
-  const cacheKey = getCacheKey(date);
-  const existing = inFlightFetches.get(cacheKey);
-  if (existing) {
-    return existing;
+export async function fetchAndCacheJournalQuotes(): Promise<CachedJournalQuotes | null> {
+  if (inFlightListFetch) {
+    return inFlightListFetch;
   }
 
-  const request = fetchRemoteJournalQuote(date).finally(() => {
-    inFlightFetches.delete(cacheKey);
+  const request = fetchRemoteJournalQuotes().finally(() => {
+    inFlightListFetch = null;
   });
 
-  inFlightFetches.set(cacheKey, request);
+  inFlightListFetch = request;
   return request;
+}
+
+/**
+ * Deterministically pick a journal quote for a given date.
+ *
+ * Uses the local-calendar day-of-year (1-366, with Feb 29 stably pinned to
+ * slot 60 across leap and non-leap years) modulo the list length. Every
+ * device on the same local calendar date resolves to the same quote, and
+ * the rollover happens at each user's local midnight.
+ */
+export function pickJournalQuoteForDate(
+  date: Date,
+  quotes: JournalQuote[]
+): JournalQuote | null {
+  if (!quotes || quotes.length === 0) return null;
+  const dayIndex = getScheduledDayOfYear(date);
+  const idx =
+    ((dayIndex % quotes.length) + quotes.length) % quotes.length;
+  return quotes[idx];
 }

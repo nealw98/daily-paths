@@ -93,11 +93,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   eyebrow: {
-    fontFamily: fonts.labelFamily,
-    fontSize: 10,
-    lineHeight: 14,
-    letterSpacing: 0.6,
-    textTransform: "uppercase",
+    // Cormorant Garamond italic — softer, editorial feel for the branded
+    // wordmark at the top of the home header. Only home uses an eyebrow
+    // today; if another screen adds one it'll inherit this treatment.
+    fontFamily: fonts.cormorantGaramondMediumItalic,
+    fontSize: 17,
+    lineHeight: 22,
+    letterSpacing: 0.2,
     marginBottom: 2,
   },
   title: {

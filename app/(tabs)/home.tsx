@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -19,7 +19,8 @@ import { useTypography } from "../../hooks/useTypography";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { useReading } from "../../hooks/useReading";
 import { useAppDate } from "../../contexts/AppDateContext";
-import { useSpeakers } from "../../hooks/useSpeakers";
+import { useSpeakers, getSpeakerAudioUrl } from "../../hooks/useSpeakers";
+import { prefetchSpeakerAudio } from "../../hooks/useSpeakerDownload";
 import { usePersonalPrayers } from "../../hooks/usePersonalPrayers";
 import { useSubscriptionContext } from "../../contexts/SubscriptionContext";
 import { fonts, layout, shadows } from "../../constants/theme";
@@ -30,6 +31,7 @@ import { TealHeader } from "../../components/shared/TealHeader";
 import { CollectionLinkRow } from "../../components/shared/CollectionLinkRow";
 import { useFeaturedSpeaker } from "../../hooks/useFeaturedSpeaker";
 import { computeJournalStreak } from "../../utils/journalStreak";
+import { getScheduledDayOfYear } from "../../utils/dateUtils";
 import { qaLog } from "../../utils/qaLog";
 
 function getGreeting(): string {
@@ -59,10 +61,11 @@ const REFLECTION_IMAGES = reflectionsContext
   .map((key: string) => reflectionsContext(key));
 
 function getReflectionImageForDate(date: Date) {
-  // Epoch-day index so the image advances exactly once per calendar day and
-  // wraps back to the first image after the last one.
+  // Local-calendar day-of-year (1-366, with Feb 29 stably pinned to slot 60
+  // across leap and non-leap years) so the image advances at each user's
+  // local midnight and wraps after the last image.
   if (REFLECTION_IMAGES.length === 0) return null;
-  const dayIndex = Math.floor(date.getTime() / 86400000);
+  const dayIndex = getScheduledDayOfYear(date);
   const idx = ((dayIndex % REFLECTION_IMAGES.length) + REFLECTION_IMAGES.length) % REFLECTION_IMAGES.length;
   return REFLECTION_IMAGES[idx];
 }
@@ -81,6 +84,17 @@ export default function HomeTab() {
   const { speaker: featuredSpeaker, isStarted: speakerIsStarted, isListenAgain } = useFeaturedSpeaker(speakers);
   const { entries: journalEntries, createEntry } = useJournalStorage();
   const [journalEntryType, setJournalEntryType] = useState<EntryType | null>(null);
+
+  // Silently pre-cache the featured speaker's audio so the first tap into
+  // the player starts instantly instead of waiting on a cold Supabase stream.
+  // Fire and forget — failures are invisible and playback falls back to
+  // streaming as before. De-duped internally; safe to re-fire on remount.
+  useEffect(() => {
+    if (!featuredSpeaker) return;
+    const url = getSpeakerAudioUrl(featuredSpeaker);
+    if (!url) return;
+    void prefetchSpeakerAudio(featuredSpeaker.id, url);
+  }, [featuredSpeaker?.id]);
 
   // Notebook row metadata — reuses the same entries array the Notebook tab
   // renders, and the same pure streak util, so numbers are guaranteed to
@@ -269,7 +283,7 @@ export default function HomeTab() {
           day: "numeric",
           year: "numeric",
         })}
-        eyebrow="Daily Paths"
+        eyebrow="Al-Anon Daily Paths"
         hideIcon
       />
       <ScrollView
