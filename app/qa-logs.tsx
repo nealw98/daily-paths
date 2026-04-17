@@ -17,11 +17,11 @@ import { useLocalSearchParams } from "expo-router";
 import * as Updates from "expo-updates";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import Clipboard from "@react-native-clipboard/clipboard";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Sharing from "expo-sharing";
-import { fonts } from "../constants/theme";
-import { useTheme } from "../hooks/useTheme";
+import { fonts, fallbackColors } from "../constants/theme";
 import { clearQaLogs, useQaLogs, qaLog } from "../utils/qaLog";
 import { resetRateShareTracking } from "../utils/rateShareTracking";
 import { isDeveloperDevice, setDeveloperDevice, getOrCreateDeviceId } from "../utils/deviceIdentity";
@@ -48,7 +48,9 @@ import {
 } from "../utils/qaDataTransfer";
 
 export default function QaLogsScreen() {
-  const { colors } = useTheme();
+  // QA screen is dev-only and should always render in the light palette,
+  // regardless of the user's theme setting.
+  const colors = fallbackColors;
   const params = useLocalSearchParams<{
     checkAndApplyUpdate?: any;
   }>();
@@ -73,6 +75,8 @@ export default function QaLogsScreen() {
   const [lifetimeDiagnostics, setLifetimeDiagnostics] =
     React.useState<LifetimeAccessDiagnostics | null>(null);
   const [refreshingLifetime, setRefreshingLifetime] = React.useState(false);
+  const [accessStatesExpanded, setAccessStatesExpanded] = React.useState(false);
+  const [lifetimeDiagExpanded, setLifetimeDiagExpanded] = React.useState(false);
 
   const loadLifetimeDiagnostics = React.useCallback(async () => {
     const diagnostics = await getLifetimeAccessDiagnostics();
@@ -486,6 +490,180 @@ export default function QaLogsScreen() {
           />
         </View>
 
+        <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>Trial Testing</Text>
+        <View style={styles.actionsRow}>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleShowTrialStatus}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Show Trial Status</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleResetTrial}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Reset Trial</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleExpireTrial}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Expire Trial</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={() => void handlePreviewTrialEndedModal()}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              Show Trial Ended Modal
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>Freemium Testing</Text>
+        <View style={[styles.developerRow, { borderColor: colors.mist }]}>
+          <View style={{ flex: 1, marginRight: 8 }}>
+            <Text style={[styles.developerLabel, { color: colors.ink }]}>Lifetime Access Override</Text>
+            <Text style={[styles.meta, { marginTop: 2 }]}>{lifetimeOverrideLabel}</Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleToggleLifetimeOverride}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              {lifetimeOverride === true ? "Force OFF" : lifetimeOverride === false ? "Clear" : "Force ON"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity
+          onPress={() => setLifetimeDiagExpanded(!lifetimeDiagExpanded)}
+          activeOpacity={0.7}
+          style={styles.accordionHeaderRow}
+        >
+          <Text style={[styles.sectionHeader, { marginTop: 0, color: colors.deepTeal }]}>
+            Lifetime Receipt Diagnostics
+          </Text>
+          <Ionicons
+            name={lifetimeDiagExpanded ? "chevron-down" : "chevron-forward"}
+            size={18}
+            color={colors.deepTeal}
+          />
+        </TouchableOpacity>
+        {lifetimeDiagExpanded && (
+          <>
+            <View style={[styles.stateBox, { backgroundColor: "#fff", borderColor: colors.mist }]}>
+              <Text style={[styles.stateLabel, { color: colors.ink }]}>
+                Source: {lifetimeDiagnostics?.source ?? "loading"}
+              </Text>
+              <Text style={[styles.stateLabel, { color: colors.ink }]}>
+                Effective access: {lifetimeDiagnostics?.effectiveStatus.hasLifetimeAccess ? "true" : "false"}
+              </Text>
+              <Text style={[styles.stateLabel, { color: colors.ink }]}>
+                Detection method: {lifetimeDiagnostics?.effectiveStatus.detectionMethod ?? "loading"}
+              </Text>
+              <Text style={[styles.stateLabel, { color: colors.ink }]}>
+                Original app version: {lifetimeDiagnostics?.effectiveStatus.originalAppVersion ?? "null"}
+              </Text>
+              <Text style={[styles.stateLabel, { color: colors.ink }]}>
+                Original purchase date: {lifetimeDiagnostics?.effectiveStatus.originalPurchaseDate ?? "null"}
+              </Text>
+              <Text style={[styles.stateLabel, { color: colors.ink }]}>
+                First free build: {lifetimeDiagnostics?.firstFreeBuildNumber ?? "null"}
+              </Text>
+              <Text style={[styles.stateLabel, { color: colors.ink }]}>
+                Native available: {lifetimeDiagnostics?.nativeInfo ? String(lifetimeDiagnostics.nativeInfo.available) : "n/a"}
+              </Text>
+              <Text style={[styles.stateLabel, { color: colors.ink }]}>
+                Native verified: {lifetimeDiagnostics?.nativeInfo ? String(lifetimeDiagnostics.nativeInfo.verified) : "n/a"}
+              </Text>
+              <Text style={[styles.stateLabel, { color: colors.ink }]}>
+                Native reason: {lifetimeDiagnostics?.nativeInfo?.reason ?? lifetimeDiagnostics?.nativeError ?? "null"}
+              </Text>
+              <Text style={[styles.stateLabel, { color: colors.ink }]}>
+                Cached status present: {lifetimeDiagnostics?.cachedStatus ? "true" : "false"}
+              </Text>
+            </View>
+            <View style={styles.actionsRow}>
+              <TouchableOpacity
+                style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+                activeOpacity={0.8}
+                onPress={handleRefreshLifetimeDiagnostics}
+                disabled={refreshingLifetime}
+              >
+                <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+                  {refreshingLifetime ? "Refreshing..." : "Refresh Lifetime Check"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+
+        <TouchableOpacity
+          onPress={() => setAccessStatesExpanded(!accessStatesExpanded)}
+          activeOpacity={0.7}
+          style={styles.accordionHeaderRow}
+        >
+          <Text style={[styles.sectionHeader, { marginTop: 0, color: colors.deepTeal }]}>
+            Access States
+          </Text>
+          <Ionicons
+            name={accessStatesExpanded ? "chevron-down" : "chevron-forward"}
+            size={18}
+            color={colors.deepTeal}
+          />
+        </TouchableOpacity>
+        {accessStatesExpanded && (
+          <View style={[styles.stateBox, { backgroundColor: "#fff", borderColor: colors.mist }]}>
+            <View style={styles.stateRow}>
+              <Text style={[styles.stateIndicator, { color: hasLifetimeAccess ? "#16a34a" : colors.textSecondary }]}>
+                {hasLifetimeAccess ? "\u2713" : "\u2717"}
+              </Text>
+              <Text style={[styles.stateLabel, { color: hasLifetimeAccess ? colors.ink : colors.textSecondary }]}>
+                Lifetime Access (paid download)
+              </Text>
+            </View>
+            <View style={styles.stateRow}>
+              <Text style={[styles.stateIndicator, { color: subStatus.isLegacy ? "#16a34a" : colors.textSecondary }]}>
+                {subStatus.isLegacy ? "\u2713" : "\u2717"}
+              </Text>
+              <Text style={[styles.stateLabel, { color: subStatus.isLegacy ? colors.ink : colors.textSecondary }]}>
+                Legacy Grant (RevenueCat)
+              </Text>
+            </View>
+            <View style={styles.stateRow}>
+              <Text style={[styles.stateIndicator, { color: subStatus.isSubscribed ? "#16a34a" : colors.textSecondary }]}>
+                {subStatus.isSubscribed ? "\u2713" : "\u2717"}
+              </Text>
+              <Text style={[styles.stateLabel, { color: subStatus.isSubscribed ? colors.ink : colors.textSecondary }]}>
+                Subscription{subStatus.isSubscribed
+                  ? ` — ${subStatus.productIdentifier ?? "unknown"} (${subStatus.willRenew ? "renews" : "expires"} ${subStatus.expirationDate ? new Date(subStatus.expirationDate).toLocaleDateString() : "\u2014"})`
+                  : ""}
+              </Text>
+            </View>
+            <View style={styles.stateRow}>
+              <Text style={[styles.stateIndicator, { color: trialStatus.isInTrial ? "#16a34a" : colors.textSecondary }]}>
+                {trialStatus.isInTrial ? "\u2713" : "\u2717"}
+              </Text>
+              <Text style={[styles.stateLabel, { color: trialStatus.isInTrial ? colors.ink : colors.textSecondary }]}>
+                7-Day Trial{trialStatus.isInTrial
+                  ? ` (${trialStatus.daysRemaining}d remaining)`
+                  : trialStatus.trialExpired
+                    ? " (expired)"
+                    : trialStatus.neverStarted
+                      ? " (not started)"
+                      : ""}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>Utilities</Text>
         <View style={styles.actionsRow}>
           <TouchableOpacity
             style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
@@ -533,119 +711,6 @@ export default function QaLogsScreen() {
           )}
         </View>
 
-        <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>Access States</Text>
-
-        <View style={[styles.stateBox, { backgroundColor: "#fff", borderColor: colors.mist }]}>
-          <View style={styles.stateRow}>
-            <Text style={[styles.stateIndicator, { color: hasLifetimeAccess ? "#16a34a" : colors.textSecondary }]}>
-              {hasLifetimeAccess ? "\u2713" : "\u2717"}
-            </Text>
-            <Text style={[styles.stateLabel, { color: hasLifetimeAccess ? colors.ink : colors.textSecondary }]}>
-              Lifetime Access (paid download)
-            </Text>
-          </View>
-          <View style={styles.stateRow}>
-            <Text style={[styles.stateIndicator, { color: subStatus.isLegacy ? "#16a34a" : colors.textSecondary }]}>
-              {subStatus.isLegacy ? "\u2713" : "\u2717"}
-            </Text>
-            <Text style={[styles.stateLabel, { color: subStatus.isLegacy ? colors.ink : colors.textSecondary }]}>
-              Legacy Grant (RevenueCat)
-            </Text>
-          </View>
-          <View style={styles.stateRow}>
-            <Text style={[styles.stateIndicator, { color: subStatus.isSubscribed ? "#16a34a" : colors.textSecondary }]}>
-              {subStatus.isSubscribed ? "\u2713" : "\u2717"}
-            </Text>
-            <Text style={[styles.stateLabel, { color: subStatus.isSubscribed ? colors.ink : colors.textSecondary }]}>
-              Subscription{subStatus.isSubscribed
-                ? ` — ${subStatus.productIdentifier ?? "unknown"} (${subStatus.willRenew ? "renews" : "expires"} ${subStatus.expirationDate ? new Date(subStatus.expirationDate).toLocaleDateString() : "\u2014"})`
-                : ""}
-            </Text>
-          </View>
-          <View style={styles.stateRow}>
-            <Text style={[styles.stateIndicator, { color: trialStatus.isInTrial ? "#16a34a" : colors.textSecondary }]}>
-              {trialStatus.isInTrial ? "\u2713" : "\u2717"}
-            </Text>
-            <Text style={[styles.stateLabel, { color: trialStatus.isInTrial ? colors.ink : colors.textSecondary }]}>
-              7-Day Trial{trialStatus.isInTrial
-                ? ` (${trialStatus.daysRemaining}d remaining)`
-                : trialStatus.trialExpired
-                  ? " (expired)"
-                  : trialStatus.neverStarted
-                    ? " (not started)"
-                    : ""}
-            </Text>
-          </View>
-        </View>
-
-        <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>Freemium Testing</Text>
-
-        <View style={[styles.developerRow, { borderColor: colors.mist }]}>
-          <View style={{ flex: 1, marginRight: 8 }}>
-            <Text style={[styles.developerLabel, { color: colors.ink }]}>Lifetime Access Override</Text>
-            <Text style={[styles.meta, { marginTop: 2 }]}>{lifetimeOverrideLabel}</Text>
-          </View>
-          <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
-            activeOpacity={0.8}
-            onPress={handleToggleLifetimeOverride}
-          >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
-              {lifetimeOverride === true ? "Force OFF" : lifetimeOverride === false ? "Clear" : "Force ON"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>
-          Lifetime Receipt Diagnostics
-        </Text>
-
-        <View style={[styles.stateBox, { backgroundColor: "#fff", borderColor: colors.mist }]}>
-          <Text style={[styles.stateLabel, { color: colors.ink }]}>
-            Source: {lifetimeDiagnostics?.source ?? "loading"}
-          </Text>
-          <Text style={[styles.stateLabel, { color: colors.ink }]}>
-            Effective access: {lifetimeDiagnostics?.effectiveStatus.hasLifetimeAccess ? "true" : "false"}
-          </Text>
-          <Text style={[styles.stateLabel, { color: colors.ink }]}>
-            Detection method: {lifetimeDiagnostics?.effectiveStatus.detectionMethod ?? "loading"}
-          </Text>
-          <Text style={[styles.stateLabel, { color: colors.ink }]}>
-            Original app version: {lifetimeDiagnostics?.effectiveStatus.originalAppVersion ?? "null"}
-          </Text>
-          <Text style={[styles.stateLabel, { color: colors.ink }]}>
-            Original purchase date: {lifetimeDiagnostics?.effectiveStatus.originalPurchaseDate ?? "null"}
-          </Text>
-          <Text style={[styles.stateLabel, { color: colors.ink }]}>
-            First free build: {lifetimeDiagnostics?.firstFreeBuildNumber ?? "null"}
-          </Text>
-          <Text style={[styles.stateLabel, { color: colors.ink }]}>
-            Native available: {lifetimeDiagnostics?.nativeInfo ? String(lifetimeDiagnostics.nativeInfo.available) : "n/a"}
-          </Text>
-          <Text style={[styles.stateLabel, { color: colors.ink }]}>
-            Native verified: {lifetimeDiagnostics?.nativeInfo ? String(lifetimeDiagnostics.nativeInfo.verified) : "n/a"}
-          </Text>
-          <Text style={[styles.stateLabel, { color: colors.ink }]}>
-            Native reason: {lifetimeDiagnostics?.nativeInfo?.reason ?? lifetimeDiagnostics?.nativeError ?? "null"}
-          </Text>
-          <Text style={[styles.stateLabel, { color: colors.ink }]}>
-            Cached status present: {lifetimeDiagnostics?.cachedStatus ? "true" : "false"}
-          </Text>
-        </View>
-
-        <View style={styles.actionsRow}>
-          <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
-            activeOpacity={0.8}
-            onPress={handleRefreshLifetimeDiagnostics}
-            disabled={refreshingLifetime}
-          >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
-              {refreshingLifetime ? "Refreshing..." : "Refresh Lifetime Check"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
         <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>
           Data Transfer (QA)
         </Text>
@@ -671,39 +736,6 @@ export default function QaLogsScreen() {
           {transferStatus && (
             <Text style={[styles.meta, { width: "100%" }]}>{transferStatus}</Text>
           )}
-        </View>
-
-        <View style={styles.actionsRow}>
-          <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
-            activeOpacity={0.8}
-            onPress={handleShowTrialStatus}
-          >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Show Trial Status</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
-            activeOpacity={0.8}
-            onPress={handleResetTrial}
-          >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Reset Trial</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
-            activeOpacity={0.8}
-            onPress={handleExpireTrial}
-          >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Expire Trial</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
-            activeOpacity={0.8}
-            onPress={() => void handlePreviewTrialEndedModal()}
-          >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
-              Show Trial Ended Modal
-            </Text>
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -942,6 +974,12 @@ const styles = StyleSheet.create({
     fontFamily: fonts.headerFamily,
     fontSize: 16,
     marginBottom: 8,
+  },
+  accordionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 16,
   },
   modalBackdrop: {
     flex: 1,

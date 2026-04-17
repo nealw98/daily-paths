@@ -21,6 +21,7 @@ import Constants from "expo-constants";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useTheme } from "../../hooks/useTheme";
+import { useTypography } from "../../hooks/useTypography";
 import { useSettings, type TextSize } from "../../hooks/useSettings";
 import { useAppFeedback } from "../../hooks/useAppFeedback";
 import { useAnalytics } from "../../utils/analytics";
@@ -56,9 +57,20 @@ const DARK_THEME_IDS = new Set(["ocean-dark", "deep-sea", "champagne"]);
 
 export default function MoreTab() {
   const { colors } = useTheme();
+  const { typography: dynamicTypography } = useTypography();
   const insets = useSafeAreaInsets();
   const { settings, setThemeId, setColorScheme, setTextSize } =
     useSettings();
+
+  const sectionTitleType = useMemo(() => {
+    const fontSize = Math.round(dynamicTypography.bodyLarge.fontSize * 1.3);
+    return {
+      fontFamily: fonts.cormorantGaramondSemiBold,
+      fontSize,
+      lineHeight: Math.round(fontSize * 1.2),
+      letterSpacing: -0.1,
+    };
+  }, [dynamicTypography.bodyLarge.fontSize]);
   const { submitting: submittingFeedback, submitFeedback } = useAppFeedback();
   const { status, hasLifetimeAccess, loading: subLoading, refresh } = useSubscription();
   const { trialStatus } = useSubscriptionContext();
@@ -168,7 +180,7 @@ export default function MoreTab() {
         showsVerticalScrollIndicator={false}
       >
         {/* ── 1. Subscription ────────────────────────────────── */}
-        <Text allowFontScaling={false} style={[styles.sectionLabel, styles.firstSectionLabel, { color: colors.deepTeal }]}>Subscription</Text>
+        <Text allowFontScaling={false} style={[styles.sectionLabel, styles.firstSectionLabel, sectionTitleType, { color: colors.onSurface }]}>Subscription</Text>
         {subLoading ? (
           <View style={[styles.subscriptionRow, { backgroundColor: colors.surfaceContainerLowest }]}>
             <View style={styles.subscriptionLeft}>
@@ -291,7 +303,7 @@ export default function MoreTab() {
 
 
         {/* ── 2. Appearance ────────────────────────────────── */}
-        <Text allowFontScaling={false} style={[styles.sectionLabel, { color: colors.deepTeal }]}>Appearance</Text>
+        <Text allowFontScaling={false} style={[styles.sectionLabel, sectionTitleType, { color: colors.onSurface }]}>Appearance</Text>
         <View style={[styles.card, { backgroundColor: colors.surfaceContainerLowest }]}>
           {/* Text Size */}
           <Text style={[styles.cardLabel, { color: colors.deepTeal }]}>
@@ -389,7 +401,7 @@ export default function MoreTab() {
         </View>
 
         {/* ── 3. Support & Share ─────────────────────────── */}
-        <Text allowFontScaling={false} style={[styles.sectionLabel, { color: colors.deepTeal }]}>Support & Share</Text>
+        <Text allowFontScaling={false} style={[styles.sectionLabel, sectionTitleType, { color: colors.onSurface }]}>Support & Share</Text>
         <View style={[styles.card, { backgroundColor: colors.surfaceContainerLowest }]}>
           <View style={styles.supportActions}>
             <TouchableOpacity
@@ -574,9 +586,6 @@ const styles = StyleSheet.create({
 
   /* ── Section Labels ────────────────────────────── */
   sectionLabel: {
-    fontFamily: fonts.bodyFamilyBold,
-    fontSize: 24,
-    lineHeight: 30,
     marginBottom: 8,
     marginTop: 22,
     marginLeft: 4,

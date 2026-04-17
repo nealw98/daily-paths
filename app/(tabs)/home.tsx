@@ -166,7 +166,7 @@ export default function HomeTab() {
     // Manrope_700Bold treatment at bodyLarge.
     const fontSize = Math.round(typography.bodyLarge.fontSize * 1.3);
     return {
-      fontFamily: fonts.cormorantGaramondMedium,
+      fontFamily: fonts.cormorantGaramondSemiBold,
       fontSize,
       lineHeight: Math.round(fontSize * 1.2),
       letterSpacing: -0.1,

@@ -43,7 +43,7 @@ export function GuidedPromptEditor({
               styles.textInput,
               {
                 color: colors.text,
-                backgroundColor: "#e8f4f3",
+                backgroundColor: colors.surfaceContainerLow,
               },
             ]}
             value={responses[prompt.id] ?? ""}

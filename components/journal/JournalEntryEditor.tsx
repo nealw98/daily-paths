@@ -472,10 +472,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                   <SanctuaryCard
                     tone="lowest"
                     style={styles.journalEntryFieldCard}
-                    contentStyle={[
-                      styles.journalEntryFieldCardInner,
-                      { backgroundColor: "#e8f4f3" },
-                    ]}
+                    contentStyle={styles.journalEntryFieldCardInner}
                     elevated
                   >
                     <TextInput
@@ -489,7 +486,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                         },
                       ]}
                       placeholder="What's on your mind..."
-                      placeholderTextColor={colors.textSecondary + "50"}
+                      placeholderTextColor={colors.textSecondary + "70"}
                       value={content}
                       onChangeText={setContent}
                       multiline
@@ -570,7 +567,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                         },
                       ]}
                       placeholder="What's on your mind..."
-                      placeholderTextColor={colors.textSecondary + "50"}
+                      placeholderTextColor={colors.textSecondary + "70"}
                       value={content}
                       onChangeText={setContent}
                       multiline
@@ -673,7 +670,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                           { color: colors.text, fontSize: 16, lineHeight: 21 },
                         ]}
                         placeholder="I'm grateful for..."
-                        placeholderTextColor={colors.textSecondary + "50"}
+                        placeholderTextColor={colors.textSecondary + "70"}
                         value={item}
                         onChangeText={(text) =>
                           handleGratitudeItemChange(index, text)
@@ -699,13 +696,16 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                   </View>
                 ))}
 
-                <SanctuaryButton
-                  label="Add another"
-                  variant="secondary"
+                <TouchableOpacity
                   onPress={handleAddGratitudeSlot}
-                  style={styles.addItemButton}
-                  icon={<Ionicons name="add" size={18} color={colors.onSecondaryContainer} />}
-                />
+                  style={styles.addItemLink}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Ionicons name="add" size={18} color={colors.secondary} />
+                  <Text style={[styles.addItemLinkText, { color: colors.secondary }]}>
+                    Add another
+                  </Text>
+                </TouchableOpacity>
 
                 <Text
                   style={[
@@ -872,7 +872,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                               ? `${prompt.placeholder} ${prompt.hint}`
                               : prompt.placeholder
                           }
-                          placeholderTextColor={colors.textSecondary + "50"}
+                          placeholderTextColor={colors.textSecondary + "70"}
                           multiline
                           textAlignVertical="top"
                           autoCorrect
@@ -1231,10 +1231,18 @@ const styles = StyleSheet.create({
     marginTop: 2,
     padding: 2,
   },
-  addItemButton: {
-    marginTop: 4,
+  addItemLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 8,
     marginBottom: 12,
     alignSelf: "flex-start",
+    paddingVertical: 4,
+  },
+  addItemLinkText: {
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 15,
   },
   addItemText: {
     ...staticTypography.label,
