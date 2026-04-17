@@ -97,8 +97,8 @@ const styles = StyleSheet.create({
     // wordmark at the top of the home header. Only home uses an eyebrow
     // today; if another screen adds one it'll inherit this treatment.
     fontFamily: fonts.cormorantGaramondMediumItalic,
-    fontSize: 17,
-    lineHeight: 22,
+    fontSize: 15,
+    lineHeight: 20,
     letterSpacing: 0.2,
     marginBottom: 2,
   },
