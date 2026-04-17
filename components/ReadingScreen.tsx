@@ -12,7 +12,7 @@ import {
   Switch,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import * as Haptics from "expo-haptics";
@@ -25,7 +25,7 @@ import { BookmarkToast } from "./BookmarkToast";
 import { ReadingFeedback } from "./ReadingFeedback";
 import { getScheduledDayOfYear } from "../utils/dateUtils";
 import { scheduleWeekOfNotifications } from "../utils/notificationSync";
-import { SanctuaryCard, FocusPill } from "./ui/Sanctuary";
+import { SanctuaryCard } from "./ui/Sanctuary";
 import { TealHeader } from "./shared/TealHeader";
 // Legacy instruction modal import kept for possible future use:
 // import { BookmarkInstructionOverlay } from "./BookmarkInstructionOverlay";
@@ -105,7 +105,7 @@ interface ReadingScreenProps {
   reading: DailyReading;
   onHeaderPress?: () => void;
   onOpenDatePicker: () => void;
-  onOpenBookmarks?: () => void;
+  onOpenFavorites?: () => void;
   isBookmarked?: boolean;
   onBookmarkToggle?: () => Promise<void>;
   onHighlight?: () => void;
@@ -123,7 +123,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   reading,
   onHeaderPress,
   onOpenDatePicker,
-  onOpenBookmarks,
+  onOpenFavorites,
   isBookmarked = false,
   onBookmarkToggle,
   onHighlight,
@@ -381,13 +381,6 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
         <TealHeader
           title={headerTitle}
           onPress={onHeaderPress}
-          rightAction={
-            onNewJournalEntry ? (
-              <TouchableOpacity onPress={onNewJournalEntry} activeOpacity={0.7} style={styles.headerAdd}>
-                <Ionicons name="add" size={26} color={colors.onPrimary} />
-              </TouchableOpacity>
-            ) : undefined
-          }
         />
 
         <Animated.View
@@ -557,30 +550,46 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
 
               <View style={styles.actionsHeader}>
                 <TouchableOpacity
-                  onPress={onOpenBookmarks}
-                  style={styles.pageCalendarButton}
+                  onPress={onOpenFavorites}
+                  style={styles.favoritedButton}
                   hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
                 >
-                  <Ionicons name="calendar-outline" size={28} color={colors.primaryContainer} />
+                  <MaterialCommunityIcons
+                    name="heart-multiple"
+                    size={26}
+                    color={colors.primaryContainer}
+                    style={styles.favoritedIcon}
+                  />
+                  <Text style={[styles.favoritedLabel, { color: colors.primaryContainer }]}>
+                    Favorited
+                  </Text>
                 </TouchableOpacity>
                 <View style={styles.actionsRight}>
-                  <FocusPill
-                    label={localBookmarked ? "Favorited" : "Favorite"}
+                  <TouchableOpacity
                     onPress={handleBookmarkToggle}
-                    selected={localBookmarked}
-                    icon={
-                      <Ionicons
-                        name={localBookmarked ? "heart" : "heart-outline"}
-                        size={14}
-                        color={localBookmarked ? colors.onSecondaryContainer : colors.onSurfaceVariant}
-                      />
-                    }
-                  />
-                  <FocusPill
-                    label="Share"
+                    hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
+                    style={styles.actionIconButton}
+                  >
+                    <Ionicons
+                      name={localBookmarked ? "heart" : "heart-outline"}
+                      size={28}
+                      color={
+                        localBookmarked ? colors.primaryContainer : colors.onSurfaceVariant
+                      }
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity
                     onPress={onShare}
-                    icon={<Ionicons name="arrow-redo-outline" size={14} color={colors.onSurfaceVariant} />}
-                  />
+                    hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
+                    style={styles.actionIconButton}
+                  >
+                    <MaterialIcons
+                      name={Platform.OS === "ios" ? "ios-share" : "share"}
+                      size={26}
+                      color={colors.onSurfaceVariant}
+                      style={styles.shareIcon}
+                    />
+                  </TouchableOpacity>
                 </View>
               </View>
 
@@ -762,12 +771,30 @@ const styles = StyleSheet.create({
     ...staticTypography.body,
     marginBottom: 0, // Reset any default margin
   },
-  pageCalendarButton: {
+  favoritedButton: {
+    height: 36,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  favoritedIcon: {
+    marginRight: 6,
+  },
+  favoritedLabel: {
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 15,
+    lineHeight: 20,
+    letterSpacing: 0,
+    includeFontPadding: false,
+    textAlignVertical: "center",
+  },
+  actionIconButton: {
     width: 36,
     height: 36,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 2,
+  },
+  shareIcon: {
+    marginTop: -4,
   },
   actionsHeader: {
     flexDirection: "row",
@@ -779,7 +806,7 @@ const styles = StyleSheet.create({
   actionsRight: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 12,
   },
   notificationSection: {
     marginTop: 40,

@@ -196,8 +196,8 @@ export default function ReadingDetail() {
     setShowInstruction(true);
   };
 
-  const handleOpenBookmarks = () => {
-    handleOpenDatePicker();
+  const handleOpenFavorites = () => {
+    router.push({ pathname: "/favorites" });
   };
 
   const handleBookmarkToggle = async () => {
@@ -332,7 +332,7 @@ export default function ReadingDetail() {
         reading={reading}
         onHeaderPress={handleGoToToday}
         onOpenDatePicker={handleOpenDatePicker}
-        onOpenBookmarks={handleOpenBookmarks}
+        onOpenFavorites={handleOpenFavorites}
         isBookmarked={isBookmarked}
         onBookmarkToggle={handleBookmarkToggle}
         onShare={handleShare}

@@ -1,9 +1,8 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import { View, Text, StyleSheet, Alert, TouchableOpacity } from "react-native";
+import { StyleSheet, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { useNavigation } from "expo-router";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { useJournalStorage, type JournalEntry, type EntryType } from "../../hooks/useJournalStorage";
 import { useJournalStats } from "../../hooks/useJournalStats";
@@ -221,14 +220,7 @@ function JournalTabContent() {
       style={[styles.container, { backgroundColor: colors.surface }]}
       edges={["top"]}
     >
-      <TealHeader
-        title="Notebook"
-        rightAction={
-          <TouchableOpacity onPress={handleNewEntry} activeOpacity={0.7} style={styles.headerAdd}>
-            <Ionicons name="add" size={26} color={colors.onPrimary} />
-          </TouchableOpacity>
-        }
-      />
+      <TealHeader title="Notebook" />
       <JournalTimeline
         entries={entries}
         stats={stats}
@@ -251,11 +243,5 @@ function JournalTabContent() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  headerAdd: {
-    width: 40,
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
   },
 });

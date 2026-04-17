@@ -53,7 +53,7 @@ export const JournalCategoryPicker: React.FC<JournalCategoryPickerProps> = ({
           </View>
 
           <Text style={[styles.title, { color: colors.primary }]}>
-            What would you like to do?
+            What would you like to add?
           </Text>
 
           {/* Vertical list */}
@@ -125,7 +125,10 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   title: {
-    ...staticTypography.h3,
+    ...staticTypography.h2,
+    fontFamily: fonts.cormorantGaramondSemiBold,
+    fontSize: 24,
+    lineHeight: 30,
     textAlign: "center",
     marginBottom: 18,
   },
@@ -148,8 +151,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cardName: {
-    ...staticTypography.body,
-    fontFamily: fonts.bodyFamilySemiBold,
+    fontFamily: fonts.bodyFamilyMedium,
+    fontSize: 16,
+    lineHeight: 21,
+    letterSpacing: 0,
     marginBottom: 2,
   },
   cardDesc: {

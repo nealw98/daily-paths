@@ -209,18 +209,7 @@ function SpeakersTabContent() {
       style={[styles.container, { backgroundColor: colors.surface }]}
       edges={["top"]}
     >
-      <TealHeader
-        title="Speakers"
-        rightAction={
-          <TouchableOpacity
-            onPress={() => setShowJournalPicker(true)}
-            activeOpacity={0.7}
-            style={styles.headerAdd}
-          >
-            <Ionicons name="add" size={26} color={colors.onPrimary} />
-          </TouchableOpacity>
-        }
-      />
+      <TealHeader title="Speakers" />
       <SpeakersBrowse
         speakers={speakers}
         loading={loading}

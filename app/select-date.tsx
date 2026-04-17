@@ -14,7 +14,7 @@ import { useTypography } from "../hooks/useTypography";
 import { useAvailableDates } from "../hooks/useAvailableDates";
 import { useReading } from "../hooks/useReading";
 import { fonts } from "../constants/theme";
-import { FieldShell, FocusPill, SanctuaryButton, SanctuaryCard } from "../components/ui/Sanctuary";
+import { FieldShell, SanctuaryButton, SanctuaryCard } from "../components/ui/Sanctuary";
 import { formatDateLocal, getScheduledDayOfYear, parseDateLocal } from "../utils/dateUtils";
 import { getBookmarks, type BookmarkData } from "../utils/bookmarkStorage";
 
@@ -115,7 +115,7 @@ export default function SelectDateScreen() {
               style={[
                 styles.monthTitle,
                 typography.h2,
-                { color: colors.primaryContainer, fontFamily: fonts.headerFamilyBoldItalic },
+                { color: colors.primaryContainer, fontFamily: fonts.headerFamily },
               ]}
             >
               {monthLabel}
@@ -164,21 +164,16 @@ export default function SelectDateScreen() {
                 <View
                   style={[
                     styles.dayInner,
-                    favorite
-                      ? {
-                          backgroundColor: colors.secondaryContainer,
-                        }
-                      : null,
                     selected
                       ? {
-                          backgroundColor: favorite ? colors.secondaryContainer : colors.secondary,
+                          backgroundColor: colors.secondary,
                         }
                       : null,
                     isToday
                       ? {
                           borderWidth: 1.5,
                           borderColor: selected
-                            ? (favorite ? colors.secondary : colors.onSecondary)
+                            ? colors.onSecondary
                             : colors.primaryContainer,
                         }
                       : null,
@@ -191,18 +186,23 @@ export default function SelectDateScreen() {
                       styles.dayNumber,
                       typography.body,
                       {
-                        color: selected
-                          ? (favorite ? colors.onSecondaryContainer : colors.onSecondary)
-                          : favorite
-                            ? colors.primaryContainer
-                            : colors.onSurface,
+                        color: selected ? colors.onSecondary : colors.onSurface,
                       },
                     ]}
                   >
                     {date.getDate()}
                   </Text>
-                  {available && !selected && !favorite ? (
-                    <View style={[styles.dayDot, { backgroundColor: colors.outlineVariant }]} />
+                  {available && !selected ? (
+                    favorite ? (
+                      <Ionicons
+                        name="heart"
+                        size={12}
+                        color={colors.secondary}
+                        style={styles.dayHeart}
+                      />
+                    ) : (
+                      <View style={[styles.dayDot, { backgroundColor: colors.outlineVariant }]} />
+                    )
                   ) : null}
                 </View>
               </TouchableOpacity>
@@ -239,14 +239,7 @@ export default function SelectDateScreen() {
               ) : null}
             </View>
             {selectedBookmark ? (
-              <View style={styles.previewPillRow}>
-                <FocusPill
-                  label="Favorited"
-                  selected
-                  style={styles.previewPill}
-                  icon={<Ionicons name="heart" size={14} color={colors.onSecondaryContainer} />}
-                />
-              </View>
+              <Ionicons name="heart" size={20} color={colors.secondary} />
             ) : null}
           </View>
           <Text style={[styles.previewTitle, typography.h3, { color: colors.primaryContainer }]}>
@@ -257,9 +250,11 @@ export default function SelectDateScreen() {
           </Text>
           <SanctuaryButton
             label="View"
+            variant="secondary"
             onPress={handleRevisitReading}
             disabled={!reading}
-            style={styles.previewButton}
+            style={[styles.previewButton, { backgroundColor: colors.secondary }]}
+            textStyle={{ color: colors.onSecondary }}
             icon={<Ionicons name="open-outline" size={18} color={colors.onSecondary} />}
           />
         </SanctuaryCard>
@@ -360,6 +355,9 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     marginTop: 6,
   },
+  dayHeart: {
+    marginTop: 2,
+  },
   previewCard: {
     borderRadius: 24,
   },
@@ -384,12 +382,6 @@ const styles = StyleSheet.create({
   previewStep: {
     marginTop: 0,
     marginBottom: 0,
-  },
-  previewPillRow: {
-    justifyContent: "center",
-  },
-  previewPill: {
-    minHeight: 34,
   },
   previewTitle: {
     marginTop: 8,

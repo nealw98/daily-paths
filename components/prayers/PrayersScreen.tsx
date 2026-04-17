@@ -464,18 +464,7 @@ export const PrayersScreen: React.FC = () => {
       edges={["top"]}
     >
       {/* Teal Gradient Header */}
-      <TealHeader
-        title="Prayers"
-        rightAction={
-          <TouchableOpacity
-            onPress={() => setShowJournalPicker(true)}
-            activeOpacity={0.7}
-            style={styles.headerAdd}
-          >
-            <Ionicons name="add" size={26} color={colors.onPrimary} />
-          </TouchableOpacity>
-        }
-      />
+      <TealHeader title="Prayers" />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}

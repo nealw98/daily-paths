@@ -254,7 +254,9 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
 
   const currentStreak = useMemo(() => computeJournalStreak(entries), [entries]);
 
-  // Build timeline items (headers + entries), always anchored to a Today section.
+  // Build timeline items (headers + entries). Today always shows a
+  // "+ New entry" CTA row right under its date header, whether or not
+  // today has entries.
   const timelineItems = useMemo(() => {
     const todayEntries: JournalEntry[] = [];
     const otherEntries: JournalEntry[] = [];
@@ -268,16 +270,14 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
       }
     }
 
-    const grouped = groupEntriesByDate([...todayEntries, ...otherEntries]);
-    if (todayEntries.length > 0) {
-      return grouped;
-    }
-
-    return [
-      { type: "header", date: todayKey } as TimelineItem,
-      { type: "placeholder", date: todayKey } as TimelineItem,
-      ...grouped,
+    const items: TimelineItem[] = [
+      { type: "header", date: todayKey },
+      { type: "placeholder", date: todayKey },
+      ...todayEntries.map((entry) => ({ type: "entry" as const, data: entry })),
+      ...groupEntriesByDate(otherEntries),
     ];
+
+    return items;
   }, [entries, todayKey]);
 
   // ─── Render: Entry Card ─────────────────────────────────────────────────
@@ -386,25 +386,41 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
             <View style={styles.timelineLineSegment} />
           </View>
           <View style={styles.timelineEntryContent}>
-            <TouchableOpacity
-              style={styles.entryCardTouchable}
-              onPress={onCreateEntry}
-              activeOpacity={0.8}
+            <SanctuaryCard
+              tone="lowest"
+              style={styles.newEntryCard}
+              contentStyle={styles.newEntryCardContent}
+              elevated
             >
-              <View style={[styles.placeholderCard, { borderColor: colors.outlineVariant }]}>
-                <Ionicons
-                  name="calendar-outline"
-                  size={22}
-                  color={colors.onSurfaceVariant}
-                />
-                <Text style={[textStyles.placeholderTitle, typography.bodySmall, { color: colors.onSurface }]}>
-                  Your day is a blank slate.
-                </Text>
-                <Text style={[textStyles.placeholderAction, typography.label, { color: colors.primary }]}>
-                  WRITE ENTRY
-                </Text>
-              </View>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.newEntryRow}
+                onPress={onCreateEntry}
+                activeOpacity={0.7}
+              >
+                <View style={styles.newEntryLeft}>
+                  <Ionicons
+                    name="add"
+                    size={18}
+                    color={colors.secondary}
+                    style={{ marginRight: 8 }}
+                  />
+                  <Text
+                    style={[
+                      typography.bodyLarge,
+                      {
+                        color: colors.secondary,
+                        fontFamily: fonts.bodyFamilySemiBold,
+                        fontSize: 16,
+                        lineHeight: 22,
+                      },
+                    ]}
+                  >
+                    New entry
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.secondary} />
+              </TouchableOpacity>
+            </SanctuaryCard>
           </View>
         </View>
       );
@@ -576,6 +592,25 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 16,
     paddingBottom: 100,
+  },
+  newEntryCard: {
+    borderRadius: 14,
+    marginBottom: 12,
+  },
+  newEntryCardContent: {
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderRadius: 14,
+  },
+  newEntryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  newEntryLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
   },
   progressRow: {
     flexDirection: "row",

@@ -83,8 +83,8 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
     () => ({
       // Matches the reading-page title treatment.
       fontFamily: fonts.loraRegular,
-      fontSize: 36 + (Platform.OS === "android" ? 4 : 0),
-      lineHeight: 44 + (Platform.OS === "android" ? 4 : 0),
+      fontSize: 30 + (Platform.OS === "android" ? 4 : 0),
+      lineHeight: 38 + (Platform.OS === "android" ? 4 : 0),
       fontWeight: "400" as const,
       letterSpacing: -0.9,
     }),
