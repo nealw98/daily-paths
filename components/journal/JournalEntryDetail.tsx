@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useRef, useState } from "react";
 import {
   View,
   Text,
@@ -7,13 +7,10 @@ import {
   StyleSheet,
   Alert,
   Share,
-  ScrollView,
-  KeyboardAvoidingView,
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useTheme } from "../../hooks/useTheme";
 import { useTypography } from "../../hooks/useTypography";
@@ -25,11 +22,8 @@ import {
   getCategoryColor,
   type EntryType,
 } from "../../constants/journalCategories";
-import { useSettings } from "../../hooks/useSettings";
-import { GuidedPromptEditor } from "./GuidedPromptEditor";
-import { EntryTypeIcon } from "../../utils/entryTypeIcon";
 import { Seedling } from "../../components/icons";
-import { FieldShell, SanctuaryButton, SanctuaryCard } from "../ui/Sanctuary";
+import { SanctuaryCard } from "../ui/Sanctuary";
 import { TealHeader } from "../shared/TealHeader";
 import { buildJournalEntryShareMessage, parseGratitudeItems } from "../../utils/journalShare";
 
@@ -44,6 +38,12 @@ interface JournalEntryDetailProps {
   onDelete: (entryId: string) => Promise<void>;
 }
 
+type Draft =
+  | { kind: "none" }
+  | { kind: "text"; value: string }
+  | { kind: "items"; items: string[] }
+  | { kind: "guided"; promptId: string; value: string };
+
 export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
   entry,
   onBack,
@@ -51,42 +51,16 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
   onDelete,
 }) => {
   const { colors } = useTheme();
-  const router = useRouter();
-
-  const { settings } = useSettings();
   const { typography } = useTypography();
-  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState<Draft>({ kind: "none" });
   const [saving, setSaving] = useState(false);
+  const textInputRef = useRef<TextInput>(null);
 
   const entryType = (entry.entry_type || "journal") as EntryType;
   const catConfig = getCategoryById(entryType);
   const catLabel = getCategoryLabel(entryType);
   const catColor = getCategoryColor(entryType);
-  // catBadgeBg removed — type info now in gradient header
   const editorType = catConfig?.editorType ?? "text";
-
-  // ─── Edit state for text entries ──────────────────────
-  const [editContent, setEditContent] = useState(entry.content ?? "");
-
-  // ─── Edit state for gratitude items ───────────────────
-  const [gratitudeItems, setGratitudeItems] = useState<string[]>(() => {
-    if (entry.structured_content?.items && Array.isArray(entry.structured_content.items)) {
-      return entry.structured_content.items as string[];
-    }
-    return parseGratitudeItems(entry.content);
-  });
-
-  // ─── Edit state for guided prompts ────────────────────
-  const [guidedResponses, setGuidedResponses] = useState<Record<string, string>>(() => {
-    if (entry.structured_content && editorType === "guided") {
-      const responses: Record<string, string> = {};
-      for (const [key, value] of Object.entries(entry.structured_content)) {
-        if (typeof value === "string") responses[key] = value;
-      }
-      return responses;
-    }
-    return {};
-  });
 
   const entryDate = new Date(entry.created_at);
   const dayOfWeek = entryDate.toLocaleDateString("en-US", { weekday: "long" });
@@ -95,6 +69,11 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
     hour: "numeric",
     minute: "2-digit",
   });
+
+  // Reset draft when entry changes (prev/next navigation).
+  React.useEffect(() => {
+    setDraft({ kind: "none" });
+  }, [entry.id]);
 
   // ─── Handlers ─────────────────────────────────────────
 
@@ -120,46 +99,64 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
     }
   };
 
+  const startEditText = () => {
+    setDraft({ kind: "text", value: entry.content ?? "" });
+  };
+
+  const startEditItems = () => {
+    const items = entry.structured_content?.items
+      ? (entry.structured_content.items as string[])
+      : parseGratitudeItems(entry.content);
+    setDraft({ kind: "items", items: items.length > 0 ? [...items] : [""] });
+  };
+
+  const startEditGuidedPrompt = (promptId: string) => {
+    const existing = entry.structured_content?.[promptId];
+    const value = typeof existing === "string" ? existing : "";
+    setDraft({ kind: "guided", promptId, value });
+  };
+
+  const handleCancel = () => {
+    setDraft({ kind: "none" });
+  };
+
   const handleSave = async () => {
+    if (draft.kind === "none" || saving) return;
     setSaving(true);
     try {
-      switch (editorType) {
-        case "text": {
-          if (!editContent.trim()) {
-            Alert.alert("Nothing to save", "Write something before saving.");
-            setSaving(false);
-            return;
-          }
-          await onSave(entry.id, editContent.trim(), null);
-          break;
+      if (draft.kind === "text") {
+        const trimmed = draft.value.trim();
+        if (!trimmed) {
+          Alert.alert("Nothing to save", "Write something before saving.");
+          setSaving(false);
+          return;
         }
-        case "items": {
-          const filledItems = gratitudeItems.map((i) => i.trim()).filter(Boolean);
-          if (filledItems.length === 0) {
-            Alert.alert("Nothing to save", "Add at least one item before saving.");
-            setSaving(false);
-            return;
-          }
-          const searchableContent = filledItems.join(" • ");
-          await onSave(entry.id, searchableContent, { items: filledItems });
-          break;
+        await onSave(entry.id, trimmed, null);
+      } else if (draft.kind === "items") {
+        const filled = draft.items.map((i) => i.trim()).filter(Boolean);
+        if (filled.length === 0) {
+          Alert.alert("Nothing to save", "Add at least one item before saving.");
+          setSaving(false);
+          return;
         }
-        case "guided": {
-          const filledResponses: Record<string, string> = {};
-          for (const [key, value] of Object.entries(guidedResponses)) {
-            if (value.trim()) filledResponses[key] = value.trim();
-          }
-          if (Object.keys(filledResponses).length === 0) {
-            Alert.alert("Nothing to save", "Write something before saving.");
-            setSaving(false);
-            return;
-          }
-          const searchableContent = Object.values(filledResponses).join("\n\n");
-          await onSave(entry.id, searchableContent, filledResponses);
-          break;
+        const searchable = filled.join(" • ");
+        await onSave(entry.id, searchable, { items: filled });
+      } else if (draft.kind === "guided") {
+        const existing = (entry.structured_content ?? {}) as Record<string, any>;
+        const merged: Record<string, string> = {};
+        for (const [key, value] of Object.entries(existing)) {
+          if (typeof value === "string" && value.trim()) merged[key] = value;
         }
+        const trimmed = draft.value.trim();
+        if (trimmed) {
+          merged[draft.promptId] = trimmed;
+        } else {
+          delete merged[draft.promptId];
+        }
+        const searchable = Object.values(merged).join("\n\n");
+        await onSave(entry.id, searchable || null, Object.keys(merged).length > 0 ? merged : null);
       }
-      setIsEditing(false);
+      setDraft({ kind: "none" });
     } catch {
       Alert.alert("Error", "Failed to save changes.");
     } finally {
@@ -167,133 +164,269 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
     }
   };
 
-  // Track whether the edit state has diverged from the saved entry
-  const hasChanges = useMemo(() => {
-    if (editorType === "text") {
-      return editContent !== (entry.content ?? "");
-    } else if (editorType === "items") {
-      const originalItems = entry.structured_content?.items
-        ? (entry.structured_content.items as string[])
-        : parseGratitudeItems(entry.content);
-      return JSON.stringify(gratitudeItems) !== JSON.stringify(originalItems);
-    } else if (editorType === "guided") {
-      const original = entry.structured_content ?? {};
-      return JSON.stringify(guidedResponses) !== JSON.stringify(original);
-    }
-    return false;
-  }, [editorType, editContent, entry.content, entry.structured_content, gratitudeItems, guidedResponses]);
-
-  const handleDiscard = () => {
-    if (hasChanges) {
-      Alert.alert("Discard changes?", "Your edits will not be saved.", [
-        { text: "Keep Editing", style: "cancel" },
-        {
-          text: "Discard",
-          style: "destructive",
-          onPress: () => {
-            resetEditState();
-            setIsEditing(false);
-          },
-        },
-      ]);
-    } else {
-      setIsEditing(false);
-    }
-  };
-
-  const resetEditState = () => {
-    setEditContent(entry.content ?? "");
-    if (entry.structured_content?.items && Array.isArray(entry.structured_content.items)) {
-      setGratitudeItems(entry.structured_content.items as string[]);
-    } else {
-      setGratitudeItems(parseGratitudeItems(entry.content));
-    }
-    if (entry.structured_content && editorType === "guided") {
-      const responses: Record<string, string> = {};
-      for (const [key, value] of Object.entries(entry.structured_content)) {
-        if (typeof value === "string") responses[key] = value;
-      }
-      setGuidedResponses(responses);
-    } else {
-      setGuidedResponses({});
-    }
-  };
-
-  // Reset edit state when entry changes (prev/next navigation)
-  React.useEffect(() => {
-    resetEditState();
-    setIsEditing(false);
-  }, [entry.id]);
-
-  // Gratitude edit handlers
-  const handleGratitudeItemChange = (index: number, text: string) => {
-    setGratitudeItems((prev) => {
-      const updated = [...prev];
-      updated[index] = text;
-      return updated;
+  // Gratitude list edit helpers
+  const updateItem = (index: number, text: string) => {
+    setDraft((prev) => {
+      if (prev.kind !== "items") return prev;
+      const next = [...prev.items];
+      next[index] = text;
+      return { ...prev, items: next };
     });
   };
 
-  const handleAddGratitudeSlot = () => {
-    setGratitudeItems((prev) => [...prev, ""]);
+  const addItem = () => {
+    setDraft((prev) => {
+      if (prev.kind !== "items") return prev;
+      return { ...prev, items: [...prev.items, ""] };
+    });
   };
 
-  const handleRemoveGratitudeItem = (index: number) => {
-    setGratitudeItems((prev) => prev.filter((_, i) => i !== index));
+  const removeItem = (index: number) => {
+    setDraft((prev) => {
+      if (prev.kind !== "items") return prev;
+      return { ...prev, items: prev.items.filter((_, i) => i !== index) };
+    });
   };
 
-  const handleGuidedResponseChange = (promptId: string, text: string) => {
-    setGuidedResponses((prev) => ({ ...prev, [promptId]: text }));
-  };
+  // ─── Inline Card Footer (Save / Cancel) ───────────────
 
-  // ─── Read-Only Render Helpers ─────────────────────────
-
-  const renderGratitudeReadOnly = () => {
-    const items = entry.structured_content?.items
-      ? (entry.structured_content.items as string[])
-      : parseGratitudeItems(entry.content);
-
-    return (
-      <TouchableOpacity activeOpacity={0.8} onPress={() => setIsEditing(true)}>
-        {items.map((item, index) => (
-          <View
-            key={index}
-            style={[styles.gratitudeReadItem, { borderBottomColor: colors.border }]}
-          >
-            <View style={styles.gratitudeIcon}>
-                <Seedling size={16} color={catColor} />
-              </View>
-            <Text style={[styles.gratitudeReadText, { color: colors.text }]}>
-              {item}
-            </Text>
-          </View>
-        ))}
+  const renderCardFooter = () => (
+    <View style={[styles.cardFooter, { borderTopColor: colors.ghostBorder }]}>
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={handleCancel}
+        style={styles.footerCancel}
+      >
+        <Text
+          style={[styles.footerCancelText, { color: colors.onSurfaceVariant }]}
+        >
+          Cancel
+        </Text>
       </TouchableOpacity>
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={handleSave}
+        disabled={saving}
+        style={[
+          styles.footerSave,
+          { backgroundColor: colors.primaryContainer },
+          saving && styles.footerSaveDisabled,
+        ]}
+      >
+        <Ionicons name="checkmark" size={14} color={colors.onPrimary} />
+        <Text style={[styles.footerSaveText, { color: colors.onPrimary }]}>
+          {saving ? "Saving..." : "Save"}
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  // ─── Card Renderers ───────────────────────────────────
+
+  const renderTextCard = () => {
+    const isEditing = draft.kind === "text";
+    return (
+      <SanctuaryCard
+        tone="lowest"
+        style={styles.entryCard}
+        contentStyle={styles.entryCardContent}
+        elevated
+      >
+        {isEditing ? (
+          <>
+            <TextInput
+              ref={textInputRef}
+              style={[
+                styles.textEditInput,
+                {
+                  color: colors.text,
+                  backgroundColor: colors.surfaceContainerLow,
+                },
+              ]}
+              value={draft.value}
+              onChangeText={(value) =>
+                setDraft((prev) => (prev.kind === "text" ? { ...prev, value } : prev))
+              }
+              multiline
+              textAlignVertical="top"
+              autoFocus
+              autoCorrect
+              autoCapitalize="sentences"
+              placeholder="What's on your mind..."
+              placeholderTextColor={colors.textSecondary + "70"}
+              selectionColor={colors.secondary}
+            />
+            {renderCardFooter()}
+          </>
+        ) : (
+          <TouchableOpacity activeOpacity={0.8} onPress={startEditText}>
+            <Text style={[styles.contentText, typography.body, { color: colors.text }]}>
+              {entry.content}
+            </Text>
+          </TouchableOpacity>
+        )}
+      </SanctuaryCard>
     );
   };
 
-  const renderGuidedReadOnly = () => {
+  const renderItemsCard = () => {
+    const isEditing = draft.kind === "items";
+    return (
+      <SanctuaryCard
+        tone="lowest"
+        style={styles.entryCard}
+        contentStyle={styles.entryCardContent}
+        elevated
+      >
+        {isEditing ? (
+          <>
+            {draft.items.map((item, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.itemsEditRow,
+                  { backgroundColor: colors.surfaceContainerLow },
+                ]}
+              >
+                <View style={styles.gratitudeIcon}>
+                  <Seedling size={16} color={catColor} />
+                </View>
+                <TextInput
+                  style={[
+                    styles.itemsEditInput,
+                    { color: colors.text },
+                  ]}
+                  placeholder="I'm grateful for..."
+                  placeholderTextColor={colors.textSecondary + "70"}
+                  value={item}
+                  onChangeText={(text) => updateItem(index, text)}
+                  multiline
+                  autoCorrect
+                  autoCapitalize="sentences"
+                />
+                {draft.items.length > 1 && (
+                  <TouchableOpacity
+                    onPress={() => removeItem(index)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    style={styles.itemsRemove}
+                  >
+                    <Ionicons
+                      name="close-circle"
+                      size={18}
+                      color={colors.textSecondary + "80"}
+                    />
+                  </TouchableOpacity>
+                )}
+              </View>
+            ))}
+            <TouchableOpacity
+              style={styles.addItemLink}
+              onPress={addItem}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="add" size={18} color={colors.secondary} />
+              <Text style={[styles.addItemLinkText, { color: colors.secondary }]}>
+                Add another
+              </Text>
+            </TouchableOpacity>
+            {renderCardFooter()}
+          </>
+        ) : (
+          <TouchableOpacity activeOpacity={0.8} onPress={startEditItems}>
+            {(entry.structured_content?.items
+              ? (entry.structured_content.items as string[])
+              : parseGratitudeItems(entry.content)
+            ).map((item, index) => (
+              <View
+                key={index}
+                style={[styles.gratitudeReadItem, { borderBottomColor: colors.border }]}
+              >
+                <View style={styles.gratitudeIcon}>
+                  <Seedling size={16} color={catColor} />
+                </View>
+                <Text style={[styles.gratitudeReadText, { color: colors.text }]}>
+                  {item}
+                </Text>
+              </View>
+            ))}
+          </TouchableOpacity>
+        )}
+      </SanctuaryCard>
+    );
+  };
+
+  const renderGuidedCards = () => {
     const prompts = catConfig?.guidedPrompts ?? [];
     const responses = entry.structured_content ?? {};
 
     return (
-      <TouchableOpacity activeOpacity={0.8} onPress={() => setIsEditing(true)}>
+      <>
         {prompts.map((prompt) => {
           const value = responses[prompt.id];
           const hasAnswer = value && typeof value === "string" && value.trim();
+          const isEditing = draft.kind === "guided" && draft.promptId === prompt.id;
           return (
-            <View key={prompt.id} style={styles.guidedReadBlock}>
-              <Text style={[styles.guidedReadQuestion, { color: colors.primary }]}>
+            <View
+              key={prompt.id}
+              style={[
+                styles.guidedCard,
+                {
+                  backgroundColor: colors.surfaceContainerLow,
+                  borderColor: colors.ghostBorder,
+                },
+              ]}
+            >
+              <Text style={[styles.guidedQuestion, { color: colors.primary }]}>
                 {prompt.question}
               </Text>
-              {hasAnswer ? (
-                <Text style={[styles.guidedReadResponse, { color: colors.text }]}>
-                  {value}
-                </Text>
+              {isEditing ? (
+                <>
+                  <TextInput
+                    style={[
+                      styles.guidedEditInput,
+                      {
+                        color: colors.text,
+                        backgroundColor: colors.surface,
+                        borderColor: colors.ghostBorder,
+                      },
+                    ]}
+                    value={draft.value}
+                    onChangeText={(value) =>
+                      setDraft((prev) =>
+                        prev.kind === "guided" ? { ...prev, value } : prev
+                      )
+                    }
+                    multiline
+                    textAlignVertical="top"
+                    autoFocus
+                    autoCorrect
+                    autoCapitalize="sentences"
+                    placeholder={prompt.placeholder ?? ""}
+                    placeholderTextColor={colors.textSecondary + "70"}
+                    selectionColor={colors.secondary}
+                  />
+                  {renderCardFooter()}
+                </>
               ) : (
-                <Text style={[styles.guidedReadResponse, { color: colors.textSecondary + "60" }]}>
-                  No entry
-                </Text>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => startEditGuidedPrompt(prompt.id)}
+                >
+                  {hasAnswer ? (
+                    <Text style={[styles.guidedResponse, { color: colors.text }]}>
+                      {value}
+                    </Text>
+                  ) : (
+                    <Text
+                      style={[
+                        styles.guidedEmpty,
+                        { color: colors.textSecondary + "80" },
+                      ]}
+                    >
+                      Tap to add
+                    </Text>
+                  )}
+                </TouchableOpacity>
               )}
             </View>
           );
@@ -305,114 +438,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
             {entry.content}
           </Text>
         )}
-      </TouchableOpacity>
-    );
-  };
-
-  const renderTextReadOnly = () => {
-    return (
-      <TouchableOpacity activeOpacity={0.8} onPress={() => setIsEditing(true)}>
-        <Text style={[styles.contentText, typography.body, { color: colors.text }]}>
-          {entry.content}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
-
-  // ─── Edit Mode Render Helpers ─────────────────────────
-
-  const renderTextEdit = () => (
-    <View style={styles.editContainer}>
-      <TextInput
-        style={[
-          styles.editInput,
-          {
-            color: colors.text,
-            backgroundColor: "#e8f4f3",
-            fontFamily: fonts.bodyFamily,
-            fontSize: 16,
-            lineHeight: 21,
-          },
-        ]}
-        value={editContent}
-        onChangeText={setEditContent}
-        multiline
-        textAlignVertical="top"
-        autoFocus
-        autoCorrect
-        autoCapitalize="sentences"
-        scrollEnabled={false}
-        selectionColor={colors.secondary}
-      />
-    </View>
-  );
-
-  const renderGratitudeEdit = () => (
-    <View>
-      {gratitudeItems.map((item, index) => (
-        <View
-          key={index}
-          style={[
-            styles.gratitudeEditCard,
-            { backgroundColor: "#e8f4f3" },
-          ]}
-        >
-          <View style={styles.gratitudeIcon}>
-            <Seedling size={16} color={catColor} />
-          </View>
-          <TextInput
-            style={[
-              styles.gratitudeEditInput,
-              {
-                color: colors.text,
-                fontFamily: fonts.bodyFamily,
-                fontSize: 16,
-                lineHeight: 21,
-              },
-            ]}
-            placeholder="I'm grateful for..."
-            placeholderTextColor={colors.textSecondary + "50"}
-            value={item}
-            onChangeText={(text) => handleGratitudeItemChange(index, text)}
-            multiline
-            autoCorrect
-            autoCapitalize="sentences"
-          />
-          {gratitudeItems.length > 1 && (
-            <TouchableOpacity
-              onPress={() => handleRemoveGratitudeItem(index)}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              style={{ marginTop: 2 }}
-            >
-              <Ionicons
-                name="close-circle"
-                size={18}
-                color={colors.textSecondary + "60"}
-              />
-            </TouchableOpacity>
-          )}
-        </View>
-      ))}
-      <TouchableOpacity
-        style={[styles.addSlotButton, { borderColor: colors.border }]}
-        onPress={handleAddGratitudeSlot}
-      >
-        <Ionicons name="add" size={18} color={catColor} />
-        <Text style={[styles.addSlotText, typography.caption, { color: catColor }]}>add another</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
-  const renderGuidedEdit = () => {
-    if (!catConfig?.guidedPrompts) return null;
-    return (
-      <GuidedPromptEditor
-        prompts={catConfig.guidedPrompts}
-        responses={guidedResponses}
-        onResponseChange={handleGuidedResponseChange}
-        color={catColor}
-        introText={catConfig.introText ?? ""}
-      />
+      </>
     );
   };
 
@@ -423,92 +449,47 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
       style={[styles.container, { backgroundColor: colors.surface }]}
       edges={["top"]}
     >
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <TealHeader
-          title={catLabel}
-          onBack={onBack}
-          rightAction={
-            <View style={styles.actionIcons}>
-              <TouchableOpacity onPress={handleShare} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                {Platform.OS === "ios" ? (
-                  <MaterialIcons name="ios-share" size={22} color={colors.onPrimary} />
-                ) : (
-                  <MaterialIcons name="share" size={22} color={colors.onPrimary} />
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleDelete} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Ionicons name="trash-outline" size={22} color={colors.onPrimary} />
-              </TouchableOpacity>
-            </View>
-          }
-        />
-
-        {/* Date & Time */}
-        <View style={[styles.dateBar, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.dateText, { color: colors.onSurfaceVariant }]}>
-            {dayOfWeek}, {monthDay} · {timeStr}
-          </Text>
-        </View>
-
-        {/* Content */}
-        <KeyboardAwareScrollView
-          style={styles.contentScroll}
-          bottomOffset={96}
-          extraKeyboardSpace={24}
-          keyboardShouldPersistTaps="handled"
-        >
-          {isEditing ? (
-            <SanctuaryCard tone="lowest" style={styles.entryCard} contentStyle={styles.entryCardContent} elevated>
-              {editorType === "text" && renderTextEdit()}
-              {editorType === "items" && renderGratitudeEdit()}
-              {editorType === "guided" && renderGuidedEdit()}
-            </SanctuaryCard>
-          ) : (
-            <>
-              <TouchableOpacity activeOpacity={0.8} onPress={() => setIsEditing(true)}>
-                <Text style={[styles.tapHint, typography.caption, { color: colors.textSecondary, marginTop: 0, marginBottom: 16 }]}>
-                  Tap to edit
-                </Text>
-              </TouchableOpacity>
-              {editorType === "guided" ? (
-                renderGuidedReadOnly()
+      <TealHeader
+        title={catLabel}
+        onBack={onBack}
+        rightAction={
+          <View style={styles.actionIcons}>
+            <TouchableOpacity onPress={handleShare} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              {Platform.OS === "ios" ? (
+                <MaterialIcons name="ios-share" size={22} color={colors.onPrimary} />
               ) : (
-                <SanctuaryCard tone="lowest" style={styles.entryCard} contentStyle={styles.entryCardContent} elevated>
-                  {editorType === "text" && renderTextReadOnly()}
-                  {editorType === "items" && renderGratitudeReadOnly()}
-                </SanctuaryCard>
+                <MaterialIcons name="share" size={22} color={colors.onPrimary} />
               )}
-            </>
-          )}
-          <View style={{ height: 100 }} />
-        </KeyboardAwareScrollView>
-
-        {/* Bottom Bar (editing only) */}
-        {isEditing && (
-          <View
-            style={[
-              styles.bottomBar,
-              { backgroundColor: colors.surface, borderTopColor: colors.ghostBorder },
-            ]}
-          >
-            <SanctuaryButton
-              label="Discard"
-              variant="secondary"
-              onPress={handleDiscard}
-              style={styles.bottomButton}
-            />
-            <SanctuaryButton
-              label={saving ? "Saving..." : "Save"}
-              onPress={handleSave}
-              disabled={saving || !hasChanges}
-              style={styles.bottomButton}
-            />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleDelete} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="trash-outline" size={22} color={colors.onPrimary} />
+            </TouchableOpacity>
           </View>
-        )}
-      </KeyboardAvoidingView>
+        }
+      />
+
+      {/* Date & Time */}
+      <View style={[styles.dateBar, { backgroundColor: colors.surface }]}>
+        <Text style={[styles.dateText, { color: colors.onSurfaceVariant }]}>
+          {dayOfWeek}, {monthDay} · {timeStr}
+        </Text>
+      </View>
+
+      {/* Content */}
+      <KeyboardAwareScrollView
+        style={styles.contentScroll}
+        bottomOffset={96}
+        extraKeyboardSpace={24}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={[styles.tapHint, typography.caption, { color: colors.textSecondary }]}>
+          Tap to edit
+        </Text>
+        {editorType === "guided" && renderGuidedCards()}
+        {editorType === "text" && renderTextCard()}
+        {editorType === "items" && renderItemsCard()}
+        <View style={{ height: 100 }} />
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 };
@@ -517,59 +498,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  flex: {
-    flex: 1,
-  },
-  gradientHeader: {
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 20,
-  },
-  headerTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  headerIconShell: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerTextBlock: {
-    flex: 1,
-  },
-  headerEyebrow: {
-    fontFamily: fonts.labelFamily,
-    fontSize: 10,
-    lineHeight: 14,
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
-    marginBottom: 2,
-  },
-  headerTitleText: {
-    ...staticTypography.h3,
-    fontFamily: fonts.bodyFamilySemiBold,
-  },
-  bottomReadOnly: {
-    flex: 1,
-    gap: 10,
-  },
-  bottomNavRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 12,
-  },
   dateBar: {
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 8,
-  },
-  dateBarRow: {
-    flexDirection: "row",
-    alignItems: "center",
   },
   dateText: {
     ...staticTypography.caption,
@@ -582,20 +514,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
   },
+  tapHint: {
+    fontStyle: "italic",
+    textAlign: "left",
+    marginBottom: 14,
+  },
+
+  // ─── Text / Items wrapper card ────────────────────────
   entryCard: {
     borderRadius: 16,
   },
   entryCardContent: {
     padding: 20,
   },
+  contentText: {},
 
-  // ─── Read-Only ────────────────────────────────────────
-  contentText: {
-  },
-  tapHint: {
-    fontStyle: "italic",
-    marginTop: 20,
-    textAlign: "center",
+  // ─── Text edit input ──────────────────────────────────
+  textEditInput: {
+    minHeight: 160,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 14,
+    fontFamily: fonts.bodyFamily,
+    fontSize: 16,
+    lineHeight: 21,
   },
 
   // ─── Gratitude Read-Only ──────────────────────────────
@@ -616,100 +559,113 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
 
-  // ─── Guided Read-Only ─────────────────────────────────
-  guidedReadBlock: {
-    paddingVertical: 20,
-  },
-  guidedReadQuestion: {
-    fontFamily: fonts.cormorantGaramondSemiBold,
-    fontSize: 22,
-    lineHeight: 28,
-    marginBottom: 10,
-  },
-  guidedReadResponse: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: 16,
-    lineHeight: 21,
-  },
-
   // ─── Gratitude Edit ───────────────────────────────────
-  gratitudeEditCard: {
+  itemsEditRow: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 10,
     padding: 14,
     borderRadius: 10,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
+    marginBottom: 10,
   },
-  gratitudeEditInput: {
+  itemsEditInput: {
     flex: 1,
     minHeight: 22,
+    fontFamily: fonts.bodyFamily,
+    fontSize: 16,
+    lineHeight: 21,
   },
-  addSlotButton: {
+  itemsRemove: {
+    marginTop: 2,
+  },
+  addItemLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "flex-start",
+    paddingVertical: 6,
+    marginTop: 2,
+    marginBottom: 4,
+  },
+  addItemLinkText: {
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 15,
+  },
+
+  // ─── Guided cards ─────────────────────────────────────
+  guidedCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 16,
+    marginBottom: 20,
+  },
+  guidedQuestion: {
+    fontFamily: fonts.cormorantGaramondSemiBold,
+    fontSize: 20,
+    lineHeight: 26,
+    marginBottom: 8,
+  },
+  guidedResponse: {
+    fontFamily: fonts.bodyFamily,
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  guidedEmpty: {
+    fontFamily: fonts.bodyFamily,
+    fontStyle: "italic",
+    fontSize: 15,
+    lineHeight: 20,
+  },
+  guidedEditInput: {
+    minHeight: 100,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 12,
+    fontFamily: fonts.bodyFamily,
+    fontSize: 16,
+    lineHeight: 22,
+  },
+
+  // ─── Card-level save/cancel footer ────────────────────
+  cardFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+  },
+  footerCancel: {
+    minHeight: 32,
+    justifyContent: "center",
+    paddingHorizontal: 6,
+  },
+  footerCancelText: {
+    ...staticTypography.label,
+  },
+  footerSave: {
+    minHeight: 36,
+    borderRadius: 10,
+    paddingHorizontal: 14,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderStyle: "dashed",
-    marginBottom: 12,
   },
-  addSlotText: {
-    fontWeight: "500",
+  footerSaveDisabled: {
+    opacity: 0.55,
+  },
+  footerSaveText: {
+    ...staticTypography.label,
   },
 
-  // ─── Text Edit ────────────────────────────────────────
-  editContainer: {
-    minHeight: 200,
-  },
-  editInput: {
-    minHeight: 200,
-    paddingHorizontal: 14,
-    paddingTop: 12,
-    paddingBottom: 14,
-    borderRadius: 10,
-  },
-
-  // ─── Bottom Bar ───────────────────────────────────────
-  bottomBar: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    gap: 12,
-  },
-  bottomButton: {
-    flex: 1,
-  },
-  backActionRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  backButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
   actionIcons: {
     flexDirection: "row",
     alignItems: "center",
     gap: 20,
-  },
-  backLabel: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
-    lineHeight: 20,
   },
 });
