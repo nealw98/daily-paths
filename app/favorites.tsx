@@ -110,8 +110,6 @@ export default function FavoritesScreen() {
                       {
                         color: colors.onSurface,
                         fontFamily: fonts.bodyFamilySemiBold,
-                        fontSize: 16,
-                        lineHeight: 22,
                       },
                     ]}
                     numberOfLines={2}

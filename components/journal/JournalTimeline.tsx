@@ -314,8 +314,8 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
                 <View style={styles.entryHeaderTitleWrap}>
                   <Text
                     style={[
-                      typography.bodyLarge,
-                      { color: catColor, fontFamily: fonts.bodyFamilyBold, fontSize: 15, lineHeight: 20 },
+                      typography.bodySmall,
+                      { color: catColor, fontFamily: fonts.bodyFamilyBold },
                     ]}
                     numberOfLines={1}
                   >
@@ -366,7 +366,17 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
         <View style={styles.timelineLineColumn}>
           <View style={[styles.timelineDot, { backgroundColor: colors.primary }]} />
         </View>
-        <Text style={[styles.dateLabel, typography.h3, { color: colors.primary, fontSize: 17, lineHeight: 22 }]}>
+        <Text
+          style={[
+            styles.dateLabel,
+            typography.h3,
+            {
+              color: colors.primary,
+              fontSize: typography.bodyFontSize,
+              lineHeight: Math.round(typography.bodyFontSize * (22 / 17)),
+            },
+          ]}
+        >
           {label}
         </Text>
       </View>
@@ -410,8 +420,8 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
                       {
                         color: colors.secondary,
                         fontFamily: fonts.bodyFamilySemiBold,
-                        fontSize: 16,
-                        lineHeight: 22,
+                        fontSize: typography.bodyFontSize,
+                        lineHeight: Math.round(typography.bodyFontSize * (22 / 17)),
                       },
                     ]}
                   >
@@ -457,7 +467,16 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
         <Text style={[textStyles.progressLabel, typography.label, { color: colors.secondary }]}>
           TOTAL ENTRIES
         </Text>
-        <Text style={[typography.h2, { fontSize: 24, lineHeight: 30, color: colors.secondary }]}>
+        <Text
+          style={[
+            typography.h2,
+            {
+              fontSize: Math.round(typography.bodyLargeFontSize * (24 / 19)),
+              lineHeight: Math.round(typography.bodyLargeFontSize * (30 / 19)),
+              color: colors.secondary,
+            },
+          ]}
+        >
           {stats.total}
         </Text>
       </View>
@@ -473,7 +492,16 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
         <Text style={[textStyles.progressLabel, typography.label, { color: colors.secondary }]}>
           CURRENT STREAK
         </Text>
-        <Text style={[typography.h2, { fontSize: 24, lineHeight: 30, color: colors.secondary }]}>
+        <Text
+          style={[
+            typography.h2,
+            {
+              fontSize: Math.round(typography.bodyLargeFontSize * (24 / 19)),
+              lineHeight: Math.round(typography.bodyLargeFontSize * (30 / 19)),
+              color: colors.secondary,
+            },
+          ]}
+        >
           {currentStreak}
         </Text>
       </View>

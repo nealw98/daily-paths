@@ -1,6 +1,7 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Modal } from "react-native";
 import { useTheme } from "../../hooks/useTheme";
+import { useTypography } from "../../hooks/useTypography";
 import { fonts, typography as staticTypography } from "../../constants/theme";
 import {
   JOURNAL_CATEGORIES,
@@ -28,6 +29,15 @@ export const JournalCategoryPicker: React.FC<JournalCategoryPickerProps> = ({
   onClose,
 }) => {
   const { colors } = useTheme();
+  const { typography } = useTypography();
+
+  // Sizing for every text element in this sheet — scales with the global
+  // text-size setting instead of being locked to 24/16/12 (the prior
+  // static values, preserved as the baseline at the "medium" tier).
+  const titleFontSize = Math.round(typography.bodyLargeFontSize * (24 / 19));
+  const titleLineHeight = Math.round(titleFontSize * (30 / 24));
+  const cardNameFontSize = Math.round(typography.bodyLargeFontSize * (16 / 19));
+  const cardNameLineHeight = Math.round(cardNameFontSize * (21 / 16));
 
   return (
     <Modal
@@ -52,7 +62,16 @@ export const JournalCategoryPicker: React.FC<JournalCategoryPickerProps> = ({
             />
           </View>
 
-          <Text style={[styles.title, { color: colors.primary }]}>
+          <Text
+            style={[
+              styles.title,
+              {
+                fontSize: titleFontSize,
+                lineHeight: titleLineHeight,
+                color: colors.primary,
+              },
+            ]}
+          >
             What would you like to add?
           </Text>
 
@@ -84,11 +103,27 @@ export const JournalCategoryPicker: React.FC<JournalCategoryPickerProps> = ({
                     <Ionicons name={CATEGORY_ICONS[category.id] || "document-text-outline"} size={24} color={category.color} />
                   </View>
                   <View style={styles.cardText}>
-                    <Text style={[styles.cardName, { color: colors.onSurface }]}>
+                    <Text
+                      style={[
+                        styles.cardName,
+                        {
+                          fontSize: cardNameFontSize,
+                          lineHeight: cardNameLineHeight,
+                          color: colors.onSurface,
+                        },
+                      ]}
+                    >
                       {category.label}
                     </Text>
                     <Text
-                      style={[styles.cardDesc, { color: colors.onSurfaceVariant }]}
+                      style={[
+                        styles.cardDesc,
+                        {
+                          fontSize: typography.captionFontSize,
+                          lineHeight: typography.captionLineHeight,
+                          color: colors.onSurfaceVariant,
+                        },
+                      ]}
                     >
                       {category.description}
                     </Text>
@@ -125,10 +160,8 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   title: {
-    ...staticTypography.h2,
+    // fontSize/lineHeight set dynamically at call site (titleFontSize).
     fontFamily: fonts.cormorantGaramondSemiBold,
-    fontSize: 24,
-    lineHeight: 30,
     textAlign: "center",
     marginBottom: 18,
   },
@@ -151,13 +184,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cardName: {
+    // fontSize/lineHeight set dynamically at call site (cardNameFontSize).
     fontFamily: fonts.bodyFamilyMedium,
-    fontSize: 16,
-    lineHeight: 21,
     letterSpacing: 0,
     marginBottom: 2,
   },
   cardDesc: {
-    ...staticTypography.caption,
+    // fontSize/lineHeight set dynamically at call site via typography.caption.
+    fontFamily: staticTypography.caption.fontFamily,
+    letterSpacing: staticTypography.caption.letterSpacing,
   },
 });

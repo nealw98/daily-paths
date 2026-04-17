@@ -202,6 +202,22 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
     [reading.application]
   );
 
+  // Sizing for the application quote and "Thought for the Day" — was
+  // previously hard-coded (quote 22/27, thought 21 iOS / 28 Android) and
+  // therefore immune to the global text-size setting. Anchor to the
+  // dynamic `bodyLargeFontSize` so the same visual ratios hold at every
+  // text-size tier.
+  const quoteFontSize = Math.round(typography.bodyLargeFontSize * (22 / 19));
+  const quoteLineHeight = Math.round(quoteFontSize * (27 / 22));
+  const thoughtFontSize =
+    Platform.OS === "android"
+      ? Math.round(typography.bodyLargeFontSize * (28 / 19))
+      : Math.round(typography.bodyLargeFontSize * (21 / 19));
+  const thoughtLineHeight =
+    Platform.OS === "android"
+      ? Math.round(thoughtFontSize * (34 / 28))
+      : Math.round(thoughtFontSize * (27 / 21));
+
   // Horizontal swipe gesture for previous/next readings
   const SWIPE_THRESHOLD = 48;
   const panResponder = useRef(
@@ -429,6 +445,8 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                     style={[
                       styles.applicationQuoteText,
                       {
+                        fontSize: quoteFontSize,
+                        lineHeight: quoteLineHeight,
                         color: colors.primary,
                       },
                     ]}
@@ -440,7 +458,8 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                       style={[
                         styles.applicationReference,
                         {
-                          fontSize: 14,
+                          fontSize: typography.bodySmallFontSize,
+                          lineHeight: typography.bodySmallLineHeight,
                           color: colors.onSurfaceVariant,
                         },
                       ]}
@@ -529,7 +548,11 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                 <Text
                   style={[
                     styles.thoughtLabel,
-                    { fontSize: 13, color: colors.secondaryContainer },
+                    {
+                      fontSize: typography.labelFontSize,
+                      lineHeight: typography.labelLineHeight,
+                      color: colors.secondaryContainer,
+                    },
                   ]}
                 >
                   Thought for the Day
@@ -538,8 +561,8 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                   style={[
                     styles.thoughtText,
                     {
-                      fontSize: Platform.OS === "android" ? typography.h2.fontSize : typography.h3.fontSize,
-                      lineHeight: Platform.OS === "android" ? typography.h2.lineHeight : typography.h3.lineHeight,
+                      fontSize: thoughtFontSize,
+                      lineHeight: thoughtLineHeight,
                       color: colors.onPrimary,
                     },
                   ]}
@@ -560,7 +583,16 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                     color={colors.primaryContainer}
                     style={styles.favoritedIcon}
                   />
-                  <Text style={[styles.favoritedLabel, { color: colors.primaryContainer }]}>
+                  <Text
+                    style={[
+                      styles.favoritedLabel,
+                      {
+                        fontSize: typography.bodySmall.fontSize,
+                        lineHeight: typography.bodySmall.lineHeight,
+                        color: colors.primaryContainer,
+                      },
+                    ]}
+                  >
                     Favorites
                   </Text>
                 </TouchableOpacity>
@@ -598,10 +630,28 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
               <View style={styles.notificationSection}>
                 <View style={styles.notificationUtilityHeader}>
                   <View style={styles.notificationUtilityCopy}>
-                    <Text style={[styles.notificationUtilityTitle, { color: colors.onSurface }]}>
+                    <Text
+                      style={[
+                        styles.notificationUtilityTitle,
+                        {
+                          fontSize: typography.bodySmall.fontSize,
+                          lineHeight: typography.bodySmall.lineHeight,
+                          color: colors.onSurface,
+                        },
+                      ]}
+                    >
                       Daily notification
                     </Text>
-                    <Text style={[styles.notificationUtilitySubtitle, { color: colors.onSurfaceVariant }]}>
+                    <Text
+                      style={[
+                        styles.notificationUtilitySubtitle,
+                        {
+                          fontSize: typography.caption.fontSize,
+                          lineHeight: typography.caption.lineHeight,
+                          color: colors.onSurfaceVariant,
+                        },
+                      ]}
+                    >
                       Receive the Thought for the Day
                     </Text>
                   </View>
@@ -623,13 +673,26 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                     }}
                     style={styles.notificationUtilityTimeLink}
                   >
-                    <Text style={[styles.notificationUtilityTimeLabel, { color: colors.onSurface }]}>
+                    <Text
+                      style={[
+                        styles.notificationUtilityTimeLabel,
+                        {
+                          fontSize: typography.caption.fontSize,
+                          lineHeight: typography.caption.lineHeight,
+                          color: colors.onSurface,
+                        },
+                      ]}
+                    >
                       Notification time
                     </Text>
                     <Text
                       style={[
                         styles.notificationUtilityTimeValue,
-                        { color: colors.onSurfaceVariant },
+                        {
+                          fontSize: typography.caption.fontSize,
+                          lineHeight: typography.caption.lineHeight,
+                          color: colors.onSurfaceVariant,
+                        },
                       ]}
                     >
                       {formatTimeDisplay(reminderDate)}
@@ -669,7 +732,16 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                           }}
                           style={[styles.notificationTimeButton, { backgroundColor: colors.surfaceContainerLowest }]}
                         >
-                          <Text style={[styles.notificationTimeButtonText, { color: colors.onSurface }]}>
+                          <Text
+                            style={[
+                              styles.notificationTimeButtonText,
+                              {
+                                fontSize: typography.bodySmall.fontSize,
+                                lineHeight: typography.bodySmall.lineHeight,
+                                color: colors.onSurface,
+                              },
+                            ]}
+                          >
                             Cancel
                           </Text>
                         </TouchableOpacity>
@@ -685,7 +757,16 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                           }}
                           style={[styles.notificationTimeButton, { backgroundColor: colors.primaryContainer }]}
                         >
-                          <Text style={[styles.notificationTimeButtonText, { color: colors.onPrimary }]}>
+                          <Text
+                            style={[
+                              styles.notificationTimeButtonText,
+                              {
+                                fontSize: typography.bodySmall.fontSize,
+                                lineHeight: typography.bodySmall.lineHeight,
+                                color: colors.onPrimary,
+                              },
+                            ]}
+                          >
                             Set Time
                           </Text>
                         </TouchableOpacity>
@@ -784,9 +865,8 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   favoritedLabel: {
+    // fontSize/lineHeight applied inline via typography.bodySmall.
     fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 15,
-    lineHeight: 20,
     letterSpacing: 0,
     includeFontPadding: false,
     textAlignVertical: "center",
@@ -926,9 +1006,9 @@ const styles = StyleSheet.create({
     height: 62,
   },
   applicationQuoteText: {
+    // fontSize/lineHeight set dynamically at the call site via
+    // quoteFontSize/quoteLineHeight so this scales with global text-size.
     fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 22,
-    lineHeight: 27,
     textAlign: "left",
     marginBottom: 10,
     fontStyle: "italic",
@@ -1019,14 +1099,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   thoughtLabel: {
-    ...staticTypography.label,
+    // fontSize/lineHeight applied inline via typography.labelFontSize so
+    // this scales with global text-size.
+    fontFamily: staticTypography.label.fontFamily,
     textTransform: "uppercase",
     letterSpacing: 1.4,
     marginBottom: 12,
     textAlign: "center",
   },
   thoughtText: {
-    ...staticTypography.h3,
+    // fontSize/lineHeight set dynamically at the call site.
     fontFamily: fonts.bodyFamilySemiBold,
     fontWeight: "600",
     textAlign: "center",

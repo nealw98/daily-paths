@@ -216,24 +216,27 @@ export default function HomeTab() {
     [typography.bodySmall],
   );
 
-  const unlockPillTextType = useMemo(() => {
-    const fontSize = Math.max(12, Math.round(textMetrics.bodySmallFontSize * (14 / 15)));
-    return {
+  // Persistent unlock pill is a fixed-size floating element — pinned to the
+  // bottom of the screen, it must stay within layout bounds regardless of
+  // the user's text-size setting. Intentionally NOT dynamic.
+  const unlockPillTextType = useMemo(
+    () => ({
       fontFamily: fonts.bodyFamilyMedium,
-      fontSize,
-      lineHeight: Math.round(fontSize * (20 / 14)),
-    };
-  }, [textMetrics.bodySmallFontSize]);
+      fontSize: 14,
+      lineHeight: 20,
+    }),
+    []
+  );
 
-  const unlockPillButtonTextType = useMemo(() => {
-    const fontSize = Math.max(12, Math.round(textMetrics.bodySmallFontSize * (14 / 15)));
-    return {
+  const unlockPillButtonTextType = useMemo(
+    () => ({
       fontFamily: fonts.bodyFamilySemiBold,
-      fontSize,
-      lineHeight: Math.round(fontSize * (20 / 14)),
+      fontSize: 14,
+      lineHeight: 20,
       fontWeight: "600" as const,
-    };
-  }, [textMetrics.bodySmallFontSize]);
+    }),
+    []
+  );
 
   const presentPaywall = useCallback(async () => {
     if (presentingPaywall.current) return;

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Modal, TouchableOpacity, Pressable, ScrollView,
 import { Ionicons } from "@expo/vector-icons";
 import { fonts } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
+import { useTypography } from "../hooks/useTypography";
 import { useSettings, TextSize } from "../hooks/useSettings";
 import { useAnalytics } from "../utils/analytics";
 
@@ -45,8 +46,19 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
   onClose,
 }) => {
   const { colors } = useTheme();
+  const { typography } = useTypography();
   const { settings, setTextSize, setThemeId, setColorScheme } = useSettings();
   const { updateThemeMode } = useAnalytics();
+
+  // Dynamic sizes — scale from bodyLargeFontSize so baseline at "medium"
+  // matches the prior static values (28/24 title/section, 16 body/button,
+  // 15 slider, 14 theme).
+  const titleFontSize = Math.round(typography.bodyLargeFontSize * (28 / 19));
+  const sectionLabelFontSize = Math.round(typography.bodyLargeFontSize * (24 / 19));
+  const bodyFontSize = Math.round(typography.bodyLargeFontSize * (16 / 19));
+  const bodyLineHeight = Math.round(bodyFontSize * (22 / 16));
+  const sliderLabelFontSize = typography.bodySmallFontSize;
+  const themeOptionFontSize = Math.round(typography.bodyLargeFontSize * (14 / 19));
   const slideAnim = React.useRef(new Animated.Value(0)).current;
   const scrollRef = React.useRef<ScrollView>(null);
   const [showExtended, setShowExtended] = React.useState(false);
@@ -138,9 +150,9 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
           onStartShouldSetResponder={() => true}
         >
           <View style={[styles.header, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.title, { color: colors.deepTeal }]}>Appearance</Text>
+            <Text style={[styles.title, { fontSize: titleFontSize, color: colors.deepTeal }]}>Appearance</Text>
             <TouchableOpacity onPress={onClose} style={styles.doneButton}>
-              <Text style={[styles.doneButtonText, { color: colors.deepTeal }]}>Done</Text>
+              <Text style={[styles.doneButtonText, { fontSize: bodyFontSize, color: colors.deepTeal }]}>Done</Text>
             </TouchableOpacity>
           </View>
 
@@ -157,7 +169,7 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
               delayLongPress={500}
               style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
             >
-              <Text style={[styles.sectionLabel, { color: colors.deepTeal }]}>Theme</Text>
+              <Text style={[styles.sectionLabel, { fontSize: sectionLabelFontSize, color: colors.deepTeal }]}>Theme</Text>
             </Pressable>
 
             {/* Default theme options (always visible) */}
@@ -188,7 +200,7 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
                     <Text
                       style={[
                         styles.themeOptionText,
-                        { color: colors.deepTeal },
+                        { fontSize: themeOptionFontSize, color: colors.deepTeal },
                         isSelected && [styles.themeOptionTextSelected, { color: colors.textOnAccent }],
                       ]}
                       numberOfLines={2}
@@ -208,7 +220,7 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
                   onPress={() => setShowExtended(false)}
                   style={({ pressed }) => [{ marginTop: -36, opacity: pressed ? 0.7 : 1 }]}
                 >
-                  <Text style={[styles.sectionLabel, { color: colors.deepTeal }]}>Colors</Text>
+                  <Text style={[styles.sectionLabel, { fontSize: sectionLabelFontSize, color: colors.deepTeal }]}>Colors</Text>
                 </Pressable>
                 <View style={styles.themeOptions}>
                   {EXTENDED_THEME_OPTIONS.map((option) => {
@@ -228,7 +240,7 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
                         <Text
                           style={[
                             styles.themeOptionText,
-                            { color: colors.deepTeal },
+                            { fontSize: themeOptionFontSize, color: colors.deepTeal },
                             isSelected && [styles.themeOptionTextSelected, { color: colors.textOnAccent }],
                           ]}
                           numberOfLines={2}
@@ -243,8 +255,8 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
             )}
 
             {/* Text Size Section */}
-            <Text style={[styles.sectionLabel, styles.sectionLabelSpacing, { color: colors.deepTeal }]}>Text Size</Text>
-            <Text style={[styles.subtitle, { color: colors.ocean }]}>
+            <Text style={[styles.sectionLabel, styles.sectionLabelSpacing, { fontSize: sectionLabelFontSize, color: colors.deepTeal }]}>Text Size</Text>
+            <Text style={[styles.subtitle, { fontSize: bodyFontSize, lineHeight: bodyLineHeight, color: colors.ocean }]}>
               Adjust how large the daily reading appears.
             </Text>
 
@@ -257,7 +269,7 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
                 <Text
                   style={[
                     styles.sliderEdgeLabel,
-                    { color: colors.deepTeal },
+                    { fontSize: sliderLabelFontSize, color: colors.deepTeal },
                     settings.textSize === textSizeStops[0] && styles.sliderEdgeLabelDisabled,
                   ]}
                 >
@@ -296,7 +308,7 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
                 <Text
                   style={[
                     styles.sliderEdgeLabel,
-                    { color: colors.deepTeal },
+                    { fontSize: sliderLabelFontSize, color: colors.deepTeal },
                     settings.textSize === textSizeStops[textSizeStops.length - 1] &&
                       styles.sliderEdgeLabelDisabled,
                   ]}
@@ -332,8 +344,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   title: {
+    // fontSize applied inline (titleFontSize).
     fontFamily: fonts.headerFamilyItalic,
-    fontSize: 28,
   },
   doneButton: {
     paddingHorizontal: 8,
@@ -342,18 +354,17 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   doneButtonText: {
+    // fontSize applied inline (bodyFontSize).
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
   },
   content: {
     padding: 20,
     paddingBottom: 60,
   },
   subtitle: {
+    // fontSize/lineHeight applied inline (bodyFontSize / bodyLineHeight).
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
     marginBottom: 24,
-    lineHeight: 22,
   },
   sliderRow: {
     flexDirection: "row",
@@ -361,8 +372,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   sliderEdgeLabel: {
+    // fontSize applied inline (sliderLabelFontSize).
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 15,
     fontWeight: "600",
   },
   sliderEdgeLabelDisabled: {
@@ -391,8 +402,8 @@ const styles = StyleSheet.create({
     transform: [{ scale: 1.1 }],
   },
   sectionLabel: {
+    // fontSize applied inline (sectionLabelFontSize).
     fontFamily: fonts.headerFamilyItalic,
-    fontSize: 24,
     marginBottom: 12,
   },
   sectionLabelSpacing: {
@@ -421,8 +432,8 @@ const styles = StyleSheet.create({
   themeOptionSelected: {
   },
   themeOptionText: {
+    // fontSize applied inline (themeOptionFontSize).
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
     fontWeight: "600",
     textAlign: "center",
   },

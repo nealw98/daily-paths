@@ -1,7 +1,8 @@
 import React from "react";
 import { View, Text, TextInput, StyleSheet } from "react-native";
 import { useTheme } from "../../hooks/useTheme";
-import { fonts, typography as staticTypography } from "../../constants/theme";
+import { useTypography } from "../../hooks/useTypography";
+import { fonts } from "../../constants/theme";
 import type { GuidedPrompt } from "../../constants/journalCategories";
 
 interface GuidedPromptEditorProps {
@@ -24,6 +25,14 @@ export function GuidedPromptEditor({
   onResponseChange,
 }: GuidedPromptEditorProps) {
   const { colors } = useTheme();
+  const { typography } = useTypography();
+
+  // Dynamic sizes — scale from bodyLargeFontSize so the medium tier matches
+  // the old fixed values (22/28 question, 16/21 input).
+  const questionFontSize = Math.round(typography.bodyLargeFontSize * (22 / 19));
+  const questionLineHeight = Math.round(questionFontSize * (28 / 22));
+  const inputFontSize = Math.round(typography.bodyLargeFontSize * (16 / 19));
+  const inputLineHeight = Math.round(inputFontSize * (21 / 16));
 
   return (
     <View style={styles.container}>
@@ -32,7 +41,11 @@ export function GuidedPromptEditor({
           <Text
             style={[
               styles.questionText,
-              { color: colors.primary },
+              {
+                fontSize: questionFontSize,
+                lineHeight: questionLineHeight,
+                color: colors.primary,
+              },
             ]}
           >
             {prompt.question}
@@ -42,6 +55,8 @@ export function GuidedPromptEditor({
             style={[
               styles.textInput,
               {
+                fontSize: inputFontSize,
+                lineHeight: inputLineHeight,
                 color: colors.text,
                 backgroundColor: colors.surfaceContainerLow,
               },
@@ -71,17 +86,14 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   questionText: {
+    // fontSize/lineHeight applied inline (questionFontSize / questionLineHeight).
     fontFamily: fonts.cormorantGaramondSemiBold,
-    fontSize: 22,
-    lineHeight: 28,
     marginBottom: 10,
   },
   textInput: {
+    // fontSize/lineHeight applied inline (inputFontSize / inputLineHeight).
     minHeight: 120,
-    ...staticTypography.body,
     fontFamily: fonts.bodyFamily,
-    fontSize: 16,
-    lineHeight: 21,
     paddingHorizontal: 14,
     paddingTop: 12,
     paddingBottom: 14,

@@ -7,6 +7,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTypography } from "../hooks/useTypography";
 
 interface DismissibleToastProps {
   visible: boolean;
@@ -25,6 +26,7 @@ export const DismissibleToast: React.FC<DismissibleToastProps> = ({
   message,
   onDismiss,
 }) => {
+  const { typography } = useTypography();
   const opacity = useRef(new Animated.Value(0)).current;
   const [shouldRender, setShouldRender] = useState(visible);
 
@@ -72,7 +74,7 @@ export const DismissibleToast: React.FC<DismissibleToastProps> = ({
           color="#fff"
           style={styles.icon}
         />
-        <Text style={styles.message}>{message}</Text>
+        <Text style={[styles.message, { fontSize: typography.bodySmallFontSize }]}>{message}</Text>
         <TouchableOpacity onPress={onDismiss} style={styles.closeButton}>
           <Ionicons name="close" size={18} color="#fff" />
         </TouchableOpacity>
@@ -103,8 +105,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   message: {
+    // fontSize applied inline via typography.bodySmallFontSize.
     color: "#fff",
-    fontSize: 15,
     flexShrink: 1,
   },
   closeButton: {

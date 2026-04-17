@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
-import { fonts, layout, typography as staticTypography } from "../../constants/theme";
+import { fonts, typography as staticTypography } from "../../constants/theme";
 
 interface TealHeaderProps {
   title: string;

@@ -8,6 +8,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { JOURNAL_QUESTION_CATEGORIES, type QuestionCategory } from "../../constants/journalQuestions";
 import { useTheme } from "../../hooks/useTheme";
+import { useTypography } from "../../hooks/useTypography";
 import { fonts } from "../../constants/theme";
 
 interface JournalQuestionsProps {
@@ -21,6 +22,7 @@ export const JournalQuestions: React.FC<JournalQuestionsProps> = ({
   categories,
 }) => {
   const { colors } = useTheme();
+  const { typography } = useTypography();
   const [expanded, setExpanded] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
@@ -41,7 +43,7 @@ export const JournalQuestions: React.FC<JournalQuestionsProps> = ({
           size={20}
           color={colors.accent}
         />
-        <Text style={[styles.toggleText, { color: colors.accent }]}>
+        <Text style={[styles.toggleText, { fontSize: typography.bodySmallFontSize, color: colors.accent }]}>
           Questions to ask myself
         </Text>
         <Ionicons
@@ -64,7 +66,7 @@ export const JournalQuestions: React.FC<JournalQuestionsProps> = ({
                 }
                 activeOpacity={0.7}
               >
-                <Text style={[styles.categoryTitle, { color: colors.text }]}>
+                <Text style={[styles.categoryTitle, { fontSize: typography.bodySmallFontSize, color: colors.text }]}>
                   {category.title}
                 </Text>
                 <Ionicons
@@ -88,7 +90,14 @@ export const JournalQuestions: React.FC<JournalQuestionsProps> = ({
                       activeOpacity={0.7}
                     >
                       <Text
-                        style={[styles.questionText, { color: colors.textSecondary }]}
+                        style={[
+                          styles.questionText,
+                          {
+                            fontSize: Math.round(typography.bodyLargeFontSize * (14 / 19)),
+                            lineHeight: Math.round(typography.bodyLargeFontSize * (20 / 19)),
+                            color: colors.textSecondary,
+                          },
+                        ]}
                       >
                         {question}
                       </Text>
@@ -123,8 +132,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   toggleText: {
+    // fontSize applied inline via typography.bodySmallFontSize.
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 15,
     flex: 1,
   },
   categoriesContainer: {
@@ -142,8 +151,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
   },
   categoryTitle: {
+    // fontSize applied inline via typography.bodySmallFontSize.
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 15,
     fontWeight: "600",
   },
   questionsContainer: {
@@ -159,9 +168,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   questionText: {
+    // fontSize/lineHeight applied inline.
     fontFamily: fonts.bodyFamily,
-    fontSize: 14,
     flex: 1,
-    lineHeight: 20,
   },
 });

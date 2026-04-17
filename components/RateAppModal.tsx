@@ -9,6 +9,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fonts } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
+import { useTypography } from '../hooks/useTypography';
 import { useAnalytics } from '../utils/analytics';
 import {
   requestReview,
@@ -32,8 +33,18 @@ export const RateAppModal: React.FC<RateAppModalProps> = ({
   trigger = 'settings_button',
 }) => {
   const { colors } = useTheme();
+  const { typography } = useTypography();
   const { trackRateModalShown, trackRateModalDismissed, trackRateModalOpenedStore } = useAnalytics();
   const [daysUsed, setDaysUsed] = useState(0);
+
+  // Dynamic sizes — were static (26/16/17/15) before. Scale proportionally
+  // from bodyLargeFontSize so the baseline at the "medium" text-size tier
+  // matches the previous fixed values.
+  const titleFontSize = Math.round(typography.bodyLargeFontSize * (26 / 19));
+  const bodyFontSize = Math.round(typography.bodyLargeFontSize * (16 / 19));
+  const bodyLineHeight = Math.round(bodyFontSize * (24 / 16));
+  const primaryButtonFontSize = typography.bodyFontSize;
+  const secondaryButtonFontSize = typography.bodySmallFontSize;
 
   // Load dynamic stats for personalized messaging
   useEffect(() => {
@@ -113,10 +124,15 @@ export const RateAppModal: React.FC<RateAppModalProps> = ({
           style={[styles.toast, { backgroundColor: colors.modalBackground }]}
           onStartShouldSetResponder={() => true}
         >
-          <Text style={[styles.title, { color: colors.text }]}>
+          <Text style={[styles.title, { fontSize: titleFontSize, color: colors.text }]}>
             Enjoying Daily Paths?
           </Text>
-          <Text style={[styles.message, { color: colors.textSecondary }]}>
+          <Text
+            style={[
+              styles.message,
+              { fontSize: bodyFontSize, lineHeight: bodyLineHeight, color: colors.textSecondary },
+            ]}
+          >
             {getMessage()}
           </Text>
 
@@ -125,19 +141,34 @@ export const RateAppModal: React.FC<RateAppModalProps> = ({
               style={[styles.rateButton, { backgroundColor: colors.buttonPrimary }]}
               onPress={handleRateApp}
             >
-              <Text style={[styles.rateButtonText, { color: colors.textOnAccent }]}>
+              <Text
+                style={[
+                  styles.rateButtonText,
+                  { fontSize: primaryButtonFontSize, color: colors.textOnAccent },
+                ]}
+              >
                 Yes, I'll rate it
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.secondaryButton} onPress={handleNotNow}>
-              <Text style={[styles.secondaryText, { color: colors.textSecondary }]}>
+              <Text
+                style={[
+                  styles.secondaryText,
+                  { fontSize: secondaryButtonFontSize, color: colors.textSecondary },
+                ]}
+              >
                 Maybe later
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.secondaryButton} onPress={handleAlreadyRated}>
-              <Text style={[styles.secondaryText, { color: colors.textSecondary }]}>
+              <Text
+                style={[
+                  styles.secondaryText,
+                  { fontSize: secondaryButtonFontSize, color: colors.textSecondary },
+                ]}
+              >
                 Already rated
               </Text>
             </TouchableOpacity>
@@ -165,15 +196,14 @@ const styles = StyleSheet.create({
     elevation: 12,
   },
   title: {
+    // fontSize applied inline (titleFontSize).
     fontFamily: fonts.headerFamilyItalic,
-    fontSize: 26,
     marginBottom: 16,
     textAlign: 'center',
   },
   message: {
+    // fontSize/lineHeight applied inline (bodyFontSize/bodyLineHeight).
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
-    lineHeight: 24,
     marginBottom: 24,
     textAlign: 'center',
   },
@@ -187,8 +217,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   rateButtonText: {
+    // fontSize applied inline (primaryButtonFontSize).
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 17,
     fontWeight: '600',
   },
   secondaryButton: {
@@ -196,7 +226,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   secondaryText: {
+    // fontSize applied inline (secondaryButtonFontSize).
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 15,
   },
 });

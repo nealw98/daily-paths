@@ -155,7 +155,7 @@ export const JournalSearch: React.FC<JournalSearchProps> = ({
           <Ionicons name="search" size={18} color={colors.textSecondary} />
           <TextInput
             ref={inputRef}
-            style={[styles.input, { color: colors.text }]}
+            style={[styles.input, { fontSize: typography.bodyFontSize, color: colors.text }]}
             placeholder="Search entries..."
             placeholderTextColor={colors.textSecondary + "50"}
             value={query}
@@ -221,9 +221,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   input: {
+    // fontSize applied inline via typography.bodyFontSize.
     flex: 1,
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
   },
   resultsList: {
     paddingHorizontal: 16,

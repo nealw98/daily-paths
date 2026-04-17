@@ -53,6 +53,16 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
   const { colors } = useTheme();
   const { typography } = useTypography();
   const [draft, setDraft] = useState<Draft>({ kind: "none" });
+
+  // Dynamic sizes for every text element in this screen — scale from
+  // bodyLargeFontSize so the "medium" tier matches the prior static
+  // values (20 question, 17 fallback content, 16 body/input, 15 aux).
+  const questionFontSize = Math.round(typography.bodyLargeFontSize * (20 / 19));
+  const questionLineHeight = Math.round(questionFontSize * (26 / 20));
+  const bodyFontSize = Math.round(typography.bodyLargeFontSize * (16 / 19));
+  const bodyLineHeight = Math.round(bodyFontSize * (22 / 16));
+  const auxFontSize = Math.round(typography.bodyLargeFontSize * (15 / 19));
+  const auxLineHeight = Math.round(auxFontSize * (20 / 15));
   const [saving, setSaving] = useState(false);
   const textInputRef = useRef<TextInput>(null);
 
@@ -239,6 +249,8 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
               style={[
                 styles.textEditInput,
                 {
+                  fontSize: bodyFontSize,
+                  lineHeight: bodyLineHeight,
                   color: colors.text,
                   backgroundColor: colors.surfaceContainerLow,
                 },
@@ -294,7 +306,11 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
                 <TextInput
                   style={[
                     styles.itemsEditInput,
-                    { color: colors.text },
+                    {
+                      fontSize: bodyFontSize,
+                      lineHeight: bodyLineHeight,
+                      color: colors.text,
+                    },
                   ]}
                   placeholder="I'm grateful for..."
                   placeholderTextColor={colors.textSecondary + "70"}
@@ -325,7 +341,12 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Ionicons name="add" size={18} color={colors.secondary} />
-              <Text style={[styles.addItemLinkText, { color: colors.secondary }]}>
+              <Text
+                style={[
+                  styles.addItemLinkText,
+                  { fontSize: auxFontSize, color: colors.secondary },
+                ]}
+              >
                 Add another
               </Text>
             </TouchableOpacity>
@@ -344,7 +365,12 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
                 <View style={styles.gratitudeIcon}>
                   <Seedling size={16} color={catColor} />
                 </View>
-                <Text style={[styles.gratitudeReadText, { color: colors.text }]}>
+                <Text
+                  style={[
+                    styles.gratitudeReadText,
+                    { fontSize: bodyFontSize, lineHeight: bodyLineHeight, color: colors.text },
+                  ]}
+                >
                   {item}
                 </Text>
               </View>
@@ -376,7 +402,16 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
                 },
               ]}
             >
-              <Text style={[styles.guidedQuestion, { color: colors.primary }]}>
+              <Text
+                style={[
+                  styles.guidedQuestion,
+                  {
+                    fontSize: questionFontSize,
+                    lineHeight: questionLineHeight,
+                    color: colors.primary,
+                  },
+                ]}
+              >
                 {prompt.question}
               </Text>
               {isEditing ? (
@@ -385,6 +420,8 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
                     style={[
                       styles.guidedEditInput,
                       {
+                        fontSize: bodyFontSize,
+                        lineHeight: bodyLineHeight,
                         color: colors.text,
                         backgroundColor: colors.surface,
                         borderColor: colors.ghostBorder,
@@ -413,14 +450,27 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
                   onPress={() => startEditGuidedPrompt(prompt.id)}
                 >
                   {hasAnswer ? (
-                    <Text style={[styles.guidedResponse, { color: colors.text }]}>
+                    <Text
+                      style={[
+                        styles.guidedResponse,
+                        {
+                          fontSize: bodyFontSize,
+                          lineHeight: bodyLineHeight,
+                          color: colors.text,
+                        },
+                      ]}
+                    >
                       {value}
                     </Text>
                   ) : (
                     <Text
                       style={[
                         styles.guidedEmpty,
-                        { color: colors.textSecondary + "80" },
+                        {
+                          fontSize: auxFontSize,
+                          lineHeight: auxLineHeight,
+                          color: colors.textSecondary + "80",
+                        },
                       ]}
                     >
                       Tap to add
@@ -434,7 +484,16 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
 
         {/* Fallback: show plain content if no structured_content */}
         {!entry.structured_content && entry.content && (
-          <Text style={[styles.contentText, { color: colors.text, fontSize: 17, lineHeight: 28 }]}>
+          <Text
+            style={[
+              styles.contentText,
+              {
+                color: colors.text,
+                fontSize: typography.bodyFontSize,
+                lineHeight: typography.bodyLineHeight,
+              },
+            ]}
+          >
             {entry.content}
           </Text>
         )}
@@ -531,14 +590,13 @@ const styles = StyleSheet.create({
 
   // ─── Text edit input ──────────────────────────────────
   textEditInput: {
+    // fontSize/lineHeight applied inline (bodyFontSize / bodyLineHeight).
     minHeight: 160,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingTop: 12,
     paddingBottom: 14,
     fontFamily: fonts.bodyFamily,
-    fontSize: 16,
-    lineHeight: 21,
   },
 
   // ─── Gratitude Read-Only ──────────────────────────────
@@ -553,10 +611,9 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   gratitudeReadText: {
+    // fontSize/lineHeight applied inline (bodyFontSize / bodyLineHeight).
     flex: 1,
     fontFamily: fonts.bodyFamily,
-    fontSize: 16,
-    lineHeight: 21,
   },
 
   // ─── Gratitude Edit ───────────────────────────────────
@@ -569,11 +626,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   itemsEditInput: {
+    // fontSize/lineHeight applied inline (bodyFontSize / bodyLineHeight).
     flex: 1,
     minHeight: 22,
     fontFamily: fonts.bodyFamily,
-    fontSize: 16,
-    lineHeight: 21,
   },
   itemsRemove: {
     marginTop: 2,
@@ -588,8 +644,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   addItemLinkText: {
+    // fontSize applied inline (auxFontSize).
     fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 15,
   },
 
   // ─── Guided cards ─────────────────────────────────────
@@ -602,23 +658,21 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   guidedQuestion: {
+    // fontSize/lineHeight applied inline (questionFontSize / questionLineHeight).
     fontFamily: fonts.cormorantGaramondSemiBold,
-    fontSize: 20,
-    lineHeight: 26,
     marginBottom: 8,
   },
   guidedResponse: {
+    // fontSize/lineHeight applied inline (bodyFontSize / bodyLineHeight).
     fontFamily: fonts.bodyFamily,
-    fontSize: 16,
-    lineHeight: 22,
   },
   guidedEmpty: {
+    // fontSize/lineHeight applied inline (auxFontSize / auxLineHeight).
     fontFamily: fonts.bodyFamily,
     fontStyle: "italic",
-    fontSize: 15,
-    lineHeight: 20,
   },
   guidedEditInput: {
+    // fontSize/lineHeight applied inline (bodyFontSize / bodyLineHeight).
     minHeight: 100,
     borderRadius: 10,
     borderWidth: 1,
@@ -626,8 +680,6 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 12,
     fontFamily: fonts.bodyFamily,
-    fontSize: 16,
-    lineHeight: 22,
   },
 
   // ─── Card-level save/cancel footer ────────────────────

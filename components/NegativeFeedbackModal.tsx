@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { fonts, type ColorPalette } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
+import { useTypography } from '../hooks/useTypography';
 
 interface NegativeFeedbackModalProps {
   visible: boolean;
@@ -31,6 +32,7 @@ export const NegativeFeedbackModal: React.FC<NegativeFeedbackModalProps> = ({
   onSubmit,
 }) => {
   const { colors } = useTheme();
+  const { typography } = useTypography();
   const [reasons, setReasons] = useState({
     unclear: false,
     tooLong: false,
@@ -65,6 +67,12 @@ export const NegativeFeedbackModal: React.FC<NegativeFeedbackModalProps> = ({
     }, 300);
   };
 
+  // Dynamic sizes — scale from bodyLargeFontSize so the baseline at
+  // "medium" matches the previous fixed values (20/16/14).
+  const titleFontSize = Math.round(typography.bodyLargeFontSize * (20 / 19));
+  const bodyFontSize = Math.round(typography.bodyLargeFontSize * (16 / 19));
+  const labelFontSize = Math.round(typography.bodyLargeFontSize * (14 / 19));
+
   return (
     <Modal
       visible={visible}
@@ -83,7 +91,9 @@ export const NegativeFeedbackModal: React.FC<NegativeFeedbackModalProps> = ({
           onResponderRelease={() => Keyboard.dismiss()}
         >
           <View style={styles.header}>
-            <Text style={styles.title}>What could be improved?</Text>
+            <Text style={[styles.title, { fontSize: titleFontSize }]}>
+              What could be improved?
+            </Text>
             <TouchableOpacity onPress={handleClose} style={styles.closeIcon}>
               <Ionicons name="close" size={24} color={colors.ink} />
             </TouchableOpacity>
@@ -99,12 +109,14 @@ export const NegativeFeedbackModal: React.FC<NegativeFeedbackModalProps> = ({
               checked={reasons.unclear}
               onToggle={() => setReasons((r) => ({ ...r, unclear: !r.unclear }))}
               colors={colors}
+              labelFontSize={bodyFontSize}
             />
             <CheckboxOption
               label="Too long or wordy"
               checked={reasons.tooLong}
               onToggle={() => setReasons((r) => ({ ...r, tooLong: !r.tooLong }))}
               colors={colors}
+              labelFontSize={bodyFontSize}
             />
             <CheckboxOption
               label="Not relevant"
@@ -113,18 +125,22 @@ export const NegativeFeedbackModal: React.FC<NegativeFeedbackModalProps> = ({
                 setReasons((r) => ({ ...r, notApplicable: !r.notApplicable }))
               }
               colors={colors}
+              labelFontSize={bodyFontSize}
             />
             <CheckboxOption
               label="Language/tone issues"
               checked={reasons.language}
               onToggle={() => setReasons((r) => ({ ...r, language: !r.language }))}
               colors={colors}
+              labelFontSize={bodyFontSize}
             />
 
             <View style={styles.otherContainer}>
-              <Text style={styles.otherLabel}>Other (optional)</Text>
+              <Text style={[styles.otherLabel, { fontSize: labelFontSize }]}>
+                Other (optional)
+              </Text>
               <TextInput
-                style={styles.otherInput}
+                style={[styles.otherInput, { fontSize: bodyFontSize }]}
                 placeholder="Tell us more..."
                 value={reasons.otherText}
                 onChangeText={(text) => setReasons((r) => ({ ...r, otherText: text }))}
@@ -138,10 +154,10 @@ export const NegativeFeedbackModal: React.FC<NegativeFeedbackModalProps> = ({
 
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.cancelButton} onPress={handleClose}>
-              <Text style={styles.cancelText}>Cancel</Text>
+              <Text style={[styles.cancelText, { fontSize: bodyFontSize }]}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-              <Text style={styles.submitText}>Submit</Text>
+              <Text style={[styles.submitText, { fontSize: bodyFontSize }]}>Submit</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -156,6 +172,8 @@ interface CheckboxOptionProps {
   checked: boolean;
   onToggle: () => void;
   colors: ColorPalette;
+  /** Dynamic label font size passed in from the parent so it stays aligned with the global text-size setting. */
+  labelFontSize: number;
 }
 
 const CheckboxOption: React.FC<CheckboxOptionProps> = ({
@@ -163,6 +181,7 @@ const CheckboxOption: React.FC<CheckboxOptionProps> = ({
   checked,
   onToggle,
   colors,
+  labelFontSize,
 }) => {
   return (
     <TouchableOpacity
@@ -175,7 +194,7 @@ const CheckboxOption: React.FC<CheckboxOptionProps> = ({
           <Ionicons name="checkmark" size={16} color="#fff" />
         )}
       </View>
-      <Text style={styles.checkboxLabel}>{label}</Text>
+      <Text style={[styles.checkboxLabel, { fontSize: labelFontSize }]}>{label}</Text>
     </TouchableOpacity>
   );
 };
@@ -207,8 +226,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   title: {
+    // fontSize applied inline (titleFontSize).
     fontFamily: fonts.headerFamilyItalic,
-    fontSize: 20,
     flex: 1,
   },
   closeIcon: {
@@ -236,21 +255,21 @@ const styles = StyleSheet.create({
   checkboxChecked: {
   },
   checkboxLabel: {
+    // fontSize applied inline (labelFontSize prop).
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
     flex: 1,
   },
   otherContainer: {
     marginTop: 12,
   },
   otherLabel: {
+    // fontSize applied inline (labelFontSize).
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
     marginBottom: 8,
   },
   otherInput: {
+    // fontSize applied inline (bodyFontSize).
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
     borderRadius: 8,
     padding: 12,
     minHeight: 80,
@@ -270,8 +289,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   cancelText: {
+    // fontSize applied inline (bodyFontSize).
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
   },
   submitButton: {
     paddingHorizontal: 20,
@@ -279,8 +298,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   submitText: {
+    // fontSize applied inline (bodyFontSize).
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
     color: '#fff', // intentional: white text on accent-colored submit button
     fontWeight: '600',
   },

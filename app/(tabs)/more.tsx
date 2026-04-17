@@ -71,6 +71,22 @@ export default function MoreTab() {
       letterSpacing: -0.1,
     };
   }, [dynamicTypography.bodyLarge.fontSize]);
+
+  // Dynamic sizes for card-level labels, subscription rows, daily-notification
+  // rows, and the A/A slider endpoints. Scaled from bodyLargeFontSize so
+  // the baseline at the "medium" tier matches the prior static values.
+  const cardLabelFontSize = Math.round(dynamicTypography.bodyLargeFontSize * (16 / 19));
+  const cardLabelLineHeight = Math.round(cardLabelFontSize * (22 / 16));
+  const subscriptionFontSize = Math.round(dynamicTypography.bodyLargeFontSize * (16 / 19));
+  const subscriptionLineHeight = Math.round(subscriptionFontSize * (20 / 16));
+  const rowTitleFontSize = Math.round(dynamicTypography.bodyLargeFontSize * (16 / 19));
+  const rowDescriptionFontSize = Math.round(dynamicTypography.bodyLargeFontSize * (14 / 19));
+  const rowDescriptionLineHeight = Math.round(rowDescriptionFontSize * (18 / 14));
+  const timePickerBtnFontSize = Math.round(dynamicTypography.bodyLargeFontSize * (14 / 19));
+  const sliderSmallAFontSize = dynamicTypography.captionFontSize;
+  const sliderLargeAFontSize = Math.round(dynamicTypography.bodyLargeFontSize * (18 / 19));
+  const supportActionFontSize = Math.round(dynamicTypography.bodyLargeFontSize * (16 / 19));
+  const supportActionLineHeight = Math.round(supportActionFontSize * (20 / 16));
   const { submitting: submittingFeedback, submitFeedback } = useAppFeedback();
   const { status, hasLifetimeAccess, loading: subLoading, refresh } = useSubscription();
   const { trialStatus } = useSubscriptionContext();
@@ -185,7 +201,7 @@ export default function MoreTab() {
           <View style={[styles.subscriptionRow, { backgroundColor: colors.surfaceContainerLowest }]}>
             <View style={styles.subscriptionLeft}>
               <ActivityIndicator size="small" color={colors.deepTeal} />
-              <Text style={[styles.subscriptionText, { color: colors.text }]}>Checking Access...</Text>
+              <Text style={[styles.subscriptionText, { fontSize: subscriptionFontSize, lineHeight: subscriptionLineHeight, color: colors.text }]}>Checking Access...</Text>
             </View>
           </View>
         ) : status.isSubscribed ? (
@@ -240,7 +256,7 @@ export default function MoreTab() {
           >
             <View style={styles.subscriptionLeft}>
               <Ionicons name="card-outline" size={22} color={colors.deepTeal} />
-              <Text style={[styles.subscriptionText, { color: colors.text }]}>
+              <Text style={[styles.subscriptionText, { fontSize: subscriptionFontSize, lineHeight: subscriptionLineHeight, color: colors.text }]}>
                 {openingCustomerCenter ? "Opening..." : "Manage Subscription"}
               </Text>
             </View>
@@ -254,7 +270,7 @@ export default function MoreTab() {
           <View style={[styles.subscriptionRow, { backgroundColor: colors.surfaceContainerLowest }]}>
             <View style={styles.subscriptionLeft}>
               <Ionicons name="star" size={22} color={colors.deepTeal} />
-              <Text style={[styles.subscriptionText, { color: colors.deepTeal }]}>Lifetime Access</Text>
+              <Text style={[styles.subscriptionText, { fontSize: subscriptionFontSize, lineHeight: subscriptionLineHeight, color: colors.deepTeal }]}>Lifetime Access</Text>
             </View>
           </View>
         ) : trialStatus.isInTrial ? (
@@ -272,7 +288,7 @@ export default function MoreTab() {
           >
             <View style={styles.subscriptionLeft}>
               <Ionicons name="time-outline" size={22} color={colors.deepTeal} />
-              <Text style={[styles.subscriptionText, { color: colors.text }]}>
+              <Text style={[styles.subscriptionText, { fontSize: subscriptionFontSize, lineHeight: subscriptionLineHeight, color: colors.text }]}>
                 {trialStatus.daysRemaining === 0
                   ? "Free Trial \u2014 expires today"
                   : `Free Trial \u2014 ${trialStatus.daysRemaining} day${trialStatus.daysRemaining === 1 ? "" : "s"} left`}
@@ -295,7 +311,7 @@ export default function MoreTab() {
           >
             <View style={styles.subscriptionLeft}>
               <Ionicons name="card-outline" size={22} color={colors.deepTeal} />
-              <Text style={[styles.subscriptionText, { color: colors.text }]}>Subscribe Now</Text>
+              <Text style={[styles.subscriptionText, { fontSize: subscriptionFontSize, lineHeight: subscriptionLineHeight, color: colors.text }]}>Subscribe Now</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.seafoam} />
           </TouchableOpacity>
@@ -306,7 +322,16 @@ export default function MoreTab() {
         <Text allowFontScaling={false} style={[styles.sectionLabel, sectionTitleType, { color: colors.onSurface }]}>Appearance</Text>
         <View style={[styles.card, { backgroundColor: colors.surfaceContainerLowest }]}>
           {/* Text Size */}
-          <Text style={[styles.cardLabel, { color: colors.deepTeal }]}>
+          <Text
+            style={[
+              styles.cardLabel,
+              {
+                fontSize: cardLabelFontSize,
+                lineHeight: cardLabelLineHeight,
+                color: colors.deepTeal,
+              },
+            ]}
+          >
             Text Size
           </Text>
           <View style={styles.sliderRow}>
@@ -318,7 +343,7 @@ export default function MoreTab() {
               }}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Text style={[styles.sliderEdgeLabel, { color: colors.textSecondary, fontSize: 12 }]}>A</Text>
+              <Text style={[styles.sliderEdgeLabel, { color: colors.textSecondary, fontSize: sliderSmallAFontSize }]}>A</Text>
             </TouchableOpacity>
             <View style={styles.sliderTrack}>
               {(["extraSmall", "small", "medium", "large", "extraLarge"] as TextSize[]).map((size) => {
@@ -351,12 +376,22 @@ export default function MoreTab() {
               }}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Text style={[styles.sliderEdgeLabel, { color: colors.textSecondary, fontSize: 18 }]}>A</Text>
+              <Text style={[styles.sliderEdgeLabel, { color: colors.textSecondary, fontSize: sliderLargeAFontSize }]}>A</Text>
             </TouchableOpacity>
           </View>
 
           {/* Themes */}
-          <Text style={[styles.cardLabel, { color: colors.deepTeal, marginTop: 16 }]}>
+          <Text
+            style={[
+              styles.cardLabel,
+              {
+                fontSize: cardLabelFontSize,
+                lineHeight: cardLabelLineHeight,
+                color: colors.deepTeal,
+                marginTop: 16,
+              },
+            ]}
+          >
             Themes
           </Text>
           <View style={styles.themeOptions}>
@@ -411,7 +446,7 @@ export default function MoreTab() {
             >
               <View style={styles.supportActionLeft}>
                 <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.deepTeal} />
-                <Text style={[styles.supportActionText, { color: colors.deepTeal }]}>Send Feedback</Text>
+                <Text style={[styles.supportActionText, { fontSize: supportActionFontSize, lineHeight: supportActionLineHeight, color: colors.deepTeal }]}>Send Feedback</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={colors.seafoam} />
             </TouchableOpacity>
@@ -422,7 +457,7 @@ export default function MoreTab() {
             >
               <View style={styles.supportActionLeft}>
                 <Ionicons name="star-outline" size={18} color={colors.deepTeal} />
-                <Text style={[styles.supportActionText, { color: colors.deepTeal }]}>Rate App</Text>
+                <Text style={[styles.supportActionText, { fontSize: supportActionFontSize, lineHeight: supportActionLineHeight, color: colors.deepTeal }]}>Rate App</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={colors.seafoam} />
             </TouchableOpacity>
@@ -434,7 +469,7 @@ export default function MoreTab() {
             >
               <View style={styles.supportActionLeft}>
                 <Ionicons name="arrow-redo-outline" size={18} color={colors.deepTeal} />
-                <Text style={[styles.supportActionText, { color: colors.deepTeal }]}>
+                <Text style={[styles.supportActionText, { fontSize: supportActionFontSize, lineHeight: supportActionLineHeight, color: colors.deepTeal }]}>
                   {isSharing ? "Sharing..." : "Share App"}
                 </Text>
               </View>
@@ -742,9 +777,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   supportActionText: {
+    // fontSize/lineHeight applied inline (supportActionFontSize / supportActionLineHeight).
     fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 16,
-    lineHeight: 20,
   },
 
   /* ── Subscription Row ──────────────────────────── */
