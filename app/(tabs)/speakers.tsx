@@ -64,9 +64,25 @@ function SpeakersTabContent() {
   const [autoPlay, setAutoPlay] = useState(false);
   const handledSpeakerIdRef = useRef<string | null>(null);
 
-  // Deep-link: open a specific speaker from the home page
+  // Deep-link: open a specific speaker from the home page.
+  //
+  // Runs after paint, but the isResolvingDeepLink placeholder below swaps
+  // in for the browse list during this one-frame window so the user never
+  // sees the list flash. We can't use useLayoutEffect here because
+  // router.setParams runs too early in expo-router's mount sequence on
+  // first render and throws "Attempted to navigate before mounting the
+  // Root Layout".
+  //
+  // The ref de-dupes against React re-firing the effect for the same param
+  // before setParams clears it; we reset it the moment the param is cleared
+  // so a subsequent navigation to the SAME featured speaker (common, since
+  // the featured speaker is pinned for a week) still opens detail.
   useEffect(() => {
-    if (!params?.speakerId || speakers.length === 0) return;
+    if (!params?.speakerId) {
+      handledSpeakerIdRef.current = null;
+      return;
+    }
+    if (speakers.length === 0) return;
     if (handledSpeakerIdRef.current === params.speakerId) return;
     handledSpeakerIdRef.current = params.speakerId;
     const match = speakers.find((s) => s.id === params.speakerId);

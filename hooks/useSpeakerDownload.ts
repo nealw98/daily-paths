@@ -14,28 +14,13 @@ import { qaLog } from "../utils/qaLog";
 
 export type DownloadStatus = "not_downloaded" | "downloading" | "downloaded";
 
-/**
- * Distinguishes user-initiated downloads from silent prefetches.
- * - "manual": user tapped the Download button — surfaced in UI (badge, status).
- * - "prefetch": app pre-cached the file in the background — invisible to the
- *   user; the file is still used transparently for playback via resolveAudioUri.
- * A missing `source` is treated as "manual" for back-compat with records
- * written before prefetching existed.
- */
-export type DownloadSource = "manual" | "prefetch";
-
 interface DownloadRecord {
   downloaded: boolean;
   localPath: string;
   downloadedAt: string;
-  source?: DownloadSource;
 }
 
 type DownloadMap = Record<string, DownloadRecord>;
-
-function getRecordSource(record: DownloadRecord | undefined): DownloadSource {
-  return record?.source ?? "manual";
-}
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
@@ -88,15 +73,7 @@ export function useSpeakerDownload(speakerId: string, audioUrl: string) {
       const map = await loadDownloadMap();
       const record = map[speakerId];
 
-      // Only user-initiated "manual" downloads surface as "downloaded" in the
-      // UI. Prefetched files live in the same place on disk (and are still
-      // used for playback via resolveAudioUri) but must not show the badge or
-      // flip the download button — the user didn't ask to download them.
-      if (
-        record?.downloaded &&
-        record.localPath &&
-        getRecordSource(record) === "manual"
-      ) {
+      if (record?.downloaded && record.localPath) {
         // Verify file actually exists on disk
         const info = await getInfoAsync(record.localPath);
         if (info.exists) {
@@ -125,9 +102,7 @@ export function useSpeakerDownload(speakerId: string, audioUrl: string) {
 
     const filePath = getLocalPath(speakerId);
 
-    // Check if file already exists (e.g. from a previous session, or from a
-    // background prefetch). Either way, upgrade/mark as "manual" so the UI
-    // reflects that this is now a user-owned download.
+    // Check if file already exists (e.g. from a previous session)
     try {
       const info = await getInfoAsync(filePath);
       if (info.exists) {
@@ -136,7 +111,6 @@ export function useSpeakerDownload(speakerId: string, audioUrl: string) {
           downloaded: true,
           localPath: filePath,
           downloadedAt: new Date().toISOString(),
-          source: "manual",
         };
         await saveDownloadMap(map);
         if (mountedRef.current) {
@@ -191,7 +165,6 @@ export function useSpeakerDownload(speakerId: string, audioUrl: string) {
         downloaded: true,
         localPath: filePath,
         downloadedAt: new Date().toISOString(),
-        source: "manual",
       };
       await saveDownloadMap(map);
 
@@ -298,13 +271,7 @@ export function useDownloadedSpeakerIds() {
       const ids = new Set<string>();
 
       for (const [id, record] of Object.entries(map)) {
-        // Prefetched files live on disk but must not appear in the UI badge
-        // — the user didn't explicitly download them.
-        if (
-          record.downloaded &&
-          record.localPath &&
-          getRecordSource(record) === "manual"
-        ) {
+        if (record.downloaded && record.localPath) {
           // Verify file exists
           const info = await getInfoAsync(record.localPath);
           if (info.exists) {
@@ -330,108 +297,6 @@ export function useDownloadedSpeakerIds() {
   }, [refresh]);
 
   return { downloadedIds, refresh };
-}
-
-// ─── Background prefetch (silent, for featured speaker) ───────────────────
-
-/**
- * Module-level dedup: if a prefetch is already in flight for a given
- * speakerId, a second call is a no-op. Survives as long as the JS context
- * does (i.e. for the life of the app session).
- */
-const inFlightPrefetches = new Map<string, DownloadResumable>();
-
-/**
- * Silently pre-cache a speaker's audio file to disk so the first tap into
- * the player is instant. Intended for the featured-speaker card on home —
- * fire and forget; failures are swallowed.
- *
- * - Skips if the file is already on disk (from a prior manual download,
- *   prior prefetch, or a same-session in-flight prefetch).
- * - Writes the AsyncStorage record with `source: "prefetch"` so the file
- *   does NOT show up with the "downloaded" badge in the UI.
- * - If the user later taps the manual Download button for the same speaker,
- *   `startDownload` detects the on-disk file and upgrades the record to
- *   `source: "manual"` without re-downloading.
- */
-export async function prefetchSpeakerAudio(
-  speakerId: string,
-  audioUrl: string
-): Promise<void> {
-  if (!speakerId || !audioUrl) return;
-  if (inFlightPrefetches.has(speakerId)) return;
-
-  const filePath = getLocalPath(speakerId);
-
-  try {
-    // Already-tracked on disk — nothing to do.
-    const map = await loadDownloadMap();
-    const existing = map[speakerId];
-    if (existing?.downloaded && existing.localPath) {
-      const info = await getInfoAsync(existing.localPath);
-      if (info.exists) return;
-    }
-
-    // File present on disk but not tracked — register it as a prefetch
-    // record so resolveAudioUri can find it, and skip the download.
-    const untrackedInfo = await getInfoAsync(filePath);
-    if (untrackedInfo.exists) {
-      const updated: DownloadMap = { ...map };
-      updated[speakerId] = {
-        downloaded: true,
-        localPath: filePath,
-        downloadedAt: new Date().toISOString(),
-        source: "prefetch",
-      };
-      await saveDownloadMap(updated);
-      return;
-    }
-  } catch {
-    // Best-effort; fall through to download.
-  }
-
-  const resumable = createDownloadResumable(audioUrl, filePath, {});
-  inFlightPrefetches.set(speakerId, resumable);
-
-  try {
-    qaLog("download", "Starting prefetch", {
-      speakerId,
-      audioUrl: audioUrl.slice(-40),
-    });
-    const result = await resumable.downloadAsync();
-    if (!result) {
-      qaLog("download", "Prefetch cancelled or empty", { speakerId });
-      return;
-    }
-
-    const map = await loadDownloadMap();
-    // If a manual download beat us to it mid-flight, don't overwrite the
-    // "manual" record with a "prefetch" one.
-    if (getRecordSource(map[speakerId]) === "manual" && map[speakerId]?.downloaded) {
-      qaLog("download", "Manual download present — skipping prefetch record", {
-        speakerId,
-      });
-      return;
-    }
-    map[speakerId] = {
-      downloaded: true,
-      localPath: filePath,
-      downloadedAt: new Date().toISOString(),
-      source: "prefetch",
-    };
-    await saveDownloadMap(map);
-    qaLog("download", "Prefetch complete", { speakerId });
-  } catch (err) {
-    qaLog("download", "Prefetch failed", { speakerId, error: String(err) });
-    // Clean up any partial file so a later download starts fresh.
-    try {
-      await deleteAsync(filePath, { idempotent: true });
-    } catch {
-      // Ignore cleanup errors
-    }
-  } finally {
-    inFlightPrefetches.delete(speakerId);
-  }
 }
 
 // ─── Helper: resolve audio URI for playback ───────────────────────────────

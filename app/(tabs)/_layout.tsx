@@ -8,6 +8,7 @@ import { fonts } from "../../constants/theme";
 import { useTheme } from "../../hooks/useTheme";
 import { useSubscription } from "../../hooks/useSubscription";
 import { useTrialStatus } from "../../hooks/useTrialStatus";
+import { SpeakersProvider } from "../../hooks/useSpeakers";
 import { getRequiredGate } from "../../utils/accessControl";
 import { qaLog } from "../../utils/qaLog";
 
@@ -152,6 +153,7 @@ export default function TabLayout() {
   );
 
   return (
+    <SpeakersProvider>
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -291,5 +293,6 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    </SpeakersProvider>
   );
 }

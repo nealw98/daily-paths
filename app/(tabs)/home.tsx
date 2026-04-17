@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -19,8 +19,7 @@ import { useTypography } from "../../hooks/useTypography";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { useReading } from "../../hooks/useReading";
 import { useAppDate } from "../../contexts/AppDateContext";
-import { useSpeakers, getSpeakerAudioUrl } from "../../hooks/useSpeakers";
-import { prefetchSpeakerAudio } from "../../hooks/useSpeakerDownload";
+import { useSpeakers } from "../../hooks/useSpeakers";
 import { usePersonalPrayers } from "../../hooks/usePersonalPrayers";
 import { useSubscriptionContext } from "../../contexts/SubscriptionContext";
 import { fonts, layout, shadows } from "../../constants/theme";
@@ -84,17 +83,6 @@ export default function HomeTab() {
   const { speaker: featuredSpeaker, isStarted: speakerIsStarted, isListenAgain } = useFeaturedSpeaker(speakers);
   const { entries: journalEntries, createEntry } = useJournalStorage();
   const [journalEntryType, setJournalEntryType] = useState<EntryType | null>(null);
-
-  // Silently pre-cache the featured speaker's audio so the first tap into
-  // the player starts instantly instead of waiting on a cold Supabase stream.
-  // Fire and forget — failures are invisible and playback falls back to
-  // streaming as before. De-duped internally; safe to re-fire on remount.
-  useEffect(() => {
-    if (!featuredSpeaker) return;
-    const url = getSpeakerAudioUrl(featuredSpeaker);
-    if (!url) return;
-    void prefetchSpeakerAudio(featuredSpeaker.id, url);
-  }, [featuredSpeaker?.id]);
 
   // Notebook row metadata — reuses the same entries array the Notebook tab
   // renders, and the same pure streak util, so numbers are guaranteed to
