@@ -561,7 +561,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                     style={styles.favoritedIcon}
                   />
                   <Text style={[styles.favoritedLabel, { color: colors.primaryContainer }]}>
-                    Favorited
+                    Favorites
                   </Text>
                 </TouchableOpacity>
                 <View style={styles.actionsRight}>
@@ -592,6 +592,8 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                   </TouchableOpacity>
                 </View>
               </View>
+
+              <View style={[styles.sectionSeparator, { backgroundColor: colors.ghostBorder }]} />
 
               <View style={styles.notificationSection}>
                 <View style={styles.notificationUtilityHeader}>
@@ -692,15 +694,17 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                   </View>
                 ) : null}
               </View>
+
+              <View style={[styles.sectionSeparator, { backgroundColor: colors.ghostBorder }]} />
+
+              <ReadingFeedback
+                readingId={reading.id}
+                dayOfYear={getScheduledDayOfYear(reading.date)}
+                readingTitle={reading.title}
+                readingDate={reading.date}
+              />
             </Pressable>
 
-            {/* Reading Feedback */}
-            <ReadingFeedback
-              readingId={reading.id}
-              dayOfYear={getScheduledDayOfYear(reading.date)}
-              readingTitle={reading.title}
-              readingDate={reading.date}
-            />
           </ScrollView>
         </Animated.View>
 
@@ -809,9 +813,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   notificationSection: {
-    marginTop: 40,
+    marginTop: 8,
     marginBottom: 20,
     gap: 10,
+  },
+  sectionSeparator: {
+    height: 1,
+    marginVertical: 10,
   },
   notificationUtilityHeader: {
     flexDirection: "row",

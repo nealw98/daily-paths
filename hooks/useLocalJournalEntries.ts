@@ -15,6 +15,7 @@ export type { EntryType };
  */
 
 const STORAGE_KEY = "@daily_paths_local_journal";
+const MIGRATIONS_KEY = "@daily_paths_journal_migrations";
 
 export interface JournalEntry {
   id: string;
@@ -43,6 +44,58 @@ async function readEntries(): Promise<JournalEntry[]> {
 
 async function writeEntries(entries: JournalEntry[]): Promise<void> {
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+}
+
+/**
+ * One-time migrations run before entries are read.
+ *
+ * - `spot_check_control_merged` (2026-04): the Spot Check prompt
+ *   `control` was merged into `my_part`. For every stored spot_check
+ *   entry, if `structured_content.control` has a value, prepend it to
+ *   the top of `my_part` (blank line separator when both exist) and
+ *   drop the `control` key. Leaves `updated_at` untouched so sort
+ *   order is unaffected.
+ */
+async function runMigrations(): Promise<void> {
+  try {
+    const rawFlags = await AsyncStorage.getItem(MIGRATIONS_KEY);
+    const done: Record<string, boolean> = rawFlags ? JSON.parse(rawFlags) : {};
+
+    if (!done.spot_check_control_merged) {
+      const entries = await readEntries();
+      let changed = false;
+      const next = entries.map((entry) => {
+        if (entry.entry_type !== "spot_check") return entry;
+        const sc = entry.structured_content;
+        if (!sc || typeof sc !== "object") return entry;
+        const control = (sc as Record<string, unknown>).control;
+        if (typeof control !== "string" || !control.trim()) return entry;
+
+        const currentMyPart =
+          typeof (sc as Record<string, unknown>).my_part === "string"
+            ? ((sc as Record<string, unknown>).my_part as string)
+            : "";
+        const mergedMyPart = currentMyPart.trim()
+          ? `${control.trim()}\n\n${currentMyPart.trim()}`
+          : control.trim();
+
+        const { control: _removed, ...rest } = sc as Record<string, unknown>;
+        changed = true;
+        return {
+          ...entry,
+          structured_content: { ...rest, my_part: mergedMyPart },
+        };
+      });
+      if (changed) {
+        await writeEntries(next);
+        qaLog("journal", "Migration: spot_check control merged into my_part");
+      }
+      done.spot_check_control_merged = true;
+      await AsyncStorage.setItem(MIGRATIONS_KEY, JSON.stringify(done));
+    }
+  } catch (err) {
+    qaLog("journal", "Migration error", { error: String(err) });
+  }
 }
 
 // Map entry_type to the correct analytics event name
@@ -88,6 +141,7 @@ export function useLocalJournalEntries() {
         setLoading(true);
       }
       setError(null);
+      await runMigrations();
       const data = await readEntries();
       if (mounted.current) setEntries(data);
     } catch (err) {

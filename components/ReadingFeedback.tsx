@@ -194,11 +194,9 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 32,
-    paddingVertical: 24,
+    paddingVertical: 8,
     paddingHorizontal: 20,
     alignItems: 'center',
-    marginBottom: 82, // Space for action bar
   },
   question: {
     fontFamily: fonts.bodyFamilyRegular,
