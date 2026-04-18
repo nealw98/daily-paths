@@ -392,7 +392,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   }, [reading.id]);
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.surface }]} edges={["top", "left", "right"]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.surface }]} edges={["left", "right"]}>
       <View style={[styles.container, { backgroundColor: colors.surface }]}>
         <TealHeader
           title={headerTitle}

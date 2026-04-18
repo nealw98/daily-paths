@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../../hooks/useTheme";
 import { fonts, typography as staticTypography } from "../../constants/theme";
 
@@ -33,6 +34,7 @@ export const TealHeader: React.FC<TealHeaderProps> = ({
 }) => {
   const { colors } = useTheme();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   return (
     <View
@@ -40,6 +42,7 @@ export const TealHeader: React.FC<TealHeaderProps> = ({
         styles.container,
         {
           backgroundColor: colors.secondary,
+          paddingTop: insets.top + 16,
         },
       ]}
     >

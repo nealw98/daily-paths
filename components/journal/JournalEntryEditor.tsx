@@ -370,7 +370,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.surface }]}
-      edges={["top"]}
+      edges={[]}
     >
       <KeyboardAvoidingView
         style={styles.flex}

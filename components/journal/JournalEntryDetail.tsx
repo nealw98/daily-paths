@@ -506,7 +506,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.surface }]}
-      edges={["top"]}
+      edges={[]}
     >
       <TealHeader
         title={catLabel}

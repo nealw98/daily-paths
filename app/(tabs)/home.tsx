@@ -266,7 +266,7 @@ export default function HomeTab() {
   }
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: colors.surface }]} edges={["top"]}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.surface }]} edges={[]}>
       <TealHeader
         title={new Date().toLocaleDateString("en-US", {
           weekday: "long",

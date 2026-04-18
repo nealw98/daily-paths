@@ -200,7 +200,7 @@ function SpeakersTabContent() {
     return (
       <SafeAreaView
         style={[styles.container, { backgroundColor: colors.surface }]}
-        edges={["top"]}
+        edges={[]}
       >
         <TealHeader
           title="Audio Player"
@@ -223,7 +223,7 @@ function SpeakersTabContent() {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.surface }]}
-      edges={["top"]}
+      edges={[]}
     >
       <TealHeader title="Speakers" />
       <SpeakersBrowse

@@ -64,7 +64,7 @@ export const GratitudeScreen: React.FC<GratitudeScreenProps> = ({ onBack }) => {
     return (
       <SafeAreaView
         style={[styles.container, { backgroundColor: colors.background }]}
-        edges={["top"]}
+        edges={[]}
       >
         <GratitudeHistory entries={history} onBack={() => setView("today")} />
       </SafeAreaView>

@@ -62,7 +62,7 @@ export default function FavoritesScreen() {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.surface }]}
-      edges={["top"]}
+      edges={[]}
     >
       <TealHeader title="Favorites" onBack={() => router.back()} />
       {bookmarks.length === 0 ? (

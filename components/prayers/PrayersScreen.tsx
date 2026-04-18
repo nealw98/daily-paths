@@ -491,7 +491,7 @@ export const PrayersScreen: React.FC = () => {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.surface }]}
-      edges={["top"]}
+      edges={[]}
     >
       {/* Teal Gradient Header */}
       <TealHeader title="Prayers" />

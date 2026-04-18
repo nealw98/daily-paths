@@ -218,7 +218,7 @@ function JournalTabContent() {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.surface }]}
-      edges={["top"]}
+      edges={[]}
     >
       <TealHeader title="Notebook" />
       <JournalTimeline

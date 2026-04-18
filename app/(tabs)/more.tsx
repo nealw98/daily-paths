@@ -183,7 +183,7 @@ export default function MoreTab() {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.surface }]}
-      edges={["top"]}
+      edges={[]}
     >
       <TealHeader
         title="Settings"
