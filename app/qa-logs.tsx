@@ -39,6 +39,7 @@ import {
   type LifetimeAccessDiagnostics,
 } from "../utils/paidAppDetector";
 import { useSubscriptionContext } from "../contexts/SubscriptionContext";
+import { QA_REFLECTION_IMAGE_OVERRIDE_KEY } from "./(tabs)/home";
 import { useSubscription } from "../hooks/useSubscription";
 import {
   exportQaTransferToFile,
@@ -77,6 +78,38 @@ export default function QaLogsScreen() {
   const [refreshingLifetime, setRefreshingLifetime] = React.useState(false);
   const [accessStatesExpanded, setAccessStatesExpanded] = React.useState(false);
   const [lifetimeDiagExpanded, setLifetimeDiagExpanded] = React.useState(false);
+  const [reflectionImageInput, setReflectionImageInput] = React.useState("");
+  const [reflectionImageStatus, setReflectionImageStatus] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    AsyncStorage.getItem(QA_REFLECTION_IMAGE_OVERRIDE_KEY)
+      .then((value) => {
+        if (value) {
+          setReflectionImageInput(value);
+          setReflectionImageStatus(`Override active: reflections-${value}.webp`);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSetReflectionImage = async () => {
+    const trimmed = reflectionImageInput.trim().replace(/^reflections-/, "").replace(/\.webp$/, "");
+    if (!/^\d+$/.test(trimmed)) {
+      setReflectionImageStatus("Enter the image number (e.g. 33 for reflections-33.webp).");
+      return;
+    }
+    await AsyncStorage.setItem(QA_REFLECTION_IMAGE_OVERRIDE_KEY, trimmed);
+    setReflectionImageInput(trimmed);
+    setReflectionImageStatus(`Override set to reflections-${trimmed}.webp. Reloading...`);
+    setTimeout(() => Updates.reloadAsync().catch(() => {}), 250);
+  };
+
+  const handleClearReflectionImage = async () => {
+    await AsyncStorage.removeItem(QA_REFLECTION_IMAGE_OVERRIDE_KEY);
+    setReflectionImageInput("");
+    setReflectionImageStatus("Override cleared. Reloading...");
+    setTimeout(() => Updates.reloadAsync().catch(() => {}), 250);
+  };
 
   const loadLifetimeDiagnostics = React.useCallback(async () => {
     const diagnostics = await getLifetimeAccessDiagnostics();
@@ -708,6 +741,53 @@ export default function QaLogsScreen() {
           </TouchableOpacity>
           {updateStatus && (
             <Text style={[styles.meta, { width: "100%" }]}>{updateStatus}</Text>
+          )}
+        </View>
+
+        <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>
+          Screenshot: Reflection Image
+        </Text>
+        <View style={styles.actionsRow}>
+          <TextInput
+            style={{
+              flexBasis: "100%",
+              borderWidth: 1,
+              borderColor: colors.mist,
+              borderRadius: 8,
+              paddingHorizontal: 10,
+              paddingVertical: 8,
+              fontFamily: fonts.bodyFamilyRegular,
+              fontSize: 14,
+              color: colors.ink,
+            }}
+            placeholder="Image number (e.g. 33) or reflections-33.webp"
+            placeholderTextColor="#9ca3af"
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="default"
+            value={reflectionImageInput}
+            onChangeText={setReflectionImageInput}
+          />
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleSetReflectionImage}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              Set & Reload
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleClearReflectionImage}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              Clear & Reload
+            </Text>
+          </TouchableOpacity>
+          {reflectionImageStatus && (
+            <Text style={[styles.meta, { width: "100%" }]}>{reflectionImageStatus}</Text>
           )}
         </View>
 

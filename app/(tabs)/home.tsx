@@ -1,4 +1,5 @@
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   View,
   Text,
@@ -49,15 +50,27 @@ const reflectionsContext = (require as any).context(
   false,
   /reflections-\d+\.webp$/
 );
-const REFLECTION_IMAGES = reflectionsContext
+const REFLECTION_IMAGE_KEYS = reflectionsContext
   .keys()
   .slice()
   .sort((a: string, b: string) => {
     const numA = parseInt(a.match(/reflections-(\d+)/)?.[1] ?? "0", 10);
     const numB = parseInt(b.match(/reflections-(\d+)/)?.[1] ?? "0", 10);
     return numA - numB;
-  })
-  .map((key: string) => reflectionsContext(key));
+  });
+const REFLECTION_IMAGES = REFLECTION_IMAGE_KEYS.map((key: string) => reflectionsContext(key));
+const REFLECTION_IMAGE_BY_NUMBER: Record<number, any> = REFLECTION_IMAGE_KEYS.reduce(
+  (acc: Record<number, any>, key: string) => {
+    const match = key.match(/reflections-(\d+)/);
+    if (match) acc[parseInt(match[1], 10)] = reflectionsContext(key);
+    return acc;
+  },
+  {},
+);
+
+// QA-only: pin the home hero image for App Store screenshots. Value is the
+// image number from the filename (e.g. "33" for reflections-33.webp).
+export const QA_REFLECTION_IMAGE_OVERRIDE_KEY = "qa:reflection-image-override";
 
 function getReflectionImageForDate(date: Date) {
   // Local-calendar day-of-year (1-366, with Feb 29 stably pinned to slot 60
@@ -83,6 +96,23 @@ export default function HomeTab() {
   const { speaker: featuredSpeaker, isStarted: speakerIsStarted, isListenAgain } = useFeaturedSpeaker(speakers);
   const { entries: journalEntries, createEntry } = useJournalStorage();
   const [journalEntryType, setJournalEntryType] = useState<EntryType | null>(null);
+  const [reflectionImageOverride, setReflectionImageOverride] = useState<number | null>(null);
+
+  useEffect(() => {
+    AsyncStorage.getItem(QA_REFLECTION_IMAGE_OVERRIDE_KEY)
+      .then((value) => {
+        if (!value) return;
+        const parsed = parseInt(value, 10);
+        if (Number.isFinite(parsed) && REFLECTION_IMAGE_BY_NUMBER[parsed]) {
+          setReflectionImageOverride(parsed);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const heroImage = reflectionImageOverride != null
+    ? REFLECTION_IMAGE_BY_NUMBER[reflectionImageOverride]
+    : getReflectionImageForDate(today);
 
   // Notebook row metadata — reuses the same entries array the Notebook tab
   // renders, and the same pure streak util, so numbers are guaranteed to
@@ -116,11 +146,11 @@ export default function HomeTab() {
   const greetingType = useMemo(
     () => ({
       fontFamily: fonts.cormorantGaramondMedium,
-      fontSize: Math.max(26, Math.round(textMetrics.h3FontSize * (32 / 24))),
-      lineHeight: Math.max(32, Math.round(textMetrics.h3FontSize * (32 / 24) * (38 / 32))),
+      fontSize: 36,
+      lineHeight: 44,
       letterSpacing: -0.5,
     }),
-    [textMetrics.h3FontSize],
+    [],
   );
 
   const heroLabelType = useMemo(
@@ -296,7 +326,7 @@ export default function HomeTab() {
           <View style={styles.heroClip}>
           {/* Top half: hero image with label + title */}
           <ImageBackground
-            source={getReflectionImageForDate(today)}
+            source={heroImage}
             resizeMode="cover"
             style={styles.heroTop}
             imageStyle={styles.heroTopImage}
