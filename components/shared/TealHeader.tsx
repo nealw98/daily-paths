@@ -67,7 +67,15 @@ export const TealHeader: React.FC<TealHeaderProps> = ({
               {eyebrow}
             </Text>
           ) : null}
-          <Text style={[styles.title, { color: colors.onSecondary }]}>{title}</Text>
+          <Text
+            style={[
+              styles.title,
+              !eyebrow && styles.titleBold,
+              { color: colors.onSecondary },
+            ]}
+          >
+            {title}
+          </Text>
         </TouchableOpacity>
         {rightAction ?? null}
       </View>
@@ -108,5 +116,10 @@ const styles = StyleSheet.create({
   title: {
     ...staticTypography.h3,
     fontFamily: fonts.bodyFamilySemiBold,
+  },
+  titleBold: {
+    fontFamily: fonts.bodyFamilyBold,
+    fontSize: 24,
+    lineHeight: 30,
   },
 });
