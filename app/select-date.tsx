@@ -242,10 +242,10 @@ export default function SelectDateScreen() {
               <Ionicons name="heart" size={20} color={colors.secondary} />
             ) : null}
           </View>
-          <Text style={[styles.previewTitle, typography.h3, { color: colors.primaryContainer }]}>
+          <Text style={[typography.h3, styles.previewTitle, { color: colors.primaryContainer }]}>
             {reading?.title || "No reading available"}
           </Text>
-          <Text style={[styles.previewSubtitle, typography.body, { color: colors.onSurfaceVariant }]}>
+          <Text style={[typography.body, styles.previewSubtitle, { color: colors.onSurfaceVariant }]}>
             {reading?.thoughtForDay || "Select an available day to preview the Thought for the Day."}
           </Text>
           <SanctuaryButton
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
   topTitle: {},
   monthHeader: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 24,
     gap: 16,
@@ -298,9 +298,7 @@ const styles = StyleSheet.create({
   monthCopy: {
     flex: 1,
   },
-  monthTitle: {
-    marginBottom: 2,
-  },
+  monthTitle: {},
   monthSubtitle: {
     marginTop: 2,
     marginBottom: 14,
@@ -308,7 +306,6 @@ const styles = StyleSheet.create({
   monthNav: {
     flexDirection: "row",
     gap: 10,
-    paddingTop: 2,
   },
   monthNavButton: {
     width: 56,
@@ -386,8 +383,12 @@ const styles = StyleSheet.create({
   previewTitle: {
     marginTop: 8,
     marginBottom: 10,
+    fontSize: 18,
+    lineHeight: 24,
   },
-  previewSubtitle: {},
+  previewSubtitle: {
+    lineHeight: 22,
+  },
   previewButton: {
     marginTop: 28,
   },
