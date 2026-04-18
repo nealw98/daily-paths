@@ -104,7 +104,7 @@ export const PrayersScreen: React.FC = () => {
       const isBold = boldPhrases.some(p => p.toLowerCase() === part.toLowerCase());
       if (isBold) {
         return (
-          <Text key={i} style={{ fontFamily: fonts.loraBold, fontWeight: "700" }}>
+          <Text key={i} style={{ fontFamily: fonts.bodyFamilyBold, fontWeight: "700" }}>
             {part}
           </Text>
         );
@@ -672,7 +672,7 @@ const styles = StyleSheet.create({
   },
   prayerPreview: {
     ...staticTypography.bodyLarge,
-    fontFamily: fonts.loraRegular,
+    fontFamily: fonts.bodyFamily,
     marginTop: 6,
   },
   prayerBody: {
@@ -681,7 +681,7 @@ const styles = StyleSheet.create({
   },
   prayerText: {
     ...staticTypography.bodyLarge,
-    fontFamily: fonts.loraRegular,
+    fontFamily: fonts.bodyFamily,
   },
   prayerSource: {
     fontFamily: fonts.bodyFamilySemiBold,
