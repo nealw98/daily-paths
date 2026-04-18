@@ -70,7 +70,7 @@ export const TealHeader: React.FC<TealHeaderProps> = ({
           <Text
             style={[
               styles.title,
-              !eyebrow && styles.titleBold,
+              styles.titleBold,
               { color: colors.onSecondary },
             ]}
           >
