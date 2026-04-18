@@ -143,15 +143,18 @@ export default function HomeTab() {
   const isFree = gate === "paywall";
   const presentingPaywall = useRef(false);
 
-  const greetingType = useMemo(
-    () => ({
+  const greetingType = useMemo(() => {
+    // Scale the display-size greeting off the user's body text setting so it
+    // grows/shrinks with "Text size" like everything else. Medium preset
+    // (bodyFontSize: 18) is the baseline that produces the original 36pt.
+    const scale = textMetrics.bodyFontSize / 18;
+    return {
       fontFamily: fonts.cormorantGaramondMedium,
-      fontSize: 36,
-      lineHeight: 44,
+      fontSize: Math.round(36 * scale),
+      lineHeight: Math.round(44 * scale),
       letterSpacing: -0.5,
-    }),
-    [],
-  );
+    };
+  }, [textMetrics.bodyFontSize]);
 
   const heroLabelType = useMemo(
     () => ({
@@ -306,8 +309,6 @@ export default function HomeTab() {
         })}
         eyebrow="Al-Anon Daily Paths"
         hideIcon
-        titleSize={20}
-        titleWeight="semibold"
       />
       <ScrollView
         style={[styles.scroll, { backgroundColor: colors.surface }]}

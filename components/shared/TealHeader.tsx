@@ -19,7 +19,7 @@ interface TealHeaderProps {
   /** Optional override for the title font size (line height scales with it). */
   titleSize?: number;
   /** Optional override for the title font weight. */
-  titleWeight?: "bold" | "semibold";
+  titleWeight?: "bold" | "semibold" | "medium" | "regular";
   /** @deprecated No longer used. */
   leftIcon?: React.ReactNode;
 }
@@ -48,8 +48,8 @@ export const TealHeader: React.FC<TealHeaderProps> = ({
         styles.container,
         {
           backgroundColor: colors.secondary,
-          paddingTop: insets.top + (hideIcon ? 16 : 24),
-          paddingBottom: hideIcon ? 18 : 10,
+          paddingTop: insets.top + 24,
+          paddingBottom: 10,
         },
       ]}
     >
@@ -81,6 +81,8 @@ export const TealHeader: React.FC<TealHeaderProps> = ({
               { color: colors.onSecondary },
               titleSize ? { fontSize: titleSize, lineHeight: Math.round(titleSize * 1.25) } : null,
               titleWeight === "semibold" ? { fontFamily: fonts.bodyFamilySemiBold } : null,
+              titleWeight === "medium" ? { fontFamily: fonts.bodyFamilyMedium } : null,
+              titleWeight === "regular" ? { fontFamily: fonts.bodyFamily } : null,
             ]}
           >
             {title}

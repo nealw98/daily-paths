@@ -702,6 +702,7 @@ export const fonts = {
   cormorantGaramondMedium: "CormorantGaramond_500Medium",
   cormorantGaramondMediumItalic: "CormorantGaramond_500Medium_Italic",
   cormorantGaramondSemiBold: "CormorantGaramond_600SemiBold",
+  cormorantGaramondSemiBoldItalic: "CormorantGaramond_600SemiBold_Italic",
   cormorantGaramondBold: "CormorantGaramond_700Bold",
   labelFamily: "Manrope_600SemiBold",
 };

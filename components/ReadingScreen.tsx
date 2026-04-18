@@ -146,6 +146,18 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
 
   const { settings, setTextSize, setDailyReminderEnabled, setDailyReminderTime } = useSettings();
   const { typography } = useTypography();
+  const pageTitleType = useMemo(() => {
+    // Scale the display-size reading title off the user's body text setting
+    // so it grows/shrinks with "Text size". Medium preset (bodyFontSize: 18)
+    // is the baseline that produces the original 36pt.
+    const baseSize = 36 + (Platform.OS === "android" ? 4 : 0);
+    const baseLine = 44 + (Platform.OS === "android" ? 4 : 0);
+    const scale = typography.body.fontSize / 18;
+    return {
+      fontSize: Math.round(baseSize * scale),
+      lineHeight: Math.round(baseLine * scale),
+    };
+  }, [typography.body.fontSize]);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [tempReminderDate, setTempReminderDate] = useState<Date | null>(null);
 
@@ -413,7 +425,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
             <Pressable onPress={handleContentPress}>
               <View style={styles.pageIntro}>
                 <View style={styles.pageIntroCopy}>
-                  <Text style={[styles.pageTitle, { color: colors.primaryContainer }]}>
+                  <Text style={[styles.pageTitle, pageTitleType, { color: colors.primaryContainer }]}>
                     {reading.title}
                   </Text>
                   <Text style={[styles.pageDate, { color: colors.onSurfaceVariant }]}>

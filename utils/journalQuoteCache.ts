@@ -1,6 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "../lib/supabase";
-import { getScheduledDayOfYear } from "./dateUtils";
 import { qaLog } from "./qaLog";
 
 // One cache key holds the full list of journal quotes. The per-day pick is
@@ -130,18 +129,23 @@ export async function fetchAndCacheJournalQuotes(): Promise<CachedJournalQuotes 
 /**
  * Deterministically pick a journal quote for a given date.
  *
- * Uses the local-calendar day-of-year (1-366, with Feb 29 stably pinned to
- * slot 60 across leap and non-leap years) modulo the list length. Every
- * device on the same local calendar date resolves to the same quote, and
- * the rollover happens at each user's local midnight.
+ * Uses a continuous local-calendar day counter (days since 1970-01-01 in the
+ * user's local timezone) modulo the list length — so the sequence advances
+ * by one each local midnight and wraps from the last quote back to the
+ * first with no year-boundary reset. Every device on the same local date
+ * resolves to the same quote.
  */
 export function pickJournalQuoteForDate(
   date: Date,
   quotes: JournalQuote[]
 ): JournalQuote | null {
   if (!quotes || quotes.length === 0) return null;
-  const dayIndex = getScheduledDayOfYear(date);
+  // Treat the local Y/M/D as a UTC date so DST transitions (23/25‑hour
+  // days) can't shift the day counter by ±1.
+  const localEpochDays = Math.floor(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000
+  );
   const idx =
-    ((dayIndex % quotes.length) + quotes.length) % quotes.length;
+    ((localEpochDays % quotes.length) + quotes.length) % quotes.length;
   return quotes[idx];
 }

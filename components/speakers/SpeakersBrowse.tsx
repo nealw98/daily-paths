@@ -137,7 +137,7 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
               </View>
             )}
           </View>
-          <Text style={[styles.title, { color: colors.onSurfaceVariant, fontSize: Math.round(14 * scale), lineHeight: Math.round(19 * scale) }]} numberOfLines={2}>
+          <Text style={[styles.title, { color: colors.onSurfaceVariant, fontSize: Math.round(15 * scale), lineHeight: Math.round(20 * scale) }]} numberOfLines={2}>
             {speaker.title}
           </Text>
           {/* Badges row */}
