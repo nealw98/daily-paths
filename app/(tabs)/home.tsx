@@ -306,6 +306,8 @@ export default function HomeTab() {
         })}
         eyebrow="Al-Anon Daily Paths"
         hideIcon
+        titleSize={20}
+        titleWeight="semibold"
       />
       <ScrollView
         style={[styles.scroll, { backgroundColor: colors.surface }]}

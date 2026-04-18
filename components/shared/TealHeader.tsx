@@ -16,6 +16,10 @@ interface TealHeaderProps {
   eyebrow?: string;
   /** Custom back handler. Falls back to router.back(). */
   onBack?: () => void;
+  /** Optional override for the title font size (line height scales with it). */
+  titleSize?: number;
+  /** Optional override for the title font weight. */
+  titleWeight?: "bold" | "semibold";
   /** @deprecated No longer used. */
   leftIcon?: React.ReactNode;
 }
@@ -31,6 +35,8 @@ export const TealHeader: React.FC<TealHeaderProps> = ({
   hideIcon = false,
   eyebrow,
   onBack,
+  titleSize,
+  titleWeight = "bold",
 }) => {
   const { colors } = useTheme();
   const router = useRouter();
@@ -42,7 +48,8 @@ export const TealHeader: React.FC<TealHeaderProps> = ({
         styles.container,
         {
           backgroundColor: colors.secondary,
-          paddingTop: insets.top + 16,
+          paddingTop: insets.top + (hideIcon ? 16 : 24),
+          paddingBottom: hideIcon ? 18 : 10,
         },
       ]}
     >
@@ -72,6 +79,8 @@ export const TealHeader: React.FC<TealHeaderProps> = ({
               styles.title,
               styles.titleBold,
               { color: colors.onSecondary },
+              titleSize ? { fontSize: titleSize, lineHeight: Math.round(titleSize * 1.25) } : null,
+              titleWeight === "semibold" ? { fontFamily: fonts.bodyFamilySemiBold } : null,
             ]}
           >
             {title}
