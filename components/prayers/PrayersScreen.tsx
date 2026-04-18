@@ -122,10 +122,7 @@ export const PrayersScreen: React.FC = () => {
     const isExpanded = expandedPrayer === prayer.id;
     const isEditing = editingKind === "builtin" && editingId === prayer.id;
 
-    // Determine which phrases to bold in this prayer
     const boldPhrases: string[] = [];
-    if (prayer.id === "just-for-today") boldPhrases.push("Just for today");
-    if (prayer.id === "just-for-tonight") boldPhrases.push("Just for tonight");
 
     return (
       <SanctuaryCard
@@ -151,8 +148,9 @@ export const PrayersScreen: React.FC = () => {
               styles.prayerTitle,
               typography.h3,
               {
-                fontSize: typography.bodyLargeFontSize,
-                lineHeight: Math.round(typography.bodyLargeFontSize * 1.28),
+                fontFamily: fonts.bodyFamilyMedium,
+                fontSize: typography.bodySmallFontSize + 2,
+                lineHeight: Math.round((typography.bodySmallFontSize + 2) * (22 / 17)),
                 color: colors.primaryContainer,
               },
             ]}
@@ -180,9 +178,18 @@ export const PrayersScreen: React.FC = () => {
 
         {isExpanded && !isEditing && (
           <View style={styles.prayerBody}>
-            <Text style={[styles.prayerText, { color: colors.ink, fontSize: typography.bodySmall.fontSize, lineHeight: typography.bodySmall.lineHeight }]}>
-              {renderPrayerText(prayer.text, boldPhrases)}
-            </Text>
+            {prayer.text.split("\n\n").map((stanza, i) => (
+              <Text
+                key={i}
+                style={[
+                  styles.prayerText,
+                  i > 0 && { marginTop: Math.round(typography.bodySmall.fontSize * 0.65) },
+                  { color: colors.ink, fontSize: typography.bodySmall.fontSize, lineHeight: typography.bodySmall.lineHeight },
+                ]}
+              >
+                {renderPrayerText(stanza, boldPhrases)}
+              </Text>
+            ))}
             {prayer.source && (
               <Text style={[styles.prayerSource, { color: colors.seafoam, fontSize: typography.bodyFontSize - 2 }]}>
                 — {prayer.source.toUpperCase()}
@@ -366,8 +373,9 @@ export const PrayersScreen: React.FC = () => {
               styles.prayerTitle,
               typography.h3,
               {
-                fontSize: typography.bodyLargeFontSize,
-                lineHeight: Math.round(typography.bodyLargeFontSize * 1.28),
+                fontFamily: fonts.bodyFamilyMedium,
+                fontSize: typography.bodySmallFontSize + 2,
+                lineHeight: Math.round((typography.bodySmallFontSize + 2) * (22 / 17)),
                 color: colors.primaryContainer,
               },
             ]}
@@ -395,9 +403,18 @@ export const PrayersScreen: React.FC = () => {
 
         {isExpanded && !isEditing && (
           <View style={styles.prayerBody}>
-            <Text style={[styles.prayerText, { color: colors.ink, fontSize: typography.bodySmall.fontSize, lineHeight: typography.bodySmall.lineHeight }]}>
-              {prayer.text}
-            </Text>
+            {prayer.text.split("\n\n").map((stanza, i) => (
+              <Text
+                key={i}
+                style={[
+                  styles.prayerText,
+                  i > 0 && { marginTop: Math.round(typography.bodySmall.fontSize * 0.65) },
+                  { color: colors.ink, fontSize: typography.bodySmall.fontSize, lineHeight: typography.bodySmall.lineHeight },
+                ]}
+              >
+                {stanza}
+              </Text>
+            ))}
           </View>
         )}
 
@@ -663,7 +680,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingTop: 6,
-    paddingBottom: 8,
+    paddingBottom: 4,
   },
   prayerTitle: {
     flex: 1,
@@ -672,16 +689,16 @@ const styles = StyleSheet.create({
   },
   prayerPreview: {
     ...staticTypography.bodyLarge,
-    fontFamily: fonts.bodyFamily,
+    fontFamily: fonts.bodyFamilyMedium,
     marginTop: 6,
   },
   prayerBody: {
-    paddingTop: 6,
+    paddingTop: 4,
     paddingBottom: 8,
   },
   prayerText: {
     ...staticTypography.bodyLarge,
-    fontFamily: fonts.bodyFamily,
+    fontFamily: fonts.bodyFamilyMedium,
   },
   prayerSource: {
     fontFamily: fonts.bodyFamilySemiBold,

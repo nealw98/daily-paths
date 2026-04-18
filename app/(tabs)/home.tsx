@@ -178,14 +178,14 @@ export default function HomeTab() {
   );
 
   const notebookLabelType = useMemo(() => {
-    const fontSize = Math.max(14, Math.round(textMetrics.bodyFontSize * (17 / 18)));
+    const fontSize = textMetrics.bodySmallFontSize + 2;
     return {
       fontFamily: fonts.bodyFamilyMedium,
       fontSize,
       lineHeight: Math.round(fontSize * (22 / 17)),
       letterSpacing: 0,
     };
-  }, [textMetrics.bodyFontSize]);
+  }, [textMetrics.bodySmallFontSize]);
 
   const notebookTagType = useMemo(
     () => [
@@ -370,7 +370,12 @@ export default function HomeTab() {
                   style={[
                     ...notebookTagType,
                     styles.heroThoughtForDay,
-                    { color: colors.onSurface, fontFamily: fonts.loraRegular },
+                    {
+                      color: colors.onSurface,
+                      fontFamily: fonts.loraRegular,
+                      fontSize: typography.body.fontSize,
+                      lineHeight: typography.body.lineHeight,
+                    },
                   ]}
                   numberOfLines={3}
                 >

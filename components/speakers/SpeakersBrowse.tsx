@@ -65,6 +65,12 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
   const scale = textMetrics.bodyFontSize / 18;
   const { typography: dynamicTypography } = useTypography();
 
+  // Card title/subtitle sizing shared with the Daily Tools / Prayers cards on
+  // Home: title is always subtitle + 2pt so the weight hierarchy stays
+  // consistent at every text-size preset.
+  const cardTitleFontSize = textMetrics.bodySmallFontSize + 2;
+  const cardTitleLineHeight = Math.round(cardTitleFontSize * (22 / 17));
+
   // ─── Filter & Sort ──────────────────────────────────────────────────────
 
   const filteredAndSorted = useMemo(() => {
@@ -125,7 +131,7 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
         </View>
         <View style={styles.cardBody}>
           <View style={styles.nameRow}>
-            <Text style={[styles.speakerName, { color: colors.onSurface, fontSize: Math.round(17 * scale), lineHeight: Math.round(22 * scale) }]}>
+            <Text style={[styles.speakerName, { color: colors.onSurface, fontSize: cardTitleFontSize, lineHeight: cardTitleLineHeight }]}>
               {speaker.speaker}
             </Text>
             {nowPlayingSpeakerId === speaker.id && (
@@ -137,7 +143,7 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
               </View>
             )}
           </View>
-          <Text style={[styles.title, { color: colors.onSurfaceVariant, fontSize: Math.round(15 * scale), lineHeight: Math.round(20 * scale) }]} numberOfLines={2}>
+          <Text style={[styles.title, { color: colors.onSurfaceVariant, fontSize: textMetrics.bodySmallFontSize, lineHeight: textMetrics.bodySmallLineHeight }]} numberOfLines={2}>
             {speaker.title}
           </Text>
           {/* Badges row */}
@@ -381,7 +387,7 @@ const styles = StyleSheet.create({
 
   // ─── Speaker Info ──────────────────────────────────────────────────────────
   speakerName: {
-    fontFamily: fonts.bodyFamilySemiBold,
+    fontFamily: fonts.bodyFamilyMedium,
     fontSize: 17,
     lineHeight: 22,
     includeFontPadding: false,
