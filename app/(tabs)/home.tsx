@@ -190,6 +190,7 @@ export default function HomeTab() {
   const notebookTagType = useMemo(
     () => [
       typography.bodySmall,
+      { fontFamily: fonts.bodyFamilyMedium },
       styles.notebookTagExtras,
     ],
     [typography.bodySmall],

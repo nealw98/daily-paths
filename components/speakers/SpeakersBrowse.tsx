@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   title: {
-    fontFamily: fonts.bodyFamily,
+    fontFamily: fonts.bodyFamilyMedium,
     fontSize: 14,
     lineHeight: 19,
     letterSpacing: -0.1,
