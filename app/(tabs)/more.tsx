@@ -157,9 +157,20 @@ export default function MoreTab() {
   const handleSubmitFeedback = async () => {
     if (!feedbackText.trim()) return;
 
+    const email = feedbackContact.trim();
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if (!emailValid) {
+      Alert.alert(
+        "Email required",
+        "Please enter a valid email address so we can follow up if needed.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+
     const success = await submitFeedback(
       feedbackText.trim(),
-      feedbackContact.trim() || undefined
+      email
     );
 
     if (success) {
@@ -560,7 +571,7 @@ export default function MoreTab() {
               />
               <TextInput
                 style={[styles.feedbackInput, { borderColor: colors.mist, color: colors.ink }]}
-                placeholder="Optional: your email if you'd like a reply"
+                placeholder="Your email (required)"
                 placeholderTextColor={colors.textSecondary + "50"}
                 value={feedbackContact}
                 onChangeText={setFeedbackContact}
@@ -580,9 +591,9 @@ export default function MoreTab() {
                   style={[
                     styles.feedbackPrimary,
                     { backgroundColor: colors.deepTeal },
-                    !feedbackText.trim() && { opacity: 0.5 },
+                    (!feedbackText.trim() || !feedbackContact.trim()) && { opacity: 0.5 },
                   ]}
-                  disabled={!feedbackText.trim() || submittingFeedback}
+                  disabled={!feedbackText.trim() || !feedbackContact.trim() || submittingFeedback}
                   onPress={handleSubmitFeedback}
                   activeOpacity={0.8}
                 >

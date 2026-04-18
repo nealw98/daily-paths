@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
   },
   titleBold: {
     fontFamily: fonts.bodyFamilyBold,
-    fontSize: 28,
-    lineHeight: 34,
+    fontSize: 24,
+    lineHeight: 30,
   },
 });
