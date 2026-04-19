@@ -16,6 +16,7 @@ import {
   Lora_700Bold,
 } from "@expo-google-fonts/lora";
 import {
+  CormorantGaramond_400Regular,
   CormorantGaramond_500Medium,
   CormorantGaramond_500Medium_Italic,
   CormorantGaramond_600SemiBold,
@@ -104,6 +105,7 @@ export default function RootLayout() {
       Lora_400Regular_Italic,
       Lora_500Medium,
       Lora_700Bold,
+      CormorantGaramond_400Regular,
       CormorantGaramond_500Medium,
       CormorantGaramond_500Medium_Italic,
       CormorantGaramond_600SemiBold,

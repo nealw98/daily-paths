@@ -486,7 +486,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                         },
                       ]}
                       placeholder="What's on your mind..."
-                      placeholderTextColor={colors.textSecondary + "70"}
+                      placeholderTextColor={colors.textSecondary + "99"}
                       value={content}
                       onChangeText={setContent}
                       multiline
@@ -567,7 +567,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                         },
                       ]}
                       placeholder="What's on your mind..."
-                      placeholderTextColor={colors.textSecondary + "70"}
+                      placeholderTextColor={colors.textSecondary + "99"}
                       value={content}
                       onChangeText={setContent}
                       multiline
@@ -647,7 +647,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                 style={styles.gratitudeEntryCard}
                 contentStyle={[
                   styles.gratitudeEntryCardInner,
-                  { backgroundColor: "#e8f4f3" },
+                  { backgroundColor: "#dfe8e4" },
                 ]}
                 elevated
               >
@@ -670,7 +670,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                           { color: colors.text, fontSize: 16, lineHeight: 21 },
                         ]}
                         placeholder="I'm grateful for..."
-                        placeholderTextColor={colors.textSecondary + "70"}
+                        placeholderTextColor={colors.textSecondary + "99"}
                         value={item}
                         onChangeText={(text) =>
                           handleGratitudeItemChange(index, text)
@@ -819,71 +819,65 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                   )}
                 </SanctuaryCard>
 
-                <SanctuaryCard
-                  tone="lowest"
-                  style={styles.spotCheckEntryCard}
-                  contentStyle={[
-                    styles.spotCheckEntryCardInner,
-                    { backgroundColor: colors.surfaceContainerLowest },
-                  ]}
-                  elevated
-                >
-                  {categoryConfig.guidedPrompts.map((prompt, index) => {
-                    return (
-                      <View
-                        key={prompt.id}
+                {categoryConfig.guidedPrompts.map((prompt) => (
+                  <SanctuaryCard
+                    key={prompt.id}
+                    tone="lowest"
+                    style={styles.spotCheckEntryCard}
+                    contentStyle={[
+                      styles.spotCheckEntryCardInner,
+                      { backgroundColor: colors.surfaceContainerLowest },
+                    ]}
+                    elevated
+                  >
+                    <View style={styles.spotCheckPromptBlock}>
+                      <Text
                         style={[
-                          styles.spotCheckPromptBlock,
-                          index === categoryConfig.guidedPrompts!.length - 1
-                            ? styles.spotCheckPromptBlockLast
-                            : null,
-                          { borderBottomColor: colors.ghostBorder },
+                          styles.spotCheckPromptQuestion,
+                          {
+                            color: colors.onSurface,
+                            fontFamily:
+                              entryType === "spot_check"
+                                ? fonts.cormorantGaramondMedium
+                                : fonts.cormorantGaramondSemiBold,
+                            fontSize: Math.round((typography.bodySmall.fontSize + 4) * 1.3),
+                            lineHeight: Math.round((typography.bodySmall.fontSize + 4) * 1.3 * (22 / 17)),
+                          },
                         ]}
                       >
-                        <Text
-                          style={[
-                            styles.spotCheckPromptQuestion,
-                            {
-                              color: colors.primary,
-                              fontSize: 22,
-                              lineHeight: 28,
-                            },
-                          ]}
-                        >
-                          {prompt.question}
-                        </Text>
+                        {prompt.question}
+                      </Text>
 
-                        <TextInput
-                          style={[
-                            styles.spotCheckPromptInput,
-                            {
-                              color: colors.text,
-                              fontSize: 16,
-                              lineHeight: 21,
-                              backgroundColor: "#e8f4f3",
-                            },
-                          ]}
-                          value={guidedResponses[prompt.id] ?? ""}
-                          onChangeText={(text) =>
-                            handleGuidedResponseChange(prompt.id, text)
-                          }
-                          placeholder={
-                            prompt.hint
-                              ? `${prompt.placeholder} ${prompt.hint}`
-                              : prompt.placeholder
-                          }
-                          placeholderTextColor={colors.textSecondary + "70"}
-                          multiline
-                          textAlignVertical="top"
-                          autoCorrect
-                          autoCapitalize="sentences"
-                          scrollEnabled={false}
-                          selectionColor={colors.secondary}
-                        />
-                      </View>
-                    );
-                  })}
-                </SanctuaryCard>
+                      <TextInput
+                        style={[
+                          styles.spotCheckPromptInput,
+                          {
+                            color: colors.onSurfaceVariant,
+                            fontSize: typography.bodySmall.fontSize + 1,
+                            lineHeight: typography.bodySmall.lineHeight + 1,
+                            backgroundColor: "#dfe8e4",
+                          },
+                        ]}
+                        value={guidedResponses[prompt.id] ?? ""}
+                        onChangeText={(text) =>
+                          handleGuidedResponseChange(prompt.id, text)
+                        }
+                        placeholder={
+                          prompt.hint
+                            ? `${prompt.placeholder} ${prompt.hint}`
+                            : prompt.placeholder
+                        }
+                        placeholderTextColor={colors.textSecondary + "99"}
+                        multiline
+                        textAlignVertical="top"
+                        autoCorrect
+                        autoCapitalize="sentences"
+                        scrollEnabled={false}
+                        selectionColor={colors.secondary}
+                      />
+                    </View>
+                  </SanctuaryCard>
+                ))}
 
                 <View style={styles.gratitudeActionsRow}>
                   <TouchableOpacity
@@ -1299,12 +1293,14 @@ const styles = StyleSheet.create({
   spotCheckPromptQuestion: {
     ...staticTypography.bodySmall,
     fontFamily: fonts.cormorantGaramondSemiBold,
-    marginBottom: 10,
+    letterSpacing: -0.2,
+    marginTop: 6,
+    marginBottom: 16,
   },
   spotCheckPromptInput: {
     minHeight: 120,
     ...staticTypography.body,
-    fontFamily: fonts.bodyFamily,
+    fontFamily: fonts.bodyFamilyMedium,
     paddingHorizontal: 14,
     paddingTop: 12,
     paddingBottom: 14,

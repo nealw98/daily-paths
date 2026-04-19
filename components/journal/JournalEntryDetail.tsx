@@ -57,10 +57,12 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
   // Dynamic sizes for every text element in this screen — scale from
   // bodyLargeFontSize so the "medium" tier matches the prior static
   // values (20 question, 17 fallback content, 16 body/input, 15 aux).
-  const questionFontSize = Math.round(typography.bodyLargeFontSize * (20 / 19));
-  const questionLineHeight = Math.round(questionFontSize * (26 / 20));
-  const bodyFontSize = Math.round(typography.bodyLargeFontSize * (16 / 19));
-  const bodyLineHeight = Math.round(bodyFontSize * (22 / 16));
+  // Cormorant reads ~30% visually smaller than Manrope/Lora at the same
+  // point size, so bump the computed size to match the same visual weight.
+  const questionFontSize = Math.round((typography.bodySmall.fontSize + 4) * 1.3);
+  const questionLineHeight = Math.round(questionFontSize * (22 / 17));
+  const bodyFontSize = typography.bodySmall.fontSize + 1;
+  const bodyLineHeight = typography.bodySmall.lineHeight + 1;
   const auxFontSize = Math.round(typography.bodyLargeFontSize * (15 / 19));
   const auxLineHeight = Math.round(auxFontSize * (20 / 15));
   const [saving, setSaving] = useState(false);
@@ -265,7 +267,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
               autoCorrect
               autoCapitalize="sentences"
               placeholder="What's on your mind..."
-              placeholderTextColor={colors.textSecondary + "70"}
+              placeholderTextColor={colors.textSecondary + "99"}
               selectionColor={colors.secondary}
             />
             {renderCardFooter()}
@@ -313,7 +315,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
                     },
                   ]}
                   placeholder="I'm grateful for..."
-                  placeholderTextColor={colors.textSecondary + "70"}
+                  placeholderTextColor={colors.textSecondary + "99"}
                   value={item}
                   onChangeText={(text) => updateItem(index, text)}
                   multiline
@@ -406,9 +408,13 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
                 style={[
                   styles.guidedQuestion,
                   {
+                    fontFamily:
+                      entryType === "spot_check"
+                        ? fonts.cormorantGaramondMedium
+                        : fonts.cormorantGaramondSemiBold,
                     fontSize: questionFontSize,
                     lineHeight: questionLineHeight,
-                    color: colors.primary,
+                    color: colors.onSurface,
                   },
                 ]}
               >
@@ -439,7 +445,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
                     autoCorrect
                     autoCapitalize="sentences"
                     placeholder={prompt.placeholder ?? ""}
-                    placeholderTextColor={colors.textSecondary + "70"}
+                    placeholderTextColor={colors.textSecondary + "99"}
                     selectionColor={colors.secondary}
                   />
                   {renderCardFooter()}
@@ -456,7 +462,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
                         {
                           fontSize: bodyFontSize,
                           lineHeight: bodyLineHeight,
-                          color: colors.text,
+                          color: colors.onSurfaceVariant,
                         },
                       ]}
                     >
@@ -660,11 +666,13 @@ const styles = StyleSheet.create({
   guidedQuestion: {
     // fontSize/lineHeight applied inline (questionFontSize / questionLineHeight).
     fontFamily: fonts.cormorantGaramondSemiBold,
-    marginBottom: 8,
+    letterSpacing: -0.2,
+    marginTop: 6,
+    marginBottom: 16,
   },
   guidedResponse: {
     // fontSize/lineHeight applied inline (bodyFontSize / bodyLineHeight).
-    fontFamily: fonts.bodyFamily,
+    fontFamily: fonts.bodyFamilyMedium,
   },
   guidedEmpty: {
     // fontSize/lineHeight applied inline (auxFontSize / auxLineHeight).

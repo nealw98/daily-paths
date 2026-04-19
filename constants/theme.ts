@@ -178,7 +178,7 @@ function buildPalette(
 const oceanLightSemantic: SemanticPalette = {
   heroGradientStart: "#2D4C47",
   heroGradientEnd: "#214743",
-  background: "#F8FAF9",
+  background: "#f4f1ea",
   backgroundSecondary: "#F2F4F3",
   text: "#1C2524",
   textSecondary: "#5A6C69",
@@ -699,6 +699,7 @@ export const fonts = {
   loraItalic: "Lora_400Regular_Italic",
   loraMedium: "Lora_500Medium",
   loraBold: "Lora_700Bold",
+  cormorantGaramondRegular: "CormorantGaramond_400Regular",
   cormorantGaramondMedium: "CormorantGaramond_500Medium",
   cormorantGaramondMediumItalic: "CormorantGaramond_500Medium_Italic",
   cormorantGaramondSemiBold: "CormorantGaramond_600SemiBold",
