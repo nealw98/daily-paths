@@ -560,7 +560,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                 style={styles.thoughtCardContainer}
                 contentStyle={[
                   styles.thoughtCard,
-                  { backgroundColor: colors.primaryContainer },
+                  { backgroundColor: colors.secondary },
                 ]}
               >
                 <Text

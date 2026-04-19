@@ -509,23 +509,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
       style={[styles.container, { backgroundColor: colors.surface }]}
       edges={[]}
     >
-      <TealHeader
-        onBack={onBack}
-        rightAction={
-          <View style={styles.actionIcons}>
-            <TouchableOpacity onPress={handleShare} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              {Platform.OS === "ios" ? (
-                <MaterialIcons name="ios-share" size={22} color={colors.onPrimary} />
-              ) : (
-                <MaterialIcons name="share" size={22} color={colors.onPrimary} />
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleDelete} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons name="trash-outline" size={22} color={colors.onPrimary} />
-            </TouchableOpacity>
-          </View>
-        }
-      />
+      <TealHeader onBack={onBack} />
       <PageTitle title={catLabel} subtitle={`${dayOfWeek}, ${monthDay} · ${timeStr}`} />
 
       {/* Content */}
@@ -541,6 +525,29 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
         {editorType === "guided" && renderGuidedCards()}
         {editorType === "text" && renderTextCard()}
         {editorType === "items" && renderItemsCard()}
+
+        <View style={styles.detailActionsRow}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={handleShare}
+            style={[styles.detailActionButton, { borderColor: colors.onSurfaceVariant }]}
+          >
+            {Platform.OS === "ios" ? (
+              <MaterialIcons name="ios-share" size={16} color={colors.onSurfaceVariant} />
+            ) : (
+              <MaterialIcons name="share" size={16} color={colors.onSurfaceVariant} />
+            )}
+            <Text style={[styles.detailActionText, { color: colors.onSurfaceVariant }]}>Share</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={handleDelete}
+            style={[styles.detailActionButton, { borderColor: colors.danger }]}
+          >
+            <Ionicons name="trash-outline" size={16} color={colors.danger} />
+            <Text style={[styles.detailActionText, { color: colors.danger }]}>Delete</Text>
+          </TouchableOpacity>
+        </View>
         <View style={{ height: 100 }} />
       </KeyboardAwareScrollView>
     </SafeAreaView>
@@ -719,5 +726,30 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 20,
+  },
+  detailActionsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 16,
+    marginBottom: 12,
+    paddingHorizontal: 0,
+  },
+  detailActionButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: "transparent",
+  },
+  detailActionText: {
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 14,
+    lineHeight: 18,
   },
 });
