@@ -148,7 +148,7 @@ export const PrayersScreen: React.FC = () => {
               styles.prayerTitle,
               typography.h3,
               {
-                fontFamily: fonts.bodyFamilyMedium,
+                fontFamily: fonts.bodyFamilySemiBold,
                 fontSize: typography.bodySmallFontSize + 2,
                 lineHeight: Math.round((typography.bodySmallFontSize + 2) * (22 / 17)),
                 color: colors.onSurface,
@@ -373,7 +373,7 @@ export const PrayersScreen: React.FC = () => {
               styles.prayerTitle,
               typography.h3,
               {
-                fontFamily: fonts.bodyFamilyMedium,
+                fontFamily: fonts.bodyFamilySemiBold,
                 fontSize: typography.bodySmallFontSize + 2,
                 lineHeight: Math.round((typography.bodySmallFontSize + 2) * (22 / 17)),
                 color: colors.onSurface,

@@ -505,7 +505,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                       <TouchableOpacity
                         activeOpacity={0.8}
                         onPress={handleCancel}
-                        style={styles.journalFooterCancel}
+                        style={[styles.journalFooterCancel, { borderColor: colors.onSurfaceVariant }]}
                       >
                         <Text
                           style={[
@@ -647,10 +647,22 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                 style={styles.gratitudeEntryCard}
                 contentStyle={[
                   styles.gratitudeEntryCardInner,
-                  { backgroundColor: "#dfe8e4" },
+                  { backgroundColor: colors.surfaceContainerLowest },
                 ]}
                 elevated
               >
+                <Text
+                  style={[
+                    styles.gratitudePromptHeader,
+                    {
+                      color: colors.onSurface,
+                      fontSize: Math.round((typography.bodySmall.fontSize + 4) * 1.3),
+                      lineHeight: Math.round((typography.bodySmall.fontSize + 4) * 1.3 * (22 / 17)),
+                    },
+                  ]}
+                >
+                  Today I'm grateful for...
+                </Text>
                 {gratitudeItems.map((item, index) => (
                   <View
                     key={index}
@@ -660,16 +672,13 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                       { borderBottomColor: colors.ghostBorder },
                     ]}
                   >
-                    <View style={styles.gratitudeIconWrapper}>
-                      <Seedling size={18} color={categoryColor} />
-                    </View>
                     <View style={styles.gratitudeInputShell}>
                       <TextInput
                         style={[
                           styles.gratitudeInput,
                           { color: colors.text, fontSize: 16, lineHeight: 21 },
                         ]}
-                        placeholder="I'm grateful for..."
+                        placeholder={index === 0 ? "Something small is fine" : ""}
                         placeholderTextColor={colors.textSecondary + "99"}
                         value={item}
                         onChangeText={(text) =>
@@ -706,22 +715,13 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                     Add another
                   </Text>
                 </TouchableOpacity>
-
-                <Text
-                  style={[
-                    styles.gratitudeHint,
-                    { color: colors.textSecondary, fontSize: typography.bodyFontSize - 8 },
-                  ]}
-                >
-                  Write as many or as few as you'd like
-                </Text>
               </SanctuaryCard>
 
               <View style={styles.gratitudeActionsRow}>
                 <TouchableOpacity
                   activeOpacity={0.8}
                   onPress={handleCancel}
-                  style={styles.journalFooterCancel}
+                  style={[styles.journalFooterCancel, { borderColor: colors.onSurfaceVariant }]}
                 >
                   <Text
                     style={[
@@ -744,7 +744,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                 >
                   <Ionicons name="checkmark" size={14} color={colors.onPrimary} />
                   <Text style={[styles.journalFooterSaveText, { color: colors.onPrimary }]}>
-                    {saving ? "Saving..." : "Save"}
+                    {saving ? "Saving..." : "Save to notebook"}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -883,7 +883,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                   <TouchableOpacity
                     activeOpacity={0.8}
                     onPress={handleCancel}
-                    style={styles.journalFooterCancel}
+                    style={[styles.journalFooterCancel, { borderColor: colors.onSurfaceVariant }]}
                   >
                     <Text
                       style={[
@@ -1100,21 +1100,27 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   journalFooterCancel: {
-    minHeight: 32,
+    minHeight: 52,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 24,
     justifyContent: "center",
-    paddingHorizontal: 6,
+    alignItems: "center",
+    backgroundColor: "transparent",
   },
   journalFooterCancelText: {
     ...staticTypography.label,
+    fontSize: 16,
+    lineHeight: 22,
   },
   journalFooterSave: {
-    minHeight: 36,
-    borderRadius: 10,
-    paddingHorizontal: 14,
+    minHeight: 52,
+    borderRadius: 12,
+    paddingHorizontal: 24,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
+    gap: 8,
   },
   journalFooterSaveDisabled: {
     opacity: 0.55,
@@ -1122,6 +1128,8 @@ const styles = StyleSheet.create({
   journalFooterSaveText: {
     ...staticTypography.label,
     fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 16,
+    lineHeight: 22,
   },
   textIntroWrapper: {
     marginHorizontal: 20,
@@ -1204,8 +1212,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 10,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
+    paddingVertical: 8,
   },
   gratitudeItemRowLast: {
     borderBottomWidth: 0,
@@ -1215,6 +1222,10 @@ const styles = StyleSheet.create({
   },
   gratitudeInputShell: {
     flex: 1,
+    backgroundColor: "#dfe8e4",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   gratitudeInput: {
     flex: 1,
@@ -1247,6 +1258,12 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     textAlign: "center",
     marginTop: 4,
+  },
+  gratitudePromptHeader: {
+    fontFamily: fonts.cormorantGaramondSemiBold,
+    letterSpacing: -0.2,
+    marginTop: 6,
+    marginBottom: 16,
   },
   gratitudeActionsRow: {
     marginHorizontal: 20,
@@ -1295,7 +1312,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.cormorantGaramondSemiBold,
     letterSpacing: -0.2,
     marginTop: 6,
-    marginBottom: 16,
+    marginBottom: 24,
   },
   spotCheckPromptInput: {
     minHeight: 120,

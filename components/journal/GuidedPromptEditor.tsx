@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.cormorantGaramondSemiBold,
     letterSpacing: -0.2,
     marginTop: 6,
-    marginBottom: 16,
+    marginBottom: 24,
   },
   textInput: {
     // fontSize/lineHeight applied inline (inputFontSize / inputLineHeight).

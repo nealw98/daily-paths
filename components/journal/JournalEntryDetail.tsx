@@ -207,7 +207,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
       <TouchableOpacity
         activeOpacity={0.8}
         onPress={handleCancel}
-        style={styles.footerCancel}
+        style={[styles.footerCancel, { borderColor: colors.onSurfaceVariant }]}
       >
         <Text
           style={[styles.footerCancelText, { color: colors.onSurfaceVariant }]}
@@ -254,7 +254,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
                   fontSize: bodyFontSize,
                   lineHeight: bodyLineHeight,
                   color: colors.text,
-                  backgroundColor: colors.surfaceContainerLow,
+                  backgroundColor: "#dfe8e4",
                 },
               ]}
               value={draft.value}
@@ -299,12 +299,9 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
                 key={index}
                 style={[
                   styles.itemsEditRow,
-                  { backgroundColor: colors.surfaceContainerLow },
+                  { backgroundColor: "#dfe8e4" },
                 ]}
               >
-                <View style={styles.gratitudeIcon}>
-                  <Seedling size={16} color={catColor} />
-                </View>
                 <TextInput
                   style={[
                     styles.itemsEditInput,
@@ -364,9 +361,6 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
                 key={index}
                 style={[styles.gratitudeReadItem, { borderBottomColor: colors.border }]}
               >
-                <View style={styles.gratitudeIcon}>
-                  <Seedling size={16} color={catColor} />
-                </View>
                 <Text
                   style={[
                     styles.gratitudeReadText,
@@ -399,7 +393,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
               style={[
                 styles.guidedCard,
                 {
-                  backgroundColor: colors.surfaceContainerLow,
+                  backgroundColor: colors.surfaceContainerLowest,
                   borderColor: colors.ghostBorder,
                 },
               ]}
@@ -429,7 +423,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
                         fontSize: bodyFontSize,
                         lineHeight: bodyLineHeight,
                         color: colors.text,
-                        backgroundColor: colors.surface,
+                        backgroundColor: "#dfe8e4",
                         borderColor: colors.ghostBorder,
                       },
                     ]}
@@ -668,7 +662,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.cormorantGaramondSemiBold,
     letterSpacing: -0.2,
     marginTop: 6,
-    marginBottom: 16,
+    marginBottom: 24,
   },
   guidedResponse: {
     // fontSize/lineHeight applied inline (bodyFontSize / bodyLineHeight).
@@ -700,9 +694,13 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
   },
   footerCancel: {
-    minHeight: 32,
+    minHeight: 36,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 14,
     justifyContent: "center",
-    paddingHorizontal: 6,
+    alignItems: "center",
+    backgroundColor: "transparent",
   },
   footerCancelText: {
     ...staticTypography.label,

@@ -280,7 +280,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
             style={[
               styles.playerCardInner,
               {
-                backgroundColor: "#e8f4f3",
+                backgroundColor: "#dfe8e4",
               },
             ]}
           >
