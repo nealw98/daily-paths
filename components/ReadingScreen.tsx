@@ -428,7 +428,16 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                   <Text style={[styles.pageTitle, pageTitleType, { color: colors.primaryContainer }]}>
                     {reading.title}
                   </Text>
-                  <Text style={[styles.pageDate, { color: colors.onSurfaceVariant }]}>
+                  <Text
+                    style={[
+                      styles.pageDate,
+                      {
+                        color: colors.onSurfaceVariant,
+                        fontSize: typography.bodySmall.fontSize,
+                        lineHeight: typography.bodySmall.lineHeight,
+                      },
+                    ]}
+                  >
                     {fullDateLabel}
                   </Text>
                 </View>
