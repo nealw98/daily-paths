@@ -25,6 +25,7 @@ import {
 import { Seedling } from "../../components/icons";
 import { SanctuaryCard } from "../ui/Sanctuary";
 import { TealHeader } from "../shared/TealHeader";
+import { PageTitle } from "../ui/PageTitle";
 import { buildJournalEntryShareMessage, parseGratitudeItems } from "../../utils/journalShare";
 
 interface JournalEntryDetailProps {
@@ -509,7 +510,6 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
       edges={[]}
     >
       <TealHeader
-        title={catLabel}
         onBack={onBack}
         rightAction={
           <View style={styles.actionIcons}>
@@ -526,13 +526,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
           </View>
         }
       />
-
-      {/* Date & Time */}
-      <View style={[styles.dateBar, { backgroundColor: colors.surface }]}>
-        <Text style={[styles.dateText, { color: colors.onSurfaceVariant }]}>
-          {dayOfWeek}, {monthDay} · {timeStr}
-        </Text>
-      </View>
+      <PageTitle title={catLabel} subtitle={`${dayOfWeek}, ${monthDay} · ${timeStr}`} />
 
       {/* Content */}
       <KeyboardAwareScrollView

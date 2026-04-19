@@ -13,10 +13,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { useTypography } from "../../hooks/useTypography";
-import { fonts, layout, typography } from "../../constants/theme";
+import { fonts, layout, rule, typography } from "../../constants/theme";
 import type { Speaker } from "../../types/speakers";
-import { FieldShell } from "../ui/Sanctuary";
+import { FieldShell, SanctuaryCard } from "../ui/Sanctuary";
 import { EqualizerBars } from "./EqualizerBars";
+import { SortSheet, type SortMode as SortSheetMode } from "./SortSheet";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -49,6 +50,9 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
   const { settings } = useSettings();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("newest");
+  const [sortSheetOpen, setSortSheetOpen] = useState(false);
+  const [sortAnchor, setSortAnchor] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const sortButtonRef = React.useRef<View>(null);
   const [refreshing, setRefreshing] = useState(false);
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -202,67 +206,71 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
 
   // ─── Render: List Header ────────────────────────────────────────────────
 
+  const activeSortLabel = sortOptions.find((o) => o.key === sortMode)?.label ?? "Newest";
+
   const listHeader = (
     <View style={styles.listHeader}>
-      <FieldShell style={styles.searchContainer}>
-        <Ionicons
-          name="search"
-          size={Math.round(18 * scale)}
-          color={colors.textSecondary}
-          style={styles.searchIcon}
-        />
-        <TextInput
-          style={[
-            styles.searchInput,
-            {
-              color: colors.text,
-              fontFamily: fonts.bodyFamilyRegular,
-              fontSize: Math.round(15 * scale),
-            },
-          ]}
-          placeholder="Search speakers..."
-          placeholderTextColor={colors.textSecondary + "50"}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          returnKeyType="search"
-          autoCorrect={false}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity
-            onPress={() => setSearchQuery("")}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
+      <SanctuaryCard
+        tone="lowest"
+        style={styles.searchCard}
+        contentStyle={styles.searchCardContent}
+        elevated
+      >
+        <View style={styles.searchRow}>
+          <FieldShell style={styles.searchContainer}>
             <Ionicons
-              name="close-circle"
+              name="search"
               size={Math.round(18 * scale)}
-              color={colors.textSecondary}
+              color={colors.deepTeal}
+              style={styles.searchIcon}
             />
-          </TouchableOpacity>
-        )}
-      </FieldShell>
-
-      <View style={styles.sortRow}>
-        {sortOptions.map(({ key, label }) => {
-          const isActive = sortMode === key;
-          return (
-            <TouchableOpacity
-              key={key}
-              onPress={() => setSortMode(key)}
-              activeOpacity={0.7}
-              style={[styles.sortButton, isActive && { backgroundColor: colors.secondary }]}
-            >
-              <Text
-                style={[
-                  styles.sortLabel,
-                  { color: isActive ? colors.onSecondary : colors.onSurfaceVariant },
-                ]}
+            <TextInput
+              style={[
+                styles.searchInput,
+                {
+                  color: colors.text,
+                  fontFamily: fonts.bodyFamilyRegular,
+                  fontSize: Math.round(15 * scale),
+                },
+              ]}
+              placeholder="Search speakers..."
+              placeholderTextColor={colors.textSecondary + "99"}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              returnKeyType="search"
+              autoCorrect={false}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setSearchQuery("")}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                {label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+                <Ionicons
+                  name="close-circle"
+                  size={Math.round(18 * scale)}
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
+            )}
+          </FieldShell>
+          <TouchableOpacity
+            ref={sortButtonRef}
+            activeOpacity={0.7}
+            onPress={() => {
+              sortButtonRef.current?.measureInWindow((x, y, width, height) => {
+                setSortAnchor({ x, y, width, height });
+                setSortSheetOpen(true);
+              });
+            }}
+            style={[styles.sortButton, { borderColor: rule }]}
+          >
+            <Text style={[styles.sortButtonLabel, { color: colors.accent }]}>
+              {activeSortLabel}
+            </Text>
+            <Ionicons name="chevron-down" size={12} color={colors.accent} />
+          </TouchableOpacity>
+        </View>
+      </SanctuaryCard>
     </View>
   );
 
@@ -288,6 +296,13 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
         }
         showsVerticalScrollIndicator={false}
       />
+      <SortSheet
+        visible={sortSheetOpen}
+        sortMode={sortMode}
+        anchor={sortAnchor}
+        onSelect={(m) => setSortMode(m as SortSheetMode)}
+        onClose={() => setSortSheetOpen(false)}
+      />
     </View>
   );
 };
@@ -308,38 +323,53 @@ const styles = StyleSheet.create({
   },
 
   // ─── Search ────────────────────────────────────────────────────────────────
-  searchContainer: {
+  searchRow: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 10,
+  },
+  searchCard: {
     marginBottom: layout.spacing.sm,
+  },
+  searchCardContent: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  searchContainer: {
+    flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#dfe8e4",
+    paddingVertical: 8,
+    paddingHorizontal: 10,
   },
   searchIcon: {
     marginRight: layout.spacing.sm,
   },
   searchInput: {
     flex: 1,
+    minWidth: 0,
     fontSize: 15,
     lineHeight: 22,
     padding: 0,
   },
 
   // ─── Sort ──────────────────────────────────────────────────────────────────
-  sortRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: layout.spacing.sm,
-    paddingVertical: layout.spacing.sm,
-    marginBottom: layout.spacing.xs,
-  },
   sortButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
+    paddingVertical: 9,
+    borderRadius: 10,
+    borderWidth: 1,
   },
-  sortLabel: {
-    fontFamily: fonts.labelFamily,
-    fontSize: 13,
-    letterSpacing: 0.3,
+  sortButtonLabel: {
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 12.5,
   },
 
   cardTouchable: {
@@ -373,12 +403,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginRight: 16,
   },
-  cardInitials: {
-    fontFamily: fonts.headerFamilyBoldItalic,
-    fontSize: 48,
-    color: "rgba(255, 255, 255, 0.2)",
-    letterSpacing: 0,
-  },
   cardBody: {
     flex: 1,
     gap: 3,
@@ -398,7 +422,6 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     letterSpacing: -0.1,
   },
-  // ─── Badges Row ──────────────────────────────────────────────────────────
   badgesRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -430,16 +453,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 0.3,
   },
-
-  // ─── Headphone Watermark ───────────────────────────────────────────────────
-  headphoneWatermark: {
-    position: "absolute",
-    bottom: -8,
-    right: 4,
-    zIndex: 0,
-  },
-
-  // ─── Now-Playing Badge ─────────────────────────────────────────────────────
   nameRow: {
     flexDirection: "row",
     alignItems: "center",

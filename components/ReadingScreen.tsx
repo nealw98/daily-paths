@@ -406,10 +406,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.surface }]} edges={["left", "right"]}>
       <View style={[styles.container, { backgroundColor: colors.surface }]}>
-        <TealHeader
-          title={headerTitle}
-          onPress={onHeaderPress}
-        />
+        <TealHeader />
 
         <Animated.View
           style={{ flex: 1, transform: [{ translateX }] }}

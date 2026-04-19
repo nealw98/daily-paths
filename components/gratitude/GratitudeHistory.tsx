@@ -11,6 +11,7 @@ import { useTheme } from "../../hooks/useTheme";
 import { fonts } from "../../constants/theme";
 import type { GratitudeEntry } from "../../hooks/useGratitude";
 import { TealHeader } from "../shared/TealHeader";
+import { PageTitle } from "../ui/PageTitle";
 
 interface GratitudeHistoryProps {
   entries: GratitudeEntry[];
@@ -55,16 +56,8 @@ export const GratitudeHistory: React.FC<GratitudeHistoryProps> = ({
 
   return (
     <View style={styles.container}>
-      <TealHeader
-        title="Gratitude History"
-      />
-
-      <View style={[styles.actionRow, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={colors.accent} />
-          <Text style={[styles.backText, { color: colors.accent }]}>Back</Text>
-        </TouchableOpacity>
-      </View>
+      <TealHeader onBack={onBack} />
+      <PageTitle title="Gratitude history" subtitle="Past reflections" />
 
       <FlatList
         data={entries}

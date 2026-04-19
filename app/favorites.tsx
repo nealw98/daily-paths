@@ -13,6 +13,7 @@ import { useTheme } from "../hooks/useTheme";
 import { useTypography } from "../hooks/useTypography";
 import { fonts } from "../constants/theme";
 import { TealHeader } from "../components/shared/TealHeader";
+import { PageTitle } from "../components/ui/PageTitle";
 import { SanctuaryCard } from "../components/ui/Sanctuary";
 import { getBookmarks, type BookmarkData } from "../utils/bookmarkStorage";
 import { parseDateLocal } from "../utils/dateUtils";
@@ -64,7 +65,8 @@ export default function FavoritesScreen() {
       style={[styles.container, { backgroundColor: colors.surface }]}
       edges={[]}
     >
-      <TealHeader title="Favorites" onBack={() => router.back()} />
+      <TealHeader onBack={() => router.back()} />
+      <PageTitle title="Favorites" subtitle="Saved readings" />
       {bookmarks.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Ionicons

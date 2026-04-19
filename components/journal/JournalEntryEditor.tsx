@@ -34,6 +34,7 @@ import { EntryTypeIcon } from "../../utils/entryTypeIcon";
 import { Seedling } from "../../components/icons";
 import { FieldShell, SanctuaryButton, SanctuaryCard } from "../ui/Sanctuary";
 import { TealHeader } from "../shared/TealHeader";
+import { PageTitle } from "../ui/PageTitle";
 import { useAppDate } from "../../contexts/AppDateContext";
 
 interface JournalEntryEditorProps {
@@ -377,10 +378,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={0}
       >
-        <TealHeader
-          title={categoryLabel}
-          onBack={handleCancel}
-        />
+        <TealHeader onBack={handleCancel} />
 
         {entryType !== "journal" &&
         entryType !== "gratitude" &&
@@ -413,14 +411,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                     ]}
                     resizeMode="contain"
                   />
-                  <Text
-                    style={[
-                      styles.journalDateText,
-                      { color: colors.onSurfaceVariant },
-                    ]}
-                  >
-                    {isEditing ? "Editing Entry" : dateStr}
-                  </Text>
+                  <PageTitle title="Journal" subtitle={isEditing ? "Editing entry" : dateStr} size="lg" />
                   <SanctuaryCard
                     tone="lowest"
                     style={styles.journalQuoteCard}
@@ -496,43 +487,38 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                       scrollEnabled={false}
                       selectionColor={colors.secondary}
                     />
-                    <View
-                      style={[
-                        styles.journalEntryFooter,
-                        { borderTopColor: colors.ghostBorder },
-                      ]}
+                  </SanctuaryCard>
+                  <View style={styles.gratitudeActionsRow}>
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      onPress={handleCancel}
+                      style={[styles.journalFooterCancel, { borderColor: colors.onSurfaceVariant }]}
                     >
-                      <TouchableOpacity
-                        activeOpacity={0.8}
-                        onPress={handleCancel}
-                        style={[styles.journalFooterCancel, { borderColor: colors.onSurfaceVariant }]}
-                      >
-                        <Text
-                          style={[
-                            styles.journalFooterCancelText,
-                            { color: colors.onSurfaceVariant },
-                          ]}
-                        >
-                          Cancel
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        activeOpacity={0.8}
-                        onPress={handleSave}
-                        disabled={saving || !hasContent}
+                      <Text
                         style={[
-                          styles.journalFooterSave,
-                          { backgroundColor: colors.primaryContainer },
-                          (saving || !hasContent) && styles.journalFooterSaveDisabled,
+                          styles.journalFooterCancelText,
+                          { color: colors.onSurfaceVariant },
                         ]}
                       >
-                        <Ionicons name="checkmark" size={14} color={colors.onPrimary} />
-                        <Text style={[styles.journalFooterSaveText, { color: colors.onPrimary }]}>
-                          {saving ? "Saving..." : "Save"}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </SanctuaryCard>
+                        Cancel
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      onPress={handleSave}
+                      disabled={saving || !hasContent}
+                      style={[
+                        styles.journalFooterSave,
+                        { backgroundColor: colors.primaryContainer },
+                        (saving || !hasContent) && styles.journalFooterSaveDisabled,
+                      ]}
+                    >
+                      <Ionicons name="checkmark" size={14} color={colors.onPrimary} />
+                      <Text style={[styles.journalFooterSaveText, { color: colors.onPrimary }]}>
+                        {saving ? "Saving..." : "Save to notebook"}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               ) : (
                 <>
@@ -593,14 +579,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                 ]}
                 resizeMode="contain"
               />
-              <Text
-                style={[
-                  styles.journalDateText,
-                  { color: colors.onSurfaceVariant },
-                ]}
-              >
-                {isEditing ? "Editing Entry" : dateStr}
-              </Text>
+              <PageTitle title="Gratitude" subtitle={isEditing ? "Editing entry" : dateStr} size="lg" />
 
               <SanctuaryCard
                 tone="lowest"
@@ -767,14 +746,11 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                   ]}
                   resizeMode="contain"
                 />
-                <Text
-                  style={[
-                    styles.journalDateText,
-                    { color: colors.onSurfaceVariant },
-                  ]}
-                >
-                  {isEditing ? "Editing Entry" : dateStr}
-                </Text>
+                <PageTitle
+                  title={entryType === "spot_check" ? "Spot check" : "Nightly review"}
+                  subtitle={isEditing ? "Editing entry" : dateStr}
+                  size="lg"
+                />
 
                 <SanctuaryCard
                   tone="lowest"
@@ -906,7 +882,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                   >
                     <Ionicons name="checkmark" size={14} color={colors.onPrimary} />
                     <Text style={[styles.journalFooterSaveText, { color: colors.onPrimary }]}>
-                      {saving ? "Saving..." : "Save"}
+                      {saving ? "Saving..." : "Save to notebook"}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -1100,36 +1076,36 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   journalFooterCancel: {
-    minHeight: 52,
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 24,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    paddingVertical: 10,
+    paddingHorizontal: 22,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "transparent",
   },
   journalFooterCancelText: {
-    ...staticTypography.label,
-    fontSize: 16,
-    lineHeight: 22,
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 14,
+    lineHeight: 18,
   },
   journalFooterSave: {
-    minHeight: 52,
-    borderRadius: 12,
-    paddingHorizontal: 24,
+    flex: 1,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: 6,
   },
   journalFooterSaveDisabled: {
     opacity: 0.55,
   },
   journalFooterSaveText: {
-    ...staticTypography.label,
     fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: 14,
+    lineHeight: 18,
   },
   textIntroWrapper: {
     marginHorizontal: 20,
@@ -1266,12 +1242,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   gratitudeActionsRow: {
-    marginHorizontal: 20,
+    paddingHorizontal: 18,
     marginTop: 16,
     marginBottom: 12,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap: 10,
   },
   spotCheckContainer: {
     paddingTop: 0,

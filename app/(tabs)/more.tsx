@@ -29,6 +29,7 @@ import { shareApp, openAppStoreForRating } from "../../utils/rateShareTracking";
 import { qaLog } from "../../utils/qaLog";
 import { fonts, typography, shadows } from "../../constants/theme";
 import { TealHeader } from "../../components/shared/TealHeader";
+import { PageTitle } from "../../components/ui/PageTitle";
 import { useSubscription } from "../../hooks/useSubscription";
 import { useSubscriptionContext } from "../../contexts/SubscriptionContext";
 import RevenueCatUI from "react-native-purchases-ui";
@@ -196,9 +197,7 @@ export default function MoreTab() {
       style={[styles.container, { backgroundColor: colors.surface }]}
       edges={[]}
     >
-      <TealHeader
-        title="Settings"
-      />
+      <TealHeader />
 
       <ScrollView
         ref={scrollRef}

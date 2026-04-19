@@ -22,6 +22,7 @@ import type { EntryType } from "../../constants/journalCategories";
 import { fonts, typography as staticTypography } from "../../constants/theme";
 import { PRAYERS, type Prayer } from "../../constants/prayers";
 import { TealHeader } from "../shared/TealHeader";
+import { PageTitle } from "../ui/PageTitle";
 import { JournalCategoryPicker } from "../journal/JournalCategoryPicker";
 import { JournalEntryEditor } from "../journal/JournalEntryEditor";
 import { FieldShell, SanctuaryButton, SanctuaryCard } from "../ui/Sanctuary";
@@ -202,20 +203,20 @@ export const PrayersScreen: React.FC = () => {
           <View style={styles.formContainer}>
             <FieldShell style={styles.inputShell}>
               <TextInput
-                style={[styles.titleInput, { color: colors.ink, fontSize: typography.bodyLargeFontSize }]}
+                style={[styles.titleInput, { color: colors.text, fontSize: typography.bodyLargeFontSize }]}
                 value={editTitle}
                 onChangeText={setEditTitle}
                 placeholder="Prayer title"
-                placeholderTextColor={colors.textSecondary + "50"}
+                placeholderTextColor={colors.textSecondary + "99"}
               />
             </FieldShell>
             <FieldShell style={styles.inputShell}>
               <TextInput
-                style={[styles.bodyInput, { color: colors.ink, fontSize: typography.bodySmallFontSize, lineHeight: Math.round(typography.bodySmallFontSize * 1.625) }]}
+                style={[styles.bodyInput, { color: colors.text, fontSize: typography.bodySmallFontSize, lineHeight: Math.round(typography.bodySmallFontSize * 1.625) }]}
                 value={editText}
                 onChangeText={setEditText}
                 placeholder="Prayer text"
-                placeholderTextColor={colors.textSecondary + "50"}
+                placeholderTextColor={colors.textSecondary + "99"}
                 multiline
                 textAlignVertical="top"
               />
@@ -422,20 +423,20 @@ export const PrayersScreen: React.FC = () => {
           <View style={styles.formContainer}>
             <FieldShell style={styles.inputShell}>
               <TextInput
-                style={[styles.titleInput, { color: colors.ink, fontSize: typography.bodyLargeFontSize }]}
+                style={[styles.titleInput, { color: colors.text, fontSize: typography.bodyLargeFontSize }]}
                 value={editTitle}
                 onChangeText={setEditTitle}
                 placeholder="Prayer title"
-                placeholderTextColor={colors.textSecondary + "50"}
+                placeholderTextColor={colors.textSecondary + "99"}
               />
             </FieldShell>
             <FieldShell style={styles.inputShell}>
               <TextInput
-                style={[styles.bodyInput, { color: colors.ink, fontSize: typography.bodySmallFontSize, lineHeight: Math.round(typography.bodySmallFontSize * 1.625) }]}
+                style={[styles.bodyInput, { color: colors.text, fontSize: typography.bodySmallFontSize, lineHeight: Math.round(typography.bodySmallFontSize * 1.625) }]}
                 value={editText}
                 onChangeText={setEditText}
                 placeholder="Prayer text"
-                placeholderTextColor={colors.textSecondary + "50"}
+                placeholderTextColor={colors.textSecondary + "99"}
                 multiline
                 textAlignVertical="top"
               />
@@ -511,7 +512,8 @@ export const PrayersScreen: React.FC = () => {
       edges={[]}
     >
       {/* Teal Gradient Header */}
-      <TealHeader title="Prayers" />
+      <TealHeader />
+      <PageTitle title="Prayers" subtitle="Essential prayers for daily practice" />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -531,8 +533,9 @@ export const PrayersScreen: React.FC = () => {
         {/* Add New Prayer */}
         <SanctuaryCard
           tone="lowest"
-          style={styles.prayerSection}
+          style={[styles.prayerSection, showAddForm && styles.prayerSectionNoMargin]}
           contentStyle={styles.prayerSectionContent}
+          elevated
         >
           <TouchableOpacity
             style={styles.prayerHeader}
@@ -575,44 +578,51 @@ export const PrayersScreen: React.FC = () => {
             <View style={styles.formContainer}>
               <FieldShell style={styles.inputShell}>
                 <TextInput
-                  style={[styles.titleInput, { color: colors.ink, fontSize: typography.bodyLargeFontSize }]}
+                  style={[styles.titleInput, { color: colors.text, fontSize: typography.bodyLargeFontSize }]}
                   value={newTitle}
                   onChangeText={setNewTitle}
                   placeholder="Prayer title"
-                  placeholderTextColor={colors.textSecondary + "50"}
+                  placeholderTextColor={colors.textSecondary + "99"}
                 />
               </FieldShell>
               <FieldShell style={styles.inputShell}>
                 <TextInput
-                  style={[styles.bodyInput, { color: colors.ink, fontSize: typography.bodySmallFontSize, lineHeight: Math.round(typography.bodySmallFontSize * 1.625) }]}
+                  style={[styles.bodyInput, { color: colors.text, fontSize: typography.bodySmallFontSize, lineHeight: Math.round(typography.bodySmallFontSize * 1.625) }]}
                   value={newText}
                   onChangeText={setNewText}
                   placeholder="Prayer text"
-                  placeholderTextColor={colors.textSecondary + "50"}
+                  placeholderTextColor={colors.textSecondary + "99"}
                   multiline
                   textAlignVertical="top"
                 />
               </FieldShell>
-              <View style={styles.formActions}>
-                <TouchableOpacity
-                  onPress={() => { setNewTitle(""); setNewText(""); setShowAddForm(false); }}
-                  activeOpacity={0.8}
-                  style={[styles.personalActionButton, { borderColor: colors.ghostBorder, backgroundColor: colors.surface }]}
-                >
-                  <Text style={[styles.personalActionText, actionTextStyle, { color: colors.primaryContainer }]}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={handleSaveNew}
-                  disabled={!newTitle.trim() || !newText.trim()}
-                  activeOpacity={0.8}
-                  style={[styles.personalActionButton, { borderColor: colors.ghostBorder, backgroundColor: colors.surface }]}
-                >
-                  <Text style={[styles.personalActionText, actionTextStyle, { color: !newTitle.trim() || !newText.trim() ? colors.outlineVariant : colors.primaryContainer }]}>Save</Text>
-                </TouchableOpacity>
-              </View>
             </View>
           )}
         </SanctuaryCard>
+        {showAddForm && (
+          <View style={styles.prayerActionsRow}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => { setNewTitle(""); setNewText(""); setShowAddForm(false); }}
+              style={[styles.prayerFooterCancel, { borderColor: colors.onSurfaceVariant }]}
+            >
+              <Text style={[styles.prayerFooterCancelText, { color: colors.onSurfaceVariant }]}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleSaveNew}
+              disabled={!newTitle.trim() || !newText.trim()}
+              style={[
+                styles.prayerFooterSave,
+                { backgroundColor: colors.primaryContainer },
+                (!newTitle.trim() || !newText.trim()) && styles.prayerFooterSaveDisabled,
+              ]}
+            >
+              <Ionicons name="checkmark" size={14} color={colors.onPrimary} />
+              <Text style={[styles.prayerFooterSaveText, { color: colors.onPrimary }]}>Save</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {personalPrayers.length > 0 ? (
           <Text style={[styles.sectionEyebrow, { color: colors.onSurfaceVariant }]}>
@@ -659,6 +669,9 @@ const styles = StyleSheet.create({
   },
   prayerSection: {
     marginBottom: 20,
+  },
+  prayerSectionNoMargin: {
+    marginBottom: 0,
   },
   sectionEyebrow: {
     fontFamily: fonts.labelFamily,
@@ -731,11 +744,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   formContainer: {
-    paddingBottom: 16,
     gap: 12,
   },
   inputShell: {
     paddingVertical: 8,
+    backgroundColor: "#dfe8e4",
   },
   titleInput: {
     fontFamily: fonts.bodyFamilyRegular,
@@ -748,6 +761,46 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "flex-end",
     gap: 12,
+  },
+  prayerActionsRow: {
+    paddingHorizontal: 18,
+    marginTop: 10,
+    marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  prayerFooterCancel: {
+    borderRadius: 10,
+    borderWidth: 1.5,
+    paddingVertical: 10,
+    paddingHorizontal: 22,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "transparent",
+  },
+  prayerFooterCancelText: {
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 14,
+    lineHeight: 18,
+  },
+  prayerFooterSave: {
+    flex: 1,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  prayerFooterSaveDisabled: {
+    opacity: 0.55,
+  },
+  prayerFooterSaveText: {
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 14,
+    lineHeight: 18,
   },
   formButton: {
     minWidth: 120,

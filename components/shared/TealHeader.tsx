@@ -7,26 +7,29 @@ import { useTheme } from "../../hooks/useTheme";
 import { fonts, typography as staticTypography } from "../../constants/theme";
 
 interface TealHeaderProps {
-  title: string;
+  /** When provided (home screen), renders legacy eyebrow + title layout. */
+  title?: string;
+  /** Legacy: handler for the tappable title (home date). */
   onPress?: () => void;
   rightAction?: React.ReactNode;
-  /** If true, hides the back arrow (used on home screen). */
+  /** If true, hides the back button (used on home screen). */
   hideIcon?: boolean;
-  /** Optional eyebrow text above the title. */
+  /** When provided, renders above the title (home brand "Al-Anon Daily Paths"). */
   eyebrow?: string;
   /** Custom back handler. Falls back to router.back(). */
   onBack?: () => void;
-  /** Optional override for the title font size (line height scales with it). */
+  /** @deprecated No longer used. */
   titleSize?: number;
-  /** Optional override for the title font weight. */
+  /** @deprecated No longer used. */
   titleWeight?: "bold" | "semibold" | "medium" | "regular";
   /** @deprecated No longer used. */
   leftIcon?: React.ReactNode;
 }
 
 /**
- * Shared structural header for top-level screens.
- * Shows a back arrow by default; home screen hides it via hideIcon.
+ * Shared app header.
+ * - Sub-page mode (no title prop): "< Back" (muted) left, centered italic brand.
+ * - Home mode (title + eyebrow provided): legacy eyebrow over title layout.
  */
 export const TealHeader: React.FC<TealHeaderProps> = ({
   title,
@@ -35,100 +38,158 @@ export const TealHeader: React.FC<TealHeaderProps> = ({
   hideIcon = false,
   eyebrow,
   onBack,
-  titleSize,
-  titleWeight = "bold",
 }) => {
   const { colors } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
+  // Legacy home layout — eyebrow over title, no centered brand.
+  if (title) {
+    return (
+      <View
+        style={[
+          styles.legacyContainer,
+          {
+            backgroundColor: colors.secondary,
+            paddingTop: insets.top + 24,
+            paddingBottom: 10,
+          },
+        ]}
+      >
+        <View style={styles.legacyRow}>
+          {!hideIcon && (
+            <TouchableOpacity
+              onPress={onBack ?? (() => router.back())}
+              activeOpacity={0.7}
+              style={styles.legacyBackButton}
+            >
+              <Ionicons name="arrow-back" size={24} color={colors.onSecondary} />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            disabled={!onPress}
+            onPress={onPress}
+            activeOpacity={onPress ? 0.8 : 1}
+            style={styles.legacyTextBlock}
+          >
+            {eyebrow ? (
+              <Text style={[styles.legacyEyebrow, { color: "rgba(255,255,255,0.95)" }]}>
+                {eyebrow}
+              </Text>
+            ) : null}
+            <Text
+              style={[
+                styles.legacyTitle,
+                { color: colors.onSecondary },
+              ]}
+            >
+              {title}
+            </Text>
+          </TouchableOpacity>
+          {rightAction ?? null}
+        </View>
+      </View>
+    );
+  }
+
+  // Sub-page mode — brand-centered.
   return (
     <View
       style={[
         styles.container,
         {
           backgroundColor: colors.secondary,
-          paddingTop: insets.top + 24,
-          paddingBottom: 10,
+          paddingTop: insets.top + 8,
+          paddingBottom: 16,
         },
       ]}
     >
       <View style={styles.row}>
-        {!hideIcon && (
-          <TouchableOpacity
-            onPress={onBack ?? (() => router.back())}
-            activeOpacity={0.7}
-            style={styles.backButton}
-          >
-            <Ionicons name="arrow-back" size={24} color={colors.onSecondary} />
-          </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          disabled={!onPress}
-          onPress={onPress}
-          activeOpacity={onPress ? 0.8 : 1}
-          style={styles.textBlock}
-        >
-          {eyebrow ? (
-            <Text style={[styles.eyebrow, { color: colors.secondaryContainer }]}>
-              {eyebrow}
-            </Text>
-          ) : null}
-          <Text
-            style={[
-              styles.title,
-              styles.titleBold,
-              { color: colors.onSecondary },
-              titleSize ? { fontSize: titleSize, lineHeight: Math.round(titleSize * 1.25) } : null,
-              titleWeight === "semibold" ? { fontFamily: fonts.bodyFamilySemiBold } : null,
-              titleWeight === "medium" ? { fontFamily: fonts.bodyFamilyMedium } : null,
-              titleWeight === "regular" ? { fontFamily: fonts.bodyFamily } : null,
-            ]}
-          >
-            {title}
-          </Text>
-        </TouchableOpacity>
-        {rightAction ?? null}
+        <View style={styles.sideLeft}>
+          {!hideIcon && (
+            <TouchableOpacity
+              onPress={onBack ?? (() => router.back())}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={styles.backButton}
+            >
+              <Ionicons name="chevron-back" size={18} color="rgba(255,255,255,0.75)" />
+              <Text style={styles.backLabel}>Back</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        <Text numberOfLines={1} style={styles.brand}>
+          Al-Anon Daily Paths
+        </Text>
+        <View style={styles.sideRight}>{rightAction ?? null}</View>
       </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  // Sub-page (brand-centered) layout
   container: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 18,
+    paddingHorizontal: 18,
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+  },
+  sideLeft: {
+    flex: 1,
+    alignItems: "flex-start",
+  },
+  sideRight: {
+    flex: 1,
+    alignItems: "flex-end",
   },
   backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+  },
+  backLabel: {
+    fontFamily: fonts.bodyFamilyMedium,
+    fontSize: 14,
+    color: "rgba(255,255,255,0.75)",
+  },
+  brand: {
+    fontFamily: fonts.cormorantGaramondSemiBoldItalic,
+    fontSize: 25,
+    lineHeight: 30,
+    color: "rgba(255,255,255,0.95)",
+  },
+
+  // Legacy (home) layout
+  legacyContainer: {
+    paddingHorizontal: 20,
+  },
+  legacyRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  legacyBackButton: {
     width: 40,
     height: 40,
     alignItems: "center",
     justifyContent: "center",
   },
-  textBlock: {
+  legacyTextBlock: {
     flex: 1,
   },
-  eyebrow: {
-    // Cormorant Garamond italic — softer, editorial feel for the branded
-    // wordmark at the top of the home header. Only home uses an eyebrow
-    // today; if another screen adds one it'll inherit this treatment.
+  legacyEyebrow: {
     fontFamily: fonts.cormorantGaramondMediumItalic,
     fontSize: 15,
     lineHeight: 20,
     letterSpacing: 0.2,
     marginBottom: 2,
   },
-  title: {
+  legacyTitle: {
     ...staticTypography.h3,
-    fontFamily: fonts.bodyFamilySemiBold,
-  },
-  titleBold: {
     fontFamily: fonts.bodyFamilyBold,
     fontSize: 24,
     lineHeight: 30,

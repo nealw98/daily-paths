@@ -178,13 +178,13 @@ function buildPalette(
 const oceanLightSemantic: SemanticPalette = {
   heroGradientStart: "#2D4C47",
   heroGradientEnd: "#214743",
-  background: "#f4f1ea",
+  background: "#faf8f2",
   backgroundSecondary: "#F2F4F3",
   text: "#1C2524",
   textSecondary: "#5A6C69",
   accent: "#376662",
   highlight: "#BAECE6",
-  modalBackground: "#FFFFFF",
+  modalBackground: "#faf8f2",
   modalBorder: "#C6D2CF",
   cardBackground: "#EDF1EF",
   buttonPrimary: "#376662",
@@ -823,6 +823,8 @@ export const typography = {
     letterSpacing: 0.4,
   },
 };
+
+export const rule = "rgba(0,0,0,0.08)";
 
 export const shadows = {
   ambient: {

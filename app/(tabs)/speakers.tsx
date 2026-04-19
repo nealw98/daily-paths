@@ -13,6 +13,7 @@ import { useTrialStatus } from "../../hooks/useTrialStatus";
 import { useDownloadedSpeakerIds } from "../../hooks/useSpeakerDownload";
 import { canDownloadSpeakers } from "../../utils/accessControl";
 import { TealHeader } from "../../components/shared/TealHeader";
+import { PageTitle } from "../../components/ui/PageTitle";
 import { SpeakersBrowse } from "../../components/speakers/SpeakersBrowse";
 import { SpeakerDetail } from "../../components/speakers/SpeakerDetail";
 import { JournalCategoryPicker } from "../../components/journal/JournalCategoryPicker";
@@ -202,10 +203,7 @@ function SpeakersTabContent() {
         style={[styles.container, { backgroundColor: colors.surface }]}
         edges={[]}
       >
-        <TealHeader
-          title="Audio Player"
-          onBack={handleBack}
-        />
+        <TealHeader onBack={handleBack} />
         <SpeakerDetail
           speaker={selectedSpeaker}
           autoPlay={autoPlay}
@@ -225,7 +223,8 @@ function SpeakersTabContent() {
       style={[styles.container, { backgroundColor: colors.surface }]}
       edges={[]}
     >
-      <TealHeader title="Speakers" />
+      <TealHeader />
+      <PageTitle title="Speakers" subtitle="Browse the speaker library" />
       <SpeakersBrowse
         speakers={speakers}
         loading={loading}

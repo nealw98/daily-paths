@@ -13,6 +13,7 @@ import { JournalEntryEditor } from "../../components/journal/JournalEntryEditor"
 import { JournalEntryDetail } from "../../components/journal/JournalEntryDetail";
 import { JournalCategoryPicker } from "../../components/journal/JournalCategoryPicker";
 import { TealHeader } from "../../components/shared/TealHeader";
+import { PageTitle } from "../../components/ui/PageTitle";
 import { PremiumGate } from "../../components/PremiumGate";
 
 type JournalView = "timeline" | "editor" | "detail";
@@ -220,7 +221,8 @@ function JournalTabContent() {
       style={[styles.container, { backgroundColor: colors.surface }]}
       edges={[]}
     >
-      <TealHeader title="Notebook" />
+      <TealHeader />
+      <PageTitle title="Notebook" subtitle="Your journal entries" />
       <JournalTimeline
         entries={entries}
         stats={stats}
