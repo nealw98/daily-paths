@@ -151,7 +151,7 @@ export const PrayersScreen: React.FC = () => {
                 fontFamily: fonts.bodyFamilyMedium,
                 fontSize: typography.bodySmallFontSize + 2,
                 lineHeight: Math.round((typography.bodySmallFontSize + 2) * (22 / 17)),
-                color: colors.primaryContainer,
+                color: colors.onSurface,
               },
             ]}
           >
@@ -168,7 +168,7 @@ export const PrayersScreen: React.FC = () => {
           <Text
             style={[
               styles.prayerPreview,
-              { color: colors.ink, fontSize: typography.bodySmall.fontSize + 1, lineHeight: typography.bodySmall.lineHeight + 1 },
+              { color: colors.onSurfaceVariant, fontSize: typography.bodySmall.fontSize + 1, lineHeight: typography.bodySmall.lineHeight + 1 },
             ]}
             numberOfLines={2}
           >
@@ -184,7 +184,7 @@ export const PrayersScreen: React.FC = () => {
                 style={[
                   styles.prayerText,
                   i > 0 && { marginTop: Math.round(typography.bodySmall.fontSize * 0.85) },
-                  { color: colors.ink, fontSize: typography.bodySmall.fontSize + 1, lineHeight: typography.bodySmall.lineHeight + 1 },
+                  { color: colors.onSurfaceVariant, fontSize: typography.bodySmall.fontSize + 1, lineHeight: typography.bodySmall.lineHeight + 1 },
                 ]}
               >
                 {renderPrayerText(stanza, boldPhrases)}
@@ -376,7 +376,7 @@ export const PrayersScreen: React.FC = () => {
                 fontFamily: fonts.bodyFamilyMedium,
                 fontSize: typography.bodySmallFontSize + 2,
                 lineHeight: Math.round((typography.bodySmallFontSize + 2) * (22 / 17)),
-                color: colors.primaryContainer,
+                color: colors.onSurface,
               },
             ]}
           >
@@ -393,7 +393,7 @@ export const PrayersScreen: React.FC = () => {
           <Text
             style={[
               styles.prayerPreview,
-              { color: colors.ink, fontSize: typography.bodySmall.fontSize + 1, lineHeight: typography.bodySmall.lineHeight + 1 },
+              { color: colors.onSurfaceVariant, fontSize: typography.bodySmall.fontSize + 1, lineHeight: typography.bodySmall.lineHeight + 1 },
             ]}
             numberOfLines={2}
           >
@@ -409,7 +409,7 @@ export const PrayersScreen: React.FC = () => {
                 style={[
                   styles.prayerText,
                   i > 0 && { marginTop: Math.round(typography.bodySmall.fontSize * 0.85) },
-                  { color: colors.ink, fontSize: typography.bodySmall.fontSize + 1, lineHeight: typography.bodySmall.lineHeight + 1 },
+                  { color: colors.onSurfaceVariant, fontSize: typography.bodySmall.fontSize + 1, lineHeight: typography.bodySmall.lineHeight + 1 },
                 ]}
               >
                 {stanza}

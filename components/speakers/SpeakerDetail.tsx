@@ -79,17 +79,20 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
   const scale = textMetrics.bodyFontSize / 18;
   const hasLoadedRef = useRef(false);
 
-  const titleType = useMemo(
-    () => ({
-      // Matches the reading-page title treatment.
+  const titleType = useMemo(() => {
+    // Additive scaling around the Medium preset so title jumps mirror the
+    // body-text jumps (2/3/4/4) instead of compounding via a multiplier.
+    const baseSize = 30 + (Platform.OS === "android" ? 4 : 0);
+    const baseLine = 38 + (Platform.OS === "android" ? 4 : 0);
+    const delta = textMetrics.bodyFontSize - 18;
+    return {
       fontFamily: fonts.loraRegular,
-      fontSize: 30 + (Platform.OS === "android" ? 4 : 0),
-      lineHeight: 38 + (Platform.OS === "android" ? 4 : 0),
+      fontSize: Math.round(baseSize + delta),
+      lineHeight: Math.round(baseLine + delta),
       fontWeight: "400" as const,
       letterSpacing: -0.9,
-    }),
-    [],
-  );
+    };
+  }, [textMetrics.bodyFontSize]);
 
   const audioUrl = getSpeakerAudioUrl(speaker);
   const download = useSpeakerDownload(speaker.id, audioUrl);
