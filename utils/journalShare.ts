@@ -1,7 +1,6 @@
 import type { JournalEntry } from "../hooks/useJournalStorage";
 import {
   getCategoryById,
-  getCategoryLabel,
   type EntryType,
 } from "../constants/journalCategories";
 
@@ -18,26 +17,25 @@ export function parseGratitudeItems(content: string | null): string[] {
 export function buildJournalEntryShareMessage(entry: JournalEntry): string {
   const entryType = (entry.entry_type || "journal") as EntryType;
   const catConfig = getCategoryById(entryType);
-  const catLabel = getCategoryLabel(entryType);
   const editorType = catConfig?.editorType ?? "text";
 
-  const entryDate = new Date(entry.created_at);
-  const dayOfWeek = entryDate.toLocaleDateString("en-US", { weekday: "long" });
-  const monthDay = entryDate.toLocaleDateString("en-US", { month: "long", day: "numeric" });
-
   const lines: string[] = [];
-  lines.push(`${dayOfWeek}, ${monthDay}`);
-  lines.push("");
-  lines.push(catLabel.toUpperCase());
-  lines.push("");
 
   if (editorType === "text") {
-    if (entry.content) lines.push(entry.content.trim());
+    const content = entry.content?.trim();
+    if (content) {
+      lines.push("My thoughts:");
+      lines.push(content);
+    }
   } else if (editorType === "items") {
     const items = entry.structured_content?.items
       ? (entry.structured_content.items as string[])
       : parseGratitudeItems(entry.content);
-    items.filter(Boolean).forEach((item) => lines.push(`• ${item}`));
+    const cleanItems = items.filter(Boolean);
+    if (cleanItems.length > 0) {
+      lines.push("Today I'm grateful for:");
+      cleanItems.forEach((item) => lines.push(`• ${item}`));
+    }
   } else if (editorType === "guided") {
     const prompts = catConfig?.guidedPrompts ?? [];
     const responses = entry.structured_content ?? {};

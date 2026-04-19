@@ -168,7 +168,7 @@ export const PrayersScreen: React.FC = () => {
           <Text
             style={[
               styles.prayerPreview,
-              { color: colors.ink, fontSize: typography.bodySmall.fontSize, lineHeight: typography.bodySmall.lineHeight },
+              { color: colors.ink, fontSize: typography.bodySmall.fontSize + 1, lineHeight: typography.bodySmall.lineHeight + 1 },
             ]}
             numberOfLines={2}
           >
@@ -183,8 +183,8 @@ export const PrayersScreen: React.FC = () => {
                 key={i}
                 style={[
                   styles.prayerText,
-                  i > 0 && { marginTop: Math.round(typography.bodySmall.fontSize * 0.65) },
-                  { color: colors.ink, fontSize: typography.bodySmall.fontSize, lineHeight: typography.bodySmall.lineHeight },
+                  i > 0 && { marginTop: Math.round(typography.bodySmall.fontSize * 0.85) },
+                  { color: colors.ink, fontSize: typography.bodySmall.fontSize + 1, lineHeight: typography.bodySmall.lineHeight + 1 },
                 ]}
               >
                 {renderPrayerText(stanza, boldPhrases)}
@@ -393,7 +393,7 @@ export const PrayersScreen: React.FC = () => {
           <Text
             style={[
               styles.prayerPreview,
-              { color: colors.ink, fontSize: typography.bodySmall.fontSize, lineHeight: typography.bodySmall.lineHeight },
+              { color: colors.ink, fontSize: typography.bodySmall.fontSize + 1, lineHeight: typography.bodySmall.lineHeight + 1 },
             ]}
             numberOfLines={2}
           >
@@ -408,8 +408,8 @@ export const PrayersScreen: React.FC = () => {
                 key={i}
                 style={[
                   styles.prayerText,
-                  i > 0 && { marginTop: Math.round(typography.bodySmall.fontSize * 0.65) },
-                  { color: colors.ink, fontSize: typography.bodySmall.fontSize, lineHeight: typography.bodySmall.lineHeight },
+                  i > 0 && { marginTop: Math.round(typography.bodySmall.fontSize * 0.85) },
+                  { color: colors.ink, fontSize: typography.bodySmall.fontSize + 1, lineHeight: typography.bodySmall.lineHeight + 1 },
                 ]}
               >
                 {stanza}

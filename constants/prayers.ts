@@ -25,7 +25,7 @@ export const PRAYERS: Prayer[] = [
   {
     id: "st-francis",
     title: "Prayer of St. Francis",
-    text: "Lord, make me a channel of Your peace\nthat where there is hatred, I may bring love\nthat where there is wrong, I may bring the spirit of forgiveness\nthat where there is discord, I may bring harmony\nthat where there is error, I may bring truth\nthat where there is doubt, I may bring faith\nthat where there is despair, I may bring hope\nthat where there are shadows, I may bring light\nthat where there is sadness, I may bring joy.\n\nLord, grant that I may seek rather to comfort than to be comforted\nto understand, than to be understood\nto love, than to be loved.\nFor it is by self-forgetting that one finds\nIt is by forgiving that one is forgiven\nIt is by dying that one awakens to eternal life.\n\nAmen.",
+    text: "Lord, make me a channel of Your peace:\nthat where there is hatred, I may bring love;\nthat where there is wrong, I may bring the spirit of forgiveness;\nthat where there is discord, I may bring harmony;\nthat where there is error, I may bring truth;\nthat where there is doubt, I may bring faith;\nthat where there is despair, I may bring hope;\nthat where there are shadows, I may bring light;\nthat where there is sadness, I may bring joy.\n\nLord, grant that I may seek rather to comfort than to be comforted;\nto understand, than to be understood;\nto love, than to be loved.\nFor it is by self-forgetting that one finds;\nit is by forgiving that one is forgiven;\nit is by dying that one awakens to eternal life.\n\nAmen.",
     source: "St. Francis of Assisi",
   },
   {
