@@ -80,17 +80,10 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
   const filteredAndSorted = useMemo(() => {
     let result = speakers;
 
-    // Search filter
+    // Search filter — name only, progressive (matches as user types)
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
-      result = result.filter(
-        (s) =>
-          s.speaker.toLowerCase().includes(q) ||
-          s.title.toLowerCase().includes(q) ||
-          (s.subtitle && s.subtitle.toLowerCase().includes(q)) ||
-          (s.quote && s.quote.toLowerCase().includes(q)) ||
-          (s.core_themes && s.core_themes.toLowerCase().includes(q))
-      );
+      result = result.filter((s) => s.speaker.toLowerCase().includes(q));
     }
 
     // Sort
