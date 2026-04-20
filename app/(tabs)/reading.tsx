@@ -273,7 +273,7 @@ export default function ReadingDetail() {
 
     if (bodyParagraphs.length) {
       lines.push("");
-      lines.push(bodyParagraphs.join(" "));
+      pushParagraphs(bodyParagraphs);
     }
 
     if (applicationParagraphs.length) {

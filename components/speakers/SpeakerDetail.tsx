@@ -239,7 +239,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
           </Text>
 
           {speaker.subtitle && (
-            <Text style={[styles.subtitle, typ.bodySmall, { color: colors.text }]}>
+            <Text style={[styles.subtitle, typ.body, { color: colors.text, fontFamily: fonts.bodyFamily }]}>
               {speaker.subtitle}
             </Text>
           )}
