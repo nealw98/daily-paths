@@ -263,6 +263,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
                       {
                         color: colors.text,
                         letterSpacing: 0,
+                        fontFamily: fonts.loraRegular,
                       },
                     ]}
                   >
