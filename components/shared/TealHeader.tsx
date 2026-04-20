@@ -158,8 +158,8 @@ const styles = StyleSheet.create({
   },
   brand: {
     fontFamily: fonts.cormorantGaramondSemiBoldItalic,
-    fontSize: 25,
-    lineHeight: 30,
+    fontSize: 22,
+    lineHeight: 27,
     color: "rgba(255,255,255,0.95)",
   },
 
