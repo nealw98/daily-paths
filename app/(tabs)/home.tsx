@@ -209,6 +209,19 @@ export default function HomeTab() {
     };
   }, [typography.bodyLarge.fontSize]);
 
+  // Vertical rhythm — expressed as multiples of body line-height so spacing
+  // scales proportionally with the user's text-size setting (XS → XL). Goal
+  // is paragraph-break feel between sections, not chapter-break.
+  const sectionRhythm = useMemo(() => {
+    const lh = typography.body.lineHeight;
+    return {
+      betweenSections: Math.round(lh * 1.2),    // prior section's last elem → next heading
+      titleToFirstCard: Math.round(lh * 0.7),    // section heading → first card beneath it
+      betweenCards: Math.round(lh * 0.85),       // stacked cards inside a section
+      cardToUtility: Math.round(lh * 0.35),      // last card → quiet utility row
+    };
+  }, [typography.body.lineHeight]);
+
   const readMoreType = useMemo(
     () => ({
       fontFamily: fonts.bodyFamily,
@@ -402,13 +415,17 @@ export default function HomeTab() {
           style={[
             styles.sectionTitleLayout,
             sectionTitleType,
-            { color: colors.onSurface, marginTop: 56 },
+            {
+              color: colors.onSurface,
+              marginTop: sectionRhythm.betweenSections,
+              marginBottom: sectionRhythm.titleToFirstCard,
+            },
             isFree && styles.sectionTitleToolsFree,
           ]}
         >
           Daily Tools
         </Text>
-        <View style={styles.toolsList}>
+        <View style={[styles.toolsList, { gap: sectionRhythm.betweenCards }]}>
           {JOURNAL_CATEGORIES.map((cat) => (
             <TouchableOpacity
               key={cat.id}
@@ -473,7 +490,11 @@ export default function HomeTab() {
               router.push("/(tabs)/journal");
             }
           }}
-          style={[styles.notebookLinkRow, isFree && styles.toolRowFree]}
+          style={[
+            styles.notebookLinkRow,
+            { marginTop: sectionRhythm.cardToUtility },
+            isFree && styles.toolRowFree,
+          ]}
         />
 
         {/* ── Speaker Feature Card ── */}
@@ -481,7 +502,11 @@ export default function HomeTab() {
           style={[
             styles.sectionTitleLayout,
             sectionTitleType,
-            { color: colors.onSurface, marginTop: 56 },
+            {
+              color: colors.onSurface,
+              marginTop: sectionRhythm.betweenSections,
+              marginBottom: sectionRhythm.titleToFirstCard,
+            },
             isFree && styles.sectionTitleSpeakersFree,
           ]}
         >
@@ -540,7 +565,11 @@ export default function HomeTab() {
               router.push("/(tabs)/speakers");
             }
           }}
-          style={[styles.speakersLinkRow, isFree && styles.speakerSectionFree]}
+          style={[
+            styles.speakersLinkRow,
+            { marginTop: sectionRhythm.cardToUtility },
+            isFree && styles.speakerSectionFree,
+          ]}
         />
 
         {/* ── Prayers Card ── */}
@@ -548,13 +577,17 @@ export default function HomeTab() {
           style={[
             styles.sectionTitleLayout,
             sectionTitleType,
-            { color: colors.onSurface, marginTop: 56 },
+            {
+              color: colors.onSurface,
+              marginTop: sectionRhythm.betweenSections,
+              marginBottom: sectionRhythm.titleToFirstCard,
+            },
             isFree && styles.sectionTitleToolsFree,
           ]}
         >
           Prayers
         </Text>
-        <View style={styles.toolsList}>
+        <View style={[styles.toolsList, { gap: sectionRhythm.betweenCards }]}>
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={() => {
@@ -713,16 +746,14 @@ const styles = StyleSheet.create({
   toolCtaRow: {
     marginTop: 0,
   },
-  // Section titles
+  // Section titles — vertical margins come from sectionRhythm (dynamic).
   sectionTitleLayout: {
-    marginBottom: layout.spacing.lg,
     marginHorizontal: layout.spacing.lgPlus,
   },
 
-  // Daily Tools list
+  // Daily Tools list — gap comes from sectionRhythm (dynamic).
   toolsList: {
     paddingHorizontal: layout.spacing.md,
-    gap: 24,
   },
   toolRow: {
     borderRadius: 10,
@@ -849,14 +880,9 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     marginTop: 4,
   },
-  // Row below Daily Tools pointing into the Notebook tab.
-  notebookLinkRow: {
-    marginTop: 12,
-  },
-  // Replacement for the former "Explore all speakers →" link.
-  speakersLinkRow: {
-    marginTop: 10,
-  },
+  // Utility link rows — marginTop comes from sectionRhythm (dynamic).
+  notebookLinkRow: {},
+  speakersLinkRow: {},
 
   // Free-user faded states
   toolRowFree: {

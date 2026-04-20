@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 3,
     paddingTop: 6,
-    paddingBottom: 2,
+    paddingBottom: 3,
     paddingHorizontal: 4,
   },
   backLabel: {

@@ -635,8 +635,8 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                     styles.gratitudePromptHeader,
                     {
                       color: colors.onSurface,
-                      fontSize: Math.round((typography.bodySmall.fontSize + 4) * 1.3),
-                      lineHeight: Math.round((typography.bodySmall.fontSize + 4) * 1.3 * (22 / 17)),
+                      fontSize: Math.round((typography.bodySmall.fontSize + 4) * (23 / 19)),
+                      lineHeight: Math.round((typography.bodySmall.fontSize + 4) * (23 / 19) * (22 / 17)),
                     },
                   ]}
                 >
@@ -816,8 +816,8 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                               entryType === "spot_check"
                                 ? fonts.cormorantGaramondMedium
                                 : fonts.cormorantGaramondSemiBold,
-                            fontSize: Math.round((typography.bodySmall.fontSize + 4) * 1.3),
-                            lineHeight: Math.round((typography.bodySmall.fontSize + 4) * 1.3 * (22 / 17)),
+                            fontSize: Math.round((typography.bodySmall.fontSize + 4) * (23 / 19)),
+                            lineHeight: Math.round((typography.bodySmall.fontSize + 4) * (23 / 19) * (22 / 17)),
                           },
                         ]}
                       >

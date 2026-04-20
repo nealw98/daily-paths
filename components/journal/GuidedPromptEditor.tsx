@@ -32,7 +32,7 @@ export function GuidedPromptEditor({
   // the old fixed values (22/28 question, 16/21 input).
   // Cormorant reads ~30% visually smaller than Manrope/Lora at the same
   // point size, so bump the computed size to match the same visual weight.
-  const questionFontSize = Math.round((typography.bodySmall.fontSize + 4) * 1.3);
+  const questionFontSize = Math.round((typography.bodySmall.fontSize + 4) * (23 / 19));
   const questionLineHeight = Math.round(questionFontSize * (22 / 17));
   const inputFontSize = typography.bodySmall.fontSize + 1;
   const inputLineHeight = typography.bodySmall.lineHeight + 1;

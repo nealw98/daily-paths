@@ -37,15 +37,15 @@ export const CollectionLinkRow: React.FC<CollectionLinkRowProps> = ({
   const { colors } = useTheme();
   const { typography } = useTypography();
 
+  // Utility rows sit quietly beneath their section — caption-sized, medium
+  // weight, muted color. They tag the section above, not a tier of their own.
   const metadataStyle = {
-    fontFamily: fonts.bodyFamily,
-    fontSize: typography.label.fontSize,
-    lineHeight: typography.label.lineHeight,
+    fontFamily: fonts.bodyFamilyMedium,
+    fontSize: typography.caption.fontSize,
+    lineHeight: typography.caption.lineHeight,
     letterSpacing: 0,
   };
 
-  // Matches the link sizing that was previously on "Explore all speakers →":
-  // bodySmall size/lineHeight + semibold family + subtle letter-spacing.
   const linkStyle = {
     fontFamily: fonts.bodyFamilySemiBold,
     fontSize: typography.bodySmall.fontSize,
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "baseline",
     marginHorizontal: layout.spacing.lgPlus,
-    paddingVertical: 5,
+    paddingVertical: 2,
   },
   metadata: {
     flexShrink: 1,
