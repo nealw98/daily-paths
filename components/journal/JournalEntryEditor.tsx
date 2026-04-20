@@ -417,22 +417,18 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                     style={styles.journalQuoteCard}
                     contentStyle={[
                       styles.journalQuoteCardInner,
-                      { backgroundColor: colors.secondary },
+                      { backgroundColor: colors.surfaceContainerLowest },
                     ]}
                     elevated
                   >
                     {categoryConfig?.introText && (
                       <View style={styles.quoteCardContent}>
+                        <View style={[styles.quoteAccent, { backgroundColor: colors.deepTeal }]} />
                         <View style={styles.journalQuoteWrap}>
                           <Text
                             style={[
                               styles.journalQuoteText,
-                              {
-                                color: colors.onPrimary,
-                                fontSize: journalQuoteFontSize,
-                                lineHeight: journalQuoteLineHeight,
-                                fontFamily: fonts.loraItalic,
-                              },
+                              { color: colors.text },
                             ]}
                           >
                             {entryType === "journal" && dailyJournalQuoteData
@@ -445,10 +441,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                             <Text
                               style={[
                                 styles.journalQuoteReference,
-                                {
-                                  fontSize: 14,
-                                  color: colors.secondaryContainer,
-                                },
+                                { color: colors.textSecondary },
                               ]}
                             >
                               {entryType === "journal"
@@ -586,22 +579,18 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                 style={styles.gratitudeQuoteCard}
                 contentStyle={[
                   styles.gratitudeQuoteCardInner,
-                  { backgroundColor: colors.secondary },
+                  { backgroundColor: colors.surfaceContainerLowest },
                 ]}
                 elevated
               >
                 {!!gratitudeQuoteText && (
                   <View style={styles.quoteCardContent}>
+                    <View style={[styles.quoteAccent, { backgroundColor: colors.deepTeal }]} />
                     <View style={styles.gratitudeQuoteWrap}>
                       <Text
                         style={[
                           styles.gratitudeDailyQuote,
-                          {
-                            color: colors.onPrimary,
-                            fontSize: journalQuoteFontSize,
-                            lineHeight: journalQuoteLineHeight,
-                            fontFamily: fonts.loraItalic,
-                          },
+                          { color: colors.text },
                         ]}
                       >
                         {gratitudeQuoteText}
@@ -610,7 +599,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                         <Text
                           style={[
                             styles.gratitudeDailyReference,
-                            { color: colors.secondaryContainer },
+                            { color: colors.textSecondary },
                           ]}
                         >
                           {gratitudeReferenceText}
@@ -752,48 +741,20 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                   size="lg"
                 />
 
-                <SanctuaryCard
-                  tone="lowest"
-                  style={styles.spotCheckQuoteCard}
-                  contentStyle={[
-                    styles.spotCheckQuoteCardInner,
-                    { backgroundColor: colors.secondary },
-                  ]}
-                  elevated
-                >
-                  {categoryConfig?.introText && (
-                    <View style={styles.quoteCardContent}>
-                      <View style={styles.journalQuoteWrap}>
-                        <Text
-                          style={[
-                            styles.journalQuoteText,
-                            {
-                              color: colors.onPrimary,
-                              fontSize: journalQuoteFontSize,
-                              lineHeight: journalQuoteLineHeight,
-                              fontFamily: fonts.loraItalic,
-                            },
-                          ]}
-                        >
-                          {journalIntroQuote}
-                        </Text>
-                        {!!journalIntroReference && (
-                          <Text
-                            style={[
-                              styles.journalQuoteReference,
-                              {
-                                fontSize: 14,
-                                color: colors.secondaryContainer,
-                              },
-                            ]}
-                          >
-                            {journalIntroReference}
-                          </Text>
-                        )}
-                      </View>
-                    </View>
-                  )}
-                </SanctuaryCard>
+                {categoryConfig?.introText && (
+                  <View style={styles.spotCheckQuoteSubtitle}>
+                    <Text style={[styles.spotCheckQuoteText, { color: colors.accent }]}>
+                      {journalIntroQuote}
+                    </Text>
+                    {!!journalIntroReference && (
+                      <Text
+                        style={[styles.spotCheckQuoteReference, { color: colors.accent }]}
+                      >
+                        {journalIntroReference}
+                      </Text>
+                    )}
+                  </View>
+                )}
 
                 {categoryConfig.guidedPrompts.map((prompt) => (
                   <SanctuaryCard
@@ -1031,28 +992,35 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     borderRadius: 12,
   },
+  quoteAccent: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+  },
   journalQuoteWrap: {
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 14,
+    paddingVertical: 14,
+    paddingLeft: 16,
+    paddingRight: 14,
     position: "relative",
   },
   journalQuoteText: {
-    ...staticTypography.quoteBox,
+    fontFamily: fonts.cormorantGaramondMediumItalic,
+    fontSize: 18,
+    lineHeight: 26,
     textAlign: "left",
-    fontWeight: "500",
-    paddingHorizontal: 14,
     position: "relative",
     zIndex: 2,
   },
   journalQuoteReference: {
-    ...staticTypography.caption,
+    fontFamily: fonts.bodyFamilyMedium,
+    fontSize: 12,
+    lineHeight: 16,
     textAlign: "left",
     letterSpacing: 0.2,
     alignSelf: "stretch",
-    marginLeft: 14,
-    marginRight: 0,
-    marginTop: 10,
+    marginTop: 8,
     position: "relative",
     zIndex: 2,
   },
@@ -1147,26 +1115,28 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   gratitudeDailyQuote: {
-    ...staticTypography.quoteBox,
+    fontFamily: fonts.cormorantGaramondMediumItalic,
+    fontSize: 18,
+    lineHeight: 26,
     textAlign: "left",
-    fontWeight: "500",
-    paddingHorizontal: 14,
     position: "relative",
-    zIndex: 1,
+    zIndex: 2,
   },
   gratitudeQuoteWrap: {
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 14,
+    paddingVertical: 14,
+    paddingLeft: 16,
+    paddingRight: 14,
     position: "relative",
   },
   gratitudeDailyReference: {
-    ...staticTypography.caption,
+    fontFamily: fonts.bodyFamilyMedium,
+    fontSize: 12,
+    lineHeight: 16,
     textAlign: "left",
-    marginTop: 10,
-    marginLeft: 14,
+    letterSpacing: 0.2,
+    marginTop: 8,
     position: "relative",
-    zIndex: 1,
+    zIndex: 2,
   },
   gratitudeEntryCard: {
     marginHorizontal: 20,
@@ -1256,15 +1226,24 @@ const styles = StyleSheet.create({
     width: "100%",
     aspectRatio: 3,
   },
-  spotCheckQuoteCard: {
-    marginHorizontal: 20,
-    marginTop: 18,
-    marginBottom: 0,
-    borderRadius: 12,
+  spotCheckQuoteSubtitle: {
+    paddingLeft: 28,
+    paddingRight: 22,
+    marginTop: 10,
+    marginBottom: 16,
   },
-  spotCheckQuoteCardInner: {
-    borderRadius: 12,
-    overflow: "hidden",
+  spotCheckQuoteText: {
+    fontFamily: fonts.cormorantGaramondSemiBoldItalic,
+    fontSize: 22,
+    lineHeight: 30,
+    letterSpacing: -0.2,
+  },
+  spotCheckQuoteReference: {
+    fontFamily: fonts.cormorantGaramondSemiBoldItalic,
+    fontSize: 22,
+    lineHeight: 30,
+    marginTop: 4,
+    opacity: 0.85,
   },
   spotCheckEntryCard: {
     marginHorizontal: 20,
