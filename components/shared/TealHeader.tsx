@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-end",
   },
   sideLeft: {
     flex: 1,
@@ -148,7 +148,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
-    paddingVertical: 6,
+    paddingTop: 6,
+    paddingBottom: 2,
     paddingHorizontal: 4,
   },
   backLabel: {
@@ -190,7 +191,7 @@ const styles = StyleSheet.create({
   },
   legacyTitle: {
     ...staticTypography.h3,
-    fontFamily: fonts.bodyFamilyBold,
+    fontFamily: fonts.bodyFamilySemiBold,
     fontSize: 24,
     lineHeight: 30,
   },

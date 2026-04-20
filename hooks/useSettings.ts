@@ -21,7 +21,7 @@ export interface AppSettings {
 }
 
 const defaultSettings: AppSettings = {
-  textSize: "small",
+  textSize: "medium",
   themeId: "ocean-light",
   colorScheme: "light",
   dailyReminderEnabled: false,

@@ -185,7 +185,11 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
 
       <NegativeFeedbackModal
         visible={showNegativeModal}
-        onClose={() => setShowNegativeModal(false)}
+        onClose={() => {
+          setShowNegativeModal(false);
+          // User canceled — revert the optimistic thumbs-down selection.
+          setLocalRating(hookRating);
+        }}
         onSubmit={handleNegativeFeedback}
       />
     </>
