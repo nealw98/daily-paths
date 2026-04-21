@@ -15,7 +15,6 @@ import { useTheme } from "../../hooks/useTheme";
 import { useTypography } from "../../hooks/useTypography";
 import { fonts } from "../../constants/theme";
 import type { JournalEntry } from "../../hooks/useJournalStorage";
-import type { JournalStats } from "../../hooks/useJournalStats";
 import {
   getCategoryLabel,
   getCategoryColor,
@@ -25,7 +24,6 @@ import {
 import { EntryTypeIcon } from "../../utils/entryTypeIcon";
 import { SanctuaryCard } from "../ui/Sanctuary";
 import { buildJournalEntryShareMessage } from "../../utils/journalShare";
-import { computeJournalStreak } from "../../utils/journalStreak";
 
 // ─── Timeline item union (date headers + entries) ───────────────────────────
 
@@ -38,7 +36,6 @@ type TimelineItem =
 
 interface JournalTimelineProps {
   entries: JournalEntry[];
-  stats: JournalStats;
   loading: boolean;
   error?: string | null;
   onSelectEntry: (entry: JournalEntry) => void;
@@ -194,10 +191,6 @@ function stripMarkdown(text: string): string {
 
 /** Text-only styles (kept separate so `styles` stays `ViewStyle` for layout rows). */
 const textStyles = StyleSheet.create({
-  progressLabel: {
-    marginBottom: 4,
-    textAlign: "center",
-  },
   placeholderTitle: {
     marginTop: 8,
     textAlign: "center",
@@ -219,7 +212,6 @@ const textStyles = StyleSheet.create({
 
 export const JournalTimeline: React.FC<JournalTimelineProps> = ({
   entries,
-  stats,
   loading,
   error,
   onSelectEntry,
@@ -251,8 +243,6 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
       console.error("Error sharing entry:", err);
     }
   }, []);
-
-  const currentStreak = useMemo(() => computeJournalStreak(entries), [entries]);
 
   // Build timeline items (headers + entries). Today always shows a
   // "+ New entry" CTA row right under its date header, whether or not
@@ -453,61 +443,6 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
     return item.data.id;
   };
 
-  const ListHeader = () => (
-    <View style={styles.progressRow}>
-      <View
-        style={[
-          styles.progressMetricBox,
-          {
-            backgroundColor: colors.surfaceContainerLowest,
-            borderColor: colors.mist,
-          },
-        ]}
-      >
-        <Text style={[textStyles.progressLabel, typography.label, { color: colors.secondary }]}>
-          TOTAL ENTRIES
-        </Text>
-        <Text
-          style={[
-            typography.h2,
-            {
-              fontSize: Math.round(typography.bodyLargeFontSize * (24 / 19)),
-              lineHeight: Math.round(typography.bodyLargeFontSize * (30 / 19)),
-              color: colors.secondary,
-            },
-          ]}
-        >
-          {stats.total}
-        </Text>
-      </View>
-      <View
-        style={[
-          styles.progressMetricBox,
-          {
-            backgroundColor: colors.surfaceContainerLowest,
-            borderColor: colors.mist,
-          },
-        ]}
-      >
-        <Text style={[textStyles.progressLabel, typography.label, { color: colors.secondary }]}>
-          CURRENT STREAK
-        </Text>
-        <Text
-          style={[
-            typography.h2,
-            {
-              fontSize: Math.round(typography.bodyLargeFontSize * (24 / 19)),
-              lineHeight: Math.round(typography.bodyLargeFontSize * (30 / 19)),
-              color: colors.secondary,
-            },
-          ]}
-        >
-          {currentStreak}
-        </Text>
-      </View>
-    </View>
-  );
-
   // ─── Empty State ───────────────────────────────────────────────────────
 
   const ListEmpty = () => (
@@ -591,7 +526,6 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
         data={timelineItems}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
-        ListHeaderComponent={ListHeader}
         ListEmptyComponent={ListEmpty}
         contentContainerStyle={styles.listContent}
         refreshControl={
@@ -640,23 +574,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flex: 1,
   },
-  progressRow: {
-    flexDirection: "row",
-    gap: 20,
-    justifyContent: "center",
-    marginTop: 14,
-    marginBottom: 16,
-    paddingHorizontal: 22,
-  },
-  progressMetricBox: {
-    width: "42%",
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    alignItems: "center",
-  },
-
   dateDivider: {
     flexDirection: "row",
     alignItems: "center",

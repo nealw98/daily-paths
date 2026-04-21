@@ -5,7 +5,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useNavigation } from "expo-router";
 import { useTheme } from "../../hooks/useTheme";
 import { useJournalStorage, type JournalEntry, type EntryType } from "../../hooks/useJournalStorage";
-import { useJournalStats } from "../../hooks/useJournalStats";
+import { computeJournalStreak } from "../../utils/journalStreak";
 import { useAnalytics } from "../../utils/analytics";
 import { useFeatureTimeTracker } from "../../hooks/useFeatureTimeTracker";
 import { JournalTimeline } from "../../components/journal/JournalTimeline";
@@ -39,7 +39,15 @@ function JournalTabContent() {
     deleteEntry,
     refreshEntries,
   } = useJournalStorage();
-  const stats = useJournalStats(entries);
+  // Small subtitle shown under the "Notebook" page title — replaces the
+  // former stat tiles. Always shows both count + streak (including 0).
+  const notebookSubtitle = useMemo(() => {
+    const total = entries.length;
+    if (total === 0) return "Your journal entries";
+    const streak = computeJournalStreak(entries);
+    const entriesLabel = `${total} ${total === 1 ? "entry" : "entries"}`;
+    return `${entriesLabel} · ${streak} day streak`;
+  }, [entries]);
 
   // Reload from storage when the tab is focused so entries created elsewhere (e.g. Home) appear.
   useFocusEffect(
@@ -222,10 +230,9 @@ function JournalTabContent() {
       edges={[]}
     >
       <TealHeader />
-      <PageTitle title="Notebook" subtitle="Your journal entries" />
+      <PageTitle title="Notebook" subtitle={notebookSubtitle} />
       <JournalTimeline
         entries={entries}
-        stats={stats}
         loading={loading}
         error={error}
         onCreateEntry={handleNewEntry}
