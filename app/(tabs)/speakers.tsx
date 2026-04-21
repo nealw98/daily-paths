@@ -224,7 +224,7 @@ function SpeakersTabContent() {
       edges={[]}
     >
       <TealHeader />
-      <PageTitle title="Speakers" subtitle="Browse the speaker library" />
+      <PageTitle title="Speakers" subtitle="Browse the speaker library" size="lg" />
       <SpeakersBrowse
         speakers={speakers}
         loading={loading}

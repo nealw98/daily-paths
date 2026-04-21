@@ -230,7 +230,7 @@ function JournalTabContent() {
       edges={[]}
     >
       <TealHeader />
-      <PageTitle title="Notebook" subtitle={notebookSubtitle} />
+      <PageTitle title="Notebook" subtitle={notebookSubtitle} size="lg" />
       <JournalTimeline
         entries={entries}
         loading={loading}

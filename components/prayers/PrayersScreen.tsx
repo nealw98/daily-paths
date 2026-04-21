@@ -513,7 +513,7 @@ export const PrayersScreen: React.FC = () => {
     >
       {/* Teal Gradient Header */}
       <TealHeader />
-      <PageTitle title="Prayers" subtitle="Essential prayers for your daily program" />
+      <PageTitle title="Prayers" subtitle="Essential prayers for your daily program" size="lg" />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
