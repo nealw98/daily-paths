@@ -493,6 +493,10 @@ export default function MoreTab() {
 
         {/* ── Footer ─────────────────────────────────────── */}
         <View style={[styles.footerSection, { paddingBottom: 4 + insets.bottom }]}>
+          <Text style={[styles.legalLink, { color: colors.textSecondary, textAlign: 'center', marginBottom: 20 }]} allowFontScaling={false}>
+            Not affiliated with Al-Anon, AA, or any 12-step fellowship.
+          </Text>
+
           <View style={styles.legalRow}>
             <TouchableOpacity
               activeOpacity={0.7}
@@ -521,10 +525,6 @@ export default function MoreTab() {
               </Text>
             </TouchableOpacity>
           </View>
-
-          <Text style={[styles.legalLink, { color: colors.textSecondary, textAlign: 'center', marginTop: 4 }]} allowFontScaling={false}>
-            Not affiliated with Al-Anon, AA, or any 12-step fellowship.
-          </Text>
 
           <TouchableOpacity
             activeOpacity={0.7}
