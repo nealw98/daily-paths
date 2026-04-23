@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Animated } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { lightColors } from "../constants/theme";
+import { useTheme } from "../hooks/useTheme";
+import { useTypography } from "../hooks/useTypography";
 
 interface BookmarkToastProps {
   visible: boolean;
@@ -18,6 +19,7 @@ export const BookmarkToast: React.FC<BookmarkToastProps> = ({
   icon,
   autoDismiss = true, // Default to auto-dismiss behavior
 }) => {
+  const { typography } = useTypography();
   const [opacity] = useState(new Animated.Value(0));
   const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const isAnimatingRef = React.useRef(false);
@@ -100,7 +102,7 @@ export const BookmarkToast: React.FC<BookmarkToastProps> = ({
     <Animated.View style={[styles.container, { opacity }]}>
       <View style={styles.toast}>
         <Ionicons name={iconName as any} size={20} color="#fff" style={styles.icon} />
-        <Text style={styles.message}>{message}</Text>
+        <Text style={[styles.message, { fontSize: typography.bodySmallFontSize }]}>{message}</Text>
       </View>
     </Animated.View>
   );
@@ -121,7 +123,6 @@ const styles = StyleSheet.create({
   toast: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: lightColors.deepTeal,
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -132,8 +133,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   message: {
+    // fontSize applied inline via typography.bodySmallFontSize.
     color: "#fff",
-    fontSize: 15,
     fontWeight: "600",
   },
 });

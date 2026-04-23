@@ -1,0 +1,220 @@
+/**
+ * Journal entry types and their configuration.
+ * Each entry type has a different editor and set of guided prompts.
+ */
+
+export type EntryType =
+  | "journal"
+  | "gratitude"
+  | "spot_check"
+  | "nightly_review";
+export type EditorType = "text" | "items" | "guided";
+export type SvgIconName = "feather" | "seedling" | "softExhale" | "moonOnWater";
+
+export interface GuidedPrompt {
+  /** Key in structured_content JSON */
+  id: string;
+  /** Display label shown above the textarea */
+  question: string;
+  /** Placeholder text inside the textarea */
+  placeholder: string;
+  /** Optional hint text shown below the textarea */
+  hint?: string;
+}
+
+export interface JournalCategory {
+  id: EntryType;
+  label: string;
+  emoji: string;
+  icon: string; // Ionicons name
+  color: string;
+  bgColor: string;
+  editorType: EditorType;
+  svgIcon: SvgIconName;
+  description: string;
+  introText?: string;
+  guidedPrompts?: GuidedPrompt[];
+}
+
+/**
+ * Type-specific accent colors for borders, badges, and number circles.
+ * Punchy and saturated — each type should be instantly recognizable.
+ */
+export const ENTRY_TYPE_COLORS = {
+  journal: "#3366A8",        // true blue
+  gratitude: "#3DA35D",      // spring green
+  spot_check: "#D4553A",     // vivid coral-red
+  nightly_review: "#6B3FA0", // deep purple
+} as const;
+
+/**
+ * Tinted background colors for type badges (~12% opacity).
+ */
+export const ENTRY_TYPE_BADGE_BG_COLORS = {
+  journal: "rgba(51, 102, 168, 0.12)",
+  gratitude: "rgba(61, 163, 93, 0.12)",
+  spot_check: "rgba(212, 85, 58, 0.10)",
+  nightly_review: "rgba(107, 63, 160, 0.12)",
+} as const;
+
+/**
+ * Tinted background colors for full entry cards (~6-7% opacity).
+ * Lighter than badges so text remains readable.
+ */
+export const ENTRY_TYPE_BG_COLORS = {
+  journal: "rgba(51, 102, 168, 0.06)",
+  gratitude: "rgba(61, 163, 93, 0.06)",
+  spot_check: "rgba(212, 85, 58, 0.05)",
+  nightly_review: "rgba(107, 63, 160, 0.06)",
+} as const;
+
+/**
+ * All journal entry types and their configuration.
+ */
+export const JOURNAL_CATEGORIES: JournalCategory[] = [
+  {
+    id: "journal",
+    label: "Journal",
+    emoji: "✏️",
+    icon: "create-outline",
+    color: ENTRY_TYPE_COLORS.journal,
+    bgColor: ENTRY_TYPE_BG_COLORS.journal,
+    editorType: "text",
+    svgIcon: "feather",
+    description: "Write freely about what's on your mind",
+    introText: "We are all part of creation, all kings, all poets, all musicians; we have only to open up, to discover what is already there. - Henry Miller",
+  },
+  {
+    id: "gratitude",
+    label: "Gratitude",
+    emoji: "✨",
+    icon: "heart-outline",
+    color: ENTRY_TYPE_COLORS.gratitude,
+    bgColor: ENTRY_TYPE_BG_COLORS.gratitude,
+    editorType: "items",
+    svgIcon: "seedling",
+    description: "Count your blessings today",
+    introText: "What are you grateful for today?",
+  },
+  {
+    id: "spot_check",
+    label: "Spot Check",
+    emoji: "⚡",
+    icon: "pulse-outline",
+    color: ENTRY_TYPE_COLORS.spot_check,
+    bgColor: ENTRY_TYPE_BG_COLORS.spot_check,
+    editorType: "guided",
+    svgIcon: "softExhale",
+    description: "Work through what's happening right now",
+    introText: "Pause. Breathe. Work through what's happening.",
+    guidedPrompts: [
+      {
+        id: "what_happened",
+        question: "What happened?",
+        placeholder: "Just the facts — what triggered this?",
+      },
+      {
+        id: "feeling",
+        question: "What am I feeling?",
+        placeholder: "Name the feelings — fear, anger, hurt...",
+        hint: "Where is my fear hiding in this?",
+      },
+      {
+        id: "my_part",
+        question: "What's my part?",
+        placeholder: "Am I responding or reacting?",
+        hint: "What am I trying to control?",
+      },
+      {
+        id: "next_right_thing",
+        question: "What's the next right thing?",
+        placeholder: "One small step I can take right now...",
+      },
+    ],
+  },
+  {
+    id: "nightly_review",
+    label: "Nightly Review",
+    emoji: "🌙",
+    icon: "moon-outline",
+    color: ENTRY_TYPE_COLORS.nightly_review,
+    bgColor: ENTRY_TYPE_BG_COLORS.nightly_review,
+    editorType: "guided",
+    svgIcon: "moonOnWater",
+    description: "Reflect on your day",
+    introText:
+      "Take a quiet moment to review your day with honesty and compassion.",
+    guidedPrompts: [
+      {
+        id: "serenity",
+        question: "What disturbed my serenity today?",
+        placeholder: "What situations or people unsettled me?",
+      },
+      {
+        id: "selfish_dishonest_afraid",
+        question: "Where was I selfish, dishonest, or afraid?",
+        placeholder: "Be gentle but honest with yourself...",
+      },
+      {
+        id: "amends",
+        question: "Do I owe anyone an amend?",
+        placeholder: "Is there something I need to make right?",
+        hint: "",
+      },
+      {
+        id: "did_well",
+        question: "What did I do well today?",
+        placeholder: "Where did I show up for my recovery?",
+      },
+      {
+        id: "grateful",
+        question: "What am I grateful for tonight?",
+        placeholder: "End the day with gratitude...",
+      },
+    ],
+  },
+];
+
+/**
+ * Get a category config by its entry type ID.
+ */
+export function getCategoryById(
+  id: EntryType | string | null
+): JournalCategory | undefined {
+  if (!id) return undefined;
+  return JOURNAL_CATEGORIES.find((c) => c.id === id);
+}
+
+/**
+ * Get the display label for an entry type. Returns "Journal" for plain/unknown entries.
+ */
+export function getCategoryLabel(id: EntryType | string | null): string {
+  const cat = getCategoryById(id);
+  return cat ? cat.label : "Journal";
+}
+
+/**
+ * Get the color for an entry type.
+ */
+export function getCategoryColor(id: EntryType | string | null): string {
+  if (!id || !(id in ENTRY_TYPE_COLORS)) return ENTRY_TYPE_COLORS.journal;
+  return ENTRY_TYPE_COLORS[id as EntryType];
+}
+
+/**
+ * Get the tinted card background color for an entry type.
+ */
+export function getCategoryBgColor(id: EntryType | string | null): string {
+  if (!id || !(id in ENTRY_TYPE_BG_COLORS))
+    return ENTRY_TYPE_BG_COLORS.journal;
+  return ENTRY_TYPE_BG_COLORS[id as EntryType];
+}
+
+/**
+ * Get the stronger badge background color for an entry type.
+ */
+export function getCategoryBadgeBgColor(id: EntryType | string | null): string {
+  if (!id || !(id in ENTRY_TYPE_BADGE_BG_COLORS))
+    return ENTRY_TYPE_BADGE_BG_COLORS.journal;
+  return ENTRY_TYPE_BADGE_BG_COLORS[id as EntryType];
+}

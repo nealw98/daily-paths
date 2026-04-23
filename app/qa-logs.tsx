@@ -6,44 +6,129 @@ import {
   ScrollView,
   TouchableOpacity,
   Switch,
+  Alert,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import Constants from "expo-constants";
 import { useLocalSearchParams } from "expo-router";
 import * as Updates from "expo-updates";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import Clipboard from "@react-native-clipboard/clipboard";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { fonts, lightColors } from "../constants/theme";
-import { useTheme } from "../hooks/useTheme";
+import * as Sharing from "expo-sharing";
+import { fonts, fallbackColors } from "../constants/theme";
 import { clearQaLogs, useQaLogs, qaLog } from "../utils/qaLog";
 import { resetRateShareTracking } from "../utils/rateShareTracking";
 import { isDeveloperDevice, setDeveloperDevice, getOrCreateDeviceId } from "../utils/deviceIdentity";
+import {
+  getTrialStatus,
+  resetTrial,
+  expireTrial,
+  clearTrialEndedModalSeen,
+} from "../utils/trialTimer";
+import {
+  setLifetimeOverride,
+  getLifetimeOverride,
+  clearLifetimeAccessCache,
+  getLifetimeAccessDiagnostics,
+  type LifetimeAccessDiagnostics,
+} from "../utils/paidAppDetector";
+import { useSubscriptionContext } from "../contexts/SubscriptionContext";
+import { QA_REFLECTION_IMAGE_OVERRIDE_KEY } from "./(tabs)/home";
+import { useSubscription } from "../hooks/useSubscription";
+import {
+  exportQaTransferToFile,
+  importQaTransferPayload,
+  parseQaTransferText,
+  type QaTransferImportMode,
+} from "../utils/qaDataTransfer";
 
 export default function QaLogsScreen() {
-  const { colors } = useTheme();
+  // QA screen is dev-only and should always render in the light palette,
+  // regardless of the user's theme setting.
+  const colors = fallbackColors;
   const params = useLocalSearchParams<{
     checkAndApplyUpdate?: any;
   }>();
   const insets = useSafeAreaInsets();
   const logs = useQaLogs();
   const router = useRouter();
+  const { trialStatus, refreshLifetimeAccess } = useSubscriptionContext();
+  const { status: subStatus, hasLifetimeAccess } = useSubscription();
   const [updating, setUpdating] = React.useState(false);
   const [updateStatus, setUpdateStatus] = React.useState<string | null>(null);
   const [copyStatus, setCopyStatus] = React.useState<string | null>(null);
+  const [transferStatus, setTransferStatus] = React.useState<string | null>(null);
+  const [showImportJsonModal, setShowImportJsonModal] = React.useState(false);
+  const [importJsonText, setImportJsonText] = React.useState("");
+  const [pendingImportMode, setPendingImportMode] =
+    React.useState<QaTransferImportMode | null>(null);
+  const [importingJson, setImportingJson] = React.useState(false);
+  const importJsonInputRef = React.useRef<TextInput | null>(null);
   const [isDeveloper, setIsDeveloper] = React.useState(false);
   const [deviceId, setDeviceId] = React.useState<string | null>(null);
+  const [lifetimeOverride, setLifetimeOverrideState] = React.useState<boolean | null>(null);
+  const [lifetimeDiagnostics, setLifetimeDiagnostics] =
+    React.useState<LifetimeAccessDiagnostics | null>(null);
+  const [refreshingLifetime, setRefreshingLifetime] = React.useState(false);
+  const [accessStatesExpanded, setAccessStatesExpanded] = React.useState(false);
+  const [lifetimeDiagExpanded, setLifetimeDiagExpanded] = React.useState(false);
+  const [reflectionImageInput, setReflectionImageInput] = React.useState("");
+  const [reflectionImageStatus, setReflectionImageStatus] = React.useState<string | null>(null);
 
-  // Load developer mode and device ID on mount
+  React.useEffect(() => {
+    AsyncStorage.getItem(QA_REFLECTION_IMAGE_OVERRIDE_KEY)
+      .then((value) => {
+        if (value) {
+          setReflectionImageInput(value);
+          setReflectionImageStatus(`Override active: reflections-${value}.webp`);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSetReflectionImage = async () => {
+    const trimmed = reflectionImageInput.trim().replace(/^reflections-/, "").replace(/\.webp$/, "");
+    if (!/^\d+$/.test(trimmed)) {
+      setReflectionImageStatus("Enter the image number (e.g. 33 for reflections-33.webp).");
+      return;
+    }
+    await AsyncStorage.setItem(QA_REFLECTION_IMAGE_OVERRIDE_KEY, trimmed);
+    setReflectionImageInput(trimmed);
+    setReflectionImageStatus(`Override set to reflections-${trimmed}.webp. Reloading...`);
+    setTimeout(() => Updates.reloadAsync().catch(() => {}), 250);
+  };
+
+  const handleClearReflectionImage = async () => {
+    await AsyncStorage.removeItem(QA_REFLECTION_IMAGE_OVERRIDE_KEY);
+    setReflectionImageInput("");
+    setReflectionImageStatus("Override cleared. Reloading...");
+    setTimeout(() => Updates.reloadAsync().catch(() => {}), 250);
+  };
+
+  const loadLifetimeDiagnostics = React.useCallback(async () => {
+    const diagnostics = await getLifetimeAccessDiagnostics();
+    setLifetimeDiagnostics(diagnostics);
+  }, []);
+
+  // Load developer mode, device ID, and lifetime override on mount
   React.useEffect(() => {
     const loadDeviceInfo = async () => {
       const devMode = await isDeveloperDevice();
       setIsDeveloper(devMode);
       const id = await getOrCreateDeviceId();
       setDeviceId(id);
+      const override = await getLifetimeOverride();
+      setLifetimeOverrideState(override);
+      await loadLifetimeDiagnostics();
     };
-    loadDeviceInfo();
-  }, []);
+    void loadDeviceInfo();
+  }, [loadLifetimeDiagnostics]);
 
   const expoConfig: any = Constants.expoConfig ?? {};
   const appVersion =
@@ -141,24 +226,278 @@ export default function QaLogsScreen() {
     }
   };
 
+  const chooseImportMode = React.useCallback((): Promise<QaTransferImportMode | null> => {
+    return new Promise((resolve) => {
+      Alert.alert(
+        "Import mode",
+        "Choose how to apply imported notebook entries and personal prayers.",
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+            onPress: () => resolve(null),
+          },
+          {
+            text: "Add",
+            onPress: () => resolve("merge"),
+          },
+          {
+            text: "Replace",
+            style: "destructive",
+            onPress: () => resolve("replace"),
+          },
+        ],
+      );
+    });
+  }, []);
+
+  const handleExportQaData = async () => {
+    try {
+      setTransferStatus("Preparing export...");
+      const canShare = await Sharing.isAvailableAsync();
+      const result = await exportQaTransferToFile();
+      qaLog("qa-transfer", "Exported QA transfer file", {
+        notebookCount: result.notebookCount,
+        prayerCount: result.prayerCount,
+        fileName: result.fileName,
+      });
+
+      if (!canShare) {
+        setTransferStatus(
+          `Exported ${result.notebookCount} notebook + ${result.prayerCount} prayer records`,
+        );
+        Alert.alert("Exported", `File saved at:\n${result.fileUri}`);
+        return;
+      }
+
+      await Sharing.shareAsync(result.fileUri, {
+        mimeType: "text/plain",
+        UTI: "public.plain-text",
+        dialogTitle: "Export QA Test Data",
+      });
+      setTransferStatus(
+        `Exported ${result.notebookCount} notebook + ${result.prayerCount} prayer records`,
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      qaLog("qa-transfer", "Export failed", { error: msg });
+      setTransferStatus(`Export failed: ${msg}`);
+      Alert.alert("Export failed", msg);
+    }
+  };
+
+  const handleImportQaData = async () => {
+    const importMode = await chooseImportMode();
+    if (!importMode) return;
+
+    try {
+      const clipboardRaw = await Clipboard.getString();
+      setPendingImportMode(importMode);
+      setImportJsonText(clipboardRaw ?? "");
+      setShowImportJsonModal(true);
+      setTransferStatus("Paste transfer JSON and tap Import.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      qaLog("qa-transfer", "Import failed", { error: msg });
+      setTransferStatus(`Import failed: ${msg}`);
+      Alert.alert("Import failed", msg);
+    }
+  };
+
+  const handlePasteFromClipboard = async () => {
+    try {
+      const clipboardRaw = await Clipboard.getString();
+      if (!clipboardRaw?.trim()) {
+        Alert.alert(
+          "Clipboard is empty",
+          "Copy the JSON text content (not the file itself), then tap 'Paste from Clipboard' again.",
+        );
+        return;
+      }
+      setImportJsonText(clipboardRaw ?? "");
+    } catch {
+      Alert.alert("Clipboard error", "Unable to read clipboard content.");
+    }
+  };
+
+  React.useEffect(() => {
+    if (!showImportJsonModal) return;
+    const timer = setTimeout(() => {
+      importJsonInputRef.current?.focus();
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [showImportJsonModal]);
+
+  const handleConfirmImportJson = async () => {
+    if (!pendingImportMode) return;
+    if (!importJsonText.trim()) {
+      Alert.alert("Import failed", "Paste transfer JSON before importing.");
+      return;
+    }
+
+    setImportingJson(true);
+    try {
+      const validPayload = parseQaTransferText(importJsonText);
+      const result = await importQaTransferPayload(validPayload, pendingImportMode);
+      const verb = pendingImportMode === "merge" ? "Added" : "Imported";
+      qaLog("qa-transfer", "Imported QA transfer from pasted JSON", {
+        importMode: pendingImportMode,
+        notebookAdded: result.notebookAdded,
+        prayerAdded: result.prayerAdded,
+        notebookCount: result.notebookCount,
+        prayerCount: result.prayerCount,
+      });
+
+      setTransferStatus(
+        pendingImportMode === "merge"
+          ? `Added ${result.notebookAdded} notebook + ${result.prayerAdded} prayers (totals: ${result.notebookCount}/${result.prayerCount})`
+          : `Imported ${result.notebookCount} notebook + ${result.prayerCount} prayer records`,
+      );
+
+      setShowImportJsonModal(false);
+      setImportJsonText("");
+      setPendingImportMode(null);
+
+      Alert.alert(
+        "Import complete",
+        pendingImportMode === "merge"
+          ? `${verb} ${result.notebookAdded} notebook entries and ${result.prayerAdded} personal prayers. Reload now to refresh all screens?`
+          : `${verb} ${result.notebookCount} notebook entries and ${result.prayerCount} personal prayers. Reload now to refresh all screens?`,
+        [
+          { text: "Later", style: "cancel" },
+          {
+            text: "Reload now",
+            onPress: () => {
+              void Updates.reloadAsync();
+            },
+          },
+        ],
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      qaLog("qa-transfer", "Import failed", { error: msg });
+      setTransferStatus(`Import failed: ${msg}`);
+      Alert.alert("Import failed", msg);
+    } finally {
+      setImportingJson(false);
+    }
+  };
+
+  // ─── Freemium testing helpers ──────────────────────────────────────────
+
+  const handleShowTrialStatus = async () => {
+    try {
+      const status = await getTrialStatus();
+      const lines = [
+        `isInTrial: ${status.isInTrial}`,
+        `trialExpired: ${status.trialExpired}`,
+        `neverStarted: ${status.neverStarted}`,
+        `daysRemaining: ${status.daysRemaining}`,
+        `trialStartDate: ${status.trialStartDate ?? "null"}`,
+      ];
+      alert(lines.join("\n"));
+      qaLog("freemium", "Trial status checked", status);
+    } catch (err) {
+      alert("Failed to read trial status");
+    }
+  };
+
+  const handleResetTrial = async () => {
+    try {
+      await resetTrial();
+      await trialStatus.refresh();
+      qaLog("freemium", "Trial reset");
+      alert("Trial reset. Restart the app to begin a fresh 7-day trial.");
+    } catch (err) {
+      qaLog("freemium", "Error resetting trial", { error: String(err) });
+      alert("Failed to reset trial");
+    }
+  };
+
+  const handleExpireTrial = async () => {
+    try {
+      await expireTrial();
+      await trialStatus.refresh();
+      qaLog("freemium", "Trial expired manually");
+      alert("Trial expired. Premium tabs will now show the paywall.");
+    } catch (err) {
+      qaLog("freemium", "Error expiring trial", { error: String(err) });
+      alert("Failed to expire trial");
+    }
+  };
+
+  /** Clears “already saw” flag + expires trial so `TrialEndedModal` can show (not subscribed / not legacy / no lifetime). */
+  const handlePreviewTrialEndedModal = async () => {
+    try {
+      await clearTrialEndedModalSeen();
+      await expireTrial();
+      await trialStatus.refresh();
+      qaLog("freemium", "Trial ended modal preview prepared");
+      Alert.alert(
+        "Trial ended modal",
+        "Dismissed this alert. The trial-ended sheet should appear if you are not subscribed, not a legacy user, and have no lifetime access. If it does not, go back to the main tabs or send the app to background and return.",
+      );
+    } catch (err) {
+      qaLog("freemium", "Error preparing trial ended modal", { error: String(err) });
+      Alert.alert("Error", "Could not reset trial-ended modal state.");
+    }
+  };
+
+  const handleToggleLifetimeOverride = async () => {
+    if (lifetimeOverride === true) {
+      // Currently forced on → turn off
+      await setLifetimeOverride(false);
+      setLifetimeOverrideState(false);
+    } else if (lifetimeOverride === false) {
+      // Currently forced off → clear override (use receipt detection)
+      await setLifetimeOverride(null);
+      setLifetimeOverrideState(null);
+    } else {
+      // No override → force on
+      await setLifetimeOverride(true);
+      setLifetimeOverrideState(true);
+    }
+    await refreshLifetimeAccess();
+    await loadLifetimeDiagnostics();
+  };
+
+  const handleRefreshLifetimeDiagnostics = async () => {
+    setRefreshingLifetime(true);
+    try {
+      await clearLifetimeAccessCache();
+      await refreshLifetimeAccess();
+      await loadLifetimeDiagnostics();
+    } finally {
+      setRefreshingLifetime(false);
+    }
+  };
+
+  const lifetimeOverrideLabel =
+    lifetimeOverride === true
+      ? "Forced ON"
+      : lifetimeOverride === false
+        ? "Forced OFF"
+        : "Auto (receipt)";
+
   return (
     <View
       style={[
         styles.container,
-        { paddingTop: insets.top || 16, paddingBottom: insets.bottom || 16 },
+        { backgroundColor: colors.pearl, paddingTop: insets.top || 16, paddingBottom: insets.bottom || 16 },
       ]}
     >
-      <View style={styles.header}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <View style={[styles.header, { borderBottomColor: colors.mist }]}>
         <View style={styles.headerRow}>
-          <Text style={styles.title}>QA Diagnostics</Text>
+          <Text style={[styles.title, { color: colors.deepTeal }]}>QA Diagnostics</Text>
           <TouchableOpacity
             onPress={() => router.back()}
             activeOpacity={0.7}
           >
-            <Text style={styles.closeText}>Close</Text>
+            <Text style={[styles.closeText, { color: colors.deepTeal }]}>Close</Text>
           </TouchableOpacity>
         </View>
-        <Text style={styles.subtitle}>
+        <Text style={[styles.subtitle, { color: colors.ink }]}>
           Version {appVersion} (build {iosBuildNumber})
         </Text>
         <Text style={styles.meta}>
@@ -167,8 +506,8 @@ export default function QaLogsScreen() {
           {deviceId && `\nDevice ID: ${deviceId.slice(0, 8)}...`}
         </Text>
         
-        <View style={styles.developerRow}>
-          <Text style={styles.developerLabel}>Developer Mode (exclude from analytics)</Text>
+        <View style={[styles.developerRow, { borderColor: colors.mist }]}>
+          <Text style={[styles.developerLabel, { color: colors.ink }]}>Developer Mode (exclude from analytics)</Text>
           <Switch
             value={isDeveloper}
             onValueChange={async (value) => {
@@ -179,50 +518,224 @@ export default function QaLogsScreen() {
                 : 'Developer mode disabled. Your usage will be counted in analytics.'
               );
             }}
-            trackColor={{ false: lightColors.mist, true: lightColors.seafoam }}
-            thumbColor={isDeveloper ? lightColors.deepTeal : '#f4f3f4'}
+            trackColor={{ false: colors.mist, true: colors.deepTeal }}
+            thumbColor={isDeveloper ? colors.pearl : '#f4f3f4'}
           />
         </View>
 
+        <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>Trial Testing</Text>
         <View style={styles.actionsRow}>
           <TouchableOpacity
-            style={styles.secondaryButton}
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleShowTrialStatus}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Show Trial Status</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleResetTrial}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Reset Trial</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleExpireTrial}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Expire Trial</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={() => void handlePreviewTrialEndedModal()}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              Show Trial Ended Modal
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>Freemium Testing</Text>
+        <View style={[styles.developerRow, { borderColor: colors.mist }]}>
+          <View style={{ flex: 1, marginRight: 8 }}>
+            <Text style={[styles.developerLabel, { color: colors.ink }]}>Lifetime Access Override</Text>
+            <Text style={[styles.meta, { marginTop: 2 }]}>{lifetimeOverrideLabel}</Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleToggleLifetimeOverride}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              {lifetimeOverride === true ? "Force OFF" : lifetimeOverride === false ? "Clear" : "Force ON"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity
+          onPress={() => setLifetimeDiagExpanded(!lifetimeDiagExpanded)}
+          activeOpacity={0.7}
+          style={styles.accordionHeaderRow}
+        >
+          <Text style={[styles.sectionHeader, { marginTop: 0, color: colors.deepTeal }]}>
+            Lifetime Receipt Diagnostics
+          </Text>
+          <Ionicons
+            name={lifetimeDiagExpanded ? "chevron-down" : "chevron-forward"}
+            size={18}
+            color={colors.deepTeal}
+          />
+        </TouchableOpacity>
+        {lifetimeDiagExpanded && (
+          <>
+            <View style={[styles.stateBox, { backgroundColor: "#fff", borderColor: colors.mist }]}>
+              <Text style={[styles.stateLabel, { color: colors.ink }]}>
+                Source: {lifetimeDiagnostics?.source ?? "loading"}
+              </Text>
+              <Text style={[styles.stateLabel, { color: colors.ink }]}>
+                Effective access: {lifetimeDiagnostics?.effectiveStatus.hasLifetimeAccess ? "true" : "false"}
+              </Text>
+              <Text style={[styles.stateLabel, { color: colors.ink }]}>
+                Detection method: {lifetimeDiagnostics?.effectiveStatus.detectionMethod ?? "loading"}
+              </Text>
+              <Text style={[styles.stateLabel, { color: colors.ink }]}>
+                Original app version: {lifetimeDiagnostics?.effectiveStatus.originalAppVersion ?? "null"}
+              </Text>
+              <Text style={[styles.stateLabel, { color: colors.ink }]}>
+                Original purchase date: {lifetimeDiagnostics?.effectiveStatus.originalPurchaseDate ?? "null"}
+              </Text>
+              <Text style={[styles.stateLabel, { color: colors.ink }]}>
+                First free build: {lifetimeDiagnostics?.firstFreeBuildNumber ?? "null"}
+              </Text>
+              <Text style={[styles.stateLabel, { color: colors.ink }]}>
+                Native available: {lifetimeDiagnostics?.nativeInfo ? String(lifetimeDiagnostics.nativeInfo.available) : "n/a"}
+              </Text>
+              <Text style={[styles.stateLabel, { color: colors.ink }]}>
+                Native verified: {lifetimeDiagnostics?.nativeInfo ? String(lifetimeDiagnostics.nativeInfo.verified) : "n/a"}
+              </Text>
+              <Text style={[styles.stateLabel, { color: colors.ink }]}>
+                Native reason: {lifetimeDiagnostics?.nativeInfo?.reason ?? lifetimeDiagnostics?.nativeError ?? "null"}
+              </Text>
+              <Text style={[styles.stateLabel, { color: colors.ink }]}>
+                Cached status present: {lifetimeDiagnostics?.cachedStatus ? "true" : "false"}
+              </Text>
+            </View>
+            <View style={styles.actionsRow}>
+              <TouchableOpacity
+                style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+                activeOpacity={0.8}
+                onPress={handleRefreshLifetimeDiagnostics}
+                disabled={refreshingLifetime}
+              >
+                <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+                  {refreshingLifetime ? "Refreshing..." : "Refresh Lifetime Check"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+
+        <TouchableOpacity
+          onPress={() => setAccessStatesExpanded(!accessStatesExpanded)}
+          activeOpacity={0.7}
+          style={styles.accordionHeaderRow}
+        >
+          <Text style={[styles.sectionHeader, { marginTop: 0, color: colors.deepTeal }]}>
+            Access States
+          </Text>
+          <Ionicons
+            name={accessStatesExpanded ? "chevron-down" : "chevron-forward"}
+            size={18}
+            color={colors.deepTeal}
+          />
+        </TouchableOpacity>
+        {accessStatesExpanded && (
+          <View style={[styles.stateBox, { backgroundColor: "#fff", borderColor: colors.mist }]}>
+            <View style={styles.stateRow}>
+              <Text style={[styles.stateIndicator, { color: hasLifetimeAccess ? "#16a34a" : colors.textSecondary }]}>
+                {hasLifetimeAccess ? "\u2713" : "\u2717"}
+              </Text>
+              <Text style={[styles.stateLabel, { color: hasLifetimeAccess ? colors.ink : colors.textSecondary }]}>
+                Lifetime Access (paid download)
+              </Text>
+            </View>
+            <View style={styles.stateRow}>
+              <Text style={[styles.stateIndicator, { color: subStatus.isLegacy ? "#16a34a" : colors.textSecondary }]}>
+                {subStatus.isLegacy ? "\u2713" : "\u2717"}
+              </Text>
+              <Text style={[styles.stateLabel, { color: subStatus.isLegacy ? colors.ink : colors.textSecondary }]}>
+                Legacy Grant (RevenueCat)
+              </Text>
+            </View>
+            <View style={styles.stateRow}>
+              <Text style={[styles.stateIndicator, { color: subStatus.isSubscribed ? "#16a34a" : colors.textSecondary }]}>
+                {subStatus.isSubscribed ? "\u2713" : "\u2717"}
+              </Text>
+              <Text style={[styles.stateLabel, { color: subStatus.isSubscribed ? colors.ink : colors.textSecondary }]}>
+                Subscription{subStatus.isSubscribed
+                  ? ` — ${subStatus.productIdentifier ?? "unknown"} (${subStatus.willRenew ? "renews" : "expires"} ${subStatus.expirationDate ? new Date(subStatus.expirationDate).toLocaleDateString() : "\u2014"})`
+                  : ""}
+              </Text>
+            </View>
+            <View style={styles.stateRow}>
+              <Text style={[styles.stateIndicator, { color: trialStatus.isInTrial ? "#16a34a" : colors.textSecondary }]}>
+                {trialStatus.isInTrial ? "\u2713" : "\u2717"}
+              </Text>
+              <Text style={[styles.stateLabel, { color: trialStatus.isInTrial ? colors.ink : colors.textSecondary }]}>
+                7-Day Trial{trialStatus.isInTrial
+                  ? ` (${trialStatus.daysRemaining}d remaining)`
+                  : trialStatus.trialExpired
+                    ? " (expired)"
+                    : trialStatus.neverStarted
+                      ? " (not started)"
+                      : ""}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>Utilities</Text>
+        <View style={styles.actionsRow}>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
             activeOpacity={0.8}
             onPress={handleCopyAll}
           >
-            <Text style={styles.secondaryButtonText}>Copy all</Text>
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Copy all</Text>
           </TouchableOpacity>
           {copyStatus && (
             <Text style={[styles.meta, { width: "100%" }]}>{copyStatus}</Text>
           )}
           <TouchableOpacity
-            style={styles.secondaryButton}
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
             activeOpacity={0.8}
             onPress={clearQaLogs}
           >
-            <Text style={styles.secondaryButtonText}>Clear logs</Text>
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Clear logs</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.secondaryButton}
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
             activeOpacity={0.8}
             onPress={handleResetDeviceId}
           >
-            <Text style={styles.secondaryButtonText}>Reset Device ID</Text>
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Reset Device ID</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.secondaryButton}
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
             activeOpacity={0.8}
             onPress={handleResetRateTracking}
           >
-            <Text style={styles.secondaryButtonText}>Reset Rate Tracking</Text>
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Reset Rate Tracking</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.secondaryButton}
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
             activeOpacity={0.8}
             onPress={handleManualUpdate}
             disabled={updating}
           >
-            <Text style={styles.secondaryButtonText}>
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
               {updating ? "Updating..." : "Check for update"}
             </Text>
           </TouchableOpacity>
@@ -230,13 +743,84 @@ export default function QaLogsScreen() {
             <Text style={[styles.meta, { width: "100%" }]}>{updateStatus}</Text>
           )}
         </View>
+
+        <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>
+          Screenshot: Reflection Image
+        </Text>
+        <View style={styles.actionsRow}>
+          <TextInput
+            style={{
+              flexBasis: "100%",
+              borderWidth: 1,
+              borderColor: colors.mist,
+              borderRadius: 8,
+              paddingHorizontal: 10,
+              paddingVertical: 8,
+              fontFamily: fonts.bodyFamilyRegular,
+              fontSize: 14,
+              color: colors.ink,
+            }}
+            placeholder="Image number (e.g. 33) or reflections-33.webp"
+            placeholderTextColor="#9ca3af"
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="default"
+            value={reflectionImageInput}
+            onChangeText={setReflectionImageInput}
+          />
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleSetReflectionImage}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              Set & Reload
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleClearReflectionImage}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              Clear & Reload
+            </Text>
+          </TouchableOpacity>
+          {reflectionImageStatus && (
+            <Text style={[styles.meta, { width: "100%" }]}>{reflectionImageStatus}</Text>
+          )}
+        </View>
+
+        <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>
+          Data Transfer (QA)
+        </Text>
+        <View style={styles.actionsRow}>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleExportQaData}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              Export Notebook + Personal Prayers
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleImportQaData}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              Import Notebook + Personal Prayers
+            </Text>
+          </TouchableOpacity>
+          {transferStatus && (
+            <Text style={[styles.meta, { width: "100%" }]}>{transferStatus}</Text>
+          )}
+        </View>
       </View>
 
-      <ScrollView
-        style={styles.logContainer}
-        contentContainerStyle={styles.logContent}
-      >
-        <Text style={[styles.sectionHeader, { marginTop: 12 }]}>QA Logs</Text>
+        <View style={[styles.logContainer, styles.logContent]}>
+        <Text style={[styles.sectionHeader, { marginTop: 12, color: colors.deepTeal }]}>QA Logs</Text>
         {logs.length === 0 ? (
           <Text style={styles.emptyText}>No QA log entries yet.</Text>
         ) : (
@@ -246,14 +830,81 @@ export default function QaLogsScreen() {
                 [{new Date(entry.timestamp).toLocaleTimeString()}]{" "}
                 {entry.scope}
               </Text>
-              <Text style={styles.logMessage}>{entry.message}</Text>
+              <Text style={[styles.logMessage, { color: colors.ink }]}>{entry.message}</Text>
               {entry.details && (
                 <Text style={styles.logDetails}>{entry.details}</Text>
               )}
             </View>
           ))
         )}
+        </View>
       </ScrollView>
+
+      <Modal
+        visible={showImportJsonModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          if (!importingJson) setShowImportJsonModal(false);
+        }}
+      >
+        <KeyboardAvoidingView
+          style={styles.modalBackdrop}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={insets.bottom + 8}
+        >
+          <View style={[styles.modalCard, { backgroundColor: colors.modalBackground, borderColor: colors.modalBorder }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Paste Transfer JSON</Text>
+            <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
+              Paste exported QA JSON text (not the file), then tap Import.
+            </Text>
+            <TextInput
+              ref={importJsonInputRef}
+              style={[styles.modalInput, { color: colors.text, borderColor: colors.modalBorder }]}
+              multiline
+              value={importJsonText}
+              onChangeText={setImportJsonText}
+              autoCorrect={false}
+              autoCapitalize="none"
+              autoFocus
+              editable={!importingJson}
+              placeholder="Paste transfer JSON here..."
+              placeholderTextColor={colors.textSecondary}
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+                activeOpacity={0.8}
+                disabled={importingJson}
+                onPress={handlePasteFromClipboard}
+              >
+                <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Paste from Clipboard</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+                activeOpacity={0.8}
+                disabled={importingJson}
+                onPress={() => {
+                  setShowImportJsonModal(false);
+                  setPendingImportMode(null);
+                }}
+              >
+                <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+                activeOpacity={0.8}
+                disabled={importingJson}
+                onPress={handleConfirmImportJson}
+              >
+                <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+                  {importingJson ? "Importing..." : "Import"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -261,13 +912,14 @@ export default function QaLogsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: lightColors.pearl,
+  },
+  scrollContent: {
+    paddingBottom: 24,
   },
   header: {
     paddingHorizontal: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: lightColors.mist,
   },
   headerRow: {
     flexDirection: "row",
@@ -277,18 +929,15 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: fonts.headerFamily,
     fontSize: 22,
-    color: lightColors.deepTeal,
   },
   closeText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
-    color: lightColors.deepTeal,
   },
   subtitle: {
     marginTop: 4,
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
-    color: lightColors.ink,
   },
   meta: {
     marginTop: 4,
@@ -306,12 +955,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: lightColors.mist,
   },
   developerLabel: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 13,
-    color: lightColors.ink,
     flex: 1,
     marginRight: 8,
   },
@@ -325,7 +972,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: lightColors.deepTeal,
   },
   primaryButtonText: {
     fontFamily: fonts.bodyFamilyRegular,
@@ -337,13 +983,11 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: lightColors.deepTeal,
     backgroundColor: "transparent",
   },
   secondaryButtonText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 12,
-    color: lightColors.deepTeal,
   },
   logContainer: {
     flex: 1,
@@ -375,7 +1019,6 @@ const styles = StyleSheet.create({
   logMessage: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 13,
-    color: lightColors.ink,
     marginBottom: 2,
   },
   logDetails: {
@@ -383,11 +1026,79 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#4b5563",
   },
+  stateBox: {
+    marginTop: 8,
+    marginBottom: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 6,
+  },
+  stateRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  stateIndicator: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 13,
+    fontWeight: "700",
+    width: 20,
+  },
+  stateLabel: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 13,
+    flex: 1,
+  },
   sectionHeader: {
     fontFamily: fonts.headerFamily,
     fontSize: 16,
-    color: lightColors.deepTeal,
     marginBottom: 8,
+  },
+  accordionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 16,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    justifyContent: "center",
+    paddingHorizontal: 16,
+  },
+  modalCard: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    maxHeight: "85%",
+  },
+  modalTitle: {
+    fontFamily: fonts.headerFamily,
+    fontSize: 18,
+  },
+  modalSubtitle: {
+    marginTop: 4,
+    marginBottom: 8,
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 13,
+  },
+  modalInput: {
+    minHeight: 140,
+    maxHeight: 240,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    textAlignVertical: "top",
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 12,
+  },
+  modalActions: {
+    marginTop: 10,
+    flexDirection: "row",
+    gap: 8,
+    flexWrap: "wrap",
   },
 });
 

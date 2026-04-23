@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Paths — Prayers & Nav Redesign</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --deep-teal: #2C5F5D;
+    --teal-dark: #1E4543;
+    --teal-darker: #183836;
+    --seafoam: #5B9E9B;
+    --pearl: #F5F0EB;
+    --pearl-warm: #EDE7E0;
+    --sand: #D4C9BC;
+    --text-primary: #2A2A2A;
+    --text-secondary: #555555;
+    --text-muted: #8A8A8A;
+    --text-light: #AAAAAA;
+    --white: #FFFFFF;
+    --border: rgba(44, 95, 93, 0.08);
+    --border-med: rgba(44, 95, 93, 0.12);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+    --radius: 14px;
+    --radius-sm: 10px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Source Sans 3', sans-serif;
+    background: #E8E2DB;
+    color: var(--text-primary);
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  h1.page-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 28px;
+    color: var(--deep-teal);
+    text-align: center;
+  }
+  .subtitle { text-align: center; color: var(--text-secondary); font-size: 14px; font-weight: 300; margin-bottom: 20px; }
+
+  .section-divider { width: 100%; max-width: 1200px; text-align: center; padding: 30px 0 10px; }
+  .section-divider h2 { font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 500; font-size: 24px; color: var(--deep-teal); }
+  .section-divider p { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+  .phones-row { display: flex; gap: 30px; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
+  .phone-wrapper { display: flex; flex-direction: column; align-items: center; }
+  .phone-label { text-align: center; font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 17px; color: var(--deep-teal); margin-bottom: 6px; font-weight: 500; }
+  .phone-label-desc { text-align: center; font-size: 12px; color: var(--text-muted); margin-bottom: 14px; max-width: 390px; line-height: 1.5; }
+
+  .phone-frame {
+    width: 390px; height: 844px; background: var(--pearl);
+    border-radius: 44px; overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04);
+    position: relative; flex-shrink: 0;
+  }
+
+  /* Header */
+  .teal-header {
+    background: linear-gradient(160deg, var(--deep-teal) 0%, var(--teal-darker) 100%);
+    padding: 56px 24px 20px;
+    position: relative; overflow: hidden;
+  }
+  .teal-header::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 30% 20%, rgba(91,158,155,0.15) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .header-row { display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 1; }
+  .header-title { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 32px; color: var(--white); font-weight: 500; }
+
+  /* Scroll area */
+  .scroll-area { height: calc(100% - 96px - 68px); overflow-y: auto; }
+  .scroll-area::-webkit-scrollbar { display: none; }
+
+  /* Prayers intro */
+  .prayers-intro {
+    padding: 24px 24px 0;
+    margin-bottom: 8px;
+  }
+  .prayers-intro-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 19px;
+    color: var(--deep-teal);
+    line-height: 1.5;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border-med);
+  }
+
+  /* Prayer cards */
+  .prayer-list { padding: 16px 16px 8px; }
+
+  .prayer-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .prayer-card:hover { box-shadow: var(--shadow-md); }
+
+  .prayer-card-header {
+    display: flex;
+    align-items: center;
+    padding: 18px 20px;
+    gap: 14px;
+  }
+
+  .prayer-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(44, 95, 93, 0.06);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .prayer-icon svg {
+    width: 18px; height: 18px; stroke: var(--deep-teal);
+    stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round;
+  }
+
+  .prayer-name {
+    flex: 1;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  .prayer-chevron {
+    transition: transform 0.3s ease;
+  }
+  .prayer-chevron svg {
+    width: 16px; height: 16px; stroke: var(--sand);
+    stroke-width: 2; fill: none;
+  }
+
+  .prayer-card.open .prayer-chevron { transform: rotate(180deg); }
+
+  .prayer-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease, padding 0.3s ease;
+  }
+
+  .prayer-card.open .prayer-body {
+    max-height: 500px;
+  }
+
+  .prayer-text {
+    padding: 0 24px 24px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    text-align: center;
+    font-style: italic;
+  }
+
+  .prayer-divider {
+    width: 40px; height: 1px;
+    background: var(--sand);
+    margin: 0 auto 16px;
+  }
+
+  /* Personal notes section */
+  .personal-section {
+    margin: 8px 16px 24px;
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+
+  .personal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .personal-title-area {
+    display: flex; align-items: center; gap: 12px;
+  }
+
+  .personal-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(139, 110, 78, 0.08);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .personal-icon svg {
+    width: 18px; height: 18px; stroke: #8B6E4E;
+    stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round;
+  }
+
+  .personal-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  .personal-edit svg {
+    width: 18px; height: 18px; stroke: var(--seafoam);
+    stroke-width: 1.8; fill: none; cursor: pointer;
+  }
+
+  .personal-body {
+    padding: 16px 20px 20px;
+  }
+
+  .personal-placeholder {
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 15px;
+    color: var(--sand);
+    font-style: italic;
+    line-height: 1.6;
+  }
+
+  /* =============================== */
+  /* BOTTOM NAV — Custom Icons       */
+  /* =============================== */
+  .bottom-nav {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 68px;
+    background: var(--white); border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-around;
+    padding: 0 16px 10px;
+  }
+  .nav-item {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 3px; cursor: pointer; opacity: 0.4;
+  }
+  .nav-item.active { opacity: 1; }
+  .nav-item svg {
+    width: 24px; height: 24px; stroke: var(--deep-teal);
+    stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round;
+  }
+  .nav-item.active svg { stroke-width: 1.8; }
+  .nav-label { font-size: 10px; font-weight: 500; color: var(--deep-teal); }
+
+  /* =============================== */
+  /* NAV ICON SHOWCASE               */
+  /* =============================== */
+  .nav-showcase {
+    background: var(--white);
+    border-radius: 20px;
+    padding: 32px;
+    width: 100%;
+    max-width: 800px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .showcase-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 22px;
+    color: var(--deep-teal);
+    margin-bottom: 6px;
+  }
+
+  .showcase-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+
+  .nav-icons-row {
+    display: flex;
+    justify-content: space-around;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .nav-icon-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+  }
+
+  .nav-icon-display {
+    width: 64px; height: 64px; border-radius: 16px;
+    background: rgba(44, 95, 93, 0.06);
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .nav-icon-display svg {
+    width: 32px; height: 32px; stroke: var(--deep-teal);
+    stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round;
+  }
+
+  .nav-icon-name { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+  .nav-icon-meaning { font-size: 11px; color: var(--text-muted); font-style: italic; text-align: center; line-height: 1.3; }
+
+  /* Simulated nav bar at large size */
+  .nav-bar-preview {
+    background: var(--pearl);
+    border-radius: 12px;
+    padding: 14px 24px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+  }
+
+  .nav-prev-item {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    opacity: 0.4;
+  }
+  .nav-prev-item.active { opacity: 1; }
+  .nav-prev-item svg {
+    width: 24px; height: 24px; stroke: var(--deep-teal);
+    stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round;
+  }
+  .nav-prev-item.active svg { stroke-width: 1.8; }
+  .nav-prev-label { font-size: 11px; font-weight: 500; color: var(--deep-teal); }
+
+  /* Annotation */
+  .annotation-group {
+    width: 100%; max-width: 900px; margin: 20px auto 10px; padding: 24px;
+    background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow-sm);
+  }
+  .annotation-title { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 20px; color: var(--deep-teal); margin-bottom: 10px; }
+  .annotation-text { font-size: 14px; color: var(--text-secondary); line-height: 1.65; }
+
+  @media (max-width: 900px) { body { flex-direction: column; align-items: center; } }
+</style>
+</head>
+<body>
+
+<h1 class="page-title">Prayers & Bottom Nav — Redesign</h1>
+<p class="subtitle">Custom nav icons + prayers page that feels like opening a prayer book</p>
+
+<!-- ================================================= -->
+<!-- CUSTOM NAV ICONS                                  -->
+<!-- ================================================= -->
+<div class="nav-showcase">
+  <div class="showcase-title">Custom Bottom Nav Icons</div>
+  <div class="showcase-desc">Organic line art matching the journal icon family. Each has personality without being decorative.</div>
+
+  <div class="nav-icons-row">
+    <div class="nav-icon-item">
+      <div class="nav-icon-display">
+        <!-- Today: Open book with bookmark ribbon -->
+        <svg viewBox="0 0 32 32">
+          <path d="M4 6c3-1 6-1.5 12 1.5C22 4.5 25 5 28 6v20c-3-1-6-1.5-12 1.5C10 24.5 7 25 4 26Z"/>
+          <path d="M16 7.5V27.5"/>
+          <path d="M12 4v4" stroke-width="1.8"/>
+        </svg>
+      </div>
+      <div class="nav-icon-name">Today</div>
+      <div class="nav-icon-meaning">open book with ribbon</div>
+    </div>
+    <div class="nav-icon-item">
+      <div class="nav-icon-display">
+        <!-- Journal: Feather (same as journal entry icon) -->
+        <svg viewBox="0 0 32 32">
+          <path d="M26 4c-8 2-12 8-14 16l-4 8 8-4c8-2 14-6 16-14"/>
+          <path d="M12 20L26 4"/>
+        </svg>
+      </div>
+      <div class="nav-icon-name">Journal</div>
+      <div class="nav-icon-meaning">the feather — consistent</div>
+    </div>
+    <div class="nav-icon-item">
+      <div class="nav-icon-display">
+        <!-- Prayers: Flame / candle light -->
+        <svg viewBox="0 0 32 32">
+          <path d="M16 4c-3 5-7 8-7 13a7 7 0 0 0 14 0c0-5-4-8-7-13Z"/>
+          <path d="M16 14c-1 2-2.5 3-2.5 5a2.5 2.5 0 0 0 5 0c0-2-1.5-3-2.5-5Z" opacity="0.4"/>
+        </svg>
+      </div>
+      <div class="nav-icon-name">Prayers</div>
+      <div class="nav-icon-meaning">flame — inner light</div>
+    </div>
+    <div class="nav-icon-item">
+      <div class="nav-icon-display">
+        <!-- More: Three stones / pebbles stacked -->
+        <svg viewBox="0 0 32 32">
+          <ellipse cx="16" cy="25" rx="9" ry="3.5"/>
+          <ellipse cx="16" cy="18" rx="6.5" ry="3"/>
+          <ellipse cx="16" cy="11.5" rx="4.5" ry="2.5"/>
+          <circle cx="16" cy="6" r="2"/>
+        </svg>
+      </div>
+      <div class="nav-icon-name">More</div>
+      <div class="nav-icon-meaning">stacked stones — balance</div>
+    </div>
+  </div>
+
+  <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">As they appear in the nav bar</div>
+  <div class="nav-bar-preview">
+    <div class="nav-prev-item active">
+      <svg viewBox="0 0 32 32"><path d="M4 6c3-1 6-1.5 12 1.5C22 4.5 25 5 28 6v20c-3-1-6-1.5-12 1.5C10 24.5 7 25 4 26Z"/><path d="M16 7.5V27.5"/><path d="M12 4v4" stroke-width="1.8"/></svg>
+      <span class="nav-prev-label">Today</span>
+    </div>
+    <div class="nav-prev-item">
+      <svg viewBox="0 0 32 32"><path d="M26 4c-8 2-12 8-14 16l-4 8 8-4c8-2 14-6 16-14"/><path d="M12 20L26 4"/></svg>
+      <span class="nav-prev-label">Journal</span>
+    </div>
+    <div class="nav-prev-item">
+      <svg viewBox="0 0 32 32"><path d="M16 4c-3 5-7 8-7 13a7 7 0 0 0 14 0c0-5-4-8-7-13Z"/><path d="M16 14c-1 2-2.5 3-2.5 5a2.5 2.5 0 0 0 5 0c0-2-1.5-3-2.5-5Z" opacity="0.4"/></svg>
+      <span class="nav-prev-label">Prayers</span>
+    </div>
+    <div class="nav-prev-item">
+      <svg viewBox="0 0 32 32"><ellipse cx="16" cy="25" rx="9" ry="3.5"/><ellipse cx="16" cy="18" rx="6.5" ry="3"/><ellipse cx="16" cy="11.5" rx="4.5" ry="2.5"/><circle cx="16" cy="6" r="2"/></svg>
+      <span class="nav-prev-label">More</span>
+    </div>
+  </div>
+</div>
+
+
+<!-- ================================================= -->
+<!-- PRAYERS PAGE                                      -->
+<!-- ================================================= -->
+<div class="section-divider">
+  <h2>The Prayers Page</h2>
+  <p>Tap the prayer cards to expand — formatted for reading aloud</p>
+</div>
+
+<div class="phones-row">
+
+  <!-- COLLAPSED STATE -->
+  <div class="phone-wrapper">
+    <div class="phone-label">Prayers — Collapsed</div>
+    <div class="phone-label-desc">Clean white cards with icons. Tap to expand any prayer.</div>
+    <div class="phone-frame">
+      <div class="teal-header">
+        <div class="header-row">
+          <div class="header-title">Prayers</div>
+        </div>
+      </div>
+      <div class="scroll-area" id="scroll-1">
+        <div class="prayers-intro">
+          <div class="prayers-intro-text">A collection of prayers for your recovery journey</div>
+        </div>
+        <div class="prayer-list" id="prayer-list-1">
+
+          <div class="prayer-card" onclick="togglePrayer(this)">
+            <div class="prayer-card-header">
+              <div class="prayer-icon"><svg viewBox="0 0 32 32"><path d="M16 4c-3 5-7 8-7 13a7 7 0 0 0 14 0c0-5-4-8-7-13Z"/><path d="M16 14c-1 2-2.5 3-2.5 5a2.5 2.5 0 0 0 5 0c0-2-1.5-3-2.5-5Z" opacity="0.4"/></svg></div>
+              <div class="prayer-name">Serenity Prayer</div>
+              <div class="prayer-chevron"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+            </div>
+            <div class="prayer-body">
+              <div class="prayer-divider"></div>
+              <div class="prayer-text">
+                God, grant me the serenity<br>
+                to accept the things<br>
+                I cannot change,<br><br>
+                the courage to change<br>
+                the things I can,<br><br>
+                and the wisdom<br>
+                to know the difference.
+              </div>
+            </div>
+          </div>
+
+          <div class="prayer-card" onclick="togglePrayer(this)">
+            <div class="prayer-card-header">
+              <div class="prayer-icon"><svg viewBox="0 0 32 32"><path d="M16 4c-3 5-7 8-7 13a7 7 0 0 0 14 0c0-5-4-8-7-13Z"/><path d="M16 14c-1 2-2.5 3-2.5 5a2.5 2.5 0 0 0 5 0c0-2-1.5-3-2.5-5Z" opacity="0.4"/></svg></div>
+              <div class="prayer-name">Serenity Prayer (Extended)</div>
+              <div class="prayer-chevron"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+            </div>
+            <div class="prayer-body">
+              <div class="prayer-divider"></div>
+              <div class="prayer-text">
+                God, grant me the serenity to accept the things I cannot change, the courage to change the things I can, and the wisdom to know the difference.<br><br>
+                Living one day at a time, enjoying one moment at a time; accepting hardship as a pathway to peace; taking, as He did, this sinful world as it is, not as I would have it.
+              </div>
+            </div>
+          </div>
+
+          <div class="prayer-card" onclick="togglePrayer(this)">
+            <div class="prayer-card-header">
+              <div class="prayer-icon"><svg viewBox="0 0 32 32"><path d="M16 4c-3 5-7 8-7 13a7 7 0 0 0 14 0c0-5-4-8-7-13Z"/><path d="M16 14c-1 2-2.5 3-2.5 5a2.5 2.5 0 0 0 5 0c0-2-1.5-3-2.5-5Z" opacity="0.4"/></svg></div>
+              <div class="prayer-name">Prayer of St. Francis</div>
+              <div class="prayer-chevron"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+            </div>
+            <div class="prayer-body">
+              <div class="prayer-divider"></div>
+              <div class="prayer-text">
+                Lord, make me<br>
+                an instrument of Thy peace.<br><br>
+                Where there is hatred,<br>
+                let me sow love;<br>
+                where there is injury, pardon;<br>
+                where there is doubt, faith.
+              </div>
+            </div>
+          </div>
+
+          <div class="prayer-card" onclick="togglePrayer(this)">
+            <div class="prayer-card-header">
+              <div class="prayer-icon"><svg viewBox="0 0 32 32"><path d="M16 4c-3 5-7 8-7 13a7 7 0 0 0 14 0c0-5-4-8-7-13Z"/><path d="M16 14c-1 2-2.5 3-2.5 5a2.5 2.5 0 0 0 5 0c0-2-1.5-3-2.5-5Z" opacity="0.4"/></svg></div>
+              <div class="prayer-name">Third Step Prayer</div>
+              <div class="prayer-chevron"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+            </div>
+            <div class="prayer-body">
+              <div class="prayer-divider"></div>
+              <div class="prayer-text">
+                God, I offer myself to Thee —<br>
+                to build with me<br>
+                and to do with me as Thou wilt.<br><br>
+                Relieve me of the bondage of self,<br>
+                that I may better do Thy will.
+              </div>
+            </div>
+          </div>
+
+          <div class="prayer-card" onclick="togglePrayer(this)">
+            <div class="prayer-card-header">
+              <div class="prayer-icon"><svg viewBox="0 0 32 32"><path d="M16 4c-3 5-7 8-7 13a7 7 0 0 0 14 0c0-5-4-8-7-13Z"/><path d="M16 14c-1 2-2.5 3-2.5 5a2.5 2.5 0 0 0 5 0c0-2-1.5-3-2.5-5Z" opacity="0.4"/></svg></div>
+              <div class="prayer-name">Seventh Step Prayer</div>
+              <div class="prayer-chevron"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+            </div>
+            <div class="prayer-body">
+              <div class="prayer-divider"></div>
+              <div class="prayer-text">
+                My Creator, I am now willing<br>
+                that You should have all of me,<br>
+                good and bad.<br><br>
+                I pray that You now remove<br>
+                from me every single defect<br>
+                of character which stands<br>
+                in the way of my usefulness<br>
+                to You and my fellows.
+              </div>
+            </div>
+          </div>
+
+          <div class="prayer-card" onclick="togglePrayer(this)">
+            <div class="prayer-card-header">
+              <div class="prayer-icon"><svg viewBox="0 0 32 32"><path d="M16 4c-3 5-7 8-7 13a7 7 0 0 0 14 0c0-5-4-8-7-13Z"/><path d="M16 14c-1 2-2.5 3-2.5 5a2.5 2.5 0 0 0 5 0c0-2-1.5-3-2.5-5Z" opacity="0.4"/></svg></div>
+              <div class="prayer-name">Let Go and Let God</div>
+              <div class="prayer-chevron"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+            </div>
+            <div class="prayer-body">
+              <div class="prayer-divider"></div>
+              <div class="prayer-text">
+                To "let go" does not mean to stop caring;<br>
+                it means I can't do it for someone else.<br><br>
+                To "let go" is not to cut myself off;<br>
+                it's the realization<br>
+                I can't control another.
+              </div>
+            </div>
+          </div>
+
+          <div class="prayer-card" onclick="togglePrayer(this)">
+            <div class="prayer-card-header">
+              <div class="prayer-icon"><svg viewBox="0 0 32 32"><path d="M16 4c-3 5-7 8-7 13a7 7 0 0 0 14 0c0-5-4-8-7-13Z"/><path d="M16 14c-1 2-2.5 3-2.5 5a2.5 2.5 0 0 0 5 0c0-2-1.5-3-2.5-5Z" opacity="0.4"/></svg></div>
+              <div class="prayer-name">Just for Today</div>
+              <div class="prayer-chevron"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+            </div>
+            <div class="prayer-body">
+              <div class="prayer-divider"></div>
+              <div class="prayer-text">
+                Just for today I will try to live<br>
+                through this day only,<br>
+                and not tackle<br>
+                my whole life problem at once.<br><br>
+                I can do something for twelve hours<br>
+                that would appall me if I felt<br>
+                that I had to keep it up for a lifetime.
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Personal Prayer Notes -->
+        <div class="personal-section">
+          <div class="personal-header">
+            <div class="personal-title-area">
+              <div class="personal-icon">
+                <svg viewBox="0 0 24 24"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="M15 5l4 4"/></svg>
+              </div>
+              <div class="personal-label">Personal Prayer Notes</div>
+            </div>
+            <div class="personal-edit">
+              <svg viewBox="0 0 24 24"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+            </div>
+          </div>
+          <div class="personal-body">
+            <div class="personal-placeholder">Tap to add your personal prayers, intentions, or words that bring you comfort...</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Bottom Nav with custom icons -->
+      <div class="bottom-nav">
+        <div class="nav-item">
+          <svg viewBox="0 0 32 32"><path d="M4 6c3-1 6-1.5 12 1.5C22 4.5 25 5 28 6v20c-3-1-6-1.5-12 1.5C10 24.5 7 25 4 26Z"/><path d="M16 7.5V27.5"/><path d="M12 4v4" stroke-width="1.8"/></svg>
+          <span class="nav-label">Today</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 32 32"><path d="M26 4c-8 2-12 8-14 16l-4 8 8-4c8-2 14-6 16-14"/><path d="M12 20L26 4"/></svg>
+          <span class="nav-label">Journal</span>
+        </div>
+        <div class="nav-item active">
+          <svg viewBox="0 0 32 32"><path d="M16 4c-3 5-7 8-7 13a7 7 0 0 0 14 0c0-5-4-8-7-13Z"/><path d="M16 14c-1 2-2.5 3-2.5 5a2.5 2.5 0 0 0 5 0c0-2-1.5-3-2.5-5Z" opacity="0.4"/></svg>
+          <span class="nav-label">Prayers</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 32 32"><ellipse cx="16" cy="25" rx="9" ry="3.5"/><ellipse cx="16" cy="18" rx="6.5" ry="3"/><ellipse cx="16" cy="11.5" rx="4.5" ry="2.5"/><circle cx="16" cy="6" r="2"/></svg>
+          <span class="nav-label">More</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPANDED STATE -->
+  <div class="phone-wrapper">
+    <div class="phone-label">Prayers — Expanded</div>
+    <div class="phone-label-desc">Prayer text centered, in Cormorant Garamond. Formatted for reading aloud or quiet meditation.</div>
+    <div class="phone-frame">
+      <div class="teal-header">
+        <div class="header-row">
+          <div class="header-title">Prayers</div>
+        </div>
+      </div>
+      <div class="scroll-area">
+        <div class="prayers-intro">
+          <div class="prayers-intro-text">A collection of prayers for your recovery journey</div>
+        </div>
+        <div class="prayer-list">
+
+          <div class="prayer-card open">
+            <div class="prayer-card-header" onclick="togglePrayer(this.parentElement)">
+              <div class="prayer-icon"><svg viewBox="0 0 32 32"><path d="M16 4c-3 5-7 8-7 13a7 7 0 0 0 14 0c0-5-4-8-7-13Z"/><path d="M16 14c-1 2-2.5 3-2.5 5a2.5 2.5 0 0 0 5 0c0-2-1.5-3-2.5-5Z" opacity="0.4"/></svg></div>
+              <div class="prayer-name">Serenity Prayer</div>
+              <div class="prayer-chevron"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+            </div>
+            <div class="prayer-body" style="max-height:500px;">
+              <div class="prayer-divider"></div>
+              <div class="prayer-text">
+                God, grant me the serenity<br>
+                to accept the things<br>
+                I cannot change,<br><br>
+                the courage to change<br>
+                the things I can,<br><br>
+                and the wisdom<br>
+                to know the difference.
+              </div>
+            </div>
+          </div>
+
+          <div class="prayer-card">
+            <div class="prayer-card-header">
+              <div class="prayer-icon"><svg viewBox="0 0 32 32"><path d="M16 4c-3 5-7 8-7 13a7 7 0 0 0 14 0c0-5-4-8-7-13Z"/><path d="M16 14c-1 2-2.5 3-2.5 5a2.5 2.5 0 0 0 5 0c0-2-1.5-3-2.5-5Z" opacity="0.4"/></svg></div>
+              <div class="prayer-name">Serenity Prayer (Extended)</div>
+              <div class="prayer-chevron"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+            </div>
+            <div class="prayer-body"><div class="prayer-divider"></div><div class="prayer-text"></div></div>
+          </div>
+
+          <div class="prayer-card open">
+            <div class="prayer-card-header" onclick="togglePrayer(this.parentElement)">
+              <div class="prayer-icon"><svg viewBox="0 0 32 32"><path d="M16 4c-3 5-7 8-7 13a7 7 0 0 0 14 0c0-5-4-8-7-13Z"/><path d="M16 14c-1 2-2.5 3-2.5 5a2.5 2.5 0 0 0 5 0c0-2-1.5-3-2.5-5Z" opacity="0.4"/></svg></div>
+              <div class="prayer-name">Prayer of St. Francis</div>
+              <div class="prayer-chevron"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+            </div>
+            <div class="prayer-body" style="max-height:500px;">
+              <div class="prayer-divider"></div>
+              <div class="prayer-text">
+                Lord, make me<br>
+                an instrument of Thy peace.<br><br>
+                Where there is hatred,<br>
+                let me sow love;<br>
+                where there is injury, pardon;<br>
+                where there is doubt, faith;<br>
+                where there is despair, hope;<br>
+                where there is darkness, light;<br>
+                where there is sadness, joy.<br><br>
+                Grant that I may not<br>
+                so much seek<br>
+                to be consoled as to console;<br>
+                to be understood<br>
+                as to understand;<br>
+                to be loved as to love.
+              </div>
+            </div>
+          </div>
+
+          <div class="prayer-card">
+            <div class="prayer-card-header">
+              <div class="prayer-icon"><svg viewBox="0 0 32 32"><path d="M16 4c-3 5-7 8-7 13a7 7 0 0 0 14 0c0-5-4-8-7-13Z"/><path d="M16 14c-1 2-2.5 3-2.5 5a2.5 2.5 0 0 0 5 0c0-2-1.5-3-2.5-5Z" opacity="0.4"/></svg></div>
+              <div class="prayer-name">Third Step Prayer</div>
+              <div class="prayer-chevron"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+            </div>
+            <div class="prayer-body"><div class="prayer-divider"></div><div class="prayer-text"></div></div>
+          </div>
+
+          <div class="prayer-card">
+            <div class="prayer-card-header">
+              <div class="prayer-icon"><svg viewBox="0 0 32 32"><path d="M16 4c-3 5-7 8-7 13a7 7 0 0 0 14 0c0-5-4-8-7-13Z"/><path d="M16 14c-1 2-2.5 3-2.5 5a2.5 2.5 0 0 0 5 0c0-2-1.5-3-2.5-5Z" opacity="0.4"/></svg></div>
+              <div class="prayer-name">Seventh Step Prayer</div>
+              <div class="prayer-chevron"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+            </div>
+            <div class="prayer-body"><div class="prayer-divider"></div><div class="prayer-text"></div></div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="bottom-nav">
+        <div class="nav-item">
+          <svg viewBox="0 0 32 32"><path d="M4 6c3-1 6-1.5 12 1.5C22 4.5 25 5 28 6v20c-3-1-6-1.5-12 1.5C10 24.5 7 25 4 26Z"/><path d="M16 7.5V27.5"/><path d="M12 4v4" stroke-width="1.8"/></svg>
+          <span class="nav-label">Today</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 32 32"><path d="M26 4c-8 2-12 8-14 16l-4 8 8-4c8-2 14-6 16-14"/><path d="M12 20L26 4"/></svg>
+          <span class="nav-label">Journal</span>
+        </div>
+        <div class="nav-item active">
+          <svg viewBox="0 0 32 32"><path d="M16 4c-3 5-7 8-7 13a7 7 0 0 0 14 0c0-5-4-8-7-13Z"/><path d="M16 14c-1 2-2.5 3-2.5 5a2.5 2.5 0 0 0 5 0c0-2-1.5-3-2.5-5Z" opacity="0.4"/></svg>
+          <span class="nav-label">Prayers</span>
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 32 32"><ellipse cx="16" cy="25" rx="9" ry="3.5"/><ellipse cx="16" cy="18" rx="6.5" ry="3"/><ellipse cx="16" cy="11.5" rx="4.5" ry="2.5"/><circle cx="16" cy="6" r="2"/></svg>
+          <span class="nav-label">More</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="annotation-group">
+  <div class="annotation-title">What's Different</div>
+  <div class="annotation-text">
+    <strong>1. Teal header.</strong> Same gradient as Today and Journal. "Prayers" in Cormorant Garamond italic. The page immediately feels like it belongs.<br><br>
+    <strong>2. Prayer cards have an icon.</strong> The flame icon (matching the Prayers nav icon) sits to the left of each prayer name in a tinted square. Gives visual weight without being decorative.<br><br>
+    <strong>3. Expanded text is formatted for reading.</strong> Centered, in Cormorant Garamond italic at 18px, with line breaks for natural breathing rhythm. A thin divider separates the title from the text. This should feel like reading from a prayer book, not a web page.<br><br>
+    <strong>4. Personal Prayer Notes is elevated.</strong> Separate section at the bottom with its own icon (pen, in warm brown). The edit icon invites interaction. The placeholder text is warm and inviting.<br><br>
+    <strong>5. Custom bottom nav icons.</strong> Open book with ribbon (Today), feather (Journal), flame (Prayers), stacked stones (More). They share the same organic line weight and style as the journal entry icons. No generic icon pack feel — these are Daily Paths icons.<br><br>
+    <strong>6. The flame connects Prayers to its identity.</strong> It appears as the nav icon, the prayer card icon, and could become the section's visual signature. A flame is universal enough for prayer/meditation without being tied to any specific tradition.
+  </div>
+</div>
+
+<script>
+  function togglePrayer(card) {
+    card.classList.toggle('open');
+  }
+</script>
+
+</body>
+</html>

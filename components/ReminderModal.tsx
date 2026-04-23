@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from "react";
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Switch, Platform, Animated } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { fonts, lightColors } from "../constants/theme";
+import { fonts } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
+import { useTypography } from "../hooks/useTypography";
 import { useSettings } from "../hooks/useSettings";
 import { scheduleWeekOfNotifications } from "../utils/notificationSync";
+import { useAnalytics } from "../utils/analytics";
 
 function parseTimeToDate(time: string): Date {
   const [h = "8", m = "0"] = time.split(":");
@@ -40,7 +42,16 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
   onShowToast,
 }) => {
   const { colors, isDark } = useTheme();
+  const { typography } = useTypography();
   const { settings, setDailyReminderEnabled, setDailyReminderTime } = useSettings();
+  const { trackReminderSet, trackReminderChanged, trackReminderDisabled } = useAnalytics();
+
+  // Dynamic sizes — scale from bodyLargeFontSize so baseline at medium
+  // matches the prior static values (24/16/14).
+  const titleFontSize = Math.round(typography.bodyLargeFontSize * (24 / 19));
+  const bodyFontSize = Math.round(typography.bodyLargeFontSize * (16 / 19));
+  const bodyLineHeight = Math.round(bodyFontSize * (22 / 16));
+  const pickerButtonFontSize = Math.round(typography.bodyLargeFontSize * (14 / 19));
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [tempReminderDate, setTempReminderDate] = useState<Date | null>(null);
   const slideAnim = React.useRef(new Animated.Value(0)).current;
@@ -74,12 +85,15 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
 
   const handleReminderToggle = async (enabled: boolean) => {
     await setDailyReminderEnabled(enabled);
-    
+
     // Update notification with thought if enabling
     if (enabled) {
       await scheduleWeekOfNotifications();
+      trackReminderSet(settings.dailyReminderTime);
+    } else {
+      trackReminderDisabled();
     }
-    
+
     if (enabled && onShowToast) {
       const timeStr = formatTimeDisplay(reminderDate);
       onShowToast(`You'll receive the Thought for the Day at ${timeStr}`);
@@ -108,9 +122,9 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
           onStartShouldSetResponder={() => true}
         >
           <View style={[styles.header, { borderBottomColor: colors.mist }]}>
-            <Text style={[styles.title, { color: colors.deepTeal }]}>Thought for the Day</Text>
+            <Text style={[styles.title, { fontSize: titleFontSize, color: colors.deepTeal }]}>Thought for the Day</Text>
             <TouchableOpacity onPress={onClose} style={styles.doneButton}>
-              <Text style={[styles.doneButtonText, { color: colors.deepTeal }]}>Done</Text>
+              <Text style={[styles.doneButtonText, { fontSize: bodyFontSize, color: colors.deepTeal }]}>Done</Text>
             </TouchableOpacity>
           </View>
 
@@ -118,19 +132,19 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
           >
-            <Text style={[styles.subtitle, { color: colors.ocean }]}>
+            <Text style={[styles.subtitle, { fontSize: bodyFontSize, lineHeight: bodyLineHeight, color: colors.ocean }]}>
               A guiding thought to focus your day.
             </Text>
 
             <View style={styles.row}>
               <View style={styles.rowText}>
-                <Text style={[styles.rowLabel, { color: colors.ink }]}>Enable daily notification</Text>
+                <Text style={[styles.rowLabel, { fontSize: bodyFontSize, color: colors.ink }]}>Enable daily notification</Text>
               </View>
               <Switch
                 value={settings.dailyReminderEnabled}
                 onValueChange={handleReminderToggle}
-                trackColor={{ false: colors.mist, true: colors.ocean }}
-                thumbColor={settings.dailyReminderEnabled ? colors.deepTeal : colors.seafoam}
+                trackColor={{ false: colors.mist, true: colors.deepTeal }}
+                thumbColor={settings.dailyReminderEnabled ? colors.pearl : '#f4f3f4'}
               />
             </View>
 
@@ -141,7 +155,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
               ]}
             >
               <View style={styles.rowText}>
-                <Text style={[styles.rowLabel, { color: colors.ink }]}>Notification time</Text>
+                <Text style={[styles.rowLabel, { fontSize: bodyFontSize, color: colors.ink }]}>Notification time</Text>
               </View>
 
               <View style={styles.timeStepperContainer}>
@@ -158,7 +172,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                   <Text
                     style={[
                       styles.timeValue,
-                      { color: colors.ink },
+                      { fontSize: bodyFontSize, color: colors.ink },
                       !settings.dailyReminderEnabled && styles.timeValueDisabled,
                     ]}
                   >
@@ -181,8 +195,11 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                       setTempReminderDate(null);
                       if (event.type === "set" && selectedDate) {
                         (async () => {
-                          await setDailyReminderTime(formatTimeStorage(selectedDate));
+                          const oldTime = settings.dailyReminderTime;
+                          const newTime = formatTimeStorage(selectedDate);
+                          await setDailyReminderTime(newTime);
                           await scheduleWeekOfNotifications();
+                          trackReminderChanged(oldTime, newTime);
                           if (onShowToast) {
                             onShowToast(`You'll receive the Thought for the Day at ${formatTimeDisplay(selectedDate)}`);
                           }
@@ -202,23 +219,26 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                       setTempReminderDate(null);
                     }}
                   >
-                    <Text style={[styles.timePickerButtonSecondaryText, { color: colors.ink }]}>Cancel</Text>
+                    <Text style={[styles.timePickerButtonSecondaryText, { fontSize: pickerButtonFontSize, color: colors.ink }]}>Cancel</Text>
                   </TouchableOpacity>
                   {Platform.OS === "ios" ? (
                     <TouchableOpacity
                       style={[styles.timePickerButtonPrimary, { backgroundColor: colors.deepTeal }]}
                       onPress={async () => {
                         const finalDate = tempReminderDate ?? reminderDate;
+                        const oldTime = settings.dailyReminderTime;
+                        const newTime = formatTimeStorage(finalDate);
                         setShowTimePicker(false);
                         setTempReminderDate(null);
-                        await setDailyReminderTime(formatTimeStorage(finalDate));
+                        await setDailyReminderTime(newTime);
                         await scheduleWeekOfNotifications();
+                        trackReminderChanged(oldTime, newTime);
                         if (onShowToast) {
                           onShowToast(`You'll receive the Thought for the Day at ${formatTimeDisplay(finalDate)}`);
                         }
                       }}
                     >
-                      <Text style={styles.timePickerButtonPrimaryText}>Set time</Text>
+                      <Text style={[styles.timePickerButtonPrimaryText, { fontSize: pickerButtonFontSize }]}>Set time</Text>
                     </TouchableOpacity>
                   ) : null}
                 </View>
@@ -238,7 +258,6 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContainer: {
-    backgroundColor: lightColors.pearl,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: "80%",
@@ -255,9 +274,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   title: {
+    // fontSize applied inline (titleFontSize).
     fontFamily: fonts.headerFamilyItalic,
-    fontSize: 24,
-    color: lightColors.deepTeal,
     flex: 1,
   },
   doneButton: {
@@ -267,20 +285,18 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   doneButtonText: {
+    // fontSize applied inline (bodyFontSize).
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
-    color: lightColors.deepTeal,
   },
   content: {
     padding: 20,
     paddingBottom: 120,
   },
   subtitle: {
+    // fontSize/lineHeight applied inline (bodyFontSize / bodyLineHeight).
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
     color: "#6b7280",
     marginBottom: 24,
-    lineHeight: 22,
   },
   row: {
     flexDirection: "row",
@@ -293,9 +309,8 @@ const styles = StyleSheet.create({
     paddingRight: 12,
   },
   rowLabel: {
+    // fontSize applied inline (bodyFontSize).
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
-    color: lightColors.ink,
   },
   timeRow: {
     flexDirection: "row",
@@ -313,9 +328,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   timeValue: {
+    // fontSize applied inline (bodyFontSize).
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
-    color: lightColors.ink,
   },
   timeValueDisabled: {
     // No extra dimming; row opacity handles the disabled look
@@ -336,19 +350,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#e5e7eb",
   },
   timePickerButtonSecondaryText: {
+    // fontSize applied inline (pickerButtonFontSize).
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
     color: "#4b5563",
   },
   timePickerButtonPrimary: {
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: lightColors.deepTeal,
   },
   timePickerButtonPrimaryText: {
+    // fontSize applied inline (pickerButtonFontSize).
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
     color: "#ffffff",
   },
 });

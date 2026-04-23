@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { fonts, lightColors } from '../constants/theme';
+import { fonts } from '../constants/theme';
 import { useTheme } from '../hooks/useTheme';
 import { useReadingFeedback } from '../hooks/useReadingFeedback';
 import { useSettings, getTextSizeMetrics } from '../hooks/useSettings';
 import { NegativeFeedbackModal } from './NegativeFeedbackModal';
-import { RateAppModal } from './RateAppModal';
-import { 
-  shouldShowRatePrompt, 
+import {
+  shouldShowRatePrompt,
   incrementReadingsCompleted,
   markRatePromptShown,
+  requestReview,
 } from '../utils/rateShareTracking';
 import { qaLog } from '../utils/qaLog';
 import { useAnalytics } from '../utils/analytics';
@@ -34,7 +34,6 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
   const { trackReadingRated } = useAnalytics();
   const [localRating, setLocalRating] = useState<'positive' | 'neutral' | 'negative' | null>(null);
   const [showNegativeModal, setShowNegativeModal] = useState(false);
-  const [showRateModal, setShowRateModal] = useState(false);
   const [showThankYou, setShowThankYou] = useState(false);
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -72,7 +71,7 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
     // Optimistically update local state immediately for visual feedback
     setLocalRating(rating);
     
-    // Track in PostHog
+    // Track in analytics
     if (rating === 'positive' || rating === 'negative') {
       trackReadingRated(
         readingId,
@@ -88,21 +87,19 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
       if (success) {
         setShowThankYou(true);
         
-        // If positive feedback, increment readings and maybe show rate modal
+        // If positive feedback, increment readings and maybe request native review
         if (rating === 'positive') {
           await incrementReadingsCompleted();
-          qaLog("rate", "Positive rating - checking if should show rate modal");
-          
-          // Check if we should show the rate modal
+          qaLog("rate", "Positive rating - checking if should request review");
+
           const shouldShow = await shouldShowRatePrompt();
           qaLog("rate", "shouldShowRatePrompt result", { shouldShow });
           if (shouldShow) {
-            // Brief delay for thank you to appear, then show rate modal
-            qaLog("rate", "Will show rate modal after delay");
             await markRatePromptShown();
-            setTimeout(() => {
-              qaLog("rate", "Showing rate modal");
-              setShowRateModal(true);
+            // Brief delay for thank you to appear, then show native review dialog
+            setTimeout(async () => {
+              qaLog("rate", "Requesting native review dialog");
+              await requestReview();
             }, 800);
           }
         }
@@ -155,7 +152,7 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
             <Ionicons
               name="thumbs-up"
               size={24}
-              color={currentRating === 'positive' ? '#fff' : colors.ocean}
+              color={currentRating === 'positive' ? colors.textOnAccent : colors.ocean}
             />
           </TouchableOpacity>
 
@@ -172,7 +169,7 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
             <Ionicons
               name="thumbs-down"
               size={24}
-              color={currentRating === 'negative' ? '#fff' : colors.ocean}
+              color={currentRating === 'negative' ? colors.textOnAccent : colors.ocean}
             />
           </TouchableOpacity>
         </View>
@@ -188,14 +185,12 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
 
       <NegativeFeedbackModal
         visible={showNegativeModal}
-        onClose={() => setShowNegativeModal(false)}
+        onClose={() => {
+          setShowNegativeModal(false);
+          // User canceled — revert the optimistic thumbs-down selection.
+          setLocalRating(hookRating);
+        }}
         onSubmit={handleNegativeFeedback}
-      />
-
-      <RateAppModal
-        visible={showRateModal}
-        onClose={() => setShowRateModal(false)}
-        trigger="positive_feedback"
       />
     </>
   );
@@ -203,17 +198,13 @@ export const ReadingFeedback: React.FC<ReadingFeedbackProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 32,
-    paddingVertical: 24,
+    paddingVertical: 8,
     paddingHorizontal: 20,
-    backgroundColor: lightColors.pearl,
     alignItems: 'center',
-    marginBottom: 82, // Space for action bar
   },
   question: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-    color: lightColors.ink,
     marginBottom: 16,
   },
   buttonRow: {
@@ -224,11 +215,10 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#fff',
+    // backgroundColor set inline via styles (colors.pearl)
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: lightColors.mist,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -236,8 +226,6 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   ratingButtonSelected: {
-    borderColor: lightColors.deepTeal,
-    backgroundColor: lightColors.deepTeal,
     borderWidth: 3,
     shadowOpacity: 0.15,
     shadowRadius: 6,
@@ -252,7 +240,6 @@ const styles = StyleSheet.create({
   thankYou: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
-    color: lightColors.deepTeal,
     textAlign: 'center',
   },
 });

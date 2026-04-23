@@ -17,12 +17,13 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import Constants from "expo-constants";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { fonts, lightColors } from "../constants/theme";
+import { fonts, fallbackColors as lightColors, shadows } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
+import { useTypography } from "../hooks/useTypography";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSettings, TextSize } from "../hooks/useSettings";
 import { useAppFeedback } from "../hooks/useAppFeedback";
-import { shareApp } from "../utils/rateShareTracking";
+import { shareApp, openAppStoreForRating } from "../utils/rateShareTracking";
 import { qaLog } from "../utils/qaLog";
 import { RateAppModal } from "./RateAppModal";
 
@@ -64,10 +65,24 @@ export const SettingsContent: React.FC<{
   scrollToSection,
 }) => {
   const { colors } = useTheme();
+  const { typography } = useTypography();
   const insets = useSafeAreaInsets();
   const { settings, setTextSize, setDailyReminderEnabled, setDailyReminderTime } =
     useSettings();
   const { submitting: submittingFeedback, submitFeedback } = useAppFeedback();
+
+  // Dynamic sizes for all text elements in this screen — scale from
+  // bodyLargeFontSize so the baseline at the "medium" tier matches the
+  // previous static values (18/16/15/14/13/12/22).
+  const sectionTitleFontSize = Math.round(typography.bodyLargeFontSize * (18 / 19));
+  const bodyFontSize = Math.round(typography.bodyLargeFontSize * (16 / 19));
+  const bodyLineHeight = Math.round(bodyFontSize * (24 / 16));
+  const subTextFontSize = Math.round(typography.bodyLargeFontSize * (14 / 19));
+  const subTextLineHeight = Math.round(subTextFontSize * (18 / 14));
+  const smallTextFontSize = Math.round(typography.bodyLargeFontSize * (13 / 19));
+  const versionFontSize = typography.captionFontSize;
+  const feedbackTitleFontSize = Math.round(typography.bodyLargeFontSize * (22 / 19));
+  const chipFontSize = typography.bodySmallFontSize;
 
   const [showTimePicker, setShowTimePicker] = useState(false);
    // Local working copy while the wheel is open so we don't commit
@@ -143,9 +158,9 @@ export const SettingsContent: React.FC<{
     await setDailyReminderEnabled(enabled);
   };
 
-  const handleRateApp = () => {
-    qaLog("rate", "Rate App button pressed - showing rate modal");
-    setShowRateModal(true);
+  const handleRateApp = async () => {
+    qaLog("rate", "Rate App button pressed - opening App Store directly");
+    await openAppStoreForRating();
   };
 
   const handleShareApp = async () => {
@@ -198,7 +213,7 @@ export const SettingsContent: React.FC<{
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.mainContent}>
-          <View style={[styles.sectionCard, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
+          <View style={[styles.sectionCard, { backgroundColor: colors.cloud }]}>
             <View style={[styles.sectionHeader, { borderBottomColor: colors.mist }]}>
               <Ionicons
                 name="information-circle-outline"
@@ -206,15 +221,15 @@ export const SettingsContent: React.FC<{
                 color={colors.deepTeal}
               />
               <View style={styles.sectionHeaderText}>
-                <Text style={[styles.sectionTitle, { color: colors.deepTeal }]}>About</Text>
+                <Text style={[styles.sectionTitle, { fontSize: sectionTitleFontSize, color: colors.deepTeal }]}>About</Text>
               </View>
             </View>
             <View style={styles.sectionBody}>
               <Text
                 style={{
-                  fontSize: 16,
-                  lineHeight: 24,
-                  fontFamily: fonts.loraRegular,
+                  fontSize: bodyFontSize,
+                  lineHeight: bodyLineHeight,
+                  fontFamily: fonts.bodyFamilyRegular,
                   color: colors.ink,
                 }}
               >
@@ -223,12 +238,12 @@ export const SettingsContent: React.FC<{
             </View>
           </View>
 
-          <View style={[styles.sectionCard, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
+          <View style={[styles.sectionCard, { backgroundColor: colors.cloud }]}>
             <View style={[styles.sectionHeader, { borderBottomColor: colors.mist }]}>
               <Ionicons name="star-outline" size={22} color={colors.deepTeal} />
               <View style={styles.sectionHeaderText}>
-                <Text style={[styles.sectionTitle, { color: colors.deepTeal }]}>Rate & Share</Text>
-                <Text style={[styles.sectionSubtitle, { color: colors.ink }]}>
+                <Text style={[styles.sectionTitle, { fontSize: sectionTitleFontSize, color: colors.deepTeal }]}>Rate & Share</Text>
+                <Text style={[styles.sectionSubtitle, { fontSize: subTextFontSize, lineHeight: subTextLineHeight, color: colors.ink }]}>
                   Help others discover Daily Paths
                 </Text>
               </View>
@@ -241,7 +256,7 @@ export const SettingsContent: React.FC<{
                   activeOpacity={0.8}
                 >
                   <Ionicons name="star" size={18} color={colors.deepTeal} />
-                  <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Rate App</Text>
+                  <Text style={[styles.secondaryButtonText, { fontSize: bodyFontSize, color: colors.deepTeal }]}>Rate App</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.secondaryButton, { borderColor: colors.mist, backgroundColor: colors.pearl }]}
@@ -250,7 +265,7 @@ export const SettingsContent: React.FC<{
                   activeOpacity={0.8}
                 >
                   <Ionicons name="share-social" size={18} color={colors.deepTeal} />
-                  <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+                  <Text style={[styles.secondaryButtonText, { fontSize: bodyFontSize, color: colors.deepTeal }]}>
                     {isSharing ? "Sharing..." : "Share App"}
                   </Text>
                 </TouchableOpacity>
@@ -258,12 +273,12 @@ export const SettingsContent: React.FC<{
             </View>
           </View>
 
-          <View style={[styles.sectionCard, { backgroundColor: colors.cloud, borderColor: colors.mist }]}>
+          <View style={[styles.sectionCard, { backgroundColor: colors.cloud }]}>
             <View style={[styles.sectionHeader, { borderBottomColor: colors.mist }]}>
               <Ionicons name="chatbubbles-outline" size={22} color={colors.deepTeal} />
               <View style={styles.sectionHeaderText}>
-                <Text style={[styles.sectionTitle, { color: colors.deepTeal }]}>Share Feedback</Text>
-                <Text style={[styles.sectionSubtitle, { color: colors.ink }]}>
+                <Text style={[styles.sectionTitle, { fontSize: sectionTitleFontSize, color: colors.deepTeal }]}>Share Feedback</Text>
+                <Text style={[styles.sectionSubtitle, { fontSize: subTextFontSize, lineHeight: subTextLineHeight, color: colors.ink }]}>
                   Tell us what's working and what to improve
                 </Text>
               </View>
@@ -275,7 +290,7 @@ export const SettingsContent: React.FC<{
                 activeOpacity={0.8}
               >
                 <Ionicons name="chatbubble-ellipses" size={18} color={colors.deepTeal} />
-                <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Send Feedback</Text>
+                <Text style={[styles.secondaryButtonText, { fontSize: bodyFontSize, color: colors.deepTeal }]}>Send Feedback</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -288,7 +303,7 @@ export const SettingsContent: React.FC<{
             activeOpacity={0.7}
             onPress={() => Linking.openURL("https://dailypaths.org/privacy")}
           >
-            <Text style={[styles.linkLabel, { color: colors.deepTeal }]} allowFontScaling={false}>
+            <Text style={[styles.linkLabel, { fontSize: subTextFontSize, color: colors.deepTeal }]} allowFontScaling={false}>
               Privacy Policy
             </Text>
           </TouchableOpacity>
@@ -297,7 +312,7 @@ export const SettingsContent: React.FC<{
             activeOpacity={0.7}
             onPress={() => Linking.openURL("https://dailypaths.org/support")}
           >
-            <Text style={[styles.linkLabel, { color: colors.deepTeal }]} allowFontScaling={false}>
+            <Text style={[styles.linkLabel, { fontSize: subTextFontSize, color: colors.deepTeal }]} allowFontScaling={false}>
               Support
             </Text>
           </TouchableOpacity>
@@ -306,7 +321,7 @@ export const SettingsContent: React.FC<{
             activeOpacity={0.7}
             onPress={() => Linking.openURL("https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")}
           >
-            <Text style={[styles.linkLabel, { color: colors.deepTeal }]} allowFontScaling={false}>
+            <Text style={[styles.linkLabel, { fontSize: subTextFontSize, color: colors.deepTeal }]} allowFontScaling={false}>
               Terms of Service
             </Text>
           </TouchableOpacity>
@@ -321,7 +336,7 @@ export const SettingsContent: React.FC<{
               router.push("/qa-logs");
             }}
           >
-            <Text style={[styles.versionText, { color: colors.ocean }]} allowFontScaling={false}>
+            <Text style={[styles.versionText, { fontSize: versionFontSize, color: colors.ocean }]} allowFontScaling={false}>
               Version {appVersion} (build {iosBuildNumber})
             </Text>
           </TouchableOpacity>
@@ -347,20 +362,20 @@ export const SettingsContent: React.FC<{
               style={styles.feedbackModal}
               onStartShouldSetResponder={() => true}
             >
-              <Text style={styles.feedbackTitle}>We'd love your feedback</Text>
+              <Text style={[styles.feedbackTitle, { fontSize: feedbackTitleFontSize }]}>We'd love your feedback</Text>
               <TextInput
-                style={[styles.feedbackInput, styles.feedbackInputMultiline]}
+                style={[styles.feedbackInput, styles.feedbackInputMultiline, { fontSize: bodyFontSize }]}
                 placeholder="Share your thoughts or suggestions..."
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor={colors.textSecondary + "50"}
                 multiline
                 numberOfLines={5}
                 value={feedbackText}
                 onChangeText={setFeedbackText}
               />
               <TextInput
-                style={styles.feedbackInput}
+                style={[styles.feedbackInput, { fontSize: bodyFontSize }]}
                 placeholder="Optional: your email if you'd like a reply"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor={colors.textSecondary + "50"}
                 value={feedbackContact}
                 onChangeText={setFeedbackContact}
                 keyboardType="email-address"
@@ -418,16 +433,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   sectionCard: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
+    ...shadows.homeSurface,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
   },
   sectionHeader: {
     flexDirection: "row",
@@ -449,23 +456,21 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   sectionTitle: {
+    // fontSize applied inline (sectionTitleFontSize).
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 18,
     fontWeight: "600",
     color: lightColors.deepTeal,
     marginBottom: 2,
   },
   sectionSubtitle: {
+    // fontSize/lineHeight applied inline (subTextFontSize / subTextLineHeight).
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
     color: lightColors.ink,
-    lineHeight: 18,
   },
   bodyText: {
-    fontFamily: fonts.loraRegular,
-    fontSize: 16,
+    // fontSize/lineHeight applied inline when used.
+    fontFamily: fonts.bodyFamilyRegular,
     color: lightColors.ink,
-    lineHeight: 24,
   },
   buttonRow: {
     flexDirection: "row",
@@ -512,8 +517,8 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   secondaryButtonText: {
+    // fontSize applied inline (bodyFontSize).
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
     color: lightColors.deepTeal,
     fontWeight: "600",
   },
@@ -613,7 +618,7 @@ const styles = StyleSheet.create({
     borderTopColor: "#f3f4f6",
   },
   textPreview: {
-    fontFamily: fonts.loraRegular,
+    fontFamily: fonts.bodyFamilyRegular,
     color: "#4b5563",
   },
   row: {
@@ -715,8 +720,8 @@ const styles = StyleSheet.create({
   linkRow: {
   },
   linkLabel: {
+    // fontSize applied inline (subTextFontSize).
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
     color: lightColors.deepTeal,
   },
   versionContainer: {
@@ -726,8 +731,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   versionText: {
+    // fontSize applied inline (versionFontSize).
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 12,
     color: "#9ca3af",
     textAlign: "center",
   },
@@ -744,18 +749,18 @@ const styles = StyleSheet.create({
     minHeight: "50%",
   },
   feedbackTitle: {
+    // fontSize applied inline (feedbackTitleFontSize).
     fontFamily: fonts.headerFamilyItalic,
-    fontSize: 22,
     color: lightColors.deepTeal,
     marginBottom: 16,
   },
   feedbackInput: {
+    // fontSize applied inline (bodyFontSize).
     borderWidth: 1,
     borderColor: "#e5e7eb",
     borderRadius: 10,
     padding: 14,
     fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 16,
     color: lightColors.ink,
     marginTop: 12,
   },

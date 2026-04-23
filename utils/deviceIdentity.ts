@@ -140,6 +140,8 @@ export async function setDeveloperDevice(isDeveloper: boolean): Promise<void> {
  * Skips if device is marked as developer
  */
 export async function recordDailyActivity(): Promise<void> {
+  // Supabase event analytics disabled: Mixpanel is the analytics source of truth.
+  return;
   try {
     // Skip if developer device
     const isDev = await isDeveloperDevice();
@@ -173,9 +175,9 @@ export async function recordDailyActivity(): Promise<void> {
     );
 
     if (error) {
-      qaLog('device', 'Error recording daily activity', { 
-        error: error.message,
-        code: (error as any).code 
+      qaLog('device', 'Error recording daily activity', {
+        error: error!.message,
+        code: (error as any).code
       });
     } else {
       // Mark as recorded locally
@@ -194,6 +196,8 @@ export async function recordDailyActivity(): Promise<void> {
  * - On subsequent views: updates last_viewed_at only
  */
 export async function recordReadingView(readingId: string): Promise<void> {
+  // Supabase event analytics disabled: Mixpanel is the analytics source of truth.
+  return;
   try {
     // Skip if developer device
     const isDev = await isDeveloperDevice();

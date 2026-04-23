@@ -1,6 +1,5 @@
 import "react-native-url-polyfill/auto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { qaLog } from "../utils/qaLog";
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || "";
@@ -38,17 +37,7 @@ function createSafeClient(): SupabaseClient {
     keyDefined: !!supabaseAnonKey,
   });
 
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      storage: AsyncStorage,
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: false,
-    },
-  });
+  return createClient(supabaseUrl, supabaseAnonKey);
 }
 
 export const supabase = createSafeClient();
-
-
-

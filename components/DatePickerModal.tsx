@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
-import { fonts, lightColors } from "../constants/theme";
+import { fonts } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
 import { getScheduledDayOfYear } from "../utils/dateUtils";
 
@@ -226,7 +226,6 @@ const styles = StyleSheet.create({
   modalContent: {
     width: "90%",
     maxWidth: 380,
-    backgroundColor: lightColors.pearl,
     borderRadius: 20,
     padding: 24,
     shadowColor: "#000",
@@ -248,7 +247,6 @@ const styles = StyleSheet.create({
   monthTitle: {
     fontFamily: fonts.headerFamily,
     fontSize: 22,
-    color: lightColors.deepTeal,
   },
   weekdays: {
     flexDirection: "row",
@@ -262,7 +260,6 @@ const styles = StyleSheet.create({
   weekdayText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 13,
-    color: lightColors.ocean,
     fontWeight: "600",
   },
   calendar: {
@@ -284,12 +281,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   selectedDay: {
-    backgroundColor: lightColors.ocean,
     borderRadius: 100,
   },
   todayDay: {
     borderWidth: 2,
-    borderColor: lightColors.seafoam,
     borderRadius: 100,
   },
   unavailableDay: {
@@ -298,18 +293,15 @@ const styles = StyleSheet.create({
   dayText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
-    color: lightColors.ink,
   },
   selectedDayText: {
     color: "#fff",
     fontWeight: "700",
   },
   todayDayText: {
-    color: lightColors.ocean,
     fontWeight: "600",
   },
   unavailableDayText: {
-    color: lightColors.mist,
   },
   buttonContainer: {
     flexDirection: "row",
@@ -317,7 +309,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: lightColors.mist,
   },
   todayButton: {
     paddingVertical: 12,
@@ -328,7 +319,6 @@ const styles = StyleSheet.create({
   todayButtonText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 17,
-    color: lightColors.ocean,
   },
   cancelButton: {
     paddingVertical: 12,
@@ -339,6 +329,5 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 17,
-    color: lightColors.ocean,
   },
 });

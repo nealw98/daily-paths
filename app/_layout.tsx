@@ -1,28 +1,44 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Stack, useRouter } from "expo-router";
 import { useFonts } from "expo-font";
 import {
-  CormorantGaramond_600SemiBold,
-  CormorantGaramond_600SemiBold_Italic,
-  CormorantGaramond_700Bold_Italic,
-} from "@expo-google-fonts/cormorant-garamond";
-import {
-  Inter_300Light,
-  Inter_400Regular,
-} from "@expo-google-fonts/inter";
+  Manrope_300Light,
+  Manrope_400Regular,
+  Manrope_500Medium,
+  Manrope_600SemiBold,
+  Manrope_700Bold,
+  Manrope_800ExtraBold,
+} from "@expo-google-fonts/manrope";
 import {
   Lora_400Regular,
   Lora_400Regular_Italic,
+  Lora_500Medium,
+  Lora_700Bold,
 } from "@expo-google-fonts/lora";
-import { lightColors, darkColors } from "../constants/theme";
+import {
+  CormorantGaramond_400Regular,
+  CormorantGaramond_500Medium,
+  CormorantGaramond_500Medium_Italic,
+  CormorantGaramond_600SemiBold,
+  CormorantGaramond_600SemiBold_Italic,
+  CormorantGaramond_700Bold,
+} from "@expo-google-fonts/cormorant-garamond";
+import { fallbackColors } from "../constants/theme";
 import { SettingsProvider } from "../hooks/useSettings";
-import { useColorScheme } from "react-native";
-import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform } from "react-native";
+import { SubscriptionProvider, useSubscriptionContext } from "../contexts/SubscriptionContext";
+import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform, AppState, AppStateStatus } from "react-native";
 import * as Notifications from "expo-notifications";
 import * as Updates from "expo-updates";
 import { installGlobalErrorHandler } from "../utils/errorLogger";
-import { PostHogProvider } from 'posthog-react-native';
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import { initMixpanel } from "../lib/mixpanel";
+import { qaLog } from "../utils/qaLog";
+import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
+import { TrialEndedModal } from "../components/TrialEndedModal";
+import { hasSeenTrialEndedModal, markTrialEndedModalSeen } from "../utils/trialTimer";
+import { LifetimeWelcomeModal } from "../components/LifetimeWelcomeModal";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { KeyboardProvider } from "react-native-keyboard-controller";
+import { AppDateProvider } from "../contexts/AppDateContext";
 
 console.log("[STARTUP] _layout.tsx module loading...");
 console.log("[STARTUP] Platform:", Platform.OS, Platform.Version);
@@ -48,9 +64,8 @@ try {
 export default function RootLayout() {
   console.log("[STARTUP] RootLayout function called");
   
-  // Use system color scheme for loading screen (before SettingsProvider is available)
-  const systemColorScheme = useColorScheme();
-  const colors = systemColorScheme === "dark" ? darkColors : lightColors;
+  // Use fallback palette for loading screen (before SettingsProvider is available)
+  const colors = fallbackColors;
   
   let router;
   try {
@@ -80,37 +95,58 @@ export default function RootLayout() {
   let fontsLoaded = false;
   try {
     [fontsLoaded] = useFonts({
-      CormorantGaramond_600SemiBold,
-      CormorantGaramond_600SemiBold_Italic,
-      CormorantGaramond_700Bold_Italic,
-      Inter_300Light,
-      Inter_400Regular,
+      Manrope_300Light,
+      Manrope_400Regular,
+      Manrope_500Medium,
+      Manrope_600SemiBold,
+      Manrope_700Bold,
+      Manrope_800ExtraBold,
       Lora_400Regular,
       Lora_400Regular_Italic,
+      Lora_500Medium,
+      Lora_700Bold,
+      CormorantGaramond_400Regular,
+      CormorantGaramond_500Medium,
+      CormorantGaramond_500Medium_Italic,
+      CormorantGaramond_600SemiBold,
+      CormorantGaramond_600SemiBold_Italic,
+      CormorantGaramond_700Bold,
     });
     console.log("[STARTUP] useFonts called, fontsLoaded:", fontsLoaded);
   } catch (err) {
     console.error("[STARTUP] ERROR loading fonts:", err);
   }
 
+  // Initialize analytics once fonts are loaded.
+  // RevenueCat and trial timer are now managed by SubscriptionContext.
+  useEffect(() => {
+    if (fontsLoaded) {
+      initMixpanel();
+    }
+  }, [fontsLoaded]);
+
   // Check for OTA updates once on startup; if downloaded, prompt to restart.
   useEffect(() => {
-    console.log("[STARTUP] Updates useEffect running, __DEV__:", __DEV__);
+    qaLog("Updates", "Check starting", { __DEV__ });
     if (__DEV__) return; // skip in dev client
     let cancelled = false;
     (async () => {
       try {
-        console.log("[STARTUP] Checking for updates...");
+        qaLog("Updates", "Checking for updates...");
         const result = await Updates.checkForUpdateAsync();
-        console.log("[STARTUP] Update check result:", result);
+        qaLog("Updates", "Check result", { isAvailable: result.isAvailable });
         if (result.isAvailable) {
+          qaLog("Updates", "Downloading update...");
           await Updates.fetchUpdateAsync();
+          qaLog("Updates", "Download complete, ready to restart");
           if (!cancelled) {
             setUpdateReady(true);
           }
+        } else {
+          qaLog("Updates", "App is up to date");
         }
       } catch (err) {
-        console.log("[Updates] check/fetch failed", err);
+        qaLog("Updates", "Check/fetch failed", { error: String(err) });
       }
     })();
     return () => {
@@ -124,7 +160,7 @@ export default function RootLayout() {
     try {
       const sub = Notifications.addNotificationResponseReceivedListener(() => {
         console.log("[STARTUP] Notification response received");
-        router.push(`/?jump=today&ts=${Date.now()}`);
+        router.push(`/(tabs)/reading?jump=today&ts=${Date.now()}`);
       });
       console.log("[STARTUP] Notification listener added successfully");
       return () => sub.remove();
@@ -135,12 +171,12 @@ export default function RootLayout() {
 
   const handleRestart = async () => {
     try {
+      qaLog("Updates", "Restarting app to apply update");
       setRestarting(true);
       await Updates.reloadAsync();
     } catch (err) {
       setRestarting(false);
-      // eslint-disable-next-line no-console
-      console.log("[Updates] reload failed", err);
+      qaLog("Updates", "Reload failed", { error: String(err) });
     }
   };
 
@@ -150,20 +186,21 @@ export default function RootLayout() {
     if (checkingUpdate || restarting) return;
     setCheckingUpdate(true);
     try {
+      qaLog("Updates", "Manual check starting");
       const result = await Updates.checkForUpdateAsync();
       if (!result.isAvailable) {
-        // eslint-disable-next-line no-console
-        console.log("[Updates] No update available");
+        qaLog("Updates", "Manual check: no update available");
         setCheckingUpdate(false);
         return;
       }
+      qaLog("Updates", "Manual check: downloading update...");
       await Updates.fetchUpdateAsync();
+      qaLog("Updates", "Manual check: download complete, restarting");
       setCheckingUpdate(false);
       await handleRestart();
     } catch (err) {
       setCheckingUpdate(false);
-      // eslint-disable-next-line no-console
-      console.log("[Updates] Manual check failed", err);
+      qaLog("Updates", "Manual check failed", { error: String(err) });
     }
   };
 
@@ -179,76 +216,141 @@ export default function RootLayout() {
   }
 
   console.log("[STARTUP] Fonts loaded, rendering main app with SettingsProvider");
-  
-  const posthogApiKey = process.env.EXPO_PUBLIC_POSTHOG_API_KEY;
-  const posthogHost = process.env.EXPO_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
-  
-  console.log("[POSTHOG] API Key present:", !!posthogApiKey, "Key prefix:", posthogApiKey?.substring(0, 10));
-  console.log("[POSTHOG] Host:", posthogHost);
-
-  // Wrap content in PostHogProvider only if API key is available
-  const wrapWithPostHog = (children: React.ReactNode) => {
-    if (!posthogApiKey) {
-      console.log("[POSTHOG] API key not found, skipping analytics");
-      return children;
-    }
-    console.log("[POSTHOG] Initializing PostHogProvider");
-    return (
-      <PostHogProvider
-        apiKey={posthogApiKey}
-        options={{
-          host: posthogHost,
-          enableSessionReplay: true,
-          flushAt: 1, // Flush after every event (for debugging)
-          flushInterval: 10000, // Flush every 10 seconds
-        }}
-        autocapture
-      >
-        {children}
-      </PostHogProvider>
-    );
-  };
 
   return (
-    <SafeAreaProvider>
-      {wrapWithPostHog(
-        <SettingsProvider>
-        {updateReady && (
-          <View style={styles.updateBanner}>
-            <Text style={styles.updateText}>
-              Update available. Restart to apply.
-            </Text>
-            <View style={styles.updateActions}>
-              <TouchableOpacity
-                style={[styles.updateButtonPrimary, { backgroundColor: colors.seafoam }]}
-                onPress={handleRestart}
-                disabled={restarting}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.updateButtonPrimaryText, { color: colors.deepTeal }]}>
-                  {restarting ? "Restarting..." : "Restart"}
+    <KeyboardProvider>
+      <SettingsProvider>
+        <AppDateProvider>
+          <SubscriptionProvider>
+            <TrialExpiryPresenter />
+            <LifetimeWelcomePresenter />
+            {updateReady && (
+              <View style={styles.updateBanner}>
+                <Text style={styles.updateText}>
+                  Update available. Restart to apply.
                 </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.updateButtonSecondary}
-                onPress={() => setUpdateReady(false)}
-                activeOpacity={0.8}
-                disabled={restarting}
-              >
-                <Text style={styles.updateButtonSecondaryText}>Later</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: colors.pearl },
-          }}
-        />
+                <View style={styles.updateActions}>
+                  <TouchableOpacity
+                    style={[
+                      styles.updateButtonPrimary,
+                      { backgroundColor: colors.seafoam },
+                    ]}
+                    onPress={handleRestart}
+                    disabled={restarting}
+                    activeOpacity={0.8}
+                  >
+                    <Text
+                      style={[
+                        styles.updateButtonPrimaryText,
+                        { color: colors.deepTeal },
+                      ]}
+                    >
+                      {restarting ? "Restarting..." : "Restart"}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.updateButtonSecondary}
+                    onPress={() => setUpdateReady(false)}
+                    activeOpacity={0.8}
+                    disabled={restarting}
+                  >
+                    <Text style={styles.updateButtonSecondaryText}>Later</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: colors.pearl },
+              }}
+            />
+          </SubscriptionProvider>
+        </AppDateProvider>
       </SettingsProvider>
-      )}
-    </SafeAreaProvider>
+    </KeyboardProvider>
+  );
+}
+
+
+function TrialExpiryPresenter() {
+  const { status, trialStatus, hasLifetimeAccess, refresh } = useSubscriptionContext();
+  const [visible, setVisible] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+
+  const checkAndShow = async () => {
+    if (checking) return;
+    setChecking(true);
+    try {
+      if (hasLifetimeAccess || status.isSubscribed || status.isLegacy || !trialStatus.trialExpired) return;
+      const seen = await hasSeenTrialEndedModal();
+      if (!seen) setVisible(true);
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  useEffect(() => {
+    checkAndShow();
+  }, [hasLifetimeAccess, status.isSubscribed, status.isLegacy, trialStatus.trialExpired]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (appStateRef.current.match(/inactive|background/) && nextState === "active") {
+        checkAndShow();
+      }
+      appStateRef.current = nextState;
+    });
+    return () => subscription.remove();
+  }, [hasLifetimeAccess, status.isSubscribed, status.isLegacy, trialStatus.trialExpired]);
+
+  return (
+    <TrialEndedModal
+      visible={visible}
+      onNotNow={async () => {
+        await markTrialEndedModalSeen();
+        setVisible(false);
+      }}
+      onSubscribeNow={async () => {
+        try {
+          const result = await RevenueCatUI.presentPaywall();
+          if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) {
+            await refresh();
+          }
+        } finally {
+          await markTrialEndedModalSeen();
+          setVisible(false);
+        }
+      }}
+    />
+  );
+}
+
+const LIFETIME_WELCOME_SEEN_KEY = "@daily_paths_lifetime_welcome_seen";
+
+function LifetimeWelcomePresenter() {
+  const { status, hasLifetimeAccess } = useSubscriptionContext();
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      if (!hasLifetimeAccess && !status.isLegacy) return;
+      const seen = await AsyncStorage.getItem(LIFETIME_WELCOME_SEEN_KEY);
+      if (seen !== "true") {
+        setVisible(true);
+      }
+    })();
+  }, [hasLifetimeAccess, status.isLegacy]);
+
+  return (
+    <LifetimeWelcomeModal
+      visible={visible}
+      onClose={async () => {
+        await AsyncStorage.setItem(LIFETIME_WELCOME_SEEN_KEY, "true");
+        setVisible(false);
+      }}
+    />
   );
 }
 

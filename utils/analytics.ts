@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
-import { usePostHog } from 'posthog-react-native';
+import { getMixpanel } from '../lib/mixpanel';
 import { getOrCreateDeviceId, isDeveloperDevice } from './deviceIdentity';
 
 // Event names as constants for consistency
@@ -13,6 +13,46 @@ export const ANALYTICS_EVENTS = {
   RATE_MODAL_SHOWN: 'rate_modal_shown',
   RATE_MODAL_DISMISSED: 'rate_modal_dismissed',
   RATE_MODAL_OPENED_STORE: 'rate_modal_opened_store',
+  // Subscription & paywall events
+  SUBSCRIPTION_STARTED: 'subscription_started',
+  SUBSCRIPTION_CANCELLED: 'subscription_cancelled',
+  TRIAL_STARTED: 'trial_started',
+  TRIAL_ENDED: 'trial_ended',
+  PAYWALL_SHOWN: 'paywall_shown',
+  PAYWALL_DISMISSED: 'paywall_dismissed',
+  LEGACY_USER_IDENTIFIED: 'legacy_user_identified',
+  // Reminder events
+  REMINDER_SET: 'reminder_set',
+  REMINDER_CHANGED: 'reminder_changed',
+  REMINDER_DISABLED: 'reminder_disabled',
+  // Notebook
+  NOTEBOOK_OPENED: 'notebook_opened',
+  // Journal CRUD
+  JOURNAL_ENTRY_CREATED: 'journal_entry_created',
+  JOURNAL_ENTRY_VIEWED: 'journal_entry_viewed',
+  JOURNAL_ENTRY_EDITED: 'journal_entry_edited',
+  JOURNAL_ENTRY_DELETED: 'journal_entry_deleted',
+  // Gratitude CRUD
+  GRATITUDE_ENTRY_CREATED: 'gratitude_entry_created',
+  GRATITUDE_ENTRY_VIEWED: 'gratitude_entry_viewed',
+  GRATITUDE_ENTRY_EDITED: 'gratitude_entry_edited',
+  GRATITUDE_ENTRY_DELETED: 'gratitude_entry_deleted',
+  // Spot Check CRUD
+  SPOT_CHECK_CREATED: 'spot_check_created',
+  SPOT_CHECK_VIEWED: 'spot_check_viewed',
+  SPOT_CHECK_EDITED: 'spot_check_edited',
+  SPOT_CHECK_DELETED: 'spot_check_deleted',
+  // Nightly Review CRUD
+  NIGHTLY_REVIEW_CREATED: 'nightly_review_created',
+  NIGHTLY_REVIEW_VIEWED: 'nightly_review_viewed',
+  NIGHTLY_REVIEW_EDITED: 'nightly_review_edited',
+  NIGHTLY_REVIEW_DELETED: 'nightly_review_deleted',
+  // Prayers
+  PRAYER_VIEWED: 'prayer_viewed',
+  // Speaker Audio
+  SPEAKER_AUDIO_PLAYED: 'speaker_audio_played',
+  SPEAKER_AUDIO_PAUSED: 'speaker_audio_paused',
+  SPEAKER_AUDIO_COMPLETED: 'speaker_audio_completed',
 } as const;
 
 // Navigation method types
@@ -34,6 +74,9 @@ export function formatReadingDisplay(date: Date): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+// Theme mode type
+export type ThemeMode = 'light' | 'dark' | 'system';
+
 // Reading view tracking state (for time spent calculation)
 // Only foreground time is counted; background ends the session, foreground starts a new one.
 interface ReadingViewState {
@@ -47,77 +90,57 @@ interface ReadingViewState {
   foregroundSegmentStart: number | null;
 }
 
-// Theme mode type
-export type ThemeMode = 'light' | 'dark' | 'system';
-
 // Hook for using analytics in components
 export function useAnalytics() {
-  const posthog = usePostHog();
   const hasIdentified = useRef(false);
   const hasTrackedAppOpen = useRef(false);
-  const hasLoggedStatus = useRef(false);
   const currentReadingView = useRef<ReadingViewState | null>(null);
   const appState = useRef<AppStateStatus>(AppState.currentState);
   const [isDeveloper, setIsDeveloper] = useState(false);
   const themeModeRef = useRef<ThemeMode>('system');
-
-  // Log PostHog status once
-  useEffect(() => {
-    if (!hasLoggedStatus.current) {
-      console.log('[POSTHOG] usePostHog() returned:', posthog ? 'PostHog instance' : 'null');
-      hasLoggedStatus.current = true;
-    }
-  }, [posthog]);
 
   // Check developer mode status
   useEffect(() => {
     (async () => {
       const devMode = await isDeveloperDevice();
       setIsDeveloper(devMode);
-      console.log('[POSTHOG] Developer mode:', devMode);
     })();
   }, []);
 
   // Update theme mode (called from components that have access to settings)
-  // Sets both the ref (for event properties) and person property (for demographics)
   const updateThemeMode = useCallback((mode: ThemeMode) => {
     themeModeRef.current = mode;
-    console.log('[POSTHOG] Theme mode updated:', mode);
-    
-    // Set as person property for demographic analysis using $set
-    if (posthog) {
-      console.log('[POSTHOG] Setting person property theme_mode:', mode);
-      posthog.capture('$set', { $set: { theme_mode: mode } });
+    const mp = getMixpanel();
+    if (mp) {
+      mp.getPeople().set({ theme_mode: mode });
     }
-  }, [posthog]);
+  }, []);
 
   // Identify user with persistent device ID
   useEffect(() => {
-    if (!posthog || hasIdentified.current) return;
-    
+    if (hasIdentified.current) return;
+
     (async () => {
+      const mp = getMixpanel();
+      if (!mp) return;
       try {
         const deviceId = await getOrCreateDeviceId();
-        console.log('[POSTHOG] Identifying user with device ID:', deviceId);
-        posthog.identify(deviceId);
+        mp.identify(deviceId);
         hasIdentified.current = true;
+        console.log('[ANALYTICS] Identified user:', deviceId);
       } catch (err) {
-        console.log('[POSTHOG] Failed to identify user:', err);
+        console.log('[ANALYTICS] Failed to identify user:', err);
       }
     })();
-  }, [posthog]);
+  }, []);
 
-  // Fire reading_viewed event with foreground-only time spent, then end session (clear state).
+  // Fire reading_viewed event with foreground-only time spent, then end session.
   const fireReadingViewedEvent = useCallback(() => {
     const viewState = currentReadingView.current;
-    if (!viewState) {
-      console.log('[POSTHOG] fireReadingViewedEvent: No current view state');
-      return;
-    }
-    if (!posthog) {
-      console.log('[POSTHOG] fireReadingViewedEvent: PostHog not available');
-      return;
-    }
+    if (!viewState) return;
+
+    const mp = getMixpanel();
+    if (!mp) return;
 
     const currentSegmentMs = viewState.foregroundSegmentStart
       ? Date.now() - viewState.foregroundSegmentStart
@@ -128,51 +151,26 @@ export function useAnalytics() {
     // End session: clear so we don't count time for this reading anymore
     currentReadingView.current = null;
 
-    // Only track if user spent at least 1 second (avoid accidental quick swipes)
+    // Only track if user spent at least 1 second
     if (timeSpentSeconds >= 1) {
-      // Build the event payload explicitly
-      const readingDate = formatReadingDate(viewState.readingDate);
-      const readingDisplay = formatReadingDisplay(viewState.readingDate);
-      const readingTitle = viewState.readingTitle;
-
-      const eventPayload = {
+      mp.track(ANALYTICS_EVENTS.READING_VIEWED, {
         reading_id: viewState.readingId,
-        reading_date: readingDate,
-        reading_display: readingDisplay,
-        reading_title: readingTitle,
+        reading_date: formatReadingDate(viewState.readingDate),
+        reading_display: formatReadingDisplay(viewState.readingDate),
+        reading_title: viewState.readingTitle,
         navigation_method: viewState.navigationMethod,
         time_spent_seconds: timeSpentSeconds,
         is_developer: isDeveloper,
         theme_mode: themeModeRef.current,
-      };
-
-      console.log('[POSTHOG] ===== FIRING READING_VIEWED EVENT =====');
-      console.log('[POSTHOG] Event name:', ANALYTICS_EVENTS.READING_VIEWED);
-      console.log('[POSTHOG] Full payload:', JSON.stringify(eventPayload, null, 2));
-      console.log('[POSTHOG] reading_id:', eventPayload.reading_id);
-      console.log('[POSTHOG] reading_date:', eventPayload.reading_date);
-      console.log('[POSTHOG] reading_display:', eventPayload.reading_display);
-      console.log('[POSTHOG] reading_title:', eventPayload.reading_title);
-      console.log('[POSTHOG] navigation_method:', eventPayload.navigation_method);
-      console.log('[POSTHOG] time_spent_seconds:', eventPayload.time_spent_seconds);
-
-      posthog.capture(ANALYTICS_EVENTS.READING_VIEWED, eventPayload);
-
-      console.log('[POSTHOG] Calling flush() for reading_viewed...');
-      posthog.flush().then(() => {
-        console.log('[POSTHOG] reading_viewed flush() completed');
-      }).catch((err: unknown) => {
-        console.log('[POSTHOG] reading_viewed flush() error:', err);
       });
-    } else {
-      console.log('[POSTHOG] fireReadingViewedEvent: Time spent too short:', timeSpentSeconds, 'seconds');
+      mp.flush();
     }
-  }, [posthog, isDeveloper]);
+  }, [isDeveloper]);
 
   // Handle app state changes (foreground/background)
   useEffect(() => {
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
-      // App going to background: pause timer, end session (fire reading_viewed with foreground time, clear state)
+      // App going to background: pause timer, fire reading_viewed, clear state
       if (appState.current === 'active' && nextAppState.match(/inactive|background/)) {
         const view = currentReadingView.current;
         if (view && view.foregroundSegmentStart !== null) {
@@ -180,13 +178,14 @@ export function useAnalytics() {
           view.foregroundSegmentStart = null;
         }
         fireReadingViewedEvent();
-        hasTrackedAppOpen.current = false; // Allow new app_opened on next foreground
+        hasTrackedAppOpen.current = false;
       }
 
-      // App coming to foreground (new session is started by index.tsx calling startReadingView)
+      // App coming to foreground
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-        if (posthog && !hasTrackedAppOpen.current) {
-          posthog.capture(ANALYTICS_EVENTS.APP_OPENED, {
+        const mp = getMixpanel();
+        if (mp && !hasTrackedAppOpen.current) {
+          mp.track(ANALYTICS_EVENTS.APP_OPENED, {
             is_developer: isDeveloper,
             theme_mode: themeModeRef.current,
           });
@@ -199,49 +198,30 @@ export function useAnalytics() {
 
     const subscription = AppState.addEventListener('change', handleAppStateChange);
     return () => subscription?.remove();
-  }, [posthog, fireReadingViewedEvent, isDeveloper]);
+  }, [fireReadingViewedEvent, isDeveloper]);
 
   // Track app opened (called on initial mount)
   const trackAppOpened = useCallback(() => {
-    if (!posthog) {
-      console.log('[POSTHOG] trackAppOpened: PostHog not available');
-      return;
-    }
-    if (hasTrackedAppOpen.current) {
-      console.log('[POSTHOG] trackAppOpened: Already tracked this session');
-      return;
-    }
-    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.APP_OPENED, { is_developer: isDeveloper, theme_mode: themeModeRef.current });
-    posthog.capture(ANALYTICS_EVENTS.APP_OPENED, { 
+    const mp = getMixpanel();
+    if (!mp) return;
+    if (hasTrackedAppOpen.current) return;
+
+    mp.track(ANALYTICS_EVENTS.APP_OPENED, {
       is_developer: isDeveloper,
       theme_mode: themeModeRef.current,
     });
-    console.log('[POSTHOG] Calling flush()...');
-    posthog.flush().then(() => {
-      console.log('[POSTHOG] flush() completed successfully');
-    }).catch((err: unknown) => {
-      console.log('[POSTHOG] flush() error:', err);
-    });
+    mp.flush();
     hasTrackedAppOpen.current = true;
-  }, [posthog, isDeveloper]);
+  }, [isDeveloper]);
 
-  // Start tracking a reading view (called when reading appears or when app returns to foreground).
-  // Session ends when user navigates away or app goes to background.
+  // Start tracking a reading view (called when reading appears or app returns to foreground)
   const startReadingView = useCallback((
     readingId: string,
     readingDate: Date,
     readingTitle: string,
     navigationMethod: NavigationMethod
   ) => {
-    console.log('[POSTHOG] ===== START READING VIEW =====');
-    console.log('[POSTHOG] readingId:', readingId);
-    console.log('[POSTHOG] readingDate:', readingDate);
-    console.log('[POSTHOG] readingDate type:', typeof readingDate);
-    console.log('[POSTHOG] readingDate instanceof Date:', readingDate instanceof Date);
-    console.log('[POSTHOG] readingTitle:', readingTitle);
-    console.log('[POSTHOG] navigationMethod:', navigationMethod);
-
-    // Fire event for previous reading before starting new one (no-op if none)
+    // Fire event for previous reading before starting new one
     fireReadingViewedEvent();
 
     const isActive = AppState.currentState === 'active';
@@ -253,13 +233,6 @@ export function useAnalytics() {
       accumulatedForegroundMs: 0,
       foregroundSegmentStart: isActive ? Date.now() : null,
     };
-
-    console.log('[POSTHOG] Stored view state:', JSON.stringify({
-      readingId: currentReadingView.current.readingId,
-      readingTitle: currentReadingView.current.readingTitle,
-      navigationMethod: currentReadingView.current.navigationMethod,
-      foregroundSegmentStart: currentReadingView.current.foregroundSegmentStart != null,
-    }));
   }, [fireReadingViewedEvent]);
 
   const trackReadingRated = useCallback((
@@ -267,96 +240,217 @@ export function useAnalytics() {
     readingDate: Date,
     rating: RatingType
   ) => {
-    posthog?.capture(ANALYTICS_EVENTS.READING_RATED, {
+    getMixpanel()?.track(ANALYTICS_EVENTS.READING_RATED, {
       reading_id: readingId,
       reading_date: formatReadingDate(readingDate),
       rating,
       is_developer: isDeveloper,
       theme_mode: themeModeRef.current,
     });
-  }, [posthog, isDeveloper]);
+  }, [isDeveloper]);
 
   const trackReadingFavorited = useCallback((readingId: string, readingDate: Date) => {
-    if (!posthog) {
-      console.log('[POSTHOG] trackReadingFavorited: PostHog not available');
-      return;
-    }
-    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.READING_FAVORITED, { reading_id: readingId, is_developer: isDeveloper, theme_mode: themeModeRef.current });
-    posthog.capture(ANALYTICS_EVENTS.READING_FAVORITED, {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.READING_FAVORITED, {
       reading_id: readingId,
       reading_date: formatReadingDate(readingDate),
       is_developer: isDeveloper,
       theme_mode: themeModeRef.current,
     });
-    posthog.flush().then(() => {
-      console.log('[POSTHOG] reading_favorited flush() completed');
-    }).catch((err: unknown) => {
-      console.log('[POSTHOG] reading_favorited flush() error:', err);
-    });
-  }, [posthog, isDeveloper]);
+    mp.flush();
+  }, [isDeveloper]);
 
   const trackReadingUnfavorited = useCallback((readingId: string, readingDate: Date) => {
-    if (!posthog) {
-      console.log('[POSTHOG] trackReadingUnfavorited: PostHog not available');
-      return;
-    }
-    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.READING_UNFAVORITED, { reading_id: readingId, is_developer: isDeveloper, theme_mode: themeModeRef.current });
-    posthog.capture(ANALYTICS_EVENTS.READING_UNFAVORITED, {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.READING_UNFAVORITED, {
       reading_id: readingId,
       reading_date: formatReadingDate(readingDate),
       is_developer: isDeveloper,
       theme_mode: themeModeRef.current,
     });
-    posthog.flush().then(() => {
-      console.log('[POSTHOG] reading_unfavorited flush() completed');
-    }).catch((err: unknown) => {
-      console.log('[POSTHOG] reading_unfavorited flush() error:', err);
-    });
-  }, [posthog, isDeveloper]);
+    mp.flush();
+  }, [isDeveloper]);
 
   const trackRateModalShown = useCallback((trigger: 'bookmark' | 'positive_feedback' | 'settings_button') => {
-    if (!posthog) {
-      console.log('[POSTHOG] trackRateModalShown: PostHog not available');
-      return;
-    }
-    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.RATE_MODAL_SHOWN, { trigger, is_developer: isDeveloper, theme_mode: themeModeRef.current });
-    posthog.capture(ANALYTICS_EVENTS.RATE_MODAL_SHOWN, {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.RATE_MODAL_SHOWN, {
       trigger,
       is_developer: isDeveloper,
       theme_mode: themeModeRef.current,
     });
-    posthog.flush();
-  }, [posthog, isDeveloper]);
+    mp.flush();
+  }, [isDeveloper]);
 
   const trackRateModalDismissed = useCallback((trigger: 'bookmark' | 'positive_feedback' | 'settings_button') => {
-    if (!posthog) {
-      console.log('[POSTHOG] trackRateModalDismissed: PostHog not available');
-      return;
-    }
-    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.RATE_MODAL_DISMISSED, { trigger, is_developer: isDeveloper, theme_mode: themeModeRef.current });
-    posthog.capture(ANALYTICS_EVENTS.RATE_MODAL_DISMISSED, {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.RATE_MODAL_DISMISSED, {
       trigger,
       is_developer: isDeveloper,
       theme_mode: themeModeRef.current,
     });
-    posthog.flush();
-  }, [posthog, isDeveloper]);
+    mp.flush();
+  }, [isDeveloper]);
 
   const trackRateModalOpenedStore = useCallback((trigger: 'bookmark' | 'positive_feedback' | 'settings_button') => {
-    if (!posthog) {
-      console.log('[POSTHOG] trackRateModalOpenedStore: PostHog not available');
-      return;
-    }
-    console.log('[POSTHOG] Capturing event:', ANALYTICS_EVENTS.RATE_MODAL_OPENED_STORE, { trigger, is_developer: isDeveloper, theme_mode: themeModeRef.current });
-    posthog.capture(ANALYTICS_EVENTS.RATE_MODAL_OPENED_STORE, {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.RATE_MODAL_OPENED_STORE, {
       trigger,
       is_developer: isDeveloper,
       theme_mode: themeModeRef.current,
     });
-    posthog.flush();
-  }, [posthog, isDeveloper]);
+    mp.flush();
+  }, [isDeveloper]);
+
+  // ─── Paywall ──────────────────────────────────────────────────────────
+
+  const trackPaywallShown = useCallback(() => {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.PAYWALL_SHOWN, {
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+    mp.flush();
+  }, [isDeveloper]);
+
+  const trackPaywallDismissed = useCallback(() => {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.PAYWALL_DISMISSED, {
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+    mp.flush();
+  }, [isDeveloper]);
+
+  // ─── Reminders ───────────────────────────────────────────────────────
+
+  const trackReminderSet = useCallback((time: string) => {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.REMINDER_SET, {
+      reminder_time: time,
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+    mp.flush();
+  }, [isDeveloper]);
+
+  const trackReminderChanged = useCallback((oldTime: string, newTime: string) => {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.REMINDER_CHANGED, {
+      old_time: oldTime,
+      new_time: newTime,
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+  }, [isDeveloper]);
+
+  const trackReminderDisabled = useCallback(() => {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.REMINDER_DISABLED, {
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+  }, [isDeveloper]);
+
+  // ─── Notebook ────────────────────────────────────────────────────────
+
+  const trackNotebookOpened = useCallback(() => {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.NOTEBOOK_OPENED, {
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+  }, [isDeveloper]);
+
+  // ─── Notebook Entry Viewed (dispatches by entry_type) ────────────────
+
+  const trackEntryViewed = useCallback((entryType: string, entryId: string) => {
+    const mp = getMixpanel();
+    if (!mp) return;
+
+    const eventMap: Record<string, string> = {
+      journal: ANALYTICS_EVENTS.JOURNAL_ENTRY_VIEWED,
+      spot_check: ANALYTICS_EVENTS.SPOT_CHECK_VIEWED,
+      nightly_review: ANALYTICS_EVENTS.NIGHTLY_REVIEW_VIEWED,
+      gratitude: ANALYTICS_EVENTS.GRATITUDE_ENTRY_VIEWED,
+    };
+    const eventName = eventMap[entryType];
+    if (!eventName) return;
+
+    mp.track(eventName, {
+      entry_id: entryId,
+      entry_type: entryType,
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+  }, [isDeveloper]);
+
+  // ─── Prayers ─────────────────────────────────────────────────────────
+
+  const trackPrayerViewed = useCallback((prayerId: string, prayerName: string) => {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.PRAYER_VIEWED, {
+      prayer_id: prayerId,
+      prayer_name: prayerName,
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+  }, [isDeveloper]);
+
+  // ─── Speaker Audio ───────────────────────────────────────────────────
+
+  const trackSpeakerAudioPlayed = useCallback((speakerId: string, speakerName: string, talkTitle: string) => {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.SPEAKER_AUDIO_PLAYED, {
+      speaker_id: speakerId,
+      speaker_name: speakerName,
+      talk_title: talkTitle,
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+  }, [isDeveloper]);
+
+  const trackSpeakerAudioPaused = useCallback((speakerId: string, speakerName: string, positionMs: number, durationMs: number) => {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.SPEAKER_AUDIO_PAUSED, {
+      speaker_id: speakerId,
+      speaker_name: speakerName,
+      position_seconds: Math.round(positionMs / 1000),
+      duration_seconds: Math.round(durationMs / 1000),
+      percent_complete: durationMs > 0 ? Math.round((positionMs / durationMs) * 100) : 0,
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+  }, [isDeveloper]);
+
+  const trackSpeakerAudioCompleted = useCallback((speakerId: string, speakerName: string, durationMs: number) => {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.SPEAKER_AUDIO_COMPLETED, {
+      speaker_id: speakerId,
+      speaker_name: speakerName,
+      duration_seconds: Math.round(durationMs / 1000),
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+    mp.flush();
+  }, [isDeveloper]);
 
   return {
+    // Existing
     trackAppOpened,
     startReadingView,
     trackReadingRated,
@@ -366,5 +460,21 @@ export function useAnalytics() {
     trackRateModalDismissed,
     trackRateModalOpenedStore,
     updateThemeMode,
+    // Paywall
+    trackPaywallShown,
+    trackPaywallDismissed,
+    // Reminders
+    trackReminderSet,
+    trackReminderChanged,
+    trackReminderDisabled,
+    // Notebook
+    trackNotebookOpened,
+    trackEntryViewed,
+    // Prayers
+    trackPrayerViewed,
+    // Speaker Audio
+    trackSpeakerAudioPlayed,
+    trackSpeakerAudioPaused,
+    trackSpeakerAudioCompleted,
   };
 }

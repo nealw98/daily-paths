@@ -1,29 +1,37 @@
 import { useColorScheme } from "react-native";
-import { useSettings, ColorScheme } from "./useSettings";
-import { lightColors, darkColors, ColorPalette } from "../constants/theme";
+import { useSettings } from "./useSettings";
+import { getColorsForScheme, getScheme, ColorPalette } from "../constants/theme";
 
 /**
- * Hook that returns the current color palette based on user preference.
- * 
- * - If colorScheme is "light", returns lightColors
- * - If colorScheme is "dark", returns darkColors  
- * - If colorScheme is "system", follows the device's dark mode setting
+ * Returns the current color palette and theme state.
+ * When colorScheme is "system", resolves theme from device appearance; otherwise uses settings.themeId.
  */
-export function useTheme(): { colors: ColorPalette; isDark: boolean; colorScheme: ColorScheme } {
+export function useTheme(): {
+  colors: ColorPalette;
+  isDark: boolean;
+  themeId: string;
+  colorScheme: "light" | "dark" | "system";
+} {
   const { settings } = useSettings();
-  const systemColorScheme = useColorScheme();
-  
-  // Determine if we should use dark mode
-  let isDark: boolean;
-  if (settings.colorScheme === "system") {
-    isDark = systemColorScheme === "dark";
-  } else {
-    isDark = settings.colorScheme === "dark";
-  }
-  
+  const deviceColorScheme = useColorScheme();
+  const themeId = settings.themeId ?? "ocean-light";
+  // Deep Sea, Rose Garden, and Desert Twilight have no light/dark; only Ocean uses system/light/dark.
+  const effectiveThemeId =
+    themeId === "deep-sea" || themeId === "burgundy-rose" || themeId === "twilight-fire"
+      ? themeId
+      : settings.colorScheme === "system"
+        ? deviceColorScheme === "dark"
+          ? "ocean-dark"
+          : "ocean-light"
+        : themeId;
+  const colors = getColorsForScheme(effectiveThemeId);
+  const scheme = getScheme(effectiveThemeId);
+  const isDark = scheme?.dark ?? false;
+
   return {
-    colors: isDark ? darkColors : lightColors,
+    colors,
     isDark,
+    themeId: effectiveThemeId,
     colorScheme: settings.colorScheme,
   };
 }

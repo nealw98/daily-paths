@@ -45,6 +45,7 @@ function transformRowToDailyReading(data: any, date: Date): DailyReading {
     id: data.id,
     date,
     title: data.title,
+    stepTheme: (data as { step_theme?: string }).step_theme ?? "",
     opening: data.opening,
     body: bodyParagraphs,
     quote: rawQuote,
@@ -241,6 +242,8 @@ export function useReading(date: Date) {
       console.log("Fetched data:", data);
 
       if (data) {
+        const transformedReading = transformRowToDailyReading(data, date);
+
         // If Supabase rows include an updated_at column, use it for freshness checks
         const remoteUpdatedAt =
           (data as { updated_at?: string }).updated_at ?? null;
@@ -255,11 +258,18 @@ export function useReading(date: Date) {
           !cached?.updatedAt ||
           (remoteUpdatedAt && remoteUpdatedAt > cached.updatedAt);
 
+        const cachedMissingStepTheme =
+          !!transformedReading.stepTheme?.trim() &&
+          !cached?.reading?.stepTheme?.trim();
+
         const shouldReplace =
-          !cached?.reading || isNewer || cachedDateMismatch || hasDifferentId;
+          !cached?.reading ||
+          isNewer ||
+          cachedDateMismatch ||
+          hasDifferentId ||
+          cachedMissingStepTheme;
 
         if (shouldReplace) {
-          const transformedReading = transformRowToDailyReading(data, date);
           console.log("Transformed reading:", transformedReading);
           setReading(transformedReading);
 
@@ -285,6 +295,7 @@ export function useReading(date: Date) {
               isNewer,
               cachedDateMismatch,
               hasDifferentId,
+              cachedMissingStepTheme,
               hadCached: !!cached?.reading,
             },
           });

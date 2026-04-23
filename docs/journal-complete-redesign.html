@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Paths — Journal Complete Redesign</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --deep-teal: #2C5F5D;
+    --teal-dark: #1E4543;
+    --teal-darker: #183836;
+    --seafoam: #5B9E9B;
+    --pearl: #F5F0EB;
+    --pearl-warm: #EDE7E0;
+    --sand: #D4C9BC;
+    --text-primary: #2A2A2A;
+    --text-secondary: #555555;
+    --text-muted: #8A8A8A;
+    --text-light: #AAAAAA;
+    --white: #FFFFFF;
+    --border: rgba(44, 95, 93, 0.08);
+    --border-med: rgba(44, 95, 93, 0.12);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+    --radius: 14px;
+    --radius-sm: 10px;
+
+    --journal-color: #2C5F5D;
+    --gratitude-color: #8B6E4E;
+    --spotcheck-color: #B8604A;
+    --nightly-color: #5B6E8A;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Source Sans 3', sans-serif;
+    background: #E8E2DB;
+    color: var(--text-primary);
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  h1.page-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 28px;
+    color: var(--deep-teal);
+    text-align: center;
+  }
+
+  .subtitle { text-align: center; color: var(--text-secondary); font-size: 14px; font-weight: 300; margin-bottom: 20px; }
+
+  .section-divider {
+    width: 100%;
+    max-width: 1200px;
+    text-align: center;
+    padding: 30px 0 10px;
+  }
+  .section-divider h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 24px;
+    color: var(--deep-teal);
+  }
+  .section-divider p { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+  .phones-row { display: flex; gap: 30px; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
+
+  .phone-wrapper { display: flex; flex-direction: column; align-items: center; }
+  .phone-label { text-align: center; font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 17px; color: var(--deep-teal); margin-bottom: 6px; font-weight: 500; }
+  .phone-label-desc { text-align: center; font-size: 12px; color: var(--text-muted); margin-bottom: 14px; max-width: 390px; line-height: 1.5; }
+
+  .phone-frame {
+    width: 390px;
+    height: 844px;
+    background: var(--pearl);
+    border-radius: 44px;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04);
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  /* =============================== */
+  /* TEAL HEADER                     */
+  /* =============================== */
+  .teal-header {
+    background: linear-gradient(160deg, var(--deep-teal) 0%, var(--teal-darker) 100%);
+    padding: 56px 24px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .teal-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 30% 20%, rgba(91,158,155,0.15) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .header-row { display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 1; }
+  .header-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 32px;
+    color: var(--white);
+    font-weight: 500;
+  }
+  .header-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .header-btn svg { width: 18px; height: 18px; stroke: var(--white); stroke-width: 2; fill: none; }
+
+  /* =============================== */
+  /* STATS                           */
+  /* =============================== */
+  .stats-section { display: flex; justify-content: space-around; padding: 18px 24px; background: var(--white); border-bottom: 1px solid var(--border); }
+  .stat-item { text-align: center; }
+  .stat-num { font-size: 24px; font-weight: 600; color: var(--deep-teal); line-height: 1; }
+  .stat-text { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* =============================== */
+  /* SEGMENTED FILTER                */
+  /* =============================== */
+  .filter-section { padding: 14px 20px; background: var(--white); border-bottom: 1px solid var(--border); }
+  .segmented-control { display: flex; background: var(--pearl); border-radius: var(--radius-sm); padding: 3px; gap: 2px; }
+  .seg-btn {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    padding: 10px 4px; border-radius: 8px; cursor: pointer;
+    transition: all 0.25s ease; border: none; background: none;
+  }
+  .seg-btn .seg-label { font-family: 'Source Sans 3', sans-serif; font-size: 13px; font-weight: 500; color: var(--text-muted); transition: all 0.25s; }
+  .seg-btn .seg-icon { display: flex; align-items: center; justify-content: center; }
+  .seg-btn .seg-icon svg { width: 18px; height: 18px; stroke: var(--text-muted); stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; transition: all 0.25s; }
+  .seg-btn:hover .seg-label { color: var(--text-secondary); }
+  .seg-btn:hover .seg-icon svg { stroke: var(--text-secondary); }
+  .seg-btn.active { background: var(--white); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .seg-btn.active .seg-label { color: var(--deep-teal); font-weight: 600; }
+  .seg-btn.active .seg-icon svg { stroke: var(--deep-teal); stroke-width: 2; }
+  .seg-btn.active[data-type="gratitude"] .seg-icon svg { stroke: var(--gratitude-color); }
+  .seg-btn.active[data-type="spotcheck"] .seg-icon svg { stroke: var(--spotcheck-color); }
+  .seg-btn.active[data-type="nightly"] .seg-icon svg { stroke: var(--nightly-color); }
+
+  /* =============================== */
+  /* TIMELINE                        */
+  /* =============================== */
+  .scroll-area { height: calc(100% - 130px - 54px - 48px - 68px); overflow-y: auto; }
+  .scroll-area::-webkit-scrollbar { display: none; }
+
+  .date-label { display: flex; align-items: center; gap: 12px; padding: 16px 24px 8px; }
+  .date-label-line { flex: 1; height: 1px; background: var(--border); }
+  .date-label-text { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.2px; }
+
+  .entry-card {
+    margin: 0 16px 12px; background: var(--white); border-radius: var(--radius);
+    overflow: hidden; box-shadow: var(--shadow-sm); cursor: pointer;
+    transition: all 0.2s; border-left: 3.5px solid var(--journal-color);
+  }
+  .entry-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+  .entry-card.type-gratitude { border-left-color: var(--gratitude-color); }
+  .entry-card.type-spotcheck { border-left-color: var(--spotcheck-color); }
+  .entry-card.type-nightly { border-left-color: var(--nightly-color); }
+
+  .entry-card-inner { padding: 16px 18px 18px; }
+  .entry-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .entry-type-label {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 13px; font-weight: 600; color: var(--journal-color); letter-spacing: 0.2px;
+  }
+  .type-gratitude .entry-type-label { color: var(--gratitude-color); }
+  .type-spotcheck .entry-type-label { color: var(--spotcheck-color); }
+  .type-nightly .entry-type-label { color: var(--nightly-color); }
+  .entry-type-label svg { width: 16px; height: 16px; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .entry-time { font-size: 13px; color: var(--text-light); }
+  .entry-text { font-size: 17px; color: var(--text-primary); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+  /* =============================== */
+  /* FAB                             */
+  /* =============================== */
+  .fab {
+    position: absolute; bottom: 82px; right: 22px; width: 56px; height: 56px;
+    border-radius: 50%; background: var(--deep-teal); color: var(--white);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 16px rgba(44, 95, 93, 0.35); cursor: pointer; z-index: 10; border: none;
+  }
+  .fab svg { width: 24px; height: 24px; stroke: var(--white); stroke-width: 2.5; fill: none; }
+
+  /* =============================== */
+  /* BOTTOM NAV                      */
+  /* =============================== */
+  .bottom-nav {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 68px;
+    background: var(--white); border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-around; padding: 0 16px 10px;
+  }
+  .nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; opacity: 0.4; }
+  .nav-item.active { opacity: 1; }
+  .nav-item svg { width: 22px; height: 22px; stroke: var(--deep-teal); stroke-width: 1.8; fill: none; }
+  .nav-label { font-size: 10px; font-weight: 500; color: var(--deep-teal); }
+
+  /* Overlay + Sheet */
+  .overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.35); z-index: 20; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+  .overlay.show { opacity: 1; pointer-events: all; }
+  .bottom-sheet {
+    position: absolute; bottom: 0; left: 0; right: 0; background: var(--white);
+    border-radius: 24px 24px 0 0; padding: 16px 20px 34px; z-index: 30;
+    transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .bottom-sheet.show { transform: translateY(0); }
+  .sheet-handle { width: 40px; height: 4px; background: var(--sand); border-radius: 2px; margin: 0 auto 18px; }
+  .sheet-title { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 21px; color: var(--deep-teal); margin-bottom: 16px; text-align: center; }
+
+  .type-picker-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .type-card {
+    display: flex; flex-direction: column; align-items: center; padding: 20px 12px 16px;
+    border-radius: var(--radius); cursor: pointer; transition: all 0.2s; border: 1.5px solid transparent; text-align: center;
+  }
+  .type-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .type-card .tc-icon { margin-bottom: 10px; }
+  .type-card .tc-icon svg { width: 28px; height: 28px; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .type-card.tc-journal { background: rgba(44,95,93,0.06); border-color: rgba(44,95,93,0.1); }
+  .type-card.tc-journal .tc-icon svg { stroke: var(--journal-color); }
+  .type-card.tc-gratitude { background: rgba(139,110,78,0.06); border-color: rgba(139,110,78,0.1); }
+  .type-card.tc-gratitude .tc-icon svg { stroke: var(--gratitude-color); }
+  .type-card.tc-spotcheck { background: rgba(184,96,74,0.06); border-color: rgba(184,96,74,0.1); }
+  .type-card.tc-spotcheck .tc-icon svg { stroke: var(--spotcheck-color); }
+  .type-card.tc-nightly { background: rgba(91,110,138,0.06); border-color: rgba(91,110,138,0.1); }
+  .type-card.tc-nightly .tc-icon svg { stroke: var(--nightly-color); }
+  .tc-name { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 3px; }
+  .tc-desc { font-size: 11px; color: var(--text-muted); line-height: 1.3; }
+
+  /* =============================== */
+  /* FORM SCREENS                    */
+  /* =============================== */
+  .form-screen { height: calc(100% - 68px); display: flex; flex-direction: column; }
+
+  .form-header-area {
+    background: linear-gradient(160deg, var(--deep-teal) 0%, var(--teal-darker) 100%);
+    padding: 56px 24px 18px;
+    position: relative;
+  }
+  .form-header-area::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 30% 20%, rgba(91,158,155,0.15) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .form-header-row { display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 1; }
+  .form-back { color: rgba(255,255,255,0.8); font-size: 14px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+  .form-back svg { width: 16px; height: 16px; stroke: rgba(255,255,255,0.8); stroke-width: 2; fill: none; }
+  .form-title-area { display: flex; align-items: center; gap: 8px; position: relative; z-index: 1; }
+  .form-title-area svg { width: 18px; height: 18px; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .form-title-text { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 18px; color: var(--white); font-weight: 500; }
+  .form-delete { color: rgba(255,255,255,0.5); font-size: 14px; cursor: pointer; }
+  .form-delete svg { width: 18px; height: 18px; stroke: rgba(255,255,255,0.5); stroke-width: 1.8; fill: none; }
+
+  /* Form type color strip under header */
+  .type-strip { height: 3px; }
+  .type-strip.strip-journal { background: var(--journal-color); }
+  .type-strip.strip-gratitude { background: var(--gratitude-color); }
+  .type-strip.strip-spotcheck { background: var(--spotcheck-color); }
+  .type-strip.strip-nightly { background: var(--nightly-color); }
+
+  .form-body { flex: 1; overflow-y: auto; padding: 20px 24px; background: var(--pearl); }
+  .form-body::-webkit-scrollbar { display: none; }
+
+  .form-intro {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 19px;
+    color: var(--deep-teal);
+    line-height: 1.5;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-med);
+  }
+
+  /* Form footer */
+  .form-footer {
+    display: flex; gap: 12px; padding: 14px 24px;
+    background: var(--white); border-top: 1px solid var(--border);
+  }
+  .btn { flex: 1; padding: 14px; border-radius: var(--radius-sm); font-family: 'Source Sans 3', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; text-align: center; border: none; transition: all 0.15s; }
+  .btn-cancel { background: var(--pearl); color: var(--text-secondary); }
+  .btn-save { background: var(--deep-teal); color: var(--white); display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .btn-save svg { width: 16px; height: 16px; stroke: var(--white); stroke-width: 2.5; fill: none; }
+
+  /* Journal freeform */
+  .journal-textarea {
+    width: 100%; min-height: 280px; border: none; background: transparent;
+    font-family: 'Source Sans 3', sans-serif; font-size: 17px; line-height: 1.7;
+    color: var(--text-primary); resize: none; outline: none;
+  }
+  .journal-textarea::placeholder { color: var(--sand); font-style: italic; }
+
+  /* Gratitude items */
+  .gratitude-item {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--white); border-radius: var(--radius-sm);
+    padding: 16px; margin-bottom: 10px; box-shadow: var(--shadow-sm);
+  }
+  .gratitude-item svg { width: 20px; height: 20px; stroke: var(--gratitude-color); stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+  .gratitude-input {
+    flex: 1; border: none; background: transparent;
+    font-family: 'Source Sans 3', sans-serif; font-size: 16px; color: var(--text-primary); outline: none;
+  }
+  .gratitude-input::placeholder { color: var(--sand); font-style: italic; }
+  .gratitude-remove { width: 24px; height: 24px; border-radius: 50%; background: var(--pearl); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+  .gratitude-remove svg { width: 12px; height: 12px; stroke: var(--text-muted); stroke-width: 2; fill: none; }
+
+  .add-another {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 14px; color: var(--seafoam); font-size: 14px; font-weight: 500;
+    cursor: pointer; border: 1.5px dashed var(--border-med); border-radius: var(--radius-sm);
+    margin-bottom: 8px;
+  }
+  .form-hint { font-size: 13px; color: var(--text-muted); text-align: center; font-style: italic; }
+
+  /* Guided prompts (spot check / nightly) */
+  .prompt-card {
+    background: var(--white); border-radius: var(--radius);
+    padding: 18px 18px 16px; margin-bottom: 14px; box-shadow: var(--shadow-sm);
+  }
+  .prompt-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .prompt-num {
+    width: 26px; height: 26px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: var(--white); flex-shrink: 0;
+  }
+  .prompt-num.num-spotcheck { background: var(--spotcheck-color); }
+  .prompt-num.num-nightly { background: var(--nightly-color); }
+  .prompt-question { font-size: 16px; font-weight: 600; color: var(--text-primary); line-height: 1.35; }
+
+  .prompt-textarea {
+    width: 100%; min-height: 80px; border: 1.5px solid var(--border-med);
+    border-radius: var(--radius-sm); background: var(--pearl);
+    font-family: 'Source Sans 3', sans-serif; font-size: 15px; line-height: 1.6;
+    color: var(--text-primary); resize: none; outline: none; padding: 12px 14px;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .prompt-textarea:focus { border-color: var(--seafoam); background: var(--white); }
+  .prompt-textarea::placeholder { color: var(--sand); font-style: italic; font-size: 14px; }
+  .prompt-hint { font-size: 13px; color: var(--seafoam); margin-top: 6px; font-style: italic; }
+
+  /* Annotation */
+  .annotation-group {
+    width: 100%; max-width: 900px; margin: 20px auto 10px; padding: 24px;
+    background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow-sm);
+  }
+  .annotation-title { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 20px; color: var(--deep-teal); margin-bottom: 10px; }
+  .annotation-text { font-size: 14px; color: var(--text-secondary); line-height: 1.65; }
+
+  .tap-hint {
+    position: absolute; bottom: 144px; right: 28px; font-size: 11px; color: var(--seafoam);
+    opacity: 0.8; animation: pulse 2s ease-in-out infinite; pointer-events: none; z-index: 5;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+
+  @media (max-width: 900px) { body { flex-direction: column; align-items: center; } }
+</style>
+</head>
+<body>
+
+<h1 class="page-title">Daily Paths — Journal Complete Redesign</h1>
+<p class="subtitle">Timeline + all four entry forms, unified with the Today screen's visual language</p>
+
+<!-- ================================================= -->
+<!-- SECTION 1: TIMELINE                               -->
+<!-- ================================================= -->
+<div class="section-divider">
+  <h2>The Timeline</h2>
+  <p>Teal header, custom SVG icons, 17px entry text, segmented filter</p>
+</div>
+
+<div class="phones-row">
+  <div class="phone-wrapper">
+    <div class="phone-label">Journal Timeline</div>
+    <div class="phone-frame" id="phone-main">
+      <div class="teal-header">
+        <div class="header-row">
+          <div class="header-title">Journal</div>
+          <div class="header-btn"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></div>
+        </div>
+      </div>
+      <div class="stats-section">
+        <div class="stat-item"><div class="stat-num">47</div><div class="stat-text">this month</div></div>
+        <div class="stat-item"><div class="stat-num">12</div><div class="stat-text">this week</div></div>
+        <div class="stat-item"><div class="stat-num">3</div><div class="stat-text">today</div></div>
+      </div>
+      <div class="filter-section">
+        <div class="segmented-control" id="seg-filter">
+          <button class="seg-btn active" data-filter="all" data-type="all"><span class="seg-label">All</span></button>
+          <button class="seg-btn" data-filter="journal" data-type="journal"><span class="seg-icon"><svg viewBox="0 0 32 32" stroke-width="1.8"><path d="M26 4c-8 2-12 8-14 16l-4 8 8-4c8-2 14-6 16-14"/><path d="M12 20L26 4"/></svg></span></button>
+          <button class="seg-btn" data-filter="gratitude" data-type="gratitude"><span class="seg-icon"><svg viewBox="0 0 32 32" stroke-width="1.8"><path d="M16 28V16"/><path d="M16 16c0-6 6-10 12-8-2 6-6 8-12 8Z"/><path d="M16 20c0-5-5-8-10-7 1.5 5 5 7 10 7Z"/></svg></span></button>
+          <button class="seg-btn" data-filter="spotcheck" data-type="spotcheck"><span class="seg-icon"><svg viewBox="0 0 32 32" stroke-width="1.8"><path d="M6 16c4-6 8-6 10-3s6 3 10-3"/><path d="M6 22c3-4 6-4 8-2s5 2 8-2" opacity="0.55"/><path d="M8 27c2-3 4-3 6-1.5s4 1.5 6-1.5" opacity="0.3"/></svg></span></button>
+          <button class="seg-btn" data-filter="nightly" data-type="nightly"><span class="seg-icon"><svg viewBox="0 0 32 32" stroke-width="1.8"><path d="M14 5a5.5 5.5 0 0 0 8.5 6.5 7 7 0 1 1-8.5-6.5Z"/><path d="M8 25c3-1.5 5.5 0 8.5-1s5-1.5 7.5 0" opacity="0.5"/><path d="M6 28.5c4-1.5 6 0 10-1s6-1.5 10 0" opacity="0.3"/></svg></span></button>
+        </div>
+      </div>
+      <div class="scroll-area">
+        <div class="date-label"><div class="date-label-line"></div><span class="date-label-text">Today — Feb 8</span><div class="date-label-line"></div></div>
+        <div class="entry-card type-nightly" data-type="nightly"><div class="entry-card-inner"><div class="entry-meta"><div class="entry-type-label"><svg viewBox="0 0 32 32" stroke="#5B6E8A"><path d="M14 5a5.5 5.5 0 0 0 8.5 6.5 7 7 0 1 1-8.5-6.5Z"/><path d="M8 25c3-1.5 5.5 0 8.5-1s5-1.5 7.5 0" opacity="0.5"/></svg>Nightly Review</div><div class="entry-time">9:14 PM</div></div><div class="entry-text">Today was hard but I stayed out of it. She came home late and I could smell it, but instead of interrogating her I said goodnight.</div></div></div>
+        <div class="entry-card" data-type="journal"><div class="entry-card-inner"><div class="entry-meta"><div class="entry-type-label"><svg viewBox="0 0 32 32" stroke="#2C5F5D"><path d="M26 4c-8 2-12 8-14 16l-4 8 8-4c8-2 14-6 16-14"/><path d="M12 20L26 4"/></svg>Journal</div><div class="entry-time">3:22 PM</div></div><div class="entry-text">I got the call from Mom and immediately fell into the old pattern. She was crying about my brother again and I found myself making promises.</div></div></div>
+        <div class="entry-card type-spotcheck" data-type="spotcheck"><div class="entry-card-inner"><div class="entry-meta"><div class="entry-type-label"><svg viewBox="0 0 32 32" stroke="#B8604A"><path d="M6 16c4-6 8-6 10-3s6 3 10-3"/><path d="M6 22c3-4 6-4 8-2s5 2 8-2" opacity="0.55"/></svg>Spot Check</div><div class="entry-time">2:45 PM</div></div><div class="entry-text">Feeling triggered after phone call with Mom. Heart racing, jaw clenched. The urge to fix everything is overwhelming right now.</div></div></div>
+        <div class="entry-card type-gratitude" data-type="gratitude"><div class="entry-card-inner"><div class="entry-meta"><div class="entry-type-label"><svg viewBox="0 0 32 32" stroke="#8B6E4E"><path d="M16 28V16"/><path d="M16 16c0-6 6-10 12-8-2 6-6 8-12 8Z"/><path d="M16 20c0-5-5-8-10-7 1.5 5 5 7 10 7Z"/></svg>Gratitude</div><div class="entry-time">7:30 AM</div></div><div class="entry-text">Morning light through the window · Hot coffee in silence · The meeting last night · My sponsor's patience</div></div></div>
+        <div class="date-label"><div class="date-label-line"></div><span class="date-label-text">Yesterday — Feb 7</span><div class="date-label-line"></div></div>
+        <div class="entry-card type-nightly" data-type="nightly"><div class="entry-card-inner"><div class="entry-meta"><div class="entry-type-label"><svg viewBox="0 0 32 32" stroke="#5B6E8A"><path d="M14 5a5.5 5.5 0 0 0 8.5 6.5 7 7 0 1 1-8.5-6.5Z"/><path d="M8 25c3-1.5 5.5 0 8.5-1s5-1.5 7.5 0" opacity="0.5"/></svg>Nightly Review</div><div class="entry-time">10:02 PM</div></div><div class="entry-text">A better day. I noticed the urge to check his phone and chose not to. I felt the anxiety but let it pass.</div></div></div>
+        <div class="entry-card" data-type="journal"><div class="entry-card-inner"><div class="entry-meta"><div class="entry-type-label"><svg viewBox="0 0 32 32" stroke="#2C5F5D"><path d="M26 4c-8 2-12 8-14 16l-4 8 8-4c8-2 14-6 16-14"/><path d="M12 20L26 4"/></svg>Journal</div><div class="entry-time">11:15 AM</div></div><div class="entry-text">Meeting topic was Step 3 today. "Made a decision to turn our will and our lives over." I keep wrestling with this one.</div></div></div>
+      </div>
+      <button class="fab" onclick="toggleSheet()"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+      <div class="tap-hint">tap me ↑</div>
+      <div class="overlay" id="overlay" onclick="hideSheet()"></div>
+      <div class="bottom-sheet" id="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">What would you like to do?</div>
+        <div class="type-picker-grid">
+          <div class="type-card tc-journal" onclick="hideSheet()"><div class="tc-icon"><svg viewBox="0 0 32 32"><path d="M26 4c-8 2-12 8-14 16l-4 8 8-4c8-2 14-6 16-14"/><path d="M12 20L26 4"/></svg></div><div class="tc-name">Journal</div><div class="tc-desc">Write freely</div></div>
+          <div class="type-card tc-gratitude" onclick="hideSheet()"><div class="tc-icon"><svg viewBox="0 0 32 32"><path d="M16 28V16"/><path d="M16 16c0-6 6-10 12-8-2 6-6 8-12 8Z"/><path d="M16 20c0-5-5-8-10-7 1.5 5 5 7 10 7Z"/></svg></div><div class="tc-name">Gratitude</div><div class="tc-desc">Count your blessings</div></div>
+          <div class="type-card tc-spotcheck" onclick="hideSheet()"><div class="tc-icon"><svg viewBox="0 0 32 32"><path d="M6 16c4-6 8-6 10-3s6 3 10-3"/><path d="M6 22c3-4 6-4 8-2s5 2 8-2" opacity="0.55"/><path d="M8 27c2-3 4-3 6-1.5s4 1.5 6-1.5" opacity="0.3"/></svg></div><div class="tc-name">Spot Check</div><div class="tc-desc">Breathe and check in</div></div>
+          <div class="type-card tc-nightly" onclick="hideSheet()"><div class="tc-icon"><svg viewBox="0 0 32 32"><path d="M14 5a5.5 5.5 0 0 0 8.5 6.5 7 7 0 1 1-8.5-6.5Z"/><path d="M8 25c3-1.5 5.5 0 8.5-1s5-1.5 7.5 0" opacity="0.5"/><path d="M6 28.5c4-1.5 6 0 10-1s6-1.5 10 0" opacity="0.3"/></svg></div><div class="tc-name">Nightly Review</div><div class="tc-desc">Reflect on your day</div></div>
+        </div>
+      </div>
+      <div class="bottom-nav">
+        <div class="nav-item"><svg viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg><span class="nav-label">Today</span></div>
+        <div class="nav-item active"><svg viewBox="0 0 24 24"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg><span class="nav-label">Journal</span></div>
+        <div class="nav-item"><svg viewBox="0 0 24 24"><path d="M12 22V2"/><path d="m5 12 7-7 7 7"/><path d="M5 19h14"/></svg><span class="nav-label">Prayers</span></div>
+        <div class="nav-item"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg><span class="nav-label">More</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================= -->
+<!-- SECTION 2: ENTRY FORMS                            -->
+<!-- ================================================= -->
+<div class="section-divider">
+  <h2>Entry Forms — Redesigned</h2>
+  <p>Teal header carries through. Prompts in clean white cards on pearl background. No emoji.</p>
+</div>
+
+<div class="phones-row">
+
+  <!-- JOURNAL FREEFORM -->
+  <div class="phone-wrapper">
+    <div class="phone-label">Freeform Journal</div>
+    <div class="phone-label-desc">Clean blank page. No questions accordion — structured types handle guided reflection now.</div>
+    <div class="phone-frame">
+      <div class="form-screen">
+        <div class="form-header-area">
+          <div class="form-header-row">
+            <div class="form-back"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg> Back</div>
+            <div class="form-title-area">
+              <svg viewBox="0 0 32 32" stroke="rgba(255,255,255,0.9)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M26 4c-8 2-12 8-14 16l-4 8 8-4c8-2 14-6 16-14"/><path d="M12 20L26 4"/></svg>
+              <span class="form-title-text">Journal Entry</span>
+            </div>
+            <div class="form-delete"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div>
+          </div>
+        </div>
+        <div class="type-strip strip-journal"></div>
+        <div class="form-body">
+          <textarea class="journal-textarea" placeholder="What's on your mind..."></textarea>
+        </div>
+        <div class="form-footer">
+          <button class="btn btn-cancel">Cancel</button>
+          <button class="btn btn-save"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Save</button>
+        </div>
+      </div>
+      <div class="bottom-nav">
+        <div class="nav-item"><svg viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg><span class="nav-label">Today</span></div>
+        <div class="nav-item active"><svg viewBox="0 0 24 24"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg><span class="nav-label">Journal</span></div>
+        <div class="nav-item"><svg viewBox="0 0 24 24"><path d="M12 22V2"/><path d="m5 12 7-7 7 7"/><path d="M5 19h14"/></svg><span class="nav-label">Prayers</span></div>
+        <div class="nav-item"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg><span class="nav-label">More</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GRATITUDE -->
+  <div class="phone-wrapper">
+    <div class="phone-label">Gratitude</div>
+    <div class="phone-label-desc">Seedling icon in warm brown. Clean white input cards.</div>
+    <div class="phone-frame">
+      <div class="form-screen">
+        <div class="form-header-area">
+          <div class="form-header-row">
+            <div class="form-back"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg> Back</div>
+            <div class="form-title-area">
+              <svg viewBox="0 0 32 32" stroke="rgba(255,255,255,0.9)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M16 28V16"/><path d="M16 16c0-6 6-10 12-8-2 6-6 8-12 8Z"/><path d="M16 20c0-5-5-8-10-7 1.5 5 5 7 10 7Z"/></svg>
+              <span class="form-title-text">Gratitude</span>
+            </div>
+            <div class="form-delete"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div>
+          </div>
+        </div>
+        <div class="type-strip strip-gratitude"></div>
+        <div class="form-body">
+          <div class="form-intro">What are you grateful for today?</div>
+          <div class="gratitude-item">
+            <svg viewBox="0 0 32 32"><path d="M16 28V16"/><path d="M16 16c0-6 6-10 12-8-2 6-6 8-12 8Z"/><path d="M16 20c0-5-5-8-10-7 1.5 5 5 7 10 7Z"/></svg>
+            <input class="gratitude-input" placeholder="I'm grateful for..." type="text">
+            <div class="gratitude-remove"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+          </div>
+          <div class="gratitude-item">
+            <svg viewBox="0 0 32 32"><path d="M16 28V16"/><path d="M16 16c0-6 6-10 12-8-2 6-6 8-12 8Z"/><path d="M16 20c0-5-5-8-10-7 1.5 5 5 7 10 7Z"/></svg>
+            <input class="gratitude-input" placeholder="I'm grateful for..." type="text">
+            <div class="gratitude-remove"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+          </div>
+          <div class="gratitude-item">
+            <svg viewBox="0 0 32 32"><path d="M16 28V16"/><path d="M16 16c0-6 6-10 12-8-2 6-6 8-12 8Z"/><path d="M16 20c0-5-5-8-10-7 1.5 5 5 7 10 7Z"/></svg>
+            <input class="gratitude-input" placeholder="I'm grateful for..." type="text">
+            <div class="gratitude-remove"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+          </div>
+          <div class="add-another">+ add another</div>
+          <div class="form-hint">Write as many or as few as you'd like</div>
+        </div>
+        <div class="form-footer">
+          <button class="btn btn-cancel">Cancel</button>
+          <button class="btn btn-save"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Save</button>
+        </div>
+      </div>
+      <div class="bottom-nav">
+        <div class="nav-item"><svg viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg><span class="nav-label">Today</span></div>
+        <div class="nav-item active"><svg viewBox="0 0 24 24"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg><span class="nav-label">Journal</span></div>
+        <div class="nav-item"><svg viewBox="0 0 24 24"><path d="M12 22V2"/><path d="m5 12 7-7 7 7"/><path d="M5 19h14"/></svg><span class="nav-label">Prayers</span></div>
+        <div class="nav-item"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg><span class="nav-label">More</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="phones-row" style="margin-top: 20px;">
+
+  <!-- SPOT CHECK -->
+  <div class="phone-wrapper">
+    <div class="phone-label">Spot Check</div>
+    <div class="phone-label-desc">Rust-colored numbered circles. Prompts in white cards. Textareas on pearl that shift to white on focus.</div>
+    <div class="phone-frame">
+      <div class="form-screen">
+        <div class="form-header-area">
+          <div class="form-header-row">
+            <div class="form-back"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg> Back</div>
+            <div class="form-title-area">
+              <svg viewBox="0 0 32 32" stroke="rgba(255,255,255,0.9)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16c4-6 8-6 10-3s6 3 10-3"/><path d="M6 22c3-4 6-4 8-2s5 2 8-2" opacity="0.55"/><path d="M8 27c2-3 4-3 6-1.5s4 1.5 6-1.5" opacity="0.3"/></svg>
+              <span class="form-title-text">Spot Check</span>
+            </div>
+            <div class="form-delete"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div>
+          </div>
+        </div>
+        <div class="type-strip strip-spotcheck"></div>
+        <div class="form-body">
+          <div class="form-intro">Pause. Breathe. Work through what's happening.</div>
+          <div class="prompt-card">
+            <div class="prompt-header"><div class="prompt-num num-spotcheck">1</div><div class="prompt-question">What happened?</div></div>
+            <textarea class="prompt-textarea" placeholder="Just the facts — what triggered this?"></textarea>
+          </div>
+          <div class="prompt-card">
+            <div class="prompt-header"><div class="prompt-num num-spotcheck">2</div><div class="prompt-question">What am I feeling?</div></div>
+            <textarea class="prompt-textarea" placeholder="Name the feelings — fear, anger, hurt..."></textarea>
+            <div class="prompt-hint">Where is my fear hiding in this?</div>
+          </div>
+          <div class="prompt-card">
+            <div class="prompt-header"><div class="prompt-num num-spotcheck">3</div><div class="prompt-question">Where am I trying to control this?</div></div>
+            <textarea class="prompt-textarea" placeholder="What am I afraid will happen if I let go?"></textarea>
+          </div>
+          <div class="prompt-card">
+            <div class="prompt-header"><div class="prompt-num num-spotcheck">4</div><div class="prompt-question">What's my part?</div></div>
+            <textarea class="prompt-textarea" placeholder="Am I responding or reacting?"></textarea>
+          </div>
+          <div class="prompt-card">
+            <div class="prompt-header"><div class="prompt-num num-spotcheck">5</div><div class="prompt-question">What's the next right thing?</div></div>
+            <textarea class="prompt-textarea" placeholder="One small step I can take right now..."></textarea>
+          </div>
+        </div>
+        <div class="form-footer">
+          <button class="btn btn-cancel">Cancel</button>
+          <button class="btn btn-save"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Save</button>
+        </div>
+      </div>
+      <div class="bottom-nav">
+        <div class="nav-item"><svg viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg><span class="nav-label">Today</span></div>
+        <div class="nav-item active"><svg viewBox="0 0 24 24"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg><span class="nav-label">Journal</span></div>
+        <div class="nav-item"><svg viewBox="0 0 24 24"><path d="M12 22V2"/><path d="m5 12 7-7 7 7"/><path d="M5 19h14"/></svg><span class="nav-label">Prayers</span></div>
+        <div class="nav-item"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg><span class="nav-label">More</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NIGHTLY REVIEW -->
+  <div class="phone-wrapper">
+    <div class="phone-label">Nightly Review</div>
+    <div class="phone-label-desc">Slate blue numbered circles. Same card structure, different color identity.</div>
+    <div class="phone-frame">
+      <div class="form-screen">
+        <div class="form-header-area">
+          <div class="form-header-row">
+            <div class="form-back"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg> Back</div>
+            <div class="form-title-area">
+              <svg viewBox="0 0 32 32" stroke="rgba(255,255,255,0.9)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14 5a5.5 5.5 0 0 0 8.5 6.5 7 7 0 1 1-8.5-6.5Z"/><path d="M8 25c3-1.5 5.5 0 8.5-1s5-1.5 7.5 0" opacity="0.5"/><path d="M6 28.5c4-1.5 6 0 10-1s6-1.5 10 0" opacity="0.3"/></svg>
+              <span class="form-title-text">Nightly Review</span>
+            </div>
+            <div class="form-delete"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div>
+          </div>
+        </div>
+        <div class="type-strip strip-nightly"></div>
+        <div class="form-body">
+          <div class="form-intro">Take a quiet moment to review your day with honesty and compassion.</div>
+          <div class="prompt-card">
+            <div class="prompt-header"><div class="prompt-num num-nightly">1</div><div class="prompt-question">What disturbed my serenity today?</div></div>
+            <textarea class="prompt-textarea" placeholder="What situations or people unsettled me?"></textarea>
+          </div>
+          <div class="prompt-card">
+            <div class="prompt-header"><div class="prompt-num num-nightly">2</div><div class="prompt-question">Where was I selfish, dishonest, or afraid?</div></div>
+            <textarea class="prompt-textarea" placeholder="Be gentle but honest with yourself..."></textarea>
+          </div>
+          <div class="prompt-card">
+            <div class="prompt-header"><div class="prompt-num num-nightly">3</div><div class="prompt-question">Do I owe anyone an amend?</div></div>
+            <textarea class="prompt-textarea" placeholder="Is there something I need to make right?"></textarea>
+            <div class="prompt-hint">This can wait until tomorrow — just note it here.</div>
+          </div>
+          <div class="prompt-card">
+            <div class="prompt-header"><div class="prompt-num num-nightly">4</div><div class="prompt-question">What did I do well today?</div></div>
+            <textarea class="prompt-textarea" placeholder="Where did I show up for my recovery?"></textarea>
+          </div>
+          <div class="prompt-card">
+            <div class="prompt-header"><div class="prompt-num num-nightly">5</div><div class="prompt-question">What am I grateful for tonight?</div></div>
+            <textarea class="prompt-textarea" placeholder="End the day with gratitude..."></textarea>
+          </div>
+        </div>
+        <div class="form-footer">
+          <button class="btn btn-cancel">Cancel</button>
+          <button class="btn btn-save"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Save</button>
+        </div>
+      </div>
+      <div class="bottom-nav">
+        <div class="nav-item"><svg viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg><span class="nav-label">Today</span></div>
+        <div class="nav-item active"><svg viewBox="0 0 24 24"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg><span class="nav-label">Journal</span></div>
+        <div class="nav-item"><svg viewBox="0 0 24 24"><path d="M12 22V2"/><path d="m5 12 7-7 7 7"/><path d="M5 19h14"/></svg><span class="nav-label">Prayers</span></div>
+        <div class="nav-item"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg><span class="nav-label">More</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="annotation-group">
+  <div class="annotation-title">Design Changes from Current Build</div>
+  <div class="annotation-text">
+    <strong>1. Teal header on every screen.</strong> The form screens now carry the same gradient header as the timeline and the Today reading screen. Entry type icon and title sit in the header bar. A thin colored strip below the header reinforces which type you're in.<br><br>
+    <strong>2. No more emoji.</strong> Every icon is a custom SVG: feather (journal), seedling (gratitude), soft exhale (spot check), moon-on-water (nightly review). They render in each type's color or in white when on the teal header.<br><br>
+    <strong>3. Forms breathe more.</strong> Pearl background instead of the tinted green. White prompt cards with generous padding. Textareas start on pearl and shift to white on focus — subtle but makes the active field feel alive.<br><br>
+    <strong>4. Bigger intro text.</strong> The italic Cormorant Garamond intro ("Pause. Breathe. Work through what's happening.") is now 19px with a proper border below it. It's a moment of pause before writing, not an afterthought.<br><br>
+    <strong>5. Prompt questions are 16px.</strong> Bigger, bolder. These are important questions — they should feel weighty, not like form labels.<br><br>
+    <strong>6. Gratitude uses the seedling icon.</strong> Warm brown seedlings replace the yellow sparkle emoji. The remove button is a subtle pearl circle with an X, not a distracting colored button.<br><br>
+    <strong>7. Journal form is just a blank page.</strong> No questions accordion — the structured entry types handle guided reflection now. Just a big open textarea and a placeholder.
+  </div>
+</div>
+
+<script>
+  function toggleSheet() {
+    document.getElementById('sheet').classList.toggle('show');
+    document.getElementById('overlay').classList.toggle('show');
+  }
+  function hideSheet() {
+    document.getElementById('sheet').classList.remove('show');
+    document.getElementById('overlay').classList.remove('show');
+  }
+  document.getElementById('seg-filter').addEventListener('click', function(e) {
+    const btn = e.target.closest('.seg-btn');
+    if (!btn) return;
+    document.querySelectorAll('#seg-filter .seg-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const filter = btn.dataset.filter;
+    document.querySelectorAll('.entry-card').forEach(card => {
+      card.style.display = (filter === 'all' || card.dataset.type === filter) ? '' : 'none';
+    });
+    document.querySelectorAll('.date-label').forEach(label => {
+      let next = label.nextElementSibling;
+      let hasVisible = false;
+      while (next && !next.classList.contains('date-label')) {
+        if (next.style.display !== 'none' && next.classList.contains('entry-card')) { hasVisible = true; break; }
+        next = next.nextElementSibling;
+      }
+      label.style.display = hasVisible ? '' : 'none';
+    });
+  });
+</script>
+
+</body>
+</html>
