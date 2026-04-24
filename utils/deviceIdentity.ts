@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import * as Updates from 'expo-updates';
 import { Platform } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { qaLog } from './qaLog';
@@ -107,6 +108,10 @@ export async function updateLastActive(): Promise<void> {
  * Check if this device is marked as a developer device (excluded from analytics)
  */
 export async function isDeveloperDevice(): Promise<boolean> {
+  if (__DEV__) return true;
+  try {
+    if (Updates.channel === 'preview') return true;
+  } catch {}
   try {
     const value = await AsyncStorage.getItem(IS_DEVELOPER_KEY);
     return value === 'true';
