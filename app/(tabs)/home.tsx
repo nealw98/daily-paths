@@ -504,7 +504,7 @@ export default function HomeTab() {
             sectionTitleType,
             {
               color: colors.onSurface,
-              marginTop: sectionRhythm.betweenSections,
+              marginTop: Math.round(sectionRhythm.betweenSections * 0.5),
               marginBottom: sectionRhythm.titleToFirstCard,
             },
             isFree && styles.sectionTitleToolsFree,
