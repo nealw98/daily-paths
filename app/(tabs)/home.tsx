@@ -497,6 +497,71 @@ export default function HomeTab() {
           ]}
         />
 
+        {/* ── Prayers Card ── */}
+        <Text
+          style={[
+            styles.sectionTitleLayout,
+            sectionTitleType,
+            {
+              color: colors.onSurface,
+              marginTop: sectionRhythm.betweenSections,
+              marginBottom: sectionRhythm.titleToFirstCard,
+            },
+            isFree && styles.sectionTitleToolsFree,
+          ]}
+        >
+          Prayers
+        </Text>
+        <View style={[styles.toolsList, { gap: sectionRhythm.betweenCards }]}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => {
+              if (isFree) {
+                void presentPaywall();
+              } else {
+                router.push("/(tabs)/prayers");
+              }
+            }}
+            style={[styles.toolRow, isFree && styles.toolRowFree]}
+          >
+            <View
+              style={[
+                styles.toolRowInner,
+                styles.prayersTile,
+                { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.mist },
+              ]}
+            >
+              <View
+                style={[
+                  styles.toolIconPip,
+                  { backgroundColor: isFree ? colors.surfaceContainer : colors.secondary },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  name="hands-pray"
+                  size={38}
+                  color={isFree ? "#aaa" : "#FFFFFF"}
+                  style={{ fontWeight: "900" }}
+                />
+              </View>
+              <View style={styles.toolText}>
+                <Text style={[notebookLabelType, { color: colors.onSurface }]}>
+                  Your Prayers
+                </Text>
+                <Text style={[...notebookTagType, { color: colors.onSurfaceVariant }]} numberOfLines={2}>
+                  A collection of prayers — and a place to add your own.
+                </Text>
+                <View style={[styles.ctaRow, styles.toolCtaRow]}>
+                  <Text style={[readMoreType, { color: colors.accent }]}>
+                    Open
+                  </Text>
+                  <MaterialIcons name="chevron-right" size={20} color={colors.accent} />
+                </View>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </View>
+
         {/* ── Speaker Feature Card ── */}
         <Text
           style={[
@@ -571,71 +636,6 @@ export default function HomeTab() {
             isFree && styles.speakerSectionFree,
           ]}
         />
-
-        {/* ── Prayers Card ── */}
-        <Text
-          style={[
-            styles.sectionTitleLayout,
-            sectionTitleType,
-            {
-              color: colors.onSurface,
-              marginTop: sectionRhythm.betweenSections,
-              marginBottom: sectionRhythm.titleToFirstCard,
-            },
-            isFree && styles.sectionTitleToolsFree,
-          ]}
-        >
-          Prayers
-        </Text>
-        <View style={[styles.toolsList, { gap: sectionRhythm.betweenCards }]}>
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => {
-              if (isFree) {
-                void presentPaywall();
-              } else {
-                router.push("/(tabs)/prayers");
-              }
-            }}
-            style={[styles.toolRow, isFree && styles.toolRowFree]}
-          >
-            <View
-              style={[
-                styles.toolRowInner,
-                styles.prayersTile,
-                { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.mist },
-              ]}
-            >
-              <View
-                style={[
-                  styles.toolIconPip,
-                  { backgroundColor: isFree ? colors.surfaceContainer : colors.secondary },
-                ]}
-              >
-                <MaterialCommunityIcons
-                  name="hands-pray"
-                  size={38}
-                  color={isFree ? "#aaa" : "#FFFFFF"}
-                  style={{ fontWeight: "900" }}
-                />
-              </View>
-              <View style={styles.toolText}>
-                <Text style={[notebookLabelType, { color: colors.onSurface }]}>
-                  Your Prayers
-                </Text>
-                <Text style={[...notebookTagType, { color: colors.onSurfaceVariant }]} numberOfLines={2}>
-                  A collection of prayers — and a place to add your own.
-                </Text>
-                <View style={[styles.ctaRow, styles.toolCtaRow]}>
-                  <Text style={[readMoreType, { color: colors.accent }]}>
-                    Open
-                  </Text>
-                  <MaterialIcons name="chevron-right" size={20} color={colors.accent} />
-                </View>
-              </View>
-            </View>
-          </TouchableOpacity>
-        </View>
 
         {/* Bottom spacing — extra room so the persistent pill doesn't cover content */}
         <View style={{ height: isFree ? 96 : 32 }} />
