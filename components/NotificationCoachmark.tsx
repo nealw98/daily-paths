@@ -403,6 +403,7 @@ const styles = StyleSheet.create({
     color: "#2C5F5D",
     marginBottom: 6,
     textAlign: "center",
+    alignSelf: "stretch",
   },
   tooltipBody: {
     fontFamily: fonts.bodyFamily,
@@ -411,6 +412,7 @@ const styles = StyleSheet.create({
     color: "#5A6968",
     marginBottom: 14,
     textAlign: "center",
+    alignSelf: "stretch",
   },
   gotItButton: {
     backgroundColor: "#2C5F5D",
