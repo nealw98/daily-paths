@@ -53,6 +53,10 @@ export const ANALYTICS_EVENTS = {
   SPEAKER_AUDIO_PLAYED: 'speaker_audio_played',
   SPEAKER_AUDIO_PAUSED: 'speaker_audio_paused',
   SPEAKER_AUDIO_COMPLETED: 'speaker_audio_completed',
+  // Notification coachmark
+  NOTIFICATION_COACHMARK_SHOWN: 'notification_coachmark_shown',
+  NOTIFICATION_COACHMARK_DISMISSED: 'notification_coachmark_dismissed',
+  NOTIFICATION_TOGGLE_CHANGED: 'notification_toggle_changed',
 } as const;
 
 // Navigation method types
@@ -361,6 +365,47 @@ export function useAnalytics() {
     });
   }, [isDeveloper]);
 
+  // ─── Notification coachmark ─────────────────────────────────────────
+
+  const trackNotificationCoachmarkShown = useCallback(() => {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.NOTIFICATION_COACHMARK_SHOWN, {
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+    mp.flush();
+  }, [isDeveloper]);
+
+  const trackNotificationCoachmarkDismissed = useCallback(
+    (reason: 'toggle_tap' | 'got_it') => {
+      const mp = getMixpanel();
+      if (!mp) return;
+      mp.track(ANALYTICS_EVENTS.NOTIFICATION_COACHMARK_DISMISSED, {
+        dismiss_reason: reason,
+        is_developer: isDeveloper,
+        theme_mode: themeModeRef.current,
+      });
+      mp.flush();
+    },
+    [isDeveloper]
+  );
+
+  const trackNotificationToggleChanged = useCallback(
+    (enabled: boolean, source: 'coachmark' | 'settings') => {
+      const mp = getMixpanel();
+      if (!mp) return;
+      mp.track(ANALYTICS_EVENTS.NOTIFICATION_TOGGLE_CHANGED, {
+        enabled,
+        source,
+        is_developer: isDeveloper,
+        theme_mode: themeModeRef.current,
+      });
+      mp.flush();
+    },
+    [isDeveloper]
+  );
+
   // ─── Notebook ────────────────────────────────────────────────────────
 
   const trackNotebookOpened = useCallback(() => {
@@ -467,6 +512,10 @@ export function useAnalytics() {
     trackReminderSet,
     trackReminderChanged,
     trackReminderDisabled,
+    // Notification coachmark
+    trackNotificationCoachmarkShown,
+    trackNotificationCoachmarkDismissed,
+    trackNotificationToggleChanged,
     // Notebook
     trackNotebookOpened,
     trackEntryViewed,

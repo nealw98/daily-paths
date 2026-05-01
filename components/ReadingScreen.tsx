@@ -27,6 +27,8 @@ import { getScheduledDayOfYear } from "../utils/dateUtils";
 import { scheduleWeekOfNotifications } from "../utils/notificationSync";
 import { SanctuaryCard } from "./ui/Sanctuary";
 import { TealHeader } from "./shared/TealHeader";
+import { NotificationCoachmark } from "./NotificationCoachmark";
+import { useNotificationCoachmark } from "../hooks/useNotificationCoachmark";
 // Legacy instruction modal import kept for possible future use:
 // import { BookmarkInstructionOverlay } from "./BookmarkInstructionOverlay";
 
@@ -146,6 +148,9 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
 
   const { settings, setTextSize, setDailyReminderEnabled, setDailyReminderTime } = useSettings();
   const { typography } = useTypography();
+  const coachmark = useNotificationCoachmark({
+    enabled: settings.dailyReminderEnabled,
+  });
   const pageTitleType = useMemo(() => {
     // Scale the display-size reading title off the user's body text setting
     // so it grows/shrinks with "Text size". Medium preset (bodyFontSize: 18)
@@ -417,7 +422,13 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
             style={[styles.content, { backgroundColor: colors.surface }]}
             contentContainerStyle={styles.contentContainer}
             showsVerticalScrollIndicator={false}
-            scrollEnabled={!isSwiping}
+            scrollEnabled={!isSwiping && !coachmark.visible}
+            onScroll={coachmark.scrollProps.onScroll}
+            onScrollEndDrag={coachmark.scrollProps.onScrollEndDrag}
+            onMomentumScrollEnd={coachmark.scrollProps.onMomentumScrollEnd}
+            scrollEventThrottle={16}
+            onContentSizeChange={coachmark.scrollProps.onContentSizeChange}
+            onLayout={coachmark.scrollProps.onLayout}
           >
             <Pressable onPress={handleContentPress}>
               <View style={styles.pageIntro}>
@@ -646,7 +657,12 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
               <View style={[styles.sectionSeparator, { backgroundColor: colors.ghostBorder }]} />
 
               <View style={styles.notificationSection}>
-                <View style={styles.notificationUtilityHeader}>
+                <View
+                  ref={coachmark.registerToggleRef}
+                  collapsable={false}
+                  onLayout={coachmark.scrollProps.onToggleLayout}
+                  style={styles.notificationUtilityHeader}
+                >
                   <View style={styles.notificationUtilityCopy}>
                     <Text
                       style={[
@@ -820,6 +836,12 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
           onDismiss={() => onDismissInstruction?.()}
         />
         */}
+
+        <NotificationCoachmark
+          visible={coachmark.visible}
+          anchor={coachmark.anchor}
+          onDismiss={coachmark.onDismiss}
+        />
       </View>
     </SafeAreaView>
   );

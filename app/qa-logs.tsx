@@ -24,6 +24,7 @@ import * as Sharing from "expo-sharing";
 import { fonts, fallbackColors } from "../constants/theme";
 import { clearQaLogs, useQaLogs, qaLog } from "../utils/qaLog";
 import { resetRateShareTracking } from "../utils/rateShareTracking";
+import { resetNotificationCoachmark } from "../utils/coachmarkStorage";
 import { isDeveloperDevice, setDeveloperDevice, getOrCreateDeviceId } from "../utils/deviceIdentity";
 import {
   getTrialStatus,
@@ -212,6 +213,17 @@ export default function QaLogsScreen() {
     } catch (err) {
       qaLog('rate', 'Error resetting rate tracking', { error: String(err) });
       alert('Failed to reset rate tracking');
+    }
+  };
+
+  const handleResetNotificationCoachmark = async () => {
+    try {
+      await resetNotificationCoachmark();
+      qaLog('coachmark', 'Notification coachmark flag cleared');
+      alert('Notification coachmark has been reset. It will appear again on the next qualifying reading visit.');
+    } catch (err) {
+      qaLog('coachmark', 'Error resetting notification coachmark', { error: String(err) });
+      alert('Failed to reset notification coachmark');
     }
   };
 
@@ -655,6 +667,13 @@ export default function QaLogsScreen() {
             onPress={handleResetRateTracking}
           >
             <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Reset Rate Tracking</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleResetNotificationCoachmark}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Reset Notification Coachmark</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
