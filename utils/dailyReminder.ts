@@ -1,5 +1,31 @@
 import * as Notifications from "expo-notifications";
-import { Platform } from "react-native";
+
+/**
+ * Rotating phrasings for the lapsed/fallback nag. Used both when no
+ * Thought for the Day is cached for a given day in the active window
+ * (rare — cache miss) and for every day in the lapsed window (days 7+
+ * since last app open).
+ */
+export const LAPSED_PHRASINGS = [
+  "A new path is waiting for you today.",
+  "Your daily reflection is ready when you are.",
+  "Take a quiet moment for today’s thought.",
+  "Today’s reading is here — a few minutes is all it takes.",
+  "A reflection to take into your day.",
+  "One small pause can shape the whole day.",
+  "Your next reflection is one tap away.",
+  "Step back onto the path — today’s reading is ready.",
+];
+
+/**
+ * Pick a phrasing deterministically based on the date's day-of-year so
+ * consecutive days rotate through the pool rather than repeating.
+ */
+export function pickLapsedPhrasing(date: Date): string {
+  const start = new Date(date.getFullYear(), 0, 0).getTime();
+  const dayOfYear = Math.floor((date.getTime() - start) / 86400000);
+  return LAPSED_PHRASINGS[dayOfYear % LAPSED_PHRASINGS.length];
+}
 
 /**
  * Ask the user for notification permissions if we don't already have them.
@@ -47,13 +73,13 @@ export async function getScheduledNotifications() {
 }
 
 /**
- * Schedule a single one-time notification for a specific date with the given thought.
+ * Schedule a single one-time notification for a specific date with the given body.
  * If the target time has already passed, the notification is silently skipped.
  */
 export async function scheduleSingleDayNotification(
   date: Date,
   time: { hour: number; minute: number },
-  thoughtForDay: string
+  body: string
 ): Promise<void> {
   const triggerDate = new Date(
     date.getFullYear(),
@@ -73,7 +99,7 @@ export async function scheduleSingleDayNotification(
   const id = await Notifications.scheduleNotificationAsync({
     content: {
       title: "Daily Paths",
-      body: `Today's Thought: ${thoughtForDay}`,
+      body,
       sound: "default",
     },
     trigger: {
@@ -83,41 +109,4 @@ export async function scheduleSingleDayNotification(
   });
 
   console.log(`[Reminder] Scheduled one-time notification for ${triggerDate.toLocaleDateString()} — id: ${id}`);
-}
-
-/**
- * Schedule a generic repeating notification as a fallback.
- * This fires on any day where no one-time notification was pre-scheduled
- * (e.g. day 8+ after last app open, or if cache was empty).
- */
-export async function scheduleGenericFallbackNotification(
-  time: { hour: number; minute: number }
-): Promise<void> {
-  let trigger: Notifications.NotificationTriggerInput;
-
-  if (Platform.OS === "ios") {
-    trigger = {
-      type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-      repeats: true,
-      hour: time.hour,
-      minute: time.minute,
-    };
-  } else {
-    trigger = {
-      type: Notifications.SchedulableTriggerInputTypes.DAILY,
-      hour: time.hour,
-      minute: time.minute,
-    };
-  }
-
-  const id = await Notifications.scheduleNotificationAsync({
-    content: {
-      title: "Daily Paths",
-      body: "It\u2019s time for today\u2019s Daily Path. Open the app to read today\u2019s reflection.",
-      sound: "default",
-    },
-    trigger,
-  });
-
-  console.log(`[Reminder] Scheduled generic fallback notification — id: ${id}`);
 }

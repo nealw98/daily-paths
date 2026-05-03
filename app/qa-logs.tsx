@@ -21,6 +21,7 @@ import { Ionicons } from "@expo/vector-icons";
 import Clipboard from "@react-native-clipboard/clipboard";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Sharing from "expo-sharing";
+import * as Notifications from "expo-notifications";
 import { fonts, fallbackColors } from "../constants/theme";
 import { clearQaLogs, useQaLogs, qaLog } from "../utils/qaLog";
 import { resetRateShareTracking } from "../utils/rateShareTracking";
@@ -224,6 +225,61 @@ export default function QaLogsScreen() {
     } catch (err) {
       qaLog('coachmark', 'Error resetting notification coachmark', { error: String(err) });
       alert('Failed to reset notification coachmark');
+    }
+  };
+
+  const handleDumpScheduledNotifications = async () => {
+    try {
+      const all = await Notifications.getAllScheduledNotificationsAsync();
+
+      // Build a list of { when, body } so we can detect duplicate trigger
+      // times (the bug we just fixed scheduled both a one-time DATE trigger
+      // and a repeating CALENDAR/DAILY trigger at the same minute).
+      const items = all.map((n) => {
+        const trigger = n.trigger as any;
+        let when = 'unknown';
+        if (trigger?.type === 'date' && (trigger.value || trigger.date)) {
+          const v = trigger.value ?? trigger.date;
+          when = new Date(typeof v === 'number' ? v : v).toLocaleString();
+        } else if (trigger?.dateComponents) {
+          const dc = trigger.dateComponents;
+          when = `repeating ${dc.hour}:${String(dc.minute ?? 0).padStart(2, '0')}`;
+        } else if (trigger?.hour != null) {
+          when = `${trigger.type ?? 'repeating'} ${trigger.hour}:${String(trigger.minute ?? 0).padStart(2, '0')}`;
+        } else {
+          when = JSON.stringify(trigger);
+        }
+        return { when, body: n.content.body ?? '', id: n.identifier };
+      });
+
+      // Sort by trigger date string for readability
+      items.sort((a, b) => a.when.localeCompare(b.when));
+
+      qaLog('notifications', `Scheduled total: ${all.length}`);
+      items.forEach((it, i) =>
+        qaLog('notifications', `[${i + 1}] ${it.when} — ${it.body}`)
+      );
+
+      // Detect duplicate trigger times
+      const dateCounts = new Map<string, number>();
+      items.forEach((it) => dateCounts.set(it.when, (dateCounts.get(it.when) ?? 0) + 1));
+      const dupes = Array.from(dateCounts.entries()).filter(([, c]) => c > 1);
+      const dupMsg =
+        dupes.length === 0
+          ? '✓ No duplicate trigger times'
+          : `⚠ Duplicates:\n${dupes.map(([d, c]) => `  ${d} (${c}x)`).join('\n')}`;
+
+      if (dupes.length > 0) {
+        qaLog('notifications', dupMsg);
+      }
+
+      Alert.alert(
+        'Scheduled Notifications',
+        `Total: ${all.length}\n${dupMsg}\n\nFull list written to QA logs below.`
+      );
+    } catch (err) {
+      qaLog('notifications', 'Failed to dump scheduled notifications', { error: String(err) });
+      Alert.alert('Error', 'Failed to read scheduled notifications. See logs.');
     }
   };
 
@@ -674,6 +730,13 @@ export default function QaLogsScreen() {
             onPress={handleResetNotificationCoachmark}
           >
             <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Reset Notification Coachmark</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleDumpScheduledNotifications}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Dump Scheduled Notifications</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
