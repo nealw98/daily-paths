@@ -1,3 +1,4 @@
+import { Platform } from "react-native";
 import type { SubscriptionStatus } from "../lib/subscription";
 import type { TrialStatus } from "./trialTimer";
 
@@ -32,6 +33,11 @@ export function hasPremiumEntitlement(
   trial: TrialStatus,
   hasLifetimeAccess: boolean,
 ): boolean {
+  // iOS is a paid download — always premium, regardless of subscription /
+  // trial / receipt state. Belt-and-suspenders guard so paywall logic can
+  // never accidentally fire on iOS.
+  if (Platform.OS === "ios") return true;
+
   if (hasLifetimeAccess) return true;
   return subscription.isSubscribed || subscription.isLegacy || trial.isInTrial;
 }

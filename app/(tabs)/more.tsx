@@ -206,6 +206,9 @@ export default function MoreTab() {
         showsVerticalScrollIndicator={false}
       >
         {/* ── 1. Subscription ────────────────────────────────── */}
+        {/* iOS is paid-download — never render subscription UI. */}
+        {Platform.OS !== "ios" && (
+        <>
         <Text allowFontScaling={false} style={[styles.sectionLabel, styles.firstSectionLabel, sectionTitleType, { color: colors.onSurface }]}>Subscription</Text>
         {subLoading ? (
           <View style={[styles.subscriptionRow, { backgroundColor: colors.surfaceContainerLowest }]}>
@@ -325,6 +328,8 @@ export default function MoreTab() {
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.seafoam} />
           </TouchableOpacity>
+        )}
+        </>
         )}
 
 
