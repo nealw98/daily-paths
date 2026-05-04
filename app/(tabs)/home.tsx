@@ -93,7 +93,7 @@ export default function HomeTab() {
   const { reading, loading: readingLoading } = useReading(today);
   const { speakers } = useSpeakers();
   const { prayers } = usePersonalPrayers();
-  const { speaker: featuredSpeaker } = useFeaturedSpeaker(speakers);
+  const featuredSpeaker = useFeaturedSpeaker(speakers);
   const { entries: journalEntries, createEntry } = useJournalStorage();
   const [journalEntryType, setJournalEntryType] = useState<EntryType | null>(null);
   const [reflectionImageOverride, setReflectionImageOverride] = useState<number | null>(null);
