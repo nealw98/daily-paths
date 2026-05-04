@@ -93,7 +93,7 @@ export default function HomeTab() {
   const { reading, loading: readingLoading } = useReading(today);
   const { speakers } = useSpeakers();
   const { prayers } = usePersonalPrayers();
-  const { speaker: featuredSpeaker, isStarted: speakerIsStarted, isListenAgain } = useFeaturedSpeaker(speakers);
+  const { speaker: featuredSpeaker } = useFeaturedSpeaker(speakers);
   const { entries: journalEntries, createEntry } = useJournalStorage();
   const [journalEntryType, setJournalEntryType] = useState<EntryType | null>(null);
   const [reflectionImageOverride, setReflectionImageOverride] = useState<number | null>(null);
@@ -230,25 +230,6 @@ export default function HomeTab() {
       letterSpacing: 0.1,
     }),
     [textMetrics.labelFontSize, textMetrics.labelLineHeight],
-  );
-
-  const speakerNameType = useMemo(
-    () => ({
-      fontFamily: fonts.headerFamily,
-      fontSize: textMetrics.h3FontSize,
-      lineHeight: textMetrics.h3LineHeight,
-      letterSpacing: -0.3,
-    }),
-    [textMetrics.h3FontSize, textMetrics.h3LineHeight],
-  );
-
-  const speakerTitleType = useMemo(
-    () => ({
-      ...typography.bodySmall,
-      fontFamily: fonts.bodyFamilyMedium,
-      letterSpacing: 0,
-    }),
-    [typography.bodySmall],
   );
 
   // Persistent unlock pill is a fixed-size floating element — pinned to the
@@ -589,33 +570,66 @@ export default function HomeTab() {
             }}
             style={[styles.speakerCard, isFree && styles.speakerSectionFree]}
           >
-            <View style={[styles.speakerCardInner, { backgroundColor: colors.secondary }]}>
-              <Ionicons
-                name="headset"
-                size={220}
-                color="rgba(255,255,255,0.05)"
-                style={[styles.speakerWatermark, { transform: [{ rotate: "30deg" }] }]}
-              />
-              <View style={styles.heroIconRow}>
-                <MaterialIcons name="record-voice-over" size={18} color="#FFFFFFCC" />
-                <Text style={[heroLabelType, { color: "#FFFFFFBB" }]}>
-                  Featured Speaker
-                </Text>
+            <View style={styles.speakerCardInner}>
+              <View style={[styles.speakerHeaderStrip, { backgroundColor: colors.secondary }]}>
+                <View style={styles.speakerHeaderStripLeft}>
+                  <MaterialIcons name="record-voice-over" size={16} color="#FFFFFFCC" />
+                  <Text style={[heroLabelType, { color: "#FFFFFFCC" }]}>
+                    Featured Speaker
+                  </Text>
+                </View>
               </View>
-              <Text style={[styles.speakerNameLayout, speakerNameType, { color: colors.onSecondary, marginTop: 12 }]}>
-                {featuredSpeaker.speaker}
-              </Text>
-              <Text
-                style={[speakerTitleType, { color: colors.onSecondary + "CC" }]}
-                numberOfLines={2}
-              >
-                {featuredSpeaker.title}
-              </Text>
-              <View style={styles.ctaRow}>
-                <Text style={[readMoreType, { color: colors.secondaryContainer }]}>
-                  {isListenAgain ? "Listen again" : speakerIsStarted ? "Continue" : "Listen"}
-                </Text>
-                <MaterialIcons name="chevron-right" size={20} color={colors.secondaryContainer} />
+              <View style={[styles.speakerBody, { backgroundColor: colors.surfaceContainerLowest }]}>
+                {featuredSpeaker.quote ? (
+                  <>
+                    <View style={styles.speakerQuoteRow}>
+                      <Text style={[styles.speakerQuoteGlyph, { color: colors.outlineVariant }]}>
+                        {"“"}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.speakerQuoteText,
+                          {
+                            color: colors.onSurface,
+                            fontFamily: fonts.loraRegular,
+                            fontSize: typography.body.fontSize,
+                            lineHeight: typography.body.lineHeight,
+                          },
+                        ]}
+                        numberOfLines={3}
+                      >
+                        {featuredSpeaker.quote.replace(/^["“”'‘’]+|["“”'‘’]+$/g, "").trim()}
+                      </Text>
+                    </View>
+                    <View style={[styles.speakerDivider, { backgroundColor: colors.outlineVariant }]} />
+                  </>
+                ) : null}
+                <View style={styles.speakerBottomRow}>
+                  <View style={styles.speakerBottomLeft}>
+                    <Text
+                      style={[styles.speakerNameText, { color: colors.onSurface }]}
+                      numberOfLines={1}
+                    >
+                      {featuredSpeaker.speaker}
+                    </Text>
+                    <Text
+                      style={[styles.speakerTitleText, { color: colors.onSurfaceVariant }]}
+                      numberOfLines={1}
+                    >
+                      {featuredSpeaker.title}
+                    </Text>
+                  </View>
+                  <View style={styles.speakerCtaRow}>
+                    <Ionicons
+                      name="play"
+                      size={22}
+                      color={colors.accent}
+                    />
+                    <Text style={[styles.speakerListenLabel, { color: colors.accent }]}>
+                      Listen
+                    </Text>
+                  </View>
+                </View>
               </View>
             </View>
           </TouchableOpacity>
@@ -848,37 +862,77 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
   },
-  speakerWatermark: {
-    position: "absolute",
-    bottom: 12,
-    right: -28,
-    zIndex: 0,
-  },
   speakerCardInner: {
-    paddingHorizontal: layout.spacing.lgPlus,
-    paddingBottom: layout.spacing.lgPlus,
-    paddingTop: 24,
     borderRadius: layout.borderRadius,
     overflow: "hidden",
   },
-  speakerBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
+  speakerHeaderStrip: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 8,
+    justifyContent: "space-between",
+    paddingHorizontal: layout.spacing.md,
+    paddingVertical: layout.spacing.lgPlus,
   },
-  speakerNameLayout: {
-    marginBottom: 12,
+  speakerHeaderStripLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: layout.spacing.xs,
   },
-  speakerThemes: {
+  speakerBody: {
+    paddingHorizontal: layout.spacing.md,
+    paddingTop: layout.spacing.md,
+    paddingBottom: layout.spacing.md,
+  },
+  speakerQuoteRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: layout.spacing.sm,
+    paddingBottom: layout.spacing.md,
+  },
+  speakerQuoteGlyph: {
+    fontFamily: fonts.cormorantGaramondMedium,
+    fontSize: 44,
+    lineHeight: 44,
+    marginTop: -4,
+  },
+  speakerQuoteText: {
+    flex: 1,
+  },
+  speakerDivider: {
+    height: StyleSheet.hairlineWidth,
+  },
+  speakerBottomRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: layout.spacing.sm,
+    paddingTop: layout.spacing.md,
+  },
+  speakerBottomLeft: {
+    flex: 1,
+    minWidth: 0,
+  },
+  speakerNameText: {
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 17,
+    lineHeight: 22,
+  },
+  speakerTitleText: {
     fontFamily: fonts.bodyFamily,
-    fontSize: 12,
-    lineHeight: 16,
-    fontStyle: "italic",
-    marginTop: 4,
+    fontSize: 14,
+    lineHeight: 19,
+    marginTop: 2,
+  },
+  speakerCtaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: layout.spacing.xs,
+  },
+  speakerListenLabel: {
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 16,
+    lineHeight: 20,
+    letterSpacing: 0.1,
   },
   // Utility link rows — marginTop comes from sectionRhythm (dynamic).
   notebookLinkRow: {},
