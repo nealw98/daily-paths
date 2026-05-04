@@ -8,10 +8,11 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Share,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useTheme } from "../../hooks/useTheme";
 import { useTypography } from "../../hooks/useTypography";
@@ -191,11 +192,6 @@ export const PrayersScreen: React.FC = () => {
                 {renderPrayerText(stanza, boldPhrases)}
               </Text>
             ))}
-            {prayer.source && (
-              <Text style={[styles.prayerSource, { color: colors.seafoam, fontSize: typography.bodyFontSize - 2 }]}>
-                — {prayer.source.toUpperCase()}
-              </Text>
-            )}
           </View>
         )}
 
@@ -250,6 +246,19 @@ export const PrayersScreen: React.FC = () => {
 
         {isExpanded && !isEditing && (
           <View style={styles.personalActions}>
+            <TouchableOpacity
+              onPress={() => handleSharePrayer(prayer)}
+              activeOpacity={0.8}
+              style={[styles.personalActionButton, styles.personalActionButtonRow, { borderColor: colors.ghostBorder, backgroundColor: colors.surface }]}
+            >
+              <MaterialIcons
+                name={Platform.OS === "ios" ? "ios-share" : "share"}
+                size={typography.bodySmallFontSize + 2}
+                color={colors.primaryContainer}
+                style={styles.shareIcon}
+              />
+              <Text style={[styles.personalActionText, actionTextStyle, { color: colors.primaryContainer }]}>Share</Text>
+            </TouchableOpacity>
             <TouchableOpacity
               onPress={() => handleStartEdit(prayer, "builtin")}
               activeOpacity={0.8}
@@ -339,6 +348,24 @@ export const PrayersScreen: React.FC = () => {
         },
       },
     ]);
+  };
+
+  const handleSharePrayer = async (
+    prayer: Pick<Prayer, "title" | "text">
+  ) => {
+    const message = [
+      prayer.title,
+      "",
+      prayer.text,
+      "",
+      "-----",
+      "Shared from Al-Anon Daily Paths",
+    ].join("\n");
+    try {
+      await Share.share({ message });
+    } catch (err) {
+      console.error("Error sharing prayer:", err);
+    }
   };
 
   const handleSaveNew = async () => {
@@ -470,6 +497,19 @@ export const PrayersScreen: React.FC = () => {
 
         {isExpanded && !isEditing && (
           <View style={styles.personalActions}>
+            <TouchableOpacity
+              onPress={() => handleSharePrayer(prayer)}
+              activeOpacity={0.8}
+              style={[styles.personalActionButton, styles.personalActionButtonRow, { borderColor: colors.ghostBorder, backgroundColor: colors.surface }]}
+            >
+              <MaterialIcons
+                name={Platform.OS === "ios" ? "ios-share" : "share"}
+                size={typography.bodySmallFontSize + 2}
+                color={colors.primaryContainer}
+                style={styles.shareIcon}
+              />
+              <Text style={[styles.personalActionText, actionTextStyle, { color: colors.primaryContainer }]}>Share</Text>
+            </TouchableOpacity>
             <TouchableOpacity
               onPress={() => handleStartEdit(prayer, "personal")}
               activeOpacity={0.8}
@@ -713,14 +753,6 @@ const styles = StyleSheet.create({
     ...staticTypography.bodyLarge,
     fontFamily: fonts.bodyFamilyMedium,
   },
-  prayerSource: {
-    fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 14,
-    fontWeight: "600",
-    letterSpacing: 0.5,
-    marginTop: 14,
-    textAlign: "right",
-  },
   personalActions: {
     flexDirection: "row",
     justifyContent: "flex-end",
@@ -735,8 +767,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  personalActionButtonRow: {
+    flexDirection: "row",
+  },
   personalActionText: {
     fontFamily: fonts.bodyFamilySemiBold,
+  },
+  shareIcon: {
+    marginRight: 6,
+    marginTop: Platform.OS === "ios" ? -1 : 0,
   },
   addPrayerLeft: {
     flexDirection: "row",
