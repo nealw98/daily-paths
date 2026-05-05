@@ -68,11 +68,53 @@ const REFLECTION_IMAGE_BY_NUMBER: Record<number, any> = REFLECTION_IMAGE_KEYS.re
   {},
 );
 
-const SPEAKER_HERO_IMAGE = require("../../assets/audio/audio-2.webp");
+// Speaker hero rotation — auto-discovered from assets/audio. Pattern accepts
+// both `audio-<N>.webp` and `audio<N>.webp` so adding new files is forgiving.
+// Sorted numerically so audio-10 comes after audio-9, not audio-1.
+const speakerHeroContext = (require as any).context(
+  "../../assets/audio",
+  false,
+  /^\.\/audio-?\d+\.webp$/
+);
+const SPEAKER_HERO_KEYS = speakerHeroContext
+  .keys()
+  .slice()
+  .sort((a: string, b: string) => {
+    const numA = parseInt(a.match(/audio-?(\d+)/)?.[1] ?? "0", 10);
+    const numB = parseInt(b.match(/audio-?(\d+)/)?.[1] ?? "0", 10);
+    return numA - numB;
+  });
+const SPEAKER_HERO_IMAGES = SPEAKER_HERO_KEYS.map((key: string) =>
+  speakerHeroContext(key)
+);
+const SPEAKER_HERO_IMAGE_BY_NUMBER: Record<number, any> = SPEAKER_HERO_KEYS.reduce(
+  (acc: Record<number, any>, key: string) => {
+    const match = key.match(/audio-?(\d+)/);
+    if (match) acc[parseInt(match[1], 10)] = speakerHeroContext(key);
+    return acc;
+  },
+  {},
+);
+
+// Same Monday-UTC anchor used by useFeaturedSpeaker, so the hero image and
+// the featured speaker advance on the same weekly cadence.
+const SPEAKER_HERO_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const SPEAKER_HERO_EPOCH_MS = Date.UTC(2025, 0, 6);
+
+function getSpeakerHeroImageForDate(date: Date) {
+  if (SPEAKER_HERO_IMAGES.length === 0) return null;
+  const weekIndex = Math.floor(
+    (date.getTime() - SPEAKER_HERO_EPOCH_MS) / SPEAKER_HERO_WEEK_MS
+  );
+  const len = SPEAKER_HERO_IMAGES.length;
+  const i = ((weekIndex % len) + len) % len;
+  return SPEAKER_HERO_IMAGES[i];
+}
 
 // QA-only: pin the home hero image for App Store screenshots. Value is the
 // image number from the filename (e.g. "33" for reflections-33.webp).
 export const QA_REFLECTION_IMAGE_OVERRIDE_KEY = "qa:reflection-image-override";
+export const QA_SPEAKER_HERO_IMAGE_OVERRIDE_KEY = "qa:speaker-hero-image-override";
 
 function getReflectionImageForDate(date: Date) {
   // Local-calendar day-of-year (1-366, with Feb 29 stably pinned to slot 60
@@ -99,6 +141,7 @@ export default function HomeTab() {
   const { entries: journalEntries, createEntry } = useJournalStorage();
   const [journalEntryType, setJournalEntryType] = useState<EntryType | null>(null);
   const [reflectionImageOverride, setReflectionImageOverride] = useState<number | null>(null);
+  const [speakerHeroOverride, setSpeakerHeroOverride] = useState<number | null>(null);
 
   useEffect(() => {
     AsyncStorage.getItem(QA_REFLECTION_IMAGE_OVERRIDE_KEY)
@@ -110,11 +153,24 @@ export default function HomeTab() {
         }
       })
       .catch(() => {});
+    AsyncStorage.getItem(QA_SPEAKER_HERO_IMAGE_OVERRIDE_KEY)
+      .then((value) => {
+        if (!value) return;
+        const parsed = parseInt(value, 10);
+        if (Number.isFinite(parsed) && SPEAKER_HERO_IMAGE_BY_NUMBER[parsed]) {
+          setSpeakerHeroOverride(parsed);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const heroImage = reflectionImageOverride != null
     ? REFLECTION_IMAGE_BY_NUMBER[reflectionImageOverride]
     : getReflectionImageForDate(today);
+
+  const speakerHeroImage = speakerHeroOverride != null
+    ? SPEAKER_HERO_IMAGE_BY_NUMBER[speakerHeroOverride]
+    : getSpeakerHeroImageForDate(today);
 
   // Notebook row metadata — reuses the same entries array the Notebook tab
   // renders, and the same pure streak util, so numbers are guaranteed to
@@ -574,7 +630,7 @@ export default function HomeTab() {
           >
             <View style={styles.heroClip}>
               <ImageBackground
-                source={SPEAKER_HERO_IMAGE}
+                source={speakerHeroImage}
                 resizeMode="cover"
                 style={styles.heroTop}
                 imageStyle={styles.heroTopImage}

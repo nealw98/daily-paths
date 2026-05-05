@@ -40,7 +40,10 @@ import {
   getLifetimeAccessDiagnostics,
 } from "../utils/paidAppDetector";
 import { useSubscriptionContext } from "../contexts/SubscriptionContext";
-import { QA_REFLECTION_IMAGE_OVERRIDE_KEY } from "./(tabs)/home";
+import {
+  QA_REFLECTION_IMAGE_OVERRIDE_KEY,
+  QA_SPEAKER_HERO_IMAGE_OVERRIDE_KEY,
+} from "./(tabs)/home";
 import { useSubscription } from "../hooks/useSubscription";
 import {
   exportQaTransferToFile,
@@ -77,6 +80,8 @@ export default function QaLogsScreen() {
   const [refreshingLifetime, setRefreshingLifetime] = React.useState(false);
   const [reflectionImageInput, setReflectionImageInput] = React.useState("");
   const [reflectionImageStatus, setReflectionImageStatus] = React.useState<string | null>(null);
+  const [speakerHeroInput, setSpeakerHeroInput] = React.useState("");
+  const [speakerHeroStatus, setSpeakerHeroStatus] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     AsyncStorage.getItem(QA_REFLECTION_IMAGE_OVERRIDE_KEY)
@@ -84,6 +89,14 @@ export default function QaLogsScreen() {
         if (value) {
           setReflectionImageInput(value);
           setReflectionImageStatus(`Override active: reflections-${value}.webp`);
+        }
+      })
+      .catch(() => {});
+    AsyncStorage.getItem(QA_SPEAKER_HERO_IMAGE_OVERRIDE_KEY)
+      .then((value) => {
+        if (value) {
+          setSpeakerHeroInput(value);
+          setSpeakerHeroStatus(`Override active: audio-${value}.webp`);
         }
       })
       .catch(() => {});
@@ -105,6 +118,25 @@ export default function QaLogsScreen() {
     await AsyncStorage.removeItem(QA_REFLECTION_IMAGE_OVERRIDE_KEY);
     setReflectionImageInput("");
     setReflectionImageStatus("Override cleared. Reloading...");
+    setTimeout(() => Updates.reloadAsync().catch(() => {}), 250);
+  };
+
+  const handleSetSpeakerHero = async () => {
+    const trimmed = speakerHeroInput.trim().replace(/^audio-?/, "").replace(/\.webp$/, "");
+    if (!/^\d+$/.test(trimmed)) {
+      setSpeakerHeroStatus("Enter the image number (e.g. 3 for audio-3.webp).");
+      return;
+    }
+    await AsyncStorage.setItem(QA_SPEAKER_HERO_IMAGE_OVERRIDE_KEY, trimmed);
+    setSpeakerHeroInput(trimmed);
+    setSpeakerHeroStatus(`Override set to audio-${trimmed}.webp. Reloading...`);
+    setTimeout(() => Updates.reloadAsync().catch(() => {}), 250);
+  };
+
+  const handleClearSpeakerHero = async () => {
+    await AsyncStorage.removeItem(QA_SPEAKER_HERO_IMAGE_OVERRIDE_KEY);
+    setSpeakerHeroInput("");
+    setSpeakerHeroStatus("Override cleared. Reloading...");
     setTimeout(() => Updates.reloadAsync().catch(() => {}), 250);
   };
 
@@ -797,6 +829,53 @@ export default function QaLogsScreen() {
           </TouchableOpacity>
           {reflectionImageStatus && (
             <Text style={[styles.meta, { width: "100%" }]}>{reflectionImageStatus}</Text>
+          )}
+        </View>
+
+        <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>
+          Screenshot: Speaker Hero Image
+        </Text>
+        <View style={styles.actionsRow}>
+          <TextInput
+            style={{
+              flexBasis: "100%",
+              borderWidth: 1,
+              borderColor: colors.mist,
+              borderRadius: 8,
+              paddingHorizontal: 10,
+              paddingVertical: 8,
+              fontFamily: fonts.bodyFamilyRegular,
+              fontSize: 14,
+              color: colors.ink,
+            }}
+            placeholder="Image number (e.g. 3) or audio-3.webp"
+            placeholderTextColor="#9ca3af"
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="default"
+            value={speakerHeroInput}
+            onChangeText={setSpeakerHeroInput}
+          />
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleSetSpeakerHero}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              Set & Reload
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleClearSpeakerHero}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              Clear & Reload
+            </Text>
+          </TouchableOpacity>
+          {speakerHeroStatus && (
+            <Text style={[styles.meta, { width: "100%" }]}>{speakerHeroStatus}</Text>
           )}
         </View>
 
