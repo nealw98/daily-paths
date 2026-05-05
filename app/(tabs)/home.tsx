@@ -68,6 +68,8 @@ const REFLECTION_IMAGE_BY_NUMBER: Record<number, any> = REFLECTION_IMAGE_KEYS.re
   {},
 );
 
+const SPEAKER_HERO_IMAGE = require("../../assets/audio/audio-2.webp");
+
 // QA-only: pin the home hero image for App Store screenshots. Value is the
 // image number from the filename (e.g. "33" for reflections-33.webp).
 export const QA_REFLECTION_IMAGE_OVERRIDE_KEY = "qa:reflection-image-override";
@@ -568,18 +570,33 @@ export default function HomeTab() {
                 router.push({ pathname: "/(tabs)/speakers", params: { speakerId: featuredSpeaker.id } });
               }
             }}
-            style={[styles.speakerCard, isFree && styles.speakerSectionFree]}
+            style={[styles.heroWrapper, isFree && styles.speakerSectionFree]}
           >
-            <View style={styles.speakerCardInner}>
-              <View style={[styles.speakerHeaderStrip, { backgroundColor: colors.secondary }]}>
-                <View style={styles.speakerHeaderStripLeft}>
-                  <MaterialIcons name="record-voice-over" size={16} color="#FFFFFFCC" />
-                  <Text style={[heroLabelType, { color: "#FFFFFFCC" }]}>
-                    Featured Speaker
+            <View style={styles.heroClip}>
+              <ImageBackground
+                source={SPEAKER_HERO_IMAGE}
+                resizeMode="cover"
+                style={styles.heroTop}
+                imageStyle={styles.heroTopImage}
+              >
+                <View style={styles.heroSpacer} />
+                <LinearGradient
+                  colors={["transparent", "rgba(0,0,0,0.55)"]}
+                  style={styles.heroOverlay}
+                >
+                  <View style={styles.heroIconRow}>
+                    <MaterialIcons name="record-voice-over" size={18} color="#FFFFFFCC" />
+                    <Text style={[heroLabelType, { color: "#FFFFFFBB" }]}>
+                      Featured Speaker
+                    </Text>
+                  </View>
+                  <Text style={[styles.heroTitleLayout, heroTitleType, { color: "#FFFFFF" }]}>
+                    {featuredSpeaker.title}
                   </Text>
-                </View>
-              </View>
-              <View style={[styles.speakerBody, { backgroundColor: colors.surfaceContainerLowest }]}>
+                </LinearGradient>
+              </ImageBackground>
+
+              <View style={[styles.heroBottom, { backgroundColor: colors.surfaceContainerLowest }]}>
                 {featuredSpeaker.quote ? (
                   <>
                     <View style={styles.speakerQuoteRow}>
@@ -588,12 +605,16 @@ export default function HomeTab() {
                       </Text>
                       <Text
                         style={[
+                          ...notebookTagType,
                           styles.speakerQuoteText,
                           {
                             color: colors.onSurface,
                             fontFamily: fonts.loraRegular,
-                            fontSize: typography.body.fontSize,
-                            lineHeight: typography.body.lineHeight,
+                            fontSize: typography.body.fontSize - 2,
+                            lineHeight: Math.round(
+                              (typography.body.fontSize - 2) *
+                                (typography.body.lineHeight / typography.body.fontSize)
+                            ),
                           },
                         ]}
                         numberOfLines={3}
@@ -604,28 +625,16 @@ export default function HomeTab() {
                     <View style={[styles.speakerDivider, { backgroundColor: colors.outlineVariant }]} />
                   </>
                 ) : null}
-                <View style={styles.speakerBottomRow}>
-                  <View style={styles.speakerBottomLeft}>
-                    <Text
-                      style={[styles.speakerNameText, { color: colors.onSurface }]}
-                      numberOfLines={1}
-                    >
-                      {featuredSpeaker.speaker}
-                    </Text>
-                    <Text
-                      style={[styles.speakerTitleText, { color: colors.onSurfaceVariant }]}
-                      numberOfLines={1}
-                    >
-                      {featuredSpeaker.title}
-                    </Text>
-                  </View>
-                  <View style={styles.speakerCtaRow}>
-                    <Ionicons
-                      name="play"
-                      size={22}
-                      color={colors.accent}
-                    />
-                    <Text style={[styles.speakerListenLabel, { color: colors.accent }]}>
+                <View style={styles.speakerListenRow}>
+                  <Text
+                    style={[styles.speakerNameText, { color: colors.onSurface }]}
+                    numberOfLines={1}
+                  >
+                    {featuredSpeaker.speaker}
+                  </Text>
+                  <View style={styles.speakerListenCta}>
+                    <Ionicons name="play" size={20} color={colors.accent} />
+                    <Text style={[readMoreType, { color: colors.accent }]}>
                       Listen
                     </Text>
                   </View>
@@ -853,41 +862,10 @@ const styles = StyleSheet.create({
   },
 
   // Speaker
-  speakerCard: {
-    marginHorizontal: layout.spacing.md,
-    borderRadius: layout.borderRadius,
-    shadowColor: "#000000",
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
-  },
-  speakerCardInner: {
-    borderRadius: layout.borderRadius,
-    overflow: "hidden",
-  },
-  speakerHeaderStrip: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: layout.spacing.md,
-    paddingVertical: layout.spacing.lgPlus,
-  },
-  speakerHeaderStripLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: layout.spacing.xs,
-  },
-  speakerBody: {
-    paddingHorizontal: layout.spacing.md,
-    paddingTop: layout.spacing.md,
-    paddingBottom: layout.spacing.md,
-  },
   speakerQuoteRow: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: layout.spacing.sm,
-    paddingBottom: layout.spacing.md,
   },
   speakerQuoteGlyph: {
     fontFamily: fonts.cormorantGaramondMedium,
@@ -897,42 +875,30 @@ const styles = StyleSheet.create({
   },
   speakerQuoteText: {
     flex: 1,
+    textAlign: "left",
   },
   speakerDivider: {
     height: StyleSheet.hairlineWidth,
+    marginTop: 16,
   },
-  speakerBottomRow: {
+  speakerListenRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: layout.spacing.sm,
-    paddingTop: layout.spacing.md,
-  },
-  speakerBottomLeft: {
-    flex: 1,
-    minWidth: 0,
+    marginTop: 12,
   },
   speakerNameText: {
+    flex: 1,
+    minWidth: 0,
     fontFamily: fonts.bodyFamilySemiBold,
     fontSize: 17,
     lineHeight: 22,
   },
-  speakerTitleText: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: 14,
-    lineHeight: 19,
-    marginTop: 2,
-  },
-  speakerCtaRow: {
+  speakerListenCta: {
     flexDirection: "row",
     alignItems: "center",
-    gap: layout.spacing.xs,
-  },
-  speakerListenLabel: {
-    fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 16,
-    lineHeight: 20,
-    letterSpacing: 0.1,
+    gap: 2,
   },
   // Utility link rows — marginTop comes from sectionRhythm (dynamic).
   notebookLinkRow: {},
