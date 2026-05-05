@@ -334,6 +334,7 @@ function LifetimeWelcomePresenter() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    if (Platform.OS === "ios") return;
     (async () => {
       if (!hasLifetimeAccess && !status.isLegacy) return;
       const seen = await AsyncStorage.getItem(LIFETIME_WELCOME_SEEN_KEY);
@@ -342,6 +343,8 @@ function LifetimeWelcomePresenter() {
       }
     })();
   }, [hasLifetimeAccess, status.isLegacy]);
+
+  if (Platform.OS === "ios") return null;
 
   return (
     <LifetimeWelcomeModal
