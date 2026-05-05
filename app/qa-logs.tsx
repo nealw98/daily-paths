@@ -44,6 +44,10 @@ import {
   QA_REFLECTION_IMAGE_OVERRIDE_KEY,
   QA_SPEAKER_HERO_IMAGE_OVERRIDE_KEY,
 } from "./(tabs)/home";
+import {
+  refreshSpeakerHeroes,
+  getHeroManifestSnapshot,
+} from "../utils/speakerHeroCache";
 import { useSubscription } from "../hooks/useSubscription";
 import {
   exportQaTransferToFile,
@@ -92,14 +96,30 @@ export default function QaLogsScreen() {
         }
       })
       .catch(() => {});
-    AsyncStorage.getItem(QA_SPEAKER_HERO_IMAGE_OVERRIDE_KEY)
-      .then((value) => {
-        if (value) {
-          setSpeakerHeroInput(value);
-          setSpeakerHeroStatus(`Override active: audio-${value}.webp`);
+    (async () => {
+      const value = await AsyncStorage.getItem(
+        QA_SPEAKER_HERO_IMAGE_OVERRIDE_KEY,
+      ).catch(() => null);
+      const snapshot = await getHeroManifestSnapshot();
+      const numbers = snapshot?.numbers ?? [];
+      if (value) {
+        setSpeakerHeroInput(value);
+        const parsed = parseInt(value, 10);
+        if (numbers.includes(parsed)) {
+          setSpeakerHeroStatus(`Override active: ${value} (cached)`);
+        } else {
+          setSpeakerHeroStatus(
+            `Override set to ${value}, but not in cached manifest. Available: ${
+              numbers.length ? numbers.join(", ") : "none yet"
+            }`,
+          );
         }
-      })
-      .catch(() => {});
+      } else if (numbers.length) {
+        setSpeakerHeroStatus(`Cached numbers: ${numbers.join(", ")}`);
+      } else {
+        setSpeakerHeroStatus("No cached hero images yet. Tap Refresh.");
+      }
+    })();
   }, []);
 
   const handleSetReflectionImage = async () => {
@@ -124,12 +144,23 @@ export default function QaLogsScreen() {
   const handleSetSpeakerHero = async () => {
     const trimmed = speakerHeroInput.trim().replace(/^audio-?/, "").replace(/\.webp$/, "");
     if (!/^\d+$/.test(trimmed)) {
-      setSpeakerHeroStatus("Enter the image number (e.g. 3 for audio-3.webp).");
+      setSpeakerHeroStatus("Enter the image number (e.g. 3).");
+      return;
+    }
+    const parsed = parseInt(trimmed, 10);
+    const snapshot = await getHeroManifestSnapshot();
+    const numbers = snapshot?.numbers ?? [];
+    if (!numbers.includes(parsed)) {
+      setSpeakerHeroStatus(
+        `${trimmed} is not in the cached manifest. Available: ${
+          numbers.length ? numbers.join(", ") : "none — tap Refresh first"
+        }`,
+      );
       return;
     }
     await AsyncStorage.setItem(QA_SPEAKER_HERO_IMAGE_OVERRIDE_KEY, trimmed);
     setSpeakerHeroInput(trimmed);
-    setSpeakerHeroStatus(`Override set to audio-${trimmed}.webp. Reloading...`);
+    setSpeakerHeroStatus(`Override set to ${trimmed}. Reloading...`);
     setTimeout(() => Updates.reloadAsync().catch(() => {}), 250);
   };
 
@@ -138,6 +169,22 @@ export default function QaLogsScreen() {
     setSpeakerHeroInput("");
     setSpeakerHeroStatus("Override cleared. Reloading...");
     setTimeout(() => Updates.reloadAsync().catch(() => {}), 250);
+  };
+
+  const handleRefreshSpeakerHeroes = async () => {
+    setSpeakerHeroStatus("Refreshing hero images...");
+    const result = await refreshSpeakerHeroes();
+    if (!result) {
+      setSpeakerHeroStatus("Refresh failed — see QA logs for details.");
+      return;
+    }
+    const snapshot = await getHeroManifestSnapshot();
+    const numbers = snapshot?.numbers ?? [];
+    setSpeakerHeroStatus(
+      `Refreshed: ${result.cached}/${result.total} cached. Numbers: ${
+        numbers.length ? numbers.join(", ") : "none"
+      }`,
+    );
   };
 
   // Load developer mode, device ID, and lifetime override on mount
@@ -872,6 +919,15 @@ export default function QaLogsScreen() {
           >
             <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
               Clear & Reload
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleRefreshSpeakerHeroes}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              Refresh from Supabase
             </Text>
           </TouchableOpacity>
           {speakerHeroStatus && (

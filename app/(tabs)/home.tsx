@@ -33,6 +33,12 @@ import { useFeaturedSpeaker } from "../../hooks/useFeaturedSpeaker";
 import { computeJournalStreak } from "../../utils/journalStreak";
 import { getScheduledDayOfYear } from "../../utils/dateUtils";
 import { qaLog } from "../../utils/qaLog";
+import {
+  refreshSpeakerHeroes,
+  getSpeakerHeroForDate,
+  getSpeakerHeroByNumber,
+  getCurrentHeroWeekIndex,
+} from "../../utils/speakerHeroCache";
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -68,48 +74,16 @@ const REFLECTION_IMAGE_BY_NUMBER: Record<number, any> = REFLECTION_IMAGE_KEYS.re
   {},
 );
 
-// Speaker hero rotation — auto-discovered from assets/audio. Pattern accepts
-// both `audio-<N>.webp` and `audio<N>.webp` so adding new files is forgiving.
-// Sorted numerically so audio-10 comes after audio-9, not audio-1.
-const speakerHeroContext = (require as any).context(
-  "../../assets/audio",
-  false,
-  /^\.\/audio-?\d+\.webp$/
-);
-const SPEAKER_HERO_KEYS = speakerHeroContext
-  .keys()
-  .slice()
-  .sort((a: string, b: string) => {
-    const numA = parseInt(a.match(/audio-?(\d+)/)?.[1] ?? "0", 10);
-    const numB = parseInt(b.match(/audio-?(\d+)/)?.[1] ?? "0", 10);
-    return numA - numB;
-  });
-const SPEAKER_HERO_IMAGES = SPEAKER_HERO_KEYS.map((key: string) =>
-  speakerHeroContext(key)
-);
-const SPEAKER_HERO_IMAGE_BY_NUMBER: Record<number, any> = SPEAKER_HERO_KEYS.reduce(
-  (acc: Record<number, any>, key: string) => {
-    const match = key.match(/audio-?(\d+)/);
-    if (match) acc[parseInt(match[1], 10)] = speakerHeroContext(key);
-    return acc;
-  },
-  {},
-);
+// Speaker hero images now live in Supabase storage (bucket
+// `speaker-hero-images`) and are downloaded + cached on device. The bundled
+// `audio-6.webp` is the last-resort fallback when the manifest is empty or
+// the chosen cached file is missing on disk. See utils/speakerHeroCache.ts.
+const SPEAKER_HERO_FALLBACK = require("../../assets/audio/audio-6.webp");
 
-// Same Monday-UTC anchor used by useFeaturedSpeaker, so the hero image and
-// the featured speaker advance on the same weekly cadence.
-const SPEAKER_HERO_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-const SPEAKER_HERO_EPOCH_MS = Date.UTC(2025, 0, 6);
-
-function getSpeakerHeroImageForDate(date: Date) {
-  if (SPEAKER_HERO_IMAGES.length === 0) return null;
-  const weekIndex = Math.floor(
-    (date.getTime() - SPEAKER_HERO_EPOCH_MS) / SPEAKER_HERO_WEEK_MS
-  );
-  const len = SPEAKER_HERO_IMAGES.length;
-  const i = ((weekIndex % len) + len) % len;
-  return SPEAKER_HERO_IMAGES[i];
-}
+// Module-level guards so the bucket is listed at most once per app session,
+// and re-listed when the week index advances during a long-running session.
+let didListHeroesThisSession = false;
+let lastHeroWeekIndex: string | null = null;
 
 // QA-only: pin the home hero image for App Store screenshots. Value is the
 // image number from the filename (e.g. "33" for reflections-33.webp).
@@ -141,7 +115,9 @@ export default function HomeTab() {
   const { entries: journalEntries, createEntry } = useJournalStorage();
   const [journalEntryType, setJournalEntryType] = useState<EntryType | null>(null);
   const [reflectionImageOverride, setReflectionImageOverride] = useState<number | null>(null);
-  const [speakerHeroOverride, setSpeakerHeroOverride] = useState<number | null>(null);
+  const [speakerHeroSource, setSpeakerHeroSource] = useState<number | { uri: string }>(
+    SPEAKER_HERO_FALLBACK,
+  );
 
   useEffect(() => {
     AsyncStorage.getItem(QA_REFLECTION_IMAGE_OVERRIDE_KEY)
@@ -153,24 +129,77 @@ export default function HomeTab() {
         }
       })
       .catch(() => {});
-    AsyncStorage.getItem(QA_SPEAKER_HERO_IMAGE_OVERRIDE_KEY)
-      .then((value) => {
-        if (!value) return;
-        const parsed = parseInt(value, 10);
-        if (Number.isFinite(parsed) && SPEAKER_HERO_IMAGE_BY_NUMBER[parsed]) {
-          setSpeakerHeroOverride(parsed);
-        }
-      })
-      .catch(() => {});
   }, []);
+
+  // Resolve the speaker hero: QA override → cached rotation pick → bundled
+  // fallback. Re-runs on `today` change so a week-boundary advance updates
+  // the image without an app restart.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const overrideRaw = await AsyncStorage.getItem(
+        QA_SPEAKER_HERO_IMAGE_OVERRIDE_KEY,
+      ).catch(() => null);
+      if (overrideRaw) {
+        const parsed = parseInt(overrideRaw, 10);
+        if (Number.isFinite(parsed)) {
+          const pinned = await getSpeakerHeroByNumber(parsed);
+          if (!cancelled && pinned) {
+            setSpeakerHeroSource(pinned);
+            return;
+          }
+        }
+      }
+      const rotated = await getSpeakerHeroForDate(today);
+      if (cancelled) return;
+      setSpeakerHeroSource(rotated ?? SPEAKER_HERO_FALLBACK);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [today]);
+
+  // List + download remote hero images once per app session, plus on every
+  // week-boundary advance during a long-running session. After refresh,
+  // re-resolve the source so any new files become visible.
+  useEffect(() => {
+    let cancelled = false;
+    const weekIndex = getCurrentHeroWeekIndex(today);
+    const sessionKey = `${weekIndex}`;
+    if (didListHeroesThisSession && lastHeroWeekIndex === sessionKey) return;
+    didListHeroesThisSession = true;
+    lastHeroWeekIndex = sessionKey;
+    (async () => {
+      const result = await refreshSpeakerHeroes();
+      if (cancelled || !result) return;
+      const overrideRaw = await AsyncStorage.getItem(
+        QA_SPEAKER_HERO_IMAGE_OVERRIDE_KEY,
+      ).catch(() => null);
+      if (overrideRaw) {
+        const parsed = parseInt(overrideRaw, 10);
+        if (Number.isFinite(parsed)) {
+          const pinned = await getSpeakerHeroByNumber(parsed);
+          if (!cancelled && pinned) {
+            setSpeakerHeroSource(pinned);
+            return;
+          }
+        }
+      }
+      const rotated = await getSpeakerHeroForDate(today);
+      if (!cancelled) {
+        setSpeakerHeroSource(rotated ?? SPEAKER_HERO_FALLBACK);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [today]);
 
   const heroImage = reflectionImageOverride != null
     ? REFLECTION_IMAGE_BY_NUMBER[reflectionImageOverride]
     : getReflectionImageForDate(today);
 
-  const speakerHeroImage = speakerHeroOverride != null
-    ? SPEAKER_HERO_IMAGE_BY_NUMBER[speakerHeroOverride]
-    : getSpeakerHeroImageForDate(today);
+  const speakerHeroImage = speakerHeroSource;
 
   // Notebook row metadata — reuses the same entries array the Notebook tab
   // renders, and the same pure streak util, so numbers are guaranteed to
