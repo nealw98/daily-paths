@@ -36,6 +36,7 @@ import {
   resetGrandfatherState,
   simulateGrandfatherGrant,
 } from "../lib/grandfather";
+import { resetTrialSnackbarShown } from "../components/TrialSnackbar";
 import {
   setLifetimeOverride,
   getLifetimeOverride,
@@ -595,6 +596,20 @@ export default function QaLogsScreen() {
     }
   };
 
+  const handleResetTrialSnackbar = async () => {
+    try {
+      await resetTrialSnackbarShown();
+      qaLog("freemium", "Trial snackbar shown-flag cleared");
+      Alert.alert(
+        "Trial snackbar reset",
+        "The once-per-day snackbar will fire again on the next launch / foreground (only if you're in trial).",
+      );
+    } catch (err) {
+      qaLog("freemium", "Error resetting trial snackbar", { error: String(err) });
+      Alert.alert("Error", "Could not reset the trial snackbar flag.");
+    }
+  };
+
   const handleResetGrandfather = async () => {
     try {
       await resetGrandfatherState();
@@ -741,6 +756,15 @@ export default function QaLogsScreen() {
           >
             <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
               Reset Grandfather State
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={() => void handleResetTrialSnackbar()}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              Reset Trial Snackbar
             </Text>
           </TouchableOpacity>
         </View>

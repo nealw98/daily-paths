@@ -12,8 +12,6 @@ import {
   KeyboardAvoidingView,
   Keyboard,
   Alert,
-  ActivityIndicator,
-  AppState,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
@@ -31,8 +29,6 @@ import { fonts, typography, shadows } from "../../constants/theme";
 import { TealHeader } from "../../components/shared/TealHeader";
 import { PageTitle } from "../../components/ui/PageTitle";
 import { useSubscription } from "../../hooks/useSubscription";
-import { useSubscriptionContext } from "../../contexts/SubscriptionContext";
-import RevenueCatUI from "react-native-purchases-ui";
 import { RateAppModal } from "../../components/RateAppModal";
 
 /** Default theme options (visible to all users) */
@@ -78,8 +74,6 @@ export default function MoreTab() {
   // the baseline at the "medium" tier matches the prior static values.
   const cardLabelFontSize = Math.round(dynamicTypography.bodyLargeFontSize * (16 / 19));
   const cardLabelLineHeight = Math.round(cardLabelFontSize * (22 / 16));
-  const subscriptionFontSize = Math.round(dynamicTypography.bodyLargeFontSize * (16 / 19));
-  const subscriptionLineHeight = Math.round(subscriptionFontSize * (20 / 16));
   const rowTitleFontSize = Math.round(dynamicTypography.bodyLargeFontSize * (16 / 19));
   const rowDescriptionFontSize = Math.round(dynamicTypography.bodyLargeFontSize * (14 / 19));
   const rowDescriptionLineHeight = Math.round(rowDescriptionFontSize * (18 / 14));
@@ -89,8 +83,7 @@ export default function MoreTab() {
   const supportActionFontSize = Math.round(dynamicTypography.bodyLargeFontSize * (16 / 19));
   const supportActionLineHeight = Math.round(supportActionFontSize * (20 / 16));
   const { submitting: submittingFeedback, submitFeedback } = useAppFeedback();
-  const { status, hasLifetimeAccess, loading: subLoading, refresh } = useSubscription();
-  const { trialStatus } = useSubscriptionContext();
+  const { status, hasLifetimeAccess } = useSubscription();
   const { updateThemeMode } = useAnalytics();
   const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
@@ -100,7 +93,6 @@ export default function MoreTab() {
   const [feedbackText, setFeedbackText] = useState("");
   const [feedbackContact, setFeedbackContact] = useState("");
   const [isSharing, setIsSharing] = useState(false);
-  const [openingCustomerCenter, setOpeningCustomerCenter] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -205,136 +197,8 @@ export default function MoreTab() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── 1. Subscription ────────────────────────────────── */}
-        {/* iOS is paid-download — never render subscription UI. */}
-        {Platform.OS !== "ios" && (
-        <>
-        <Text allowFontScaling={false} style={[styles.sectionLabel, styles.firstSectionLabel, sectionTitleType, { color: colors.onSurface }]}>Subscription</Text>
-        {subLoading ? (
-          <View style={[styles.subscriptionRow, { backgroundColor: colors.surfaceContainerLowest }]}>
-            <View style={styles.subscriptionLeft}>
-              <ActivityIndicator size="small" color={colors.deepTeal} />
-              <Text style={[styles.subscriptionText, { fontSize: subscriptionFontSize, lineHeight: subscriptionLineHeight, color: colors.text }]}>Checking Access...</Text>
-            </View>
-          </View>
-        ) : status.isSubscribed ? (
-          <TouchableOpacity
-            style={[styles.subscriptionRow, { backgroundColor: colors.surfaceContainerLowest }]}
-            disabled={openingCustomerCenter}
-            onPress={async () => {
-              if (openingCustomerCenter) return;
-              setOpeningCustomerCenter(true);
-              let sawBackground = false;
-              const appStateSub = AppState.addEventListener("change", (nextState) => {
-                if (nextState !== "active") sawBackground = true;
-              });
-              try {
-                await RevenueCatUI.presentCustomerCenter({
-                  callbacks: {
-                    onRestoreCompleted: () => refresh(),
-                  },
-                });
-                await refresh();
-              } catch (err) {
-                const errorText = String(err).toLowerCase();
-                const isBenignAndroidReturn =
-                  Platform.OS === "android" &&
-                  (sawBackground ||
-                    errorText.includes("cancel") ||
-                    errorText.includes("dismiss") ||
-                    errorText.includes("background") ||
-                    errorText.includes("activity") ||
-                    errorText.includes("aborted"));
-
-                if (isBenignAndroidReturn) {
-                  qaLog("subscription", "Customer Center returned with benign Android flow error", {
-                    error: String(err),
-                    sawBackground,
-                  });
-                  await refresh();
-                  return;
-                }
-
-                qaLog("subscription", "Customer Center failed to open", { error: String(err) });
-                Alert.alert(
-                  "Unable to Open Subscription Management",
-                  "Please try again in a moment.",
-                );
-              } finally {
-                appStateSub.remove();
-                setOpeningCustomerCenter(false);
-              }
-            }}
-            activeOpacity={openingCustomerCenter ? 1 : 0.8}
-          >
-            <View style={styles.subscriptionLeft}>
-              <Ionicons name="card-outline" size={22} color={colors.deepTeal} />
-              <Text style={[styles.subscriptionText, { fontSize: subscriptionFontSize, lineHeight: subscriptionLineHeight, color: colors.text }]}>
-                {openingCustomerCenter ? "Opening..." : "Manage Subscription"}
-              </Text>
-            </View>
-            {openingCustomerCenter ? (
-              <ActivityIndicator size="small" color={colors.deepTeal} />
-            ) : (
-              <Ionicons name="chevron-forward" size={20} color={colors.seafoam} />
-            )}
-          </TouchableOpacity>
-        ) : hasLifetimeAccess || status.isLegacy ? (
-          <View style={[styles.subscriptionRow, { backgroundColor: colors.surfaceContainerLowest }]}>
-            <View style={styles.subscriptionLeft}>
-              <Ionicons name="star" size={22} color={colors.deepTeal} />
-              <Text style={[styles.subscriptionText, { fontSize: subscriptionFontSize, lineHeight: subscriptionLineHeight, color: colors.deepTeal }]}>Lifetime Access</Text>
-            </View>
-          </View>
-        ) : trialStatus.isInTrial ? (
-          <TouchableOpacity
-            style={[styles.subscriptionRow, { backgroundColor: colors.surfaceContainerLowest }]}
-            onPress={async () => {
-              try {
-                const result = await RevenueCatUI.presentPaywall();
-                if (result === "PURCHASED") await refresh();
-              } catch (err) {
-                qaLog("subscription", "Paywall failed to open from trial row", { error: String(err) });
-              }
-            }}
-            activeOpacity={0.8}
-          >
-            <View style={styles.subscriptionLeft}>
-              <Ionicons name="time-outline" size={22} color={colors.deepTeal} />
-              <Text style={[styles.subscriptionText, { fontSize: subscriptionFontSize, lineHeight: subscriptionLineHeight, color: colors.text }]}>
-                {trialStatus.daysRemaining === 0
-                  ? "Free Trial \u2014 expires today"
-                  : `Free Trial \u2014 ${trialStatus.daysRemaining} day${trialStatus.daysRemaining === 1 ? "" : "s"} left`}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.seafoam} />
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={[styles.subscriptionRow, { backgroundColor: colors.surfaceContainerLowest }]}
-            onPress={async () => {
-              try {
-                const result = await RevenueCatUI.presentPaywall();
-                if (result === "PURCHASED") await refresh();
-              } catch (err) {
-                qaLog("subscription", "Paywall failed to open from subscribe row", { error: String(err) });
-              }
-            }}
-            activeOpacity={0.8}
-          >
-            <View style={styles.subscriptionLeft}>
-              <Ionicons name="card-outline" size={22} color={colors.deepTeal} />
-              <Text style={[styles.subscriptionText, { fontSize: subscriptionFontSize, lineHeight: subscriptionLineHeight, color: colors.text }]}>Subscribe Now</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.seafoam} />
-          </TouchableOpacity>
-        )}
-        </>
-        )}
-
-
-        {/* ── 2. Appearance ────────────────────────────────── */}
-        <Text allowFontScaling={false} style={[styles.sectionLabel, sectionTitleType, { color: colors.onSurface }]}>Appearance</Text>
+        {/* ── Appearance ────────────────────────────────── */}
+        <Text allowFontScaling={false} style={[styles.sectionLabel, styles.firstSectionLabel, sectionTitleType, { color: colors.onSurface }]}>Appearance</Text>
         <View style={[styles.card, { backgroundColor: colors.surfaceContainerLowest }]}>
           {/* Text Size */}
           <Text
@@ -794,27 +658,6 @@ const styles = StyleSheet.create({
   supportActionText: {
     // fontSize/lineHeight applied inline (supportActionFontSize / supportActionLineHeight).
     fontFamily: fonts.bodyFamilySemiBold,
-  },
-
-  /* ── Subscription Row ──────────────────────────── */
-  subscriptionRow: {
-    ...shadows.homeSurface,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 14,
-    marginBottom: 10,
-    marginTop: 0,
-  },
-  subscriptionLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  subscriptionText: {
-    fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 16,
-    lineHeight: 20,
   },
 
   /* ── About Footer ──────────────────────────────── */
