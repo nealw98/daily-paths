@@ -33,12 +33,12 @@ import { installGlobalErrorHandler } from "../utils/errorLogger";
 import { initMixpanel } from "../lib/mixpanel";
 import { qaLog } from "../utils/qaLog";
 import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
-import { TrialEndedModal } from "../components/TrialEndedModal";
-import { hasSeenTrialEndedModal, markTrialEndedModalSeen } from "../utils/trialTimer";
-import { LifetimeWelcomeModal } from "../components/LifetimeWelcomeModal";
+import { SubscriberToLifetimeModal } from "../components/SubscriberToLifetimeModal";
+import { GrandfatheredLifetimeModal } from "../components/GrandfatheredLifetimeModal";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { AppDateProvider } from "../contexts/AppDateContext";
+import { useAnalytics } from "../utils/analytics";
 
 console.log("[STARTUP] _layout.tsx module loading...");
 console.log("[STARTUP] Platform:", Platform.OS, Platform.Version);
@@ -222,8 +222,9 @@ export default function RootLayout() {
       <SettingsProvider>
         <AppDateProvider>
           <SubscriptionProvider>
-            <TrialExpiryPresenter />
-            <LifetimeWelcomePresenter />
+            <AndroidHardPaywallGate />
+            <SubscriberToLifetimePresenter />
+            <GrandfatheredLifetimePresenter />
             {updateReady && (
               <View style={styles.updateBanner}>
                 <Text style={styles.updateText}>
@@ -273,85 +274,140 @@ export default function RootLayout() {
 }
 
 
-function TrialExpiryPresenter() {
-  const { status, trialStatus, hasLifetimeAccess, refresh } = useSubscriptionContext();
-  const [visible, setVisible] = useState(false);
-  const [checking, setChecking] = useState(false);
+/**
+ * Root-level hard paywall for Android.
+ *
+ * When the gate is "paywall" and the app is foreground, presents the
+ * RevenueCat-rendered paywall as an overlay above the Stack (so notifications
+ * deep-linking still works when the user eventually purchases).  The user
+ * cannot dismiss without purchasing or restoring — that's enforced via the
+ * RevenueCat dashboard config (Close button disabled). Re-presents if the
+ * paywall returns without an entitlement.
+ */
+function AndroidHardPaywallGate() {
+  const { gate, loading, refresh } = useSubscriptionContext();
+  const { trackPaywallShown, trackPaywallDismissed, trackRestoreCompleted } = useAnalytics();
+  const presenting = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 
-  const checkAndShow = async () => {
-    if (checking) return;
-    setChecking(true);
+  const present = async () => {
+    if (Platform.OS !== "android") return;
+    if (presenting.current) return;
+    if (loading) return;
+    if (gate !== "paywall") return;
+
+    presenting.current = true;
     try {
-      if (hasLifetimeAccess || status.isSubscribed || status.isLegacy || !trialStatus.trialExpired) return;
-      const seen = await hasSeenTrialEndedModal();
-      if (!seen) setVisible(true);
+      trackPaywallShown();
+      qaLog("paywall", "Hard paywall presenting");
+      const result = await RevenueCatUI.presentPaywall();
+      qaLog("paywall", "Hard paywall result", { result });
+
+      if (result === PAYWALL_RESULT.PURCHASED) {
+        await refresh();
+        await new Promise((r) => setTimeout(r, 350));
+        await refresh();
+      } else if (result === PAYWALL_RESULT.RESTORED) {
+        trackRestoreCompleted(true);
+        await refresh();
+        await new Promise((r) => setTimeout(r, 350));
+        await refresh();
+      } else {
+        // Closed without purchasing/restoring — re-present on next focus / launch.
+        trackPaywallDismissed();
+      }
+    } catch (err) {
+      qaLog("paywall", "Hard paywall error", { error: String(err) });
     } finally {
-      setChecking(false);
+      presenting.current = false;
     }
   };
 
+  // Present whenever gate transitions to paywall and we're not already showing it.
   useEffect(() => {
-    checkAndShow();
-  }, [hasLifetimeAccess, status.isSubscribed, status.isLegacy, trialStatus.trialExpired]);
+    if (Platform.OS !== "android") return;
+    if (loading) return;
+    if (gate !== "paywall") return;
+    void present();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gate, loading]);
+
+  // Re-present on foreground if still gated.
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    const sub = AppState.addEventListener("change", (next) => {
+      if (appStateRef.current.match(/inactive|background/) && next === "active") {
+        if (gate === "paywall" && !loading) void present();
+      }
+      appStateRef.current = next;
+    });
+    return () => sub.remove();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gate, loading]);
+
+  return null;
+}
+
+const SUB_TO_LIFETIME_MODAL_KEY = "@daily_paths_modal_sub_to_lifetime_seen";
+
+/**
+ * Modal A — fires once on Android for users with both `unlimited` and
+ * `lifetime` entitlements (legacy annual subscribers manually granted
+ * lifetime in the RC dashboard during the 2.6.6 transition).
+ */
+function SubscriberToLifetimePresenter() {
+  const { hasSubAndLifetime } = useSubscriptionContext();
+  const { trackModalShown } = useAnalytics();
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const subscription = AppState.addEventListener("change", (nextState) => {
-      if (appStateRef.current.match(/inactive|background/) && nextState === "active") {
-        checkAndShow();
+    if (Platform.OS !== "android") return;
+    if (!hasSubAndLifetime) return;
+    (async () => {
+      const seen = await AsyncStorage.getItem(SUB_TO_LIFETIME_MODAL_KEY);
+      if (seen !== "true") {
+        setVisible(true);
+        trackModalShown("subscriber_to_lifetime");
       }
-      appStateRef.current = nextState;
-    });
-    return () => subscription.remove();
-  }, [hasLifetimeAccess, status.isSubscribed, status.isLegacy, trialStatus.trialExpired]);
+    })();
+  }, [hasSubAndLifetime, trackModalShown]);
+
+  if (Platform.OS !== "android") return null;
 
   return (
-    <TrialEndedModal
+    <SubscriberToLifetimeModal
       visible={visible}
-      onNotNow={async () => {
-        await markTrialEndedModalSeen();
+      onClose={async () => {
+        await AsyncStorage.setItem(SUB_TO_LIFETIME_MODAL_KEY, "true");
         setVisible(false);
-      }}
-      onSubscribeNow={async () => {
-        try {
-          const result = await RevenueCatUI.presentPaywall();
-          if (result === PAYWALL_RESULT.PURCHASED || result === PAYWALL_RESULT.RESTORED) {
-            await refresh();
-          }
-        } finally {
-          await markTrialEndedModalSeen();
-          setVisible(false);
-        }
       }}
     />
   );
 }
 
-const LIFETIME_WELCOME_SEEN_KEY = "@daily_paths_lifetime_welcome_seen";
-
-function LifetimeWelcomePresenter() {
-  const { status, hasLifetimeAccess } = useSubscriptionContext();
-  const [visible, setVisible] = useState(false);
+/**
+ * Modal B — fires once on Android for users who were just granted lifetime
+ * via the grandfather edge function. Dismissal clears the pending flag.
+ */
+function GrandfatheredLifetimePresenter() {
+  const { showGrandfatherModal, acknowledgeGrandfatherModal } = useSubscriptionContext();
+  const { trackModalShown } = useAnalytics();
+  const announced = useRef(false);
 
   useEffect(() => {
-    if (Platform.OS === "ios") return;
-    (async () => {
-      if (!hasLifetimeAccess && !status.isLegacy) return;
-      const seen = await AsyncStorage.getItem(LIFETIME_WELCOME_SEEN_KEY);
-      if (seen !== "true") {
-        setVisible(true);
-      }
-    })();
-  }, [hasLifetimeAccess, status.isLegacy]);
+    if (showGrandfatherModal && !announced.current) {
+      trackModalShown("grandfathered");
+      announced.current = true;
+    }
+  }, [showGrandfatherModal, trackModalShown]);
 
-  if (Platform.OS === "ios") return null;
+  if (Platform.OS !== "android") return null;
 
   return (
-    <LifetimeWelcomeModal
-      visible={visible}
-      onClose={async () => {
-        await AsyncStorage.setItem(LIFETIME_WELCOME_SEEN_KEY, "true");
-        setVisible(false);
+    <GrandfatheredLifetimeModal
+      visible={showGrandfatherModal}
+      onClose={() => {
+        void acknowledgeGrandfatherModal();
       }}
     />
   );

@@ -18,7 +18,6 @@ import { SpeakersBrowse } from "../../components/speakers/SpeakersBrowse";
 import { SpeakerDetail } from "../../components/speakers/SpeakerDetail";
 import { JournalCategoryPicker } from "../../components/journal/JournalCategoryPicker";
 import { JournalEntryEditor } from "../../components/journal/JournalEntryEditor";
-import { PremiumGate } from "../../components/PremiumGate";
 import type { Speaker } from "../../types/speakers";
 import type { EntryType } from "../../constants/journalCategories";
 import { useJournalStorage } from "../../hooks/useJournalStorage";
@@ -26,14 +25,6 @@ import { useJournalStorage } from "../../hooks/useJournalStorage";
 type SpeakerView = "browse" | "detail";
 
 export default function SpeakersTab() {
-  return (
-    <PremiumGate>
-      <SpeakersTabContent />
-    </PremiumGate>
-  );
-}
-
-function SpeakersTabContent() {
   const { colors } = useTheme();
   const navigation = useNavigation();
   const router = useRouter();

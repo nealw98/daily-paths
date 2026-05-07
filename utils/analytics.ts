@@ -18,8 +18,13 @@ export const ANALYTICS_EVENTS = {
   SUBSCRIPTION_CANCELLED: 'subscription_cancelled',
   TRIAL_STARTED: 'trial_started',
   TRIAL_ENDED: 'trial_ended',
+  TRIAL_DAY_REACHED: 'trial_day_reached',
   PAYWALL_SHOWN: 'paywall_shown',
   PAYWALL_DISMISSED: 'paywall_dismissed',
+  RESTORE_INITIATED: 'restore_initiated',
+  RESTORE_COMPLETED: 'restore_completed',
+  LIFETIME_GRANDFATHERED: 'lifetime_grandfathered',
+  MODAL_SHOWN: 'modal_shown',
   LEGACY_USER_IDENTIFIED: 'legacy_user_identified',
   // Reminder events
   REMINDER_SET: 'reminder_set',
@@ -332,6 +337,41 @@ export function useAnalytics() {
     mp.flush();
   }, [isDeveloper]);
 
+  const trackRestoreInitiated = useCallback(() => {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.RESTORE_INITIATED, {
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+    mp.flush();
+  }, [isDeveloper]);
+
+  const trackRestoreCompleted = useCallback((restored: boolean) => {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.RESTORE_COMPLETED, {
+      restored,
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+    mp.flush();
+  }, [isDeveloper]);
+
+  const trackModalShown = useCallback(
+    (modalName: 'subscriber_to_lifetime' | 'grandfathered') => {
+      const mp = getMixpanel();
+      if (!mp) return;
+      mp.track(ANALYTICS_EVENTS.MODAL_SHOWN, {
+        modal_name: modalName,
+        is_developer: isDeveloper,
+        theme_mode: themeModeRef.current,
+      });
+      mp.flush();
+    },
+    [isDeveloper],
+  );
+
   // ─── Reminders ───────────────────────────────────────────────────────
 
   const trackReminderSet = useCallback((time: string) => {
@@ -508,6 +548,9 @@ export function useAnalytics() {
     // Paywall
     trackPaywallShown,
     trackPaywallDismissed,
+    trackRestoreInitiated,
+    trackRestoreCompleted,
+    trackModalShown,
     // Reminders
     trackReminderSet,
     trackReminderChanged,

@@ -3,23 +3,25 @@ import { trackEvent } from "./trackEvent";
 import { ANALYTICS_EVENTS } from "./analytics";
 
 /**
- * Local 7-day trial timer for the freemium model.
+ * Local 3-day trial timer for the try-before-you-buy model.
  *
  * The clock starts on first app open and is stored as an ISO timestamp in
- * AsyncStorage.  During the trial window every feature is accessible without
- * an account.  After the window expires, premium tabs (Journal, Prayers,
- * Speakers) require a subscription.
+ * AsyncStorage. During the trial window every feature is accessible without
+ * an account. After the window expires, a hard paywall blocks the app on
+ * Android until the user purchases the lifetime IAP.
  */
 
 const TRIAL_START_KEY = "@daily_paths_trial_start";
 const TRIAL_ENDED_TRACKED_KEY = "@daily_paths_trial_ended_tracked";
-const TRIAL_ENDED_MODAL_SEEN_KEY = "@daily_paths_trial_ended_modal_seen";
-const TRIAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const TRIAL_DAY_TRACKED_PREFIX = "@daily_paths_trial_day_";
+const TRIAL_DURATION_DAYS = 3;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const TRIAL_DURATION_MS = TRIAL_DURATION_DAYS * DAY_MS;
 
 export interface TrialStatus {
-  /** True when within the 7-day window */
+  /** True when within the trial window */
   isInTrial: boolean;
-  /** True when past the 7-day window */
+  /** True when past the trial window */
   trialExpired: boolean;
   /** True when no trial start has been recorded yet (very first launch) */
   neverStarted: boolean;
@@ -59,7 +61,7 @@ export async function getTrialStatus(): Promise<TrialStatus> {
         trialExpired: false,
         neverStarted: true,
         trialStartDate: null,
-        daysRemaining: 7,
+        daysRemaining: TRIAL_DURATION_DAYS,
       };
     }
 
@@ -67,8 +69,11 @@ export async function getTrialStatus(): Promise<TrialStatus> {
     const elapsed = Date.now() - startMs;
     const remaining = Math.max(
       0,
-      Math.ceil((TRIAL_DURATION_MS - elapsed) / (24 * 60 * 60 * 1000)),
+      Math.ceil((TRIAL_DURATION_MS - elapsed) / DAY_MS),
     );
+
+    // Fire trial_day_reached once for each 24h boundary the user has crossed
+    await markTrialDayReachedIfDue(elapsed, startStr);
 
     // Fire trial_ended exactly once when expiry is first detected
     if (elapsed >= TRIAL_DURATION_MS) {
@@ -78,7 +83,7 @@ export async function getTrialStatus(): Promise<TrialStatus> {
           await AsyncStorage.setItem(TRIAL_ENDED_TRACKED_KEY, "true");
           trackEvent(ANALYTICS_EVENTS.TRIAL_ENDED, {
             trial_start_date: startStr,
-            trial_duration_days: 7,
+            trial_duration_days: TRIAL_DURATION_DAYS,
           }, true);
         }
       } catch {
@@ -102,8 +107,36 @@ export async function getTrialStatus(): Promise<TrialStatus> {
       trialExpired: false,
       neverStarted: false,
       trialStartDate: null,
-      daysRemaining: 7,
+      daysRemaining: TRIAL_DURATION_DAYS,
     };
+  }
+}
+
+/**
+ * Fire `trial_day_reached` events as the user crosses each 24h boundary.
+ * Idempotent per day — won't re-fire across launches within the same day.
+ *
+ * Day-1 fires alongside TRIAL_STARTED on first open. Day-2 fires once after
+ * 24h elapsed; Day-3 fires once after 48h elapsed.
+ */
+async function markTrialDayReachedIfDue(elapsedMs: number, trialStartIso: string): Promise<void> {
+  const elapsedDays = Math.floor(elapsedMs / DAY_MS) + 1; // 1-indexed (day 1 = first 24h)
+  const cap = Math.min(TRIAL_DURATION_DAYS, elapsedDays);
+
+  for (let day = 1; day <= cap; day++) {
+    try {
+      const key = `${TRIAL_DAY_TRACKED_PREFIX}${day}_tracked`;
+      const tracked = await AsyncStorage.getItem(key);
+      if (tracked) continue;
+      await AsyncStorage.setItem(key, "true");
+      trackEvent(ANALYTICS_EVENTS.TRIAL_DAY_REACHED, {
+        day,
+        trial_start_date: trialStartIso,
+        trial_duration_days: TRIAL_DURATION_DAYS,
+      }, true);
+    } catch {
+      // Non-critical — continue
+    }
   }
 }
 
@@ -113,42 +146,18 @@ export async function getTrialStatus(): Promise<TrialStatus> {
  */
 export async function resetTrial(): Promise<void> {
   await AsyncStorage.removeItem(TRIAL_START_KEY);
+  await AsyncStorage.removeItem(TRIAL_ENDED_TRACKED_KEY);
+  for (let day = 1; day <= TRIAL_DURATION_DAYS; day++) {
+    await AsyncStorage.removeItem(`${TRIAL_DAY_TRACKED_PREFIX}${day}_tracked`);
+  }
 }
 
 /**
  * Immediately expire the trial (dev / testing only).
- * Sets the start date to 8 days ago so the trial appears expired without
+ * Sets the start date past the trial window so it appears expired without
  * needing to manipulate the device clock.
  */
 export async function expireTrial(): Promise<void> {
-  const expired = new Date(
-    Date.now() - TRIAL_DURATION_MS - 24 * 60 * 60 * 1000,
-  );
+  const expired = new Date(Date.now() - TRIAL_DURATION_MS - DAY_MS);
   await AsyncStorage.setItem(TRIAL_START_KEY, expired.toISOString());
-}
-
-export async function hasSeenTrialEndedModal(): Promise<boolean> {
-  try {
-    const val = await AsyncStorage.getItem(TRIAL_ENDED_MODAL_SEEN_KEY);
-    return val === "true";
-  } catch {
-    return false;
-  }
-}
-
-export async function markTrialEndedModalSeen(): Promise<void> {
-  try {
-    await AsyncStorage.setItem(TRIAL_ENDED_MODAL_SEEN_KEY, "true");
-  } catch {
-    // Non-critical
-  }
-}
-
-/** QA / design review: allow the post-trial sheet to show again on next check. */
-export async function clearTrialEndedModalSeen(): Promise<void> {
-  try {
-    await AsyncStorage.removeItem(TRIAL_ENDED_MODAL_SEEN_KEY);
-  } catch {
-    // Non-critical
-  }
 }

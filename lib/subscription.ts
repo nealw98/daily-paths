@@ -11,8 +11,9 @@ import { trackEvent } from "../utils/trackEvent";
 import { ANALYTICS_EVENTS } from "../utils/analytics";
 
 /**
- * RevenueCat subscription management for Daily Paths Unlimited.
- * Products: Monthly ($3.99), Annual ($29.99) with 14-day free trial.
+ * RevenueCat entitlement management.
+ * Android: $4.99 one-time lifetime IAP (3-day in-app trial).
+ * iOS: paid download — entitlement granted via App Store receipt.
  */
 
 // Entitlement IDs configured in RevenueCat dashboard
@@ -111,17 +112,20 @@ export async function purchasePackage(
 
     const { customerInfo } = await Purchases.purchasePackage(pkg);
 
-    const isActive = customerInfo.entitlements.active[ENTITLEMENT_ID] !== undefined;
+    const hasUnlimited = customerInfo.entitlements.active[ENTITLEMENT_ID] !== undefined;
+    const hasLifetime = customerInfo.entitlements.active[LIFETIME_ENTITLEMENT_ID] !== undefined;
     qaLog("subscription", "Purchase complete", {
-      isActive,
+      hasUnlimited,
+      hasLifetime,
       entitlements: Object.keys(customerInfo.entitlements.active),
     });
 
-    if (isActive) {
+    if (hasUnlimited || hasLifetime) {
       trackEvent(ANALYTICS_EVENTS.SUBSCRIPTION_STARTED, {
         package_identifier: pkg.identifier,
         price_string: pkg.product.priceString,
         product_identifier: pkg.product.identifier,
+        purchase_type: hasLifetime ? "lifetime" : "subscription",
       }, true);
     }
 
@@ -281,6 +285,30 @@ export async function getCachedSubscriptionStatus(): Promise<SubscriptionStatus 
     return JSON.parse(raw) as SubscriptionStatus;
   } catch {
     return null;
+  }
+}
+
+/**
+ * Read raw entitlement booleans from RevenueCat.
+ *
+ * `getSubscriptionStatus()` collapses both entitlements into `isLegacy` once
+ * `lifetime` is active, losing the dual-entitlement signal needed to detect
+ * a previously-subscribing user who has just been granted lifetime
+ * (Modal A — sub→lifetime conversion).
+ */
+export async function getRawEntitlements(): Promise<{
+  hasUnlimited: boolean;
+  hasLifetime: boolean;
+}> {
+  try {
+    const customerInfo = await Purchases.getCustomerInfo();
+    return {
+      hasUnlimited: customerInfo.entitlements.active[ENTITLEMENT_ID] !== undefined,
+      hasLifetime: customerInfo.entitlements.active[LIFETIME_ENTITLEMENT_ID] !== undefined,
+    };
+  } catch (err) {
+    qaLog("subscription", "Error reading raw entitlements", { error: String(err) });
+    return { hasUnlimited: false, hasLifetime: false };
   }
 }
 

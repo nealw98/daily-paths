@@ -31,8 +31,11 @@ import {
   getTrialStatus,
   resetTrial,
   expireTrial,
-  clearTrialEndedModalSeen,
 } from "../utils/trialTimer";
+import {
+  resetGrandfatherState,
+  simulateGrandfatherGrant,
+} from "../lib/grandfather";
 import {
   setLifetimeOverride,
   getLifetimeOverride,
@@ -543,7 +546,7 @@ export default function QaLogsScreen() {
       await resetTrial();
       await trialStatus.refresh();
       qaLog("freemium", "Trial reset");
-      alert("Trial reset. Restart the app to begin a fresh 7-day trial.");
+      alert("Trial reset. Restart the app to begin a fresh 3-day trial.");
     } catch (err) {
       qaLog("freemium", "Error resetting trial", { error: String(err) });
       alert("Failed to reset trial");
@@ -555,27 +558,54 @@ export default function QaLogsScreen() {
       await expireTrial();
       await trialStatus.refresh();
       qaLog("freemium", "Trial expired manually");
-      alert("Trial expired. Premium tabs will now show the paywall.");
+      alert("Trial expired. Restart the app to see the hard paywall.");
     } catch (err) {
       qaLog("freemium", "Error expiring trial", { error: String(err) });
       alert("Failed to expire trial");
     }
   };
 
-  /** Clears “already saw” flag + expires trial so `TrialEndedModal` can show (not subscribed / not legacy / no lifetime). */
-  const handlePreviewTrialEndedModal = async () => {
+  /** Sets the grandfather modal-pending flag so the modal shows on next app open. */
+  const handlePreviewGrandfatheredModal = async () => {
     try {
-      await clearTrialEndedModalSeen();
-      await expireTrial();
-      await trialStatus.refresh();
-      qaLog("freemium", "Trial ended modal preview prepared");
+      await simulateGrandfatherGrant();
+      qaLog("freemium", "Grandfathered modal preview prepared");
       Alert.alert(
-        "Trial ended modal",
-        "Dismissed this alert. The trial-ended sheet should appear if you are not subscribed, not a legacy user, and have no lifetime access. If it does not, go back to the main tabs or send the app to background and return.",
+        "Grandfathered modal",
+        "Restart the app — the grandfathered welcome modal should appear.",
       );
     } catch (err) {
-      qaLog("freemium", "Error preparing trial ended modal", { error: String(err) });
-      Alert.alert("Error", "Could not reset trial-ended modal state.");
+      qaLog("freemium", "Error preparing grandfathered modal", { error: String(err) });
+      Alert.alert("Error", "Could not prepare grandfathered modal.");
+    }
+  };
+
+  /** Clears the sub→lifetime modal seen flag so it shows on next app open (requires both `unlimited` and `lifetime` entitlements in RC). */
+  const handlePreviewSubToLifetimeModal = async () => {
+    try {
+      await AsyncStorage.removeItem("@daily_paths_modal_sub_to_lifetime_seen");
+      qaLog("freemium", "Sub→Lifetime modal seen flag cleared");
+      Alert.alert(
+        "Sub→Lifetime modal",
+        "Cleared seen flag. Modal will show on next app open if your RC user has both `unlimited` and `lifetime` entitlements active.",
+      );
+    } catch (err) {
+      qaLog("freemium", "Error clearing sub→lifetime modal flag", { error: String(err) });
+      Alert.alert("Error", "Could not clear the modal seen flag.");
+    }
+  };
+
+  const handleResetGrandfather = async () => {
+    try {
+      await resetGrandfatherState();
+      qaLog("freemium", "Grandfather state reset");
+      Alert.alert(
+        "Grandfather reset",
+        "Both the attempted flag and modal-pending flag are cleared. On next app open the grant attempt will run again if eligible.",
+      );
+    } catch (err) {
+      qaLog("freemium", "Error resetting grandfather", { error: String(err) });
+      Alert.alert("Error", "Could not reset grandfather state.");
     }
   };
 
@@ -689,10 +719,28 @@ export default function QaLogsScreen() {
           <TouchableOpacity
             style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
             activeOpacity={0.8}
-            onPress={() => void handlePreviewTrialEndedModal()}
+            onPress={() => void handlePreviewGrandfatheredModal()}
           >
             <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
-              Show Trial Ended Modal
+              Preview Grandfathered Modal
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={() => void handlePreviewSubToLifetimeModal()}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              Preview Sub→Lifetime Modal
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={() => void handleResetGrandfather()}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              Reset Grandfather State
             </Text>
           </TouchableOpacity>
         </View>
@@ -746,7 +794,7 @@ export default function QaLogsScreen() {
               {trialStatus.isInTrial ? "\u2713" : "\u2717"}
             </Text>
             <Text style={[styles.stateLabel, { color: trialStatus.isInTrial ? colors.ink : colors.textSecondary }]}>
-              7-Day Trial{trialStatus.isInTrial
+              3-Day Trial{trialStatus.isInTrial
                 ? ` (${trialStatus.daysRemaining}d remaining)`
                 : trialStatus.trialExpired
                   ? " (expired)"

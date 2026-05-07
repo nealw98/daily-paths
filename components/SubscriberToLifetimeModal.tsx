@@ -3,12 +3,16 @@ import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useTheme } from "../hooks/useTheme";
 import { fonts } from "../constants/theme";
 
-interface LifetimeWelcomeModalProps {
+interface SubscriberToLifetimeModalProps {
   visible: boolean;
   onClose: () => void;
 }
 
-export const LifetimeWelcomeModal: React.FC<LifetimeWelcomeModalProps> = ({
+/**
+ * Shown once on Android to users whose subscription has been converted
+ * to a lifetime entitlement (the legacy annual subscribers).
+ */
+export const SubscriberToLifetimeModal: React.FC<SubscriberToLifetimeModalProps> = ({
   visible,
   onClose,
 }) => {
@@ -17,10 +21,10 @@ export const LifetimeWelcomeModal: React.FC<LifetimeWelcomeModalProps> = ({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={[styles.backdrop, { backgroundColor: colors.backdrop }]}>
         <View style={[styles.card, { backgroundColor: colors.background }]}>
-          <Text style={[styles.title, { color: colors.text }]}>Welcome, Early Adopter</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Lifetime Access, On Us</Text>
           <Text style={[styles.message, { color: colors.textSecondary }]}>
-            Thank you for supporting Daily Paths early. You have lifetime premium access
-            — no subscription needed, ever.
+            Your subscription has been converted to lifetime access. You won't be
+            billed at renewal — Daily Paths is yours to keep.
           </Text>
           <TouchableOpacity
             style={[styles.button, { backgroundColor: colors.buttonPrimary }]}

@@ -14,19 +14,10 @@ import { JournalEntryDetail } from "../../components/journal/JournalEntryDetail"
 import { JournalCategoryPicker } from "../../components/journal/JournalCategoryPicker";
 import { TealHeader } from "../../components/shared/TealHeader";
 import { PageTitle } from "../../components/ui/PageTitle";
-import { PremiumGate } from "../../components/PremiumGate";
 
 type JournalView = "timeline" | "editor" | "detail";
 
 export default function JournalTab() {
-  return (
-    <PremiumGate>
-      <JournalTabContent />
-    </PremiumGate>
-  );
-}
-
-function JournalTabContent() {
   const { colors } = useTheme();
   const navigation = useNavigation();
   const { trackNotebookOpened, trackEntryViewed } = useAnalytics();

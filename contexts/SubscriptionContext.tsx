@@ -16,8 +16,14 @@ import {
   restorePurchases,
   isRevenueCatInitialized,
   getCachedSubscriptionStatus,
+  getRawEntitlements,
   type SubscriptionStatus,
 } from "../lib/subscription";
+import {
+  attemptGrandfatherGrantIfEligible,
+  isGrandfatherModalPending,
+  clearGrandfatherModalPending,
+} from "../lib/grandfather";
 import {
   ensureTrialStarted,
   getTrialStatus,
@@ -40,6 +46,12 @@ interface SubscriptionContextValue {
   status: SubscriptionStatus;
   trialStatus: TrialStatusWithMeta;
   hasLifetimeAccess: boolean;
+  /** True when both `unlimited` and `lifetime` entitlements are active —
+   *  legacy subscribers whose subscription has been converted to lifetime. */
+  hasSubAndLifetime: boolean;
+  /** True when a grandfather grant just succeeded and the welcome modal
+   *  has not yet been shown. */
+  showGrandfatherModal: boolean;
   packages: PurchasesPackage[];
   loading: boolean;
   purchasing: boolean;
@@ -48,6 +60,7 @@ interface SubscriptionContextValue {
   restore: () => Promise<boolean>;
   refresh: () => Promise<void>;
   refreshLifetimeAccess: () => Promise<void>;
+  acknowledgeGrandfatherModal: () => Promise<void>;
 }
 
 const DEFAULT_STATUS: SubscriptionStatus = {
@@ -64,7 +77,7 @@ const DEFAULT_TRIAL: TrialStatus = {
   trialExpired: false,
   neverStarted: true,
   trialStartDate: null,
-  daysRemaining: 7,
+  daysRemaining: 3,
 };
 
 // ─── Context ─────────────────────────────────────────────────────────────────
@@ -82,6 +95,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
   const [trial, setTrial] = useState<TrialStatus>(DEFAULT_TRIAL);
   const [trialLoading, setTrialLoading] = useState(true);
   const [hasLifetimeAccess, setHasLifetimeAccess] = useState(false);
+  const [hasSubAndLifetime, setHasSubAndLifetime] = useState(false);
+  const [showGrandfatherModal, setShowGrandfatherModal] = useState(false);
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
@@ -206,6 +221,19 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
         qaLog("subscription", "RevenueCat NOT initialized — skipping migration");
       }
 
+      // Android grandfather grant (no-op on iOS).
+      // Must run after migration so we use the post-migration app_user_id.
+      // A successful grant materializes a real `lifetime` entitlement in RC,
+      // so the fresh status fetch below will pick it up automatically.
+      if (isRevenueCatInitialized()) {
+        try {
+          const granted = await attemptGrandfatherGrantIfEligible();
+          qaLog("subscription", "Grandfather grant attempt", { granted });
+        } catch (err) {
+          qaLog("subscription", "Grandfather grant unexpected error", { error: String(err) });
+        }
+      }
+
       // Start the trial clock only for non-lifetime users
       if (!lifetimeStatus.hasLifetimeAccess) {
         await ensureTrialStarted();
@@ -231,6 +259,22 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
         } catch (err) {
           qaLog("subscription", "Error fetching fresh RC status", { error: String(err) });
         }
+
+        // Detect dual entitlement (sub→lifetime conversion) for Modal A.
+        try {
+          const raw = await getRawEntitlements();
+          if (!cancelled) setHasSubAndLifetime(raw.hasUnlimited && raw.hasLifetime);
+        } catch {
+          // Non-critical
+        }
+      }
+
+      // Modal B (grandfathered welcome) — set from local pending flag.
+      try {
+        const pending = await isGrandfatherModalPending();
+        if (!cancelled) setShowGrandfatherModal(pending);
+      } catch {
+        // Non-critical
       }
 
       if (!cancelled) setLoading(false);
@@ -270,8 +314,13 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
   // ── Gate computation ───────────────────────────────────────────────────
   const gate = useMemo<GateType>(() => {
     if (hasLifetimeAccess) return "none";
+    // RC not yet initialized: trust the trial; otherwise fall back to a
+    // cached entitlement (handled inside getSubscriptionStatus on error).
+    // Final fallback: paywall (fail-closed without cache or trial).
     if (!isRevenueCatInitialized()) {
-      return trial.isInTrial ? "none" : "paywall";
+      if (trial.isInTrial) return "none";
+      if (status.isSubscribed || status.isLegacy) return "none";
+      return "paywall";
     }
     return getRequiredGate(status, trial, hasLifetimeAccess);
   }, [status, trial, hasLifetimeAccess]);
@@ -286,17 +335,23 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
           const newStatus = await getSubscriptionStatus();
           setStatus(newStatus);
 
-          // Expire the local trial once the user subscribes so the
-          // subscription entitlement takes over immediately. This matters
-          // because subscribers get features (e.g. speaker downloads)
-          // that trial users don't.
-          if (newStatus.isSubscribed) {
+          // Expire the local trial once the user becomes entitled (sub or
+          // lifetime), so the entitlement takes over immediately.
+          if (newStatus.isSubscribed || newStatus.isLegacy) {
             await expireTrial();
             const freshTrial = await getTrialStatus();
             setTrial(freshTrial);
           }
 
-          return newStatus.isSubscribed;
+          // Refresh dual-entitlement flag — purchase may flip it.
+          try {
+            const raw = await getRawEntitlements();
+            setHasSubAndLifetime(raw.hasUnlimited && raw.hasLifetime);
+          } catch {
+            // Non-critical
+          }
+
+          return newStatus.isSubscribed || newStatus.isLegacy;
         }
         return false;
       } catch (err) {
@@ -315,7 +370,13 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       await restorePurchases();
       const newStatus = await getSubscriptionStatus();
       setStatus(newStatus);
-      return newStatus.isSubscribed;
+      try {
+        const raw = await getRawEntitlements();
+        setHasSubAndLifetime(raw.hasUnlimited && raw.hasLifetime);
+      } catch {
+        // Non-critical
+      }
+      return newStatus.isSubscribed || newStatus.isLegacy;
     } catch (err) {
       qaLog("subscription", "Restore error", { error: String(err) });
       throw err;
@@ -328,9 +389,20 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       const newStatus = await getSubscriptionStatus();
       setStatus(newStatus);
+      try {
+        const raw = await getRawEntitlements();
+        setHasSubAndLifetime(raw.hasUnlimited && raw.hasLifetime);
+      } catch {
+        // Non-critical
+      }
     } catch (err) {
       qaLog("subscription", "Refresh error", { error: String(err) });
     }
+  }, []);
+
+  const acknowledgeGrandfatherModal = useCallback(async () => {
+    await clearGrandfatherModalPending();
+    setShowGrandfatherModal(false);
   }, []);
 
   // ── Context value ──────────────────────────────────────────────────────
@@ -344,6 +416,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       status,
       trialStatus: trialStatusValue,
       hasLifetimeAccess,
+      hasSubAndLifetime,
+      showGrandfatherModal,
       packages,
       loading,
       purchasing,
@@ -352,11 +426,14 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       restore,
       refresh,
       refreshLifetimeAccess,
+      acknowledgeGrandfatherModal,
     }),
     [
       status,
       trialStatusValue,
       hasLifetimeAccess,
+      hasSubAndLifetime,
+      showGrandfatherModal,
       packages,
       loading,
       purchasing,
@@ -365,6 +442,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       restore,
       refresh,
       refreshLifetimeAccess,
+      acknowledgeGrandfatherModal,
     ],
   );
 

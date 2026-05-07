@@ -1,18 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigation } from "expo-router";
 import { PrayersScreen } from "../../components/prayers/PrayersScreen";
-import { PremiumGate } from "../../components/PremiumGate";
 import { useFeatureTimeTracker } from "../../hooks/useFeatureTimeTracker";
 
 export default function PrayersTab() {
-  return (
-    <PremiumGate>
-      <PrayersTabContent />
-    </PremiumGate>
-  );
-}
-
-function PrayersTabContent() {
   const navigation = useNavigation();
 
   const [tabFocused, setTabFocused] = useState(false);
