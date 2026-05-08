@@ -49,6 +49,10 @@ interface SubscriptionContextValue {
   /** True when both `unlimited` and `lifetime` entitlements are active —
    *  legacy subscribers whose subscription has been converted to lifetime. */
   hasSubAndLifetime: boolean;
+  /** True when the active `unlimited` subscription is annual (expiry >60d
+   *  out). Used to gate the gift-codes offer in Modal A — only annuals get
+   *  it; the single monthly subscriber does not. */
+  isAnnualSubscriber: boolean;
   /** True when a grandfather grant just succeeded and the welcome modal
    *  has not yet been shown. */
   showGrandfatherModal: boolean;
@@ -80,6 +84,17 @@ const DEFAULT_TRIAL: TrialStatus = {
   daysRemaining: 3,
 };
 
+const ANNUAL_THRESHOLD_DAYS = 60;
+
+/** Active unlimited expiration > 60 days out → treat as an annual sub.
+ *  Monthly renewals expire within ~30 days; annuals within ~365. */
+function isAnnualFromExpiration(expirationIso: string | null): boolean {
+  if (!expirationIso) return false;
+  const expiresMs = Date.parse(expirationIso);
+  if (Number.isNaN(expiresMs)) return false;
+  return expiresMs - Date.now() > ANNUAL_THRESHOLD_DAYS * 24 * 60 * 60 * 1000;
+}
+
 // ─── Context ─────────────────────────────────────────────────────────────────
 
 const SubscriptionContext = createContext<SubscriptionContextValue | undefined>(
@@ -96,6 +111,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
   const [trialLoading, setTrialLoading] = useState(true);
   const [hasLifetimeAccess, setHasLifetimeAccess] = useState(false);
   const [hasSubAndLifetime, setHasSubAndLifetime] = useState(false);
+  const [isAnnualSubscriber, setIsAnnualSubscriber] = useState(false);
   const [showGrandfatherModal, setShowGrandfatherModal] = useState(false);
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -263,7 +279,10 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
         // Detect dual entitlement (sub→lifetime conversion) for Modal A.
         try {
           const raw = await getRawEntitlements();
-          if (!cancelled) setHasSubAndLifetime(raw.hasUnlimited && raw.hasLifetime);
+          if (!cancelled) {
+            setHasSubAndLifetime(raw.hasUnlimited && raw.hasLifetime);
+            setIsAnnualSubscriber(raw.hasUnlimited && isAnnualFromExpiration(raw.unlimitedExpirationDate));
+          }
         } catch {
           // Non-critical
         }
@@ -347,6 +366,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
           try {
             const raw = await getRawEntitlements();
             setHasSubAndLifetime(raw.hasUnlimited && raw.hasLifetime);
+            setIsAnnualSubscriber(raw.hasUnlimited && isAnnualFromExpiration(raw.unlimitedExpirationDate));
           } catch {
             // Non-critical
           }
@@ -373,6 +393,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         const raw = await getRawEntitlements();
         setHasSubAndLifetime(raw.hasUnlimited && raw.hasLifetime);
+        setIsAnnualSubscriber(raw.hasUnlimited && isAnnualFromExpiration(raw.unlimitedExpirationDate));
       } catch {
         // Non-critical
       }
@@ -392,6 +413,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         const raw = await getRawEntitlements();
         setHasSubAndLifetime(raw.hasUnlimited && raw.hasLifetime);
+        setIsAnnualSubscriber(raw.hasUnlimited && isAnnualFromExpiration(raw.unlimitedExpirationDate));
       } catch {
         // Non-critical
       }
@@ -417,6 +439,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       trialStatus: trialStatusValue,
       hasLifetimeAccess,
       hasSubAndLifetime,
+      isAnnualSubscriber,
       showGrandfatherModal,
       packages,
       loading,
@@ -433,6 +456,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       trialStatusValue,
       hasLifetimeAccess,
       hasSubAndLifetime,
+      isAnnualSubscriber,
       showGrandfatherModal,
       packages,
       loading,

@@ -358,7 +358,7 @@ const SUB_TO_LIFETIME_MODAL_KEY = "@daily_paths_modal_sub_to_lifetime_seen";
  * lifetime in the RC dashboard during the 2.6.6 transition).
  */
 function SubscriberToLifetimePresenter() {
-  const { hasSubAndLifetime } = useSubscriptionContext();
+  const { hasSubAndLifetime, isAnnualSubscriber } = useSubscriptionContext();
   const { trackModalShown } = useAnalytics();
   const [visible, setVisible] = useState(false);
 
@@ -379,6 +379,7 @@ function SubscriberToLifetimePresenter() {
   return (
     <SubscriberToLifetimeModal
       visible={visible}
+      isAnnual={isAnnualSubscriber}
       onClose={async () => {
         await AsyncStorage.setItem(SUB_TO_LIFETIME_MODAL_KEY, "true");
         setVisible(false);

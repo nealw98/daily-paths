@@ -10,7 +10,8 @@ interface GrandfatheredLifetimeModalProps {
 
 /**
  * Shown once on Android to existing 2.6.5 users who were granted lifetime
- * access for free as part of the model change.
+ * access for free as part of the model change. This is a gift, not a
+ * conversion — they never paid anything.
  */
 export const GrandfatheredLifetimeModal: React.FC<GrandfatheredLifetimeModalProps> = ({
   visible,
@@ -21,11 +22,10 @@ export const GrandfatheredLifetimeModal: React.FC<GrandfatheredLifetimeModalProp
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={[styles.backdrop, { backgroundColor: colors.backdrop }]}>
         <View style={[styles.card, { backgroundColor: colors.background }]}>
-          <Text style={[styles.title, { color: colors.text }]}>A Gift From Us</Text>
+          <Text style={[styles.title, { color: colors.text }]}>You Own Daily Paths</Text>
           <Text style={[styles.message, { color: colors.textSecondary }]}>
-            Daily Paths is moving to a one-time purchase model — but as an early
-            user, you've been given lifetime access free of charge. Thank you
-            for being here.
+            A thank-you for being an early Daily Paths user — the app is yours to keep,
+            on us. No subscription, no purchase, no further billing.
           </Text>
           <TouchableOpacity
             style={[styles.button, { backgroundColor: colors.buttonPrimary }]}

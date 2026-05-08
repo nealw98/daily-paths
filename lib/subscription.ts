@@ -295,20 +295,27 @@ export async function getCachedSubscriptionStatus(): Promise<SubscriptionStatus 
  * `lifetime` is active, losing the dual-entitlement signal needed to detect
  * a previously-subscribing user who has just been granted lifetime
  * (Modal A — sub→lifetime conversion).
+ *
+ * Also exposes the active subscription's expirationDate so callers can
+ * differentiate annual vs monthly (annuals expire >60 days out; monthlies
+ * within ~30).
  */
 export async function getRawEntitlements(): Promise<{
   hasUnlimited: boolean;
   hasLifetime: boolean;
+  unlimitedExpirationDate: string | null;
 }> {
   try {
     const customerInfo = await Purchases.getCustomerInfo();
+    const unlimited = customerInfo.entitlements.active[ENTITLEMENT_ID];
     return {
-      hasUnlimited: customerInfo.entitlements.active[ENTITLEMENT_ID] !== undefined,
+      hasUnlimited: unlimited !== undefined,
       hasLifetime: customerInfo.entitlements.active[LIFETIME_ENTITLEMENT_ID] !== undefined,
+      unlimitedExpirationDate: unlimited?.expirationDate ?? null,
     };
   } catch (err) {
     qaLog("subscription", "Error reading raw entitlements", { error: String(err) });
-    return { hasUnlimited: false, hasLifetime: false };
+    return { hasUnlimited: false, hasLifetime: false, unlimitedExpirationDate: null };
   }
 }
 

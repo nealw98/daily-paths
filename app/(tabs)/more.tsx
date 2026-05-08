@@ -60,14 +60,15 @@ export default function MoreTab() {
     useSettings();
 
   const sectionTitleType = useMemo(() => {
-    const fontSize = Math.round(dynamicTypography.bodyLarge.fontSize * 1.3);
+    // 30pt at medium tier; scales with the user's text-size setting.
+    const fontSize = Math.round(dynamicTypography.bodyLargeFontSize * (30 / 19));
     return {
       fontFamily: fonts.cormorantGaramondSemiBold,
       fontSize,
-      lineHeight: Math.round(fontSize * 1.2),
-      letterSpacing: -0.1,
+      lineHeight: Math.round(fontSize * 1.1),
+      letterSpacing: -0.3,
     };
-  }, [dynamicTypography.bodyLarge.fontSize]);
+  }, [dynamicTypography.bodyLargeFontSize]);
 
   // Dynamic sizes for card-level labels, subscription rows, daily-notification
   // rows, and the A/A slider endpoints. Scaled from bodyLargeFontSize so
@@ -500,12 +501,12 @@ const styles = StyleSheet.create({
 
   /* ── Section Labels ────────────────────────────── */
   sectionLabel: {
-    marginBottom: 8,
-    marginTop: 22,
+    marginBottom: 14,
+    marginTop: 40,
     marginLeft: 4,
   },
   firstSectionLabel: {
-    marginTop: 12,
+    marginTop: 20,
   },
 
   /* ── Cards ─────────────────────────────────────── */
