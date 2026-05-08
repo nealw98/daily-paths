@@ -37,6 +37,8 @@ import {
   simulateGrandfatherGrant,
 } from "../lib/grandfather";
 import { resetTrialSnackbarShown } from "../components/TrialSnackbar";
+import { SubscriberToLifetimeModal } from "../components/SubscriberToLifetimeModal";
+import { GrandfatheredLifetimeModal } from "../components/GrandfatheredLifetimeModal";
 import {
   setLifetimeOverride,
   getLifetimeOverride,
@@ -90,6 +92,11 @@ export default function QaLogsScreen() {
   const [reflectionImageStatus, setReflectionImageStatus] = React.useState<string | null>(null);
   const [speakerHeroInput, setSpeakerHeroInput] = React.useState("");
   const [speakerHeroStatus, setSpeakerHeroStatus] = React.useState<string | null>(null);
+  // Direct-mount modal previews (bypass entitlement check so we can preview
+  // copy/styling without setting up matching RC sandbox state).
+  const [previewSubAnnual, setPreviewSubAnnual] = React.useState(false);
+  const [previewSubMonthly, setPreviewSubMonthly] = React.useState(false);
+  const [previewGrandfathered, setPreviewGrandfathered] = React.useState(false);
 
   React.useEffect(() => {
     AsyncStorage.getItem(QA_REFLECTION_IMAGE_OVERRIDE_KEY)
@@ -566,33 +573,51 @@ export default function QaLogsScreen() {
     }
   };
 
-  /** Sets the grandfather modal-pending flag so the modal shows on next app open. */
-  const handlePreviewGrandfatheredModal = async () => {
-    try {
-      await simulateGrandfatherGrant();
-      qaLog("freemium", "Grandfathered modal preview prepared");
-      Alert.alert(
-        "Grandfathered modal",
-        "Restart the app — the grandfathered welcome modal should appear.",
-      );
-    } catch (err) {
-      qaLog("freemium", "Error preparing grandfathered modal", { error: String(err) });
-      Alert.alert("Error", "Could not prepare grandfathered modal.");
-    }
+  /** Direct-mount preview: opens the modal regardless of entitlement state.
+   *  Use to verify copy/styling. Does not set the seen-flag, does not affect
+   *  real production firing. */
+  const handlePreviewGrandfatheredModal = () => {
+    setPreviewGrandfathered(true);
   };
 
-  /** Clears the sub→lifetime modal seen flag so it shows on next app open (requires both `unlimited` and `lifetime` entitlements in RC). */
-  const handlePreviewSubToLifetimeModal = async () => {
+  const handlePreviewSubToLifetimeModalAnnual = () => {
+    setPreviewSubAnnual(true);
+  };
+
+  const handlePreviewSubToLifetimeModalMonthly = () => {
+    setPreviewSubMonthly(true);
+  };
+
+  /** Clears the sub→lifetime modal seen flag so the *real* modal can fire
+   *  again on the next launch — requires both `unlimited` AND `lifetime`
+   *  entitlements active in RC for that user. */
+  const handleResetSubToLifetimeSeenFlag = async () => {
     try {
       await AsyncStorage.removeItem("@daily_paths_modal_sub_to_lifetime_seen");
       qaLog("freemium", "Sub→Lifetime modal seen flag cleared");
       Alert.alert(
-        "Sub→Lifetime modal",
-        "Cleared seen flag. Modal will show on next app open if your RC user has both `unlimited` and `lifetime` entitlements active.",
+        "Seen flag cleared",
+        "On next launch, the real Modal A will fire if your RC user has both `unlimited` AND `lifetime` entitlements active.",
       );
     } catch (err) {
       qaLog("freemium", "Error clearing sub→lifetime modal flag", { error: String(err) });
       Alert.alert("Error", "Could not clear the modal seen flag.");
+    }
+  };
+
+  /** Sets the grandfather modal-pending flag — used to test the modal
+   *  presenter wiring when you don't want to invoke the edge function. */
+  const handlePrimeGrandfatherModalPending = async () => {
+    try {
+      await simulateGrandfatherGrant();
+      qaLog("freemium", "Grandfather modal-pending flag set");
+      Alert.alert(
+        "Pending flag set",
+        "On next launch, the real Modal B will fire (Android only).",
+      );
+    } catch (err) {
+      qaLog("freemium", "Error priming grandfather modal", { error: String(err) });
+      Alert.alert("Error", "Could not prime the modal-pending flag.");
     }
   };
 
@@ -734,19 +759,46 @@ export default function QaLogsScreen() {
           <TouchableOpacity
             style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
             activeOpacity={0.8}
-            onPress={() => void handlePreviewGrandfatheredModal()}
+            onPress={handlePreviewGrandfatheredModal}
           >
             <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
-              Preview Grandfathered Modal
+              Preview Modal B (Grandfathered)
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
             activeOpacity={0.8}
-            onPress={() => void handlePreviewSubToLifetimeModal()}
+            onPress={handlePreviewSubToLifetimeModalAnnual}
           >
             <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
-              Preview Sub→Lifetime Modal
+              Preview Modal A (Annual)
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handlePreviewSubToLifetimeModalMonthly}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              Preview Modal A (Monthly)
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={() => void handleResetSubToLifetimeSeenFlag()}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              Reset Modal A Seen Flag
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={() => void handlePrimeGrandfatherModalPending()}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              Prime Modal B Pending
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -1055,6 +1107,22 @@ export default function QaLogsScreen() {
         )}
         </View>
       </ScrollView>
+
+      {/* Direct-mount modal previews — bypass entitlement state */}
+      <SubscriberToLifetimeModal
+        visible={previewSubAnnual}
+        isAnnual={true}
+        onClose={() => setPreviewSubAnnual(false)}
+      />
+      <SubscriberToLifetimeModal
+        visible={previewSubMonthly}
+        isAnnual={false}
+        onClose={() => setPreviewSubMonthly(false)}
+      />
+      <GrandfatheredLifetimeModal
+        visible={previewGrandfathered}
+        onClose={() => setPreviewGrandfathered(false)}
+      />
 
       <Modal
         visible={showImportJsonModal}
