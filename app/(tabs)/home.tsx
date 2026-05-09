@@ -30,12 +30,6 @@ import { CollectionLinkRow } from "../../components/shared/CollectionLinkRow";
 import { useFeaturedSpeaker } from "../../hooks/useFeaturedSpeaker";
 import { computeJournalStreak } from "../../utils/journalStreak";
 import { getScheduledDayOfYear } from "../../utils/dateUtils";
-import {
-  refreshSpeakerHeroes,
-  getSpeakerHeroForDate,
-  getSpeakerHeroByNumber,
-  getCurrentHeroWeekIndex,
-} from "../../utils/speakerHeroCache";
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -71,21 +65,9 @@ const REFLECTION_IMAGE_BY_NUMBER: Record<number, any> = REFLECTION_IMAGE_KEYS.re
   {},
 );
 
-// Speaker hero images now live in Supabase storage (bucket
-// `speaker-hero-images`) and are downloaded + cached on device. The bundled
-// `audio-6.webp` is the last-resort fallback when the manifest is empty or
-// the chosen cached file is missing on disk. See utils/speakerHeroCache.ts.
-const SPEAKER_HERO_FALLBACK = require("../../assets/audio/audio-6.webp");
-
-// Module-level guards so the bucket is listed at most once per app session,
-// and re-listed when the week index advances during a long-running session.
-let didListHeroesThisSession = false;
-let lastHeroWeekIndex: string | null = null;
-
 // QA-only: pin the home hero image for App Store screenshots. Value is the
 // image number from the filename (e.g. "33" for reflections-33.webp).
 export const QA_REFLECTION_IMAGE_OVERRIDE_KEY = "qa:reflection-image-override";
-export const QA_SPEAKER_HERO_IMAGE_OVERRIDE_KEY = "qa:speaker-hero-image-override";
 
 function getReflectionImageForDate(date: Date) {
   // Local-calendar day-of-year (1-366, with Feb 29 stably pinned to slot 60
@@ -112,9 +94,6 @@ export default function HomeTab() {
   const { entries: journalEntries, createEntry } = useJournalStorage();
   const [journalEntryType, setJournalEntryType] = useState<EntryType | null>(null);
   const [reflectionImageOverride, setReflectionImageOverride] = useState<number | null>(null);
-  const [speakerHeroSource, setSpeakerHeroSource] = useState<number | { uri: string }>(
-    SPEAKER_HERO_FALLBACK,
-  );
 
   useEffect(() => {
     AsyncStorage.getItem(QA_REFLECTION_IMAGE_OVERRIDE_KEY)
@@ -128,75 +107,9 @@ export default function HomeTab() {
       .catch(() => {});
   }, []);
 
-  // Resolve the speaker hero: QA override → cached rotation pick → bundled
-  // fallback. Re-runs on `today` change so a week-boundary advance updates
-  // the image without an app restart.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const overrideRaw = await AsyncStorage.getItem(
-        QA_SPEAKER_HERO_IMAGE_OVERRIDE_KEY,
-      ).catch(() => null);
-      if (overrideRaw) {
-        const parsed = parseInt(overrideRaw, 10);
-        if (Number.isFinite(parsed)) {
-          const pinned = await getSpeakerHeroByNumber(parsed);
-          if (!cancelled && pinned) {
-            setSpeakerHeroSource(pinned);
-            return;
-          }
-        }
-      }
-      const rotated = await getSpeakerHeroForDate(today);
-      if (cancelled) return;
-      setSpeakerHeroSource(rotated ?? SPEAKER_HERO_FALLBACK);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [today]);
-
-  // List + download remote hero images once per app session, plus on every
-  // week-boundary advance during a long-running session. After refresh,
-  // re-resolve the source so any new files become visible.
-  useEffect(() => {
-    let cancelled = false;
-    const weekIndex = getCurrentHeroWeekIndex(today);
-    const sessionKey = `${weekIndex}`;
-    if (didListHeroesThisSession && lastHeroWeekIndex === sessionKey) return;
-    didListHeroesThisSession = true;
-    lastHeroWeekIndex = sessionKey;
-    (async () => {
-      const result = await refreshSpeakerHeroes();
-      if (cancelled || !result) return;
-      const overrideRaw = await AsyncStorage.getItem(
-        QA_SPEAKER_HERO_IMAGE_OVERRIDE_KEY,
-      ).catch(() => null);
-      if (overrideRaw) {
-        const parsed = parseInt(overrideRaw, 10);
-        if (Number.isFinite(parsed)) {
-          const pinned = await getSpeakerHeroByNumber(parsed);
-          if (!cancelled && pinned) {
-            setSpeakerHeroSource(pinned);
-            return;
-          }
-        }
-      }
-      const rotated = await getSpeakerHeroForDate(today);
-      if (!cancelled) {
-        setSpeakerHeroSource(rotated ?? SPEAKER_HERO_FALLBACK);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [today]);
-
   const heroImage = reflectionImageOverride != null
     ? REFLECTION_IMAGE_BY_NUMBER[reflectionImageOverride]
     : getReflectionImageForDate(today);
-
-  const speakerHeroImage = speakerHeroSource;
 
   // Notebook row metadata — reuses the same entries array the Notebook tab
   // renders, and the same pure streak util, so numbers are guaranteed to
@@ -584,17 +497,14 @@ export default function HomeTab() {
             style={styles.heroWrapper}
           >
             <View style={styles.heroClip}>
-              <ImageBackground
-                source={speakerHeroImage}
-                resizeMode="cover"
-                style={styles.heroTop}
-                imageStyle={styles.heroTopImage}
-              >
-                <View style={styles.heroSpacer} />
-                <LinearGradient
-                  colors={["transparent", "rgba(0,0,0,0.55)"]}
-                  style={styles.heroOverlay}
-                >
+              <View style={[styles.heroTopTeal, { backgroundColor: colors.secondary }]}>
+                <MaterialIcons
+                  name="record-voice-over"
+                  size={140}
+                  color={colors.onSecondary}
+                  style={styles.heroWatermark}
+                />
+                <View style={styles.heroTealContent}>
                   <View style={styles.heroIconRow}>
                     <MaterialIcons name="record-voice-over" size={18} color="#FFFFFFCC" />
                     <Text style={[heroLabelType, { color: "#FFFFFFBB" }]}>
@@ -604,8 +514,8 @@ export default function HomeTab() {
                   <Text style={[styles.heroTitleLayout, heroTitleType, { color: "#FFFFFF" }]}>
                     {featuredSpeaker.title}
                   </Text>
-                </LinearGradient>
-              </ImageBackground>
+                </View>
+              </View>
 
               <View style={[styles.heroBottom, { backgroundColor: colors.surfaceContainerLowest }]}>
                 {featuredSpeaker.quote ? (
@@ -708,10 +618,22 @@ const styles = StyleSheet.create({
     borderTopRightRadius: layout.borderRadiusLarge,
     minHeight: 160,
     justifyContent: "flex-end",
+    overflow: "hidden",
   },
   heroTopImage: {
     borderTopLeftRadius: layout.borderRadiusLarge,
     borderTopRightRadius: layout.borderRadiusLarge,
+  },
+  heroTopTeal: {
+    borderTopLeftRadius: layout.borderRadiusLarge,
+    borderTopRightRadius: layout.borderRadiusLarge,
+    overflow: "hidden",
+  },
+  heroWatermark: {
+    position: "absolute",
+    right: -18,
+    bottom: -22,
+    opacity: 0.18,
   },
   heroSpacer: {
     flex: 1,
@@ -720,6 +642,9 @@ const styles = StyleSheet.create({
     padding: layout.spacing.lgPlus,
     paddingTop: layout.spacing.xxl,
     paddingBottom: layout.spacing.md,
+  },
+  heroTealContent: {
+    padding: layout.spacing.lgPlus,
   },
   heroBottom: {
     padding: layout.spacing.lgPlus,

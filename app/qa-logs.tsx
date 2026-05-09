@@ -45,14 +45,7 @@ import {
   getLifetimeAccessDiagnostics,
 } from "../utils/paidAppDetector";
 import { useSubscriptionContext } from "../contexts/SubscriptionContext";
-import {
-  QA_REFLECTION_IMAGE_OVERRIDE_KEY,
-  QA_SPEAKER_HERO_IMAGE_OVERRIDE_KEY,
-} from "./(tabs)/home";
-import {
-  refreshSpeakerHeroes,
-  getHeroManifestSnapshot,
-} from "../utils/speakerHeroCache";
+import { QA_REFLECTION_IMAGE_OVERRIDE_KEY } from "./(tabs)/home";
 import { useSubscription } from "../hooks/useSubscription";
 import { getRawEntitlements, type RawEntitlements } from "../lib/subscription";
 import {
@@ -90,8 +83,6 @@ export default function QaLogsScreen() {
   const [refreshingLifetime, setRefreshingLifetime] = React.useState(false);
   const [reflectionImageInput, setReflectionImageInput] = React.useState("");
   const [reflectionImageStatus, setReflectionImageStatus] = React.useState<string | null>(null);
-  const [speakerHeroInput, setSpeakerHeroInput] = React.useState("");
-  const [speakerHeroStatus, setSpeakerHeroStatus] = React.useState<string | null>(null);
   // Direct-mount modal previews (bypass entitlement check so we can preview
   // copy/styling without setting up matching RC sandbox state).
   const [previewSubAnnual, setPreviewSubAnnual] = React.useState(false);
@@ -123,30 +114,6 @@ export default function QaLogsScreen() {
         }
       })
       .catch(() => {});
-    (async () => {
-      const value = await AsyncStorage.getItem(
-        QA_SPEAKER_HERO_IMAGE_OVERRIDE_KEY,
-      ).catch(() => null);
-      const snapshot = await getHeroManifestSnapshot();
-      const numbers = snapshot?.numbers ?? [];
-      if (value) {
-        setSpeakerHeroInput(value);
-        const parsed = parseInt(value, 10);
-        if (numbers.includes(parsed)) {
-          setSpeakerHeroStatus(`Override active: ${value} (cached)`);
-        } else {
-          setSpeakerHeroStatus(
-            `Override set to ${value}, but not in cached manifest. Available: ${
-              numbers.length ? numbers.join(", ") : "none yet"
-            }`,
-          );
-        }
-      } else if (numbers.length) {
-        setSpeakerHeroStatus(`Cached numbers: ${numbers.join(", ")}`);
-      } else {
-        setSpeakerHeroStatus("No cached hero images yet. Tap Refresh.");
-      }
-    })();
   }, []);
 
   const handleSetReflectionImage = async () => {
@@ -166,52 +133,6 @@ export default function QaLogsScreen() {
     setReflectionImageInput("");
     setReflectionImageStatus("Override cleared. Reloading...");
     setTimeout(() => Updates.reloadAsync().catch(() => {}), 250);
-  };
-
-  const handleSetSpeakerHero = async () => {
-    const trimmed = speakerHeroInput.trim().replace(/^audio-?/, "").replace(/\.webp$/, "");
-    if (!/^\d+$/.test(trimmed)) {
-      setSpeakerHeroStatus("Enter the image number (e.g. 3).");
-      return;
-    }
-    const parsed = parseInt(trimmed, 10);
-    const snapshot = await getHeroManifestSnapshot();
-    const numbers = snapshot?.numbers ?? [];
-    if (!numbers.includes(parsed)) {
-      setSpeakerHeroStatus(
-        `${trimmed} is not in the cached manifest. Available: ${
-          numbers.length ? numbers.join(", ") : "none — tap Refresh first"
-        }`,
-      );
-      return;
-    }
-    await AsyncStorage.setItem(QA_SPEAKER_HERO_IMAGE_OVERRIDE_KEY, trimmed);
-    setSpeakerHeroInput(trimmed);
-    setSpeakerHeroStatus(`Override set to ${trimmed}. Reloading...`);
-    setTimeout(() => Updates.reloadAsync().catch(() => {}), 250);
-  };
-
-  const handleClearSpeakerHero = async () => {
-    await AsyncStorage.removeItem(QA_SPEAKER_HERO_IMAGE_OVERRIDE_KEY);
-    setSpeakerHeroInput("");
-    setSpeakerHeroStatus("Override cleared. Reloading...");
-    setTimeout(() => Updates.reloadAsync().catch(() => {}), 250);
-  };
-
-  const handleRefreshSpeakerHeroes = async () => {
-    setSpeakerHeroStatus("Refreshing hero images...");
-    const result = await refreshSpeakerHeroes();
-    if (!result) {
-      setSpeakerHeroStatus("Refresh failed — see QA logs for details.");
-      return;
-    }
-    const snapshot = await getHeroManifestSnapshot();
-    const numbers = snapshot?.numbers ?? [];
-    setSpeakerHeroStatus(
-      `Refreshed: ${result.cached}/${result.total} cached. Numbers: ${
-        numbers.length ? numbers.join(", ") : "none"
-      }`,
-    );
   };
 
   // Load developer mode, device ID, and lifetime override on mount
@@ -1023,62 +944,6 @@ export default function QaLogsScreen() {
           </TouchableOpacity>
           {reflectionImageStatus && (
             <Text style={[styles.meta, { width: "100%" }]}>{reflectionImageStatus}</Text>
-          )}
-        </View>
-
-        <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>
-          Screenshot: Speaker Hero Image
-        </Text>
-        <View style={styles.actionsRow}>
-          <TextInput
-            style={{
-              flexBasis: "100%",
-              borderWidth: 1,
-              borderColor: colors.mist,
-              borderRadius: 8,
-              paddingHorizontal: 10,
-              paddingVertical: 8,
-              fontFamily: fonts.bodyFamilyRegular,
-              fontSize: 14,
-              color: colors.ink,
-            }}
-            placeholder="Image number (e.g. 3) or audio-3.webp"
-            placeholderTextColor="#9ca3af"
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="default"
-            value={speakerHeroInput}
-            onChangeText={setSpeakerHeroInput}
-          />
-          <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
-            activeOpacity={0.8}
-            onPress={handleSetSpeakerHero}
-          >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
-              Set & Reload
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
-            activeOpacity={0.8}
-            onPress={handleClearSpeakerHero}
-          >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
-              Clear & Reload
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
-            activeOpacity={0.8}
-            onPress={handleRefreshSpeakerHeroes}
-          >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
-              Refresh from Supabase
-            </Text>
-          </TouchableOpacity>
-          {speakerHeroStatus && (
-            <Text style={[styles.meta, { width: "100%" }]}>{speakerHeroStatus}</Text>
           )}
         </View>
 
