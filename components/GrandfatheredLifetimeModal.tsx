@@ -24,8 +24,8 @@ export const GrandfatheredLifetimeModal: React.FC<GrandfatheredLifetimeModalProp
         <View style={[styles.card, { backgroundColor: colors.background }]}>
           <Text style={[styles.title, { color: colors.text }]}>You Own Daily Paths</Text>
           <Text style={[styles.message, { color: colors.textSecondary }]}>
-            A thank-you for being an early Daily Paths user — the app is yours to keep,
-            on us. No subscription, no purchase, no further billing.
+            A thank-you for being an early Daily Paths user — the full app is now yours
+            to keep, on us. No subscription, no purchase, no further billing.
           </Text>
           <TouchableOpacity
             style={[styles.button, { backgroundColor: colors.buttonPrimary }]}
