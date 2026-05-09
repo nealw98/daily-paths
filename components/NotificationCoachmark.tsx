@@ -40,7 +40,7 @@ const RING_PADDING_V = 8;
 const RING_BORDER = 3;
 const RING_RADIUS = 12;
 const TOOLTIP_GAP = 14;
-const TOOLTIP_WIDTH = 280;
+const TOOLTIP_WIDTH = 340;
 const TOOLTIP_TRIANGLE_SIZE = 12;
 const FADE_DURATION = 200;
 // The toggle row's measured height can be flaky on Android (intrinsic text-row
@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
   tooltipCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
-    paddingVertical: 18,
+    paddingVertical: 14,
     paddingHorizontal: 20,
     alignItems: "center",
     ...Platform.select({
@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     lineHeight: 26,
     color: "#2C5F5D",
-    marginBottom: 6,
+    marginBottom: 4,
     textAlign: "center",
     alignSelf: "stretch",
   },
@@ -410,13 +410,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     color: "#5A6968",
-    marginBottom: 14,
+    marginBottom: 10,
     textAlign: "center",
     alignSelf: "stretch",
   },
   gotItButton: {
     backgroundColor: "#2C5F5D",
-    paddingVertical: 10,
+    paddingVertical: 8,
     paddingHorizontal: 28,
     borderRadius: 999,
     alignSelf: "center",

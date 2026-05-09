@@ -92,16 +92,26 @@ export function useNotificationCoachmark(
   const measureToggle = useCallback(() => {
     const node = toggleViewRef.current;
     if (!node) return;
-    node.measureInWindow((x, y, width, height) => {
-      if (
-        typeof x === "number" &&
-        typeof y === "number" &&
-        width > 0 &&
-        height > 0
-      ) {
-        setAnchor({ x, y, width, height });
-      }
-    });
+    const doMeasure = () => {
+      const target = toggleViewRef.current;
+      if (!target) return;
+      target.measureInWindow((x, y, width, height) => {
+        if (
+          typeof x === "number" &&
+          typeof y === "number" &&
+          width > 0 &&
+          height > 0
+        ) {
+          setAnchor({ x, y, width, height });
+        }
+      });
+    };
+    doMeasure();
+    // iOS sometimes reports stale window position when measureInWindow is
+    // called during the layout commit (e.g. a child Switch's metrics or a
+    // sibling resize haven't finalized yet). Re-measure on the next frame
+    // to capture the post-commit geometry.
+    requestAnimationFrame(doMeasure);
   }, []);
 
   const tryShow = useCallback(() => {
@@ -185,8 +195,13 @@ export function useNotificationCoachmark(
     (_w: number, h: number) => {
       contentSizeRef.current.height = h;
       evaluateAtBottomFromSizes();
+      // Total content height changed — anything above or below the toggle
+      // row could have shifted it. Re-measure so the ring tracks the row's
+      // post-resize position instead of pinning to the stale value captured
+      // when the row's own onLayout last fired.
+      measureToggle();
     },
-    [evaluateAtBottomFromSizes]
+    [evaluateAtBottomFromSizes, measureToggle]
   );
 
   const onLayout = useCallback(
