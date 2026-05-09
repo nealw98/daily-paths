@@ -35,7 +35,6 @@ import { qaLog } from "../utils/qaLog";
 import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
 import { SubscriberToLifetimeModal } from "../components/SubscriberToLifetimeModal";
 import { GrandfatheredLifetimeModal } from "../components/GrandfatheredLifetimeModal";
-import { TrialSnackbar } from "../components/TrialSnackbar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { AppDateProvider } from "../contexts/AppDateContext";
@@ -226,7 +225,6 @@ export default function RootLayout() {
             <AndroidHardPaywallGate />
             <SubscriberToLifetimePresenter />
             <GrandfatheredLifetimePresenter />
-            <TrialSnackbar />
             {updateReady && (
               <View style={styles.updateBanner}>
                 <Text style={styles.updateText}>
