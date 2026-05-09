@@ -44,7 +44,8 @@ export const SubscriberToLifetimeModal: React.FC<SubscriberToLifetimeModalProps>
         <View style={[styles.card, { backgroundColor: colors.background }]}>
           <Text style={[styles.title, { color: colors.text }]}>You Own Daily Paths</Text>
           <Text style={[styles.message, { color: colors.textSecondary }]}>
-            Your subscription has ended — Daily Paths is yours to keep, with no further billing.
+            Daily Paths is yours to keep. Your subscription will not need to renew —
+            no more billing.
           </Text>
           {isAnnual ? (
             <Text style={[styles.message, { color: colors.textSecondary }]}>

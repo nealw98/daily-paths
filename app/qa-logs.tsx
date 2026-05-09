@@ -55,6 +55,7 @@ import {
   getHeroManifestSnapshot,
 } from "../utils/speakerHeroCache";
 import { useSubscription } from "../hooks/useSubscription";
+import { getRawEntitlements, type RawEntitlements } from "../lib/subscription";
 import {
   exportQaTransferToFile,
   importQaTransferPayload,
@@ -97,6 +98,22 @@ export default function QaLogsScreen() {
   const [previewSubAnnual, setPreviewSubAnnual] = React.useState(false);
   const [previewSubMonthly, setPreviewSubMonthly] = React.useState(false);
   const [previewGrandfathered, setPreviewGrandfathered] = React.useState(false);
+  // Raw RC entitlement details for the Access States panel — read directly
+  // (not through the collapsed `getSubscriptionStatus()` view).
+  const [rawEntitlements, setRawEntitlements] = React.useState<RawEntitlements | null>(null);
+  const [refreshingEntitlements, setRefreshingEntitlements] = React.useState(false);
+  const refreshRawEntitlements = React.useCallback(async () => {
+    setRefreshingEntitlements(true);
+    try {
+      const raw = await getRawEntitlements();
+      setRawEntitlements(raw);
+    } finally {
+      setRefreshingEntitlements(false);
+    }
+  }, []);
+  React.useEffect(() => {
+    void refreshRawEntitlements();
+  }, [refreshRawEntitlements]);
 
   React.useEffect(() => {
     AsyncStorage.getItem(QA_REFLECTION_IMAGE_OVERRIDE_KEY)
@@ -839,32 +856,52 @@ export default function QaLogsScreen() {
 
         <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>Access States</Text>
         <View style={[styles.stateBox, { backgroundColor: "#fff", borderColor: colors.mist }]}>
-          <View style={styles.stateRow}>
-            <Text style={[styles.stateIndicator, { color: hasLifetimeAccess ? "#16a34a" : colors.textSecondary }]}>
-              {hasLifetimeAccess ? "\u2713" : "\u2717"}
-            </Text>
-            <Text style={[styles.stateLabel, { color: hasLifetimeAccess ? colors.ink : colors.textSecondary }]}>
-              Lifetime Access (paid download)
-            </Text>
-          </View>
-          <View style={styles.stateRow}>
-            <Text style={[styles.stateIndicator, { color: subStatus.isLegacy ? "#16a34a" : colors.textSecondary }]}>
-              {subStatus.isLegacy ? "\u2713" : "\u2717"}
-            </Text>
-            <Text style={[styles.stateLabel, { color: subStatus.isLegacy ? colors.ink : colors.textSecondary }]}>
-              Legacy Grant (RevenueCat)
-            </Text>
-          </View>
-          <View style={styles.stateRow}>
-            <Text style={[styles.stateIndicator, { color: subStatus.isSubscribed ? "#16a34a" : colors.textSecondary }]}>
-              {subStatus.isSubscribed ? "\u2713" : "\u2717"}
-            </Text>
-            <Text style={[styles.stateLabel, { color: subStatus.isSubscribed ? colors.ink : colors.textSecondary }]}>
-              Subscription{subStatus.isSubscribed
-                ? ` — ${subStatus.productIdentifier ?? "unknown"} (${subStatus.willRenew ? "renews" : "expires"} ${subStatus.expirationDate ? new Date(subStatus.expirationDate).toLocaleDateString() : "\u2014"})`
-                : ""}
-            </Text>
-          </View>
+          {Platform.OS === "ios" ? (
+            <View style={styles.stateRow}>
+              <Text style={[styles.stateIndicator, { color: hasLifetimeAccess ? "#16a34a" : colors.textSecondary }]}>
+                {hasLifetimeAccess ? "\u2713" : "\u2717"}
+              </Text>
+              <Text style={[styles.stateLabel, { color: hasLifetimeAccess ? colors.ink : colors.textSecondary }]}>
+                Paid Download (iOS receipt)
+              </Text>
+            </View>
+          ) : null}
+          {(() => {
+            const has = rawEntitlements?.hasUnlimited ?? false;
+            const product = rawEntitlements?.unlimitedProductIdentifier;
+            const expIso = rawEntitlements?.unlimitedExpirationDate;
+            const willRenew = rawEntitlements?.unlimitedWillRenew ?? false;
+            const detail = has
+              ? ` \u2014 ${product ?? "unknown"} (${willRenew ? "renews" : "expires"} ${
+                  expIso ? new Date(expIso).toLocaleDateString() : "\u2014"
+                })`
+              : "";
+            return (
+              <View style={styles.stateRow}>
+                <Text style={[styles.stateIndicator, { color: has ? "#16a34a" : colors.textSecondary }]}>
+                  {has ? "\u2713" : "\u2717"}
+                </Text>
+                <Text style={[styles.stateLabel, { color: has ? colors.ink : colors.textSecondary }]}>
+                  Subscription (unlimited){detail}
+                </Text>
+              </View>
+            );
+          })()}
+          {(() => {
+            const has = rawEntitlements?.hasLifetime ?? false;
+            const product = rawEntitlements?.lifetimeProductIdentifier;
+            const detail = has && product ? ` \u2014 ${product}` : "";
+            return (
+              <View style={styles.stateRow}>
+                <Text style={[styles.stateIndicator, { color: has ? "#16a34a" : colors.textSecondary }]}>
+                  {has ? "\u2713" : "\u2717"}
+                </Text>
+                <Text style={[styles.stateLabel, { color: has ? colors.ink : colors.textSecondary }]}>
+                  Lifetime (lifetime){detail}
+                </Text>
+              </View>
+            );
+          })()}
           <View style={styles.stateRow}>
             <Text style={[styles.stateIndicator, { color: trialStatus.isInTrial ? "#16a34a" : colors.textSecondary }]}>
               {trialStatus.isInTrial ? "\u2713" : "\u2717"}
@@ -881,7 +918,17 @@ export default function QaLogsScreen() {
           </View>
         </View>
 
-        <View style={[styles.actionsRow, { marginTop: 16 }]}>
+        <View style={[styles.actionsRow, { marginTop: 8 }]}>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={() => void refreshRawEntitlements()}
+            disabled={refreshingEntitlements}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              {refreshingEntitlements ? "Refreshing..." : "Refresh from RevenueCat"}
+            </Text>
+          </TouchableOpacity>
           <TouchableOpacity
             style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
             activeOpacity={0.8}

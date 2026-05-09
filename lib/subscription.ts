@@ -300,22 +300,38 @@ export async function getCachedSubscriptionStatus(): Promise<SubscriptionStatus 
  * differentiate annual vs monthly (annuals expire >60 days out; monthlies
  * within ~30).
  */
-export async function getRawEntitlements(): Promise<{
+export interface RawEntitlements {
   hasUnlimited: boolean;
   hasLifetime: boolean;
   unlimitedExpirationDate: string | null;
-}> {
+  unlimitedProductIdentifier: string | null;
+  unlimitedWillRenew: boolean;
+  lifetimeProductIdentifier: string | null;
+}
+
+export async function getRawEntitlements(): Promise<RawEntitlements> {
   try {
     const customerInfo = await Purchases.getCustomerInfo();
     const unlimited = customerInfo.entitlements.active[ENTITLEMENT_ID];
+    const lifetime = customerInfo.entitlements.active[LIFETIME_ENTITLEMENT_ID];
     return {
       hasUnlimited: unlimited !== undefined,
-      hasLifetime: customerInfo.entitlements.active[LIFETIME_ENTITLEMENT_ID] !== undefined,
+      hasLifetime: lifetime !== undefined,
       unlimitedExpirationDate: unlimited?.expirationDate ?? null,
+      unlimitedProductIdentifier: unlimited?.productIdentifier ?? null,
+      unlimitedWillRenew: unlimited?.willRenew ?? false,
+      lifetimeProductIdentifier: lifetime?.productIdentifier ?? null,
     };
   } catch (err) {
     qaLog("subscription", "Error reading raw entitlements", { error: String(err) });
-    return { hasUnlimited: false, hasLifetime: false, unlimitedExpirationDate: null };
+    return {
+      hasUnlimited: false,
+      hasLifetime: false,
+      unlimitedExpirationDate: null,
+      unlimitedProductIdentifier: null,
+      unlimitedWillRenew: false,
+      lifetimeProductIdentifier: null,
+    };
   }
 }
 
