@@ -44,12 +44,13 @@ export const SubscriberToLifetimeModal: React.FC<SubscriberToLifetimeModalProps>
         <View style={[styles.card, { backgroundColor: colors.background }]}>
           <Text style={[styles.title, { color: colors.text }]}>You Own Daily Paths</Text>
           <Text style={[styles.message, { color: colors.textSecondary }]}>
-            Daily Paths is yours to keep. Your subscription will not need to renew —
-            no more billing.
+            {isAnnual
+              ? "Your annual subscription has been converted to lifetime access. The app is yours to keep — no renewal at the end of your year, no further billing."
+              : "Daily Paths is yours to keep. Your subscription will not need to renew — no more billing."}
           </Text>
           {isAnnual ? (
             <Text style={[styles.message, { color: colors.textSecondary }]}>
-              As a thank-you for your support, you can request 5 gift codes to share with others.
+              As thanks for your early support, you'll receive 5 gift codes to share Daily Paths with others.
             </Text>
           ) : null}
           {isAnnual ? (
@@ -59,7 +60,7 @@ export const SubscriberToLifetimeModal: React.FC<SubscriberToLifetimeModalProps>
               activeOpacity={0.8}
             >
               <Text style={[styles.secondaryButtonText, { color: colors.buttonPrimary }]}>
-                Request gift codes
+                Get my gift codes
               </Text>
             </TouchableOpacity>
           ) : null}
