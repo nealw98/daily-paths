@@ -46,7 +46,7 @@ export const SubscriberToLifetimeModal: React.FC<SubscriberToLifetimeModalProps>
           <Text style={[styles.message, { color: colors.textSecondary }]}>
             {isAnnual
               ? "Your annual subscription has been converted to lifetime access. The app is yours to keep — no renewal at the end of your year, no further billing."
-              : "Daily Paths is yours to keep. Your subscription will not need to renew — no more billing."}
+              : "Your monthly subscription has been converted to lifetime access. The app is yours to keep — no more monthly charges, no renewal, nothing further to do."}
           </Text>
           {isAnnual ? (
             <Text style={[styles.message, { color: colors.textSecondary }]}>
