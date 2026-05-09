@@ -14,7 +14,6 @@ import {
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Ionicons, MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Svg, { Path } from "react-native-svg";
 import * as Haptics from "expo-haptics";
 import { fonts, layout, typography as staticTypography } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
@@ -68,21 +67,6 @@ const renderInlineMarkdown = (text: string, italicStyle: any) => {
 
   return parts;
 };
-
-function DecorativeQuoteMark({ color }: { color: string }) {
-  return (
-    <Svg width={80} height={62} viewBox="0 0 118 92" fill="none">
-      <Path
-        d="M38 10C24.7 10 14 20.7 14 34C14 44.9 21.2 54 31.1 56.8L22 82H42.3L56 53.9V34C56 20.7 45.3 10 32 10H38Z"
-        fill={color}
-      />
-      <Path
-        d="M82 10C68.7 10 58 20.7 58 34C58 44.9 65.2 54 75.1 56.8L66 82H86.3L100 53.9V34C100 20.7 89.3 10 76 10H82Z"
-        fill={color}
-      />
-    </Svg>
-  );
-}
 
 function parseTimeToDate(time: string): Date {
   const [h = "8", m = "0"] = time.split(":");
@@ -226,6 +210,9 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   // text-size tier.
   const quoteFontSize = Math.round(typography.bodyLargeFontSize * (22 / 19));
   const quoteLineHeight = Math.round(quoteFontSize * (27 / 22));
+  // Decorative open-quote glyph scales with quote text size. Ratio (~2.5×)
+  // matches the speaker card glyph proportion at the default text size.
+  const quoteGlyphSize = Math.round(quoteFontSize * 2.5) + 4;
   const thoughtFontSize =
     Platform.OS === "android"
       ? Math.round(typography.bodyLargeFontSize * (28 / 19))
@@ -467,35 +454,49 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                   ]}
                   contentStyle={styles.applicationQuoteContent}
                 >
-                  <View style={styles.quoteMark}>
-                    <DecorativeQuoteMark color={colors.onSurfaceVariant + "1F"} />
-                  </View>
-                  <Text
-                    style={[
-                      styles.applicationQuoteText,
-                      {
-                        fontSize: quoteFontSize,
-                        lineHeight: quoteLineHeight,
-                        color: colors.primary,
-                      },
-                    ]}
-                  >
-                    {renderInlineMarkdown(applicationQuote, styles.quoteInlineItalic)}
-                  </Text>
-                  {!!applicationReference && (
+                  <View style={styles.applicationQuoteRow}>
                     <Text
                       style={[
-                        styles.applicationReference,
+                        styles.applicationQuoteGlyph,
                         {
-                          fontSize: typography.bodySmallFontSize,
-                          lineHeight: typography.bodySmallLineHeight,
-                          color: colors.onSurfaceVariant,
+                          fontSize: quoteGlyphSize,
+                          lineHeight: Math.round(quoteGlyphSize * 1.2),
+                          marginTop: -Math.round(quoteGlyphSize * 0.22),
+                          color: colors.outlineVariant,
                         },
                       ]}
                     >
-                      {applicationReference}
+                      {"“"}
                     </Text>
-                  )}
+                    <View style={styles.applicationQuoteColumn}>
+                      <Text
+                        style={[
+                          styles.applicationQuoteText,
+                          {
+                            fontSize: quoteFontSize,
+                            lineHeight: quoteLineHeight,
+                            color: colors.primary,
+                          },
+                        ]}
+                      >
+                        {renderInlineMarkdown(applicationQuote, styles.quoteInlineItalic)}
+                      </Text>
+                      {!!applicationReference && (
+                        <Text
+                          style={[
+                            styles.applicationReference,
+                            {
+                              fontSize: typography.bodySmallFontSize,
+                              lineHeight: typography.bodySmallLineHeight,
+                              color: colors.onSurfaceVariant,
+                            },
+                          ]}
+                        >
+                          {applicationReference}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
                 </SanctuaryCard>
               )}
 
@@ -1034,16 +1035,18 @@ const styles = StyleSheet.create({
   applicationQuoteContent: {
     paddingHorizontal: 32,
     paddingVertical: 32,
-    paddingTop: 80,
-    position: "relative",
-    overflow: "hidden",
   },
-  quoteMark: {
-    position: "absolute",
-    top: 8,
-    left: 10,
-    width: 80,
-    height: 62,
+  applicationQuoteRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  applicationQuoteGlyph: {
+    fontFamily: fonts.cormorantGaramondMedium,
+    marginTop: -4,
+  },
+  applicationQuoteColumn: {
+    flex: 1,
   },
   applicationQuoteText: {
     // fontSize/lineHeight set dynamically at the call site via
@@ -1053,11 +1056,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     fontStyle: "italic",
     fontWeight: "600",
-    position: "relative",
-    zIndex: 1,
-    alignSelf: "stretch",
-    marginLeft: 28,
-    marginRight: 0,
   },
   quoteInlineItalic: {
     fontFamily: fonts.bodyFamilySemiBold,
@@ -1068,11 +1066,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyFamilyRegular,
     textAlign: "left",
     letterSpacing: 0.2,
-    position: "relative",
-    zIndex: 1,
-    alignSelf: "stretch",
-    marginLeft: 28,
-    marginRight: 0,
   },
   practiceSection: {
     marginTop: 8,
