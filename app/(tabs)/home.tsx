@@ -14,6 +14,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
+import Svg, { Circle } from "react-native-svg";
 import { useTheme } from "../../hooks/useTheme";
 import { useTypography } from "../../hooks/useTypography";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
@@ -68,6 +69,17 @@ const REFLECTION_IMAGE_BY_NUMBER: Record<number, any> = REFLECTION_IMAGE_KEYS.re
 // QA-only: pin the home hero image for App Store screenshots. Value is the
 // image number from the filename (e.g. "33" for reflections-33.webp).
 export const QA_REFLECTION_IMAGE_OVERRIDE_KEY = "qa:reflection-image-override";
+
+// Speaker card ripple decoration: 6 concentric circles emanating from the
+// top-right corner, behind the title/label. Radii spaced 30px apart.
+const SPEAKER_RIPPLES = [
+  { r: 50, opacity: 0.45 },
+  { r: 80, opacity: 0.32 },
+  { r: 110, opacity: 0.22 },
+  { r: 140, opacity: 0.15 },
+  { r: 170, opacity: 0.1 },
+  { r: 200, opacity: 0.06 },
+];
 
 function getReflectionImageForDate(date: Date) {
   // Local-calendar day-of-year (1-366, with Feb 29 stably pinned to slot 60
@@ -498,12 +510,26 @@ export default function HomeTab() {
           >
             <View style={styles.heroClip}>
               <View style={[styles.heroTopTeal, { backgroundColor: colors.secondary }]}>
-                <MaterialIcons
-                  name="record-voice-over"
-                  size={140}
-                  color={colors.onSecondary}
-                  style={styles.heroWatermark}
-                />
+                <Svg
+                  width={400}
+                  height={400}
+                  viewBox="0 0 400 400"
+                  style={styles.heroRipples}
+                  pointerEvents="none"
+                >
+                  {SPEAKER_RIPPLES.map(({ r, opacity }) => (
+                    <Circle
+                      key={r}
+                      cx={200}
+                      cy={200}
+                      r={r}
+                      stroke="#FFFFFF"
+                      strokeWidth={0.75}
+                      fill="none"
+                      opacity={opacity}
+                    />
+                  ))}
+                </Svg>
                 <View style={styles.heroTealContent}>
                   <View style={styles.heroIconRow}>
                     <MaterialIcons name="record-voice-over" size={18} color="#FFFFFFCC" />
@@ -629,11 +655,10 @@ const styles = StyleSheet.create({
     borderTopRightRadius: layout.borderRadiusLarge,
     overflow: "hidden",
   },
-  heroWatermark: {
+  heroRipples: {
     position: "absolute",
-    right: -18,
-    bottom: -22,
-    opacity: 0.18,
+    right: -200,
+    top: -200,
   },
   heroSpacer: {
     flex: 1,
