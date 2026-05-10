@@ -26,8 +26,9 @@ import {
 import { fallbackColors } from "../constants/theme";
 import { SettingsProvider } from "../hooks/useSettings";
 import { SubscriptionProvider, useSubscriptionContext } from "../contexts/SubscriptionContext";
-import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform, AppState, AppStateStatus, Image } from "react-native";
+import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform, AppState, AppStateStatus } from "react-native";
 import * as Notifications from "expo-notifications";
+import * as SplashScreen from "expo-splash-screen";
 import * as Updates from "expo-updates";
 import { installGlobalErrorHandler } from "../utils/errorLogger";
 import { initMixpanel } from "../lib/mixpanel";
@@ -42,6 +43,13 @@ import { useAnalytics } from "../utils/analytics";
 
 console.log("[STARTUP] _layout.tsx module loading...");
 console.log("[STARTUP] Platform:", Platform.OS, Platform.Version);
+
+// Keep the native splash visible until the subscription gate resolves
+// (and, on Android, the hard paywall has presented). Hidden via
+// SplashScreen.hideAsync() in AndroidHardPaywallGate / SubscriptionGateSplash.
+SplashScreen.preventAutoHideAsync().catch(() => {
+  // No-op: already hidden or unsupported. Safe to ignore.
+});
 
 let notificationHandlerSet = false;
 try {
@@ -284,17 +292,21 @@ export default function RootLayout() {
  * RevenueCat dashboard config (Close button disabled). Re-presents if the
  * paywall returns without an entitlement.
  *
- * Also renders a launch-splash overlay on top of the Stack while the gate is
- * resolving or "paywall", so the user never sees a flash of Home before the
- * native paywall slides up. The overlay clears if paywall presentation fails,
- * so a failure doesn't trap the user on a blank splash.
+ * Also drives the native splash dismiss: the splash stays up until the
+ * gate resolves and (on the paywall path) RC's native paywall has presented,
+ * so the user never sees a flash of Home before the paywall slides up.
  */
 function AndroidHardPaywallGate() {
   const { gate, loading, refresh } = useSubscriptionContext();
   const { trackPaywallShown, trackPaywallDismissed, trackRestoreCompleted } = useAnalytics();
   const presenting = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
-  const [presentFailed, setPresentFailed] = useState(false);
+
+  const hideNativeSplash = () => {
+    SplashScreen.hideAsync().catch(() => {
+      // Already hidden / unsupported — safe to ignore.
+    });
+  };
 
   const present = async () => {
     if (Platform.OS !== "android") return;
@@ -308,8 +320,6 @@ function AndroidHardPaywallGate() {
       qaLog("paywall", "Hard paywall presenting");
       const result = await RevenueCatUI.presentPaywall();
       qaLog("paywall", "Hard paywall result", { result });
-      // Successful presentation — clear any prior failure flag.
-      setPresentFailed(false);
 
       if (result === PAYWALL_RESULT.PURCHASED) {
         await refresh();
@@ -326,9 +336,9 @@ function AndroidHardPaywallGate() {
       }
     } catch (err) {
       qaLog("paywall", "Hard paywall error", { error: String(err) });
-      // Hide the splash so the user isn't trapped on a blank screen.
-      // They'll see Home underneath; foreground / next launch will retry.
-      setPresentFailed(true);
+      // Drop the splash so the user isn't trapped if presentation fails;
+      // they'll see Home and we'll retry on next foreground / launch.
+      hideNativeSplash();
     } finally {
       presenting.current = false;
     }
@@ -339,9 +349,20 @@ function AndroidHardPaywallGate() {
     if (Platform.OS !== "android") return;
     if (loading) return;
     if (gate !== "paywall") return;
+    // Kick off the paywall, then drop the native splash once the RC native
+    // paywall has had time to slide up — avoids exposing Home in the gap.
     void present();
+    const t = setTimeout(hideNativeSplash, 600);
+    return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gate, loading]);
+
+  // Gate resolved with premium access — let the splash come down so Home shows.
+  useEffect(() => {
+    if (loading) return;
+    if (gate !== "none") return;
+    hideNativeSplash();
+  }, [loading, gate]);
 
   // Re-present on foreground if still gated.
   useEffect(() => {
@@ -356,35 +377,7 @@ function AndroidHardPaywallGate() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gate, loading]);
 
-  // Hold the splash for a short grace period after the gate clears so the
-  // tab tree and Home content have time to render — prevents a one-frame
-  // flash of an empty pearl background between splash and Home.
-  const [splashHeld, setSplashHeld] = useState(true);
-  useEffect(() => {
-    if (loading || gate !== "none") {
-      setSplashHeld(true);
-      return;
-    }
-    const t = setTimeout(() => setSplashHeld(false), 250);
-    return () => clearTimeout(t);
-  }, [loading, gate]);
-
-  // Splash overlay — Android-only, hides Home until gate resolves to "none"
-  // (plus a short grace period) or paywall presentation fails. Sits above
-  // the Stack so the user never sees a flash of Home before RC's native
-  // paywall slides up.
-  if (Platform.OS !== "android") return null;
-  if (presentFailed) return null;
-  if (!loading && gate === "none" && !splashHeld) return null;
-  return (
-    <View pointerEvents="none" style={styles.splashOverlay}>
-      <Image
-        source={require("../assets/splash-icon.png")}
-        style={styles.splashImage}
-        resizeMode="contain"
-      />
-    </View>
-  );
+  return null;
 }
 
 const SUB_TO_LIFETIME_MODAL_KEY = "@daily_paths_modal_sub_to_lifetime_seen";
@@ -459,18 +452,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-  },
-  splashOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "#F7FAFA",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 998,
-    elevation: 998,
-  },
-  splashImage: {
-    width: "100%",
-    height: "100%",
   },
   updateBanner: {
     position: "absolute",
