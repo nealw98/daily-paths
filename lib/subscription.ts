@@ -29,7 +29,6 @@ const SUBSCRIPTION_CACHE_KEY = "@daily_paths_subscription_status_v1";
 export interface SubscriptionStatus {
   isSubscribed: boolean;
   isTrialing: boolean;
-  isLegacy: boolean;
   expirationDate: string | null;
   productIdentifier: string | null;
   willRenew: boolean;
@@ -169,7 +168,6 @@ export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
       return {
         isSubscribed: false,
         isTrialing: false,
-        isLegacy: false,
         expirationDate: null,
         productIdentifier: null,
         willRenew: false,
@@ -186,12 +184,14 @@ export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
 
     let result: SubscriptionStatus;
 
-    // Lifetime entitlement — RevenueCat is the sole source of truth
+    // Lifetime entitlement — RevenueCat is the sole source of truth.
+    // Lifetime users are signaled by `expirationDate === null` while
+    // `isSubscribed === true` (recurring subs always carry a non-null
+    // expirationDate from Play / App Store).
     if (lifetimeEntitlement) {
       result = {
         isSubscribed: true,
         isTrialing: false,
-        isLegacy: true,
         expirationDate: null,
         productIdentifier: lifetimeEntitlement.productIdentifier,
         willRenew: false,
@@ -200,7 +200,6 @@ export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
       result = {
         isSubscribed: false,
         isTrialing: false,
-        isLegacy: false,
         expirationDate: null,
         productIdentifier: null,
         willRenew: false,
@@ -209,17 +208,25 @@ export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
       result = {
         isSubscribed: true,
         isTrialing: entitlement.periodType === "TRIAL",
-        isLegacy: false,
         expirationDate: entitlement.expirationDate,
         productIdentifier: entitlement.productIdentifier,
         willRenew: entitlement.willRenew,
       };
     }
 
-    // Detect cancellation: willRenew flipped from true to false while still subscribed
+    // Detect cancellation: willRenew flipped from true to false while still
+    // subscribed AND on a recurring sub (expirationDate !== null). The
+    // `expirationDate !== null` guard skips the sub→lifetime transition,
+    // which legitimately collapses willRenew=true → false but isn't a cancel.
     try {
       const cached = await getCachedSubscriptionStatus();
-      if (cached && cached.willRenew && !result.willRenew && result.isSubscribed && !result.isLegacy) {
+      if (
+        cached &&
+        cached.willRenew &&
+        !result.willRenew &&
+        result.isSubscribed &&
+        result.expirationDate !== null
+      ) {
         trackEvent(ANALYTICS_EVENTS.SUBSCRIPTION_CANCELLED, {
           product_identifier: result.productIdentifier,
           expiration_date: result.expirationDate,
@@ -246,7 +253,6 @@ export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
     return {
       isSubscribed: false,
       isTrialing: false,
-      isLegacy: false,
       expirationDate: null,
       productIdentifier: null,
       willRenew: false,
@@ -291,10 +297,11 @@ export async function getCachedSubscriptionStatus(): Promise<SubscriptionStatus 
 /**
  * Read raw entitlement booleans from RevenueCat.
  *
- * `getSubscriptionStatus()` collapses both entitlements into `isLegacy` once
- * `lifetime` is active, losing the dual-entitlement signal needed to detect
- * a previously-subscribing user who has just been granted lifetime
- * (Modal A — sub→lifetime conversion).
+ * `getSubscriptionStatus()` collapses both entitlements into a single
+ * subscribed/expirationDate-null shape once `lifetime` is active, losing
+ * the dual-entitlement signal needed to detect a previously-subscribing
+ * user who has just been granted lifetime (Modal A — sub→lifetime
+ * conversion).
  *
  * Also exposes the active subscription's expirationDate so callers can
  * differentiate annual vs monthly (annuals expire >60 days out; monthlies

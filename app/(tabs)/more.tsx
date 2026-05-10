@@ -103,12 +103,12 @@ export default function MoreTab() {
 
   // Collapse premium themes when entitlement lapses and reset protected theme choices.
   useEffect(() => {
-    const hasPaidEntitlement = hasLifetimeAccess || status.isSubscribed || status.isLegacy;
+    const hasPaidEntitlement = hasLifetimeAccess || status.isSubscribed;
     if (!hasPaidEntitlement && EXTENDED_THEME_OPTIONS.some((t) => t.id === settings.themeId)) {
       setThemeId("ocean-light");
       updateThemeMode("light");
     }
-  }, [hasLifetimeAccess, status.isSubscribed, status.isLegacy, settings.themeId]);
+  }, [hasLifetimeAccess, status.isSubscribed, settings.themeId]);
 
   const expoConfig: any = Constants.expoConfig ?? {};
   const appVersion =
@@ -116,7 +116,7 @@ export default function MoreTab() {
   const iosBuildNumber =
     expoConfig.ios?.buildNumber ?? Constants.nativeBuildVersion ?? "dev";
 
-  const hasPaidEntitlement = hasLifetimeAccess || status.isSubscribed || status.isLegacy;
+  const hasPaidEntitlement = hasLifetimeAccess || status.isSubscribed;
 
   const handleThemeChange = (optionId: string) => {
     if (optionId === "system") {

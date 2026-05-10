@@ -39,7 +39,7 @@ export function hasPremiumEntitlement(
   if (Platform.OS === "ios") return true;
 
   if (hasLifetimeAccess) return true;
-  return subscription.isSubscribed || subscription.isLegacy || trial.isInTrial;
+  return subscription.isSubscribed || trial.isInTrial;
 }
 
 /**

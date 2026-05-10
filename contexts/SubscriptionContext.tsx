@@ -70,7 +70,6 @@ interface SubscriptionContextValue {
 const DEFAULT_STATUS: SubscriptionStatus = {
   isSubscribed: false,
   isTrialing: false,
-  isLegacy: false,
   expirationDate: null,
   productIdentifier: null,
   willRenew: false,
@@ -267,8 +266,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
           const fresh = await getSubscriptionStatus();
           qaLog("subscription", "Fresh RC status", {
             isSubscribed: fresh.isSubscribed,
-            isLegacy: fresh.isLegacy,
             isTrialing: fresh.isTrialing,
+            expirationDate: fresh.expirationDate,
             productIdentifier: fresh.productIdentifier,
           });
           if (!cancelled) setStatus(fresh);
@@ -338,7 +337,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
     // Final fallback: paywall (fail-closed without cache or trial).
     if (!isRevenueCatInitialized()) {
       if (trial.isInTrial) return "none";
-      if (status.isSubscribed || status.isLegacy) return "none";
+      if (status.isSubscribed) return "none";
       return "paywall";
     }
     return getRequiredGate(status, trial, hasLifetimeAccess);
@@ -356,7 +355,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
 
           // Expire the local trial once the user becomes entitled (sub or
           // lifetime), so the entitlement takes over immediately.
-          if (newStatus.isSubscribed || newStatus.isLegacy) {
+          if (newStatus.isSubscribed) {
             await expireTrial();
             const freshTrial = await getTrialStatus();
             setTrial(freshTrial);
@@ -371,7 +370,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
             // Non-critical
           }
 
-          return newStatus.isSubscribed || newStatus.isLegacy;
+          return newStatus.isSubscribed;
         }
         return false;
       } catch (err) {
@@ -397,7 +396,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       } catch {
         // Non-critical
       }
-      return newStatus.isSubscribed || newStatus.isLegacy;
+      return newStatus.isSubscribed;
     } catch (err) {
       qaLog("subscription", "Restore error", { error: String(err) });
       throw err;
