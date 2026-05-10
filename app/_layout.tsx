@@ -26,7 +26,7 @@ import {
 import { fallbackColors } from "../constants/theme";
 import { SettingsProvider } from "../hooks/useSettings";
 import { SubscriptionProvider, useSubscriptionContext } from "../contexts/SubscriptionContext";
-import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform, AppState, AppStateStatus } from "react-native";
+import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform, AppState, AppStateStatus, Image } from "react-native";
 import * as Notifications from "expo-notifications";
 import * as Updates from "expo-updates";
 import { installGlobalErrorHandler } from "../utils/errorLogger";
@@ -283,12 +283,18 @@ export default function RootLayout() {
  * cannot dismiss without purchasing or restoring — that's enforced via the
  * RevenueCat dashboard config (Close button disabled). Re-presents if the
  * paywall returns without an entitlement.
+ *
+ * Also renders a launch-splash overlay on top of the Stack while the gate is
+ * resolving or "paywall", so the user never sees a flash of Home before the
+ * native paywall slides up. The overlay clears if paywall presentation fails,
+ * so a failure doesn't trap the user on a blank splash.
  */
 function AndroidHardPaywallGate() {
   const { gate, loading, refresh } = useSubscriptionContext();
   const { trackPaywallShown, trackPaywallDismissed, trackRestoreCompleted } = useAnalytics();
   const presenting = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const [presentFailed, setPresentFailed] = useState(false);
 
   const present = async () => {
     if (Platform.OS !== "android") return;
@@ -302,6 +308,8 @@ function AndroidHardPaywallGate() {
       qaLog("paywall", "Hard paywall presenting");
       const result = await RevenueCatUI.presentPaywall();
       qaLog("paywall", "Hard paywall result", { result });
+      // Successful presentation — clear any prior failure flag.
+      setPresentFailed(false);
 
       if (result === PAYWALL_RESULT.PURCHASED) {
         await refresh();
@@ -318,6 +326,9 @@ function AndroidHardPaywallGate() {
       }
     } catch (err) {
       qaLog("paywall", "Hard paywall error", { error: String(err) });
+      // Hide the splash so the user isn't trapped on a blank screen.
+      // They'll see Home underneath; foreground / next launch will retry.
+      setPresentFailed(true);
     } finally {
       presenting.current = false;
     }
@@ -345,7 +356,21 @@ function AndroidHardPaywallGate() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gate, loading]);
 
-  return null;
+  // Splash overlay — Android-only, hides Home until gate resolves to "none"
+  // or paywall presentation fails. Sits above the Stack so the user never
+  // sees a flash of Home before RC's native paywall slides up.
+  if (Platform.OS !== "android") return null;
+  if (presentFailed) return null;
+  if (!loading && gate === "none") return null;
+  return (
+    <View pointerEvents="none" style={styles.splashOverlay}>
+      <Image
+        source={require("../assets/splash-icon.png")}
+        style={styles.splashImage}
+        resizeMode="contain"
+      />
+    </View>
+  );
 }
 
 const SUB_TO_LIFETIME_MODAL_KEY = "@daily_paths_modal_sub_to_lifetime_seen";
@@ -420,6 +445,17 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  splashOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#F7FAFA",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 998,
+  },
+  splashImage: {
+    width: 200,
+    height: 200,
   },
   updateBanner: {
     position: "absolute",
