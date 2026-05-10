@@ -469,8 +469,8 @@ const styles = StyleSheet.create({
     elevation: 998,
   },
   splashImage: {
-    width: 200,
-    height: 200,
+    width: "100%",
+    height: "100%",
   },
   updateBanner: {
     position: "absolute",
