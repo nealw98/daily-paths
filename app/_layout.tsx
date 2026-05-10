@@ -26,7 +26,7 @@ import {
 import { fallbackColors } from "../constants/theme";
 import { SettingsProvider } from "../hooks/useSettings";
 import { SubscriptionProvider, useSubscriptionContext } from "../contexts/SubscriptionContext";
-import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform, AppState, AppStateStatus } from "react-native";
+import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform, AppState, AppStateStatus, Image } from "react-native";
 import * as Notifications from "expo-notifications";
 import * as SplashScreen from "expo-splash-screen";
 import * as Updates from "expo-updates";
@@ -301,6 +301,10 @@ function AndroidHardPaywallGate() {
   const { trackPaywallShown, trackPaywallDismissed, trackRestoreCompleted } = useAnalytics();
   const presenting = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  // Whether the JS splash overlay should still cover Home. False when user
+  // has closed the paywall (so they see Home until the AppState listener
+  // re-presents on next foreground) or when presentation fails.
+  const [paywallDismissed, setPaywallDismissed] = useState(false);
 
   const hideNativeSplash = () => {
     SplashScreen.hideAsync().catch(() => {
@@ -325,49 +329,48 @@ function AndroidHardPaywallGate() {
         await refresh();
         await new Promise((r) => setTimeout(r, 350));
         await refresh();
-        // gate flips to "none" → other effect hides splash, Home shows.
+        // gate flips to "none" → overlay unmounts via render condition below.
       } else if (result === PAYWALL_RESULT.RESTORED) {
         trackRestoreCompleted(true);
         await refresh();
         await new Promise((r) => setTimeout(r, 350));
         await refresh();
       } else {
-        // Closed without purchasing/restoring — re-present on next focus / launch.
-        // Hide the splash so the user sees Home behind it (rather than being
-        // stuck on the splash with no paywall on top).
+        // Closed without purchasing/restoring — show Home; AppState listener
+        // will re-present on next foreground.
         trackPaywallDismissed();
-        hideNativeSplash();
+        setPaywallDismissed(true);
       }
     } catch (err) {
       qaLog("paywall", "Hard paywall error", { error: String(err) });
-      // Drop the splash so the user isn't trapped if presentation fails;
-      // they'll see Home and we'll retry on next foreground / launch.
-      hideNativeSplash();
+      // Drop the overlay so the user isn't trapped on the splash visual.
+      setPaywallDismissed(true);
     } finally {
       presenting.current = false;
     }
   };
 
-  // Present whenever gate transitions to paywall. Splash stays up — RC's
-  // native paywall slides up *over* the splash, so the user never sees Home
-  // in the gap. Splash hides only when:
-  //   - gate becomes "none" (purchase/restore) — handled below
-  //   - user closes paywall without buying — hideNativeSplash() in present()
-  //   - paywall presentation throws — catch hides splash
+  // Hide the native splash as soon as gate resolves. The JS overlay below
+  // takes over visually with an identical image+bg so the handoff is
+  // imperceptible. We hide the native splash early because RC's paywall is
+  // a native window that may not render correctly while the system splash
+  // is still held — handing off to a React-rendered overlay (which RC's
+  // paywall reliably renders over) is the safer pattern.
+  useEffect(() => {
+    if (loading) return;
+    hideNativeSplash();
+  }, [loading]);
+
+  // Present paywall when gate flips to "paywall". Reset the dismissed flag
+  // so the overlay covers again on each fresh present cycle.
   useEffect(() => {
     if (Platform.OS !== "android") return;
     if (loading) return;
     if (gate !== "paywall") return;
+    setPaywallDismissed(false);
     void present();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gate, loading]);
-
-  // Gate resolved with premium access — let the splash come down so Home shows.
-  useEffect(() => {
-    if (loading) return;
-    if (gate !== "none") return;
-    hideNativeSplash();
-  }, [loading, gate]);
 
   // Re-present on foreground if still gated.
   useEffect(() => {
@@ -382,7 +385,24 @@ function AndroidHardPaywallGate() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gate, loading]);
 
-  return null;
+  // JS splash overlay — covers Home while gate is loading or while the
+  // paywall flow is in progress on Android. Visually mirrors the native
+  // splash (#376662 + new-splash-icon.png centered) so the handoff from
+  // native splash → JS overlay is invisible. RC's native paywall renders
+  // *over* this overlay (native window is always above RN views), so the
+  // user sees splash → paywall slide-up with no Home flash in between.
+  if (Platform.OS !== "android") return null;
+  if (paywallDismissed) return null;
+  if (!loading && gate === "none") return null;
+  return (
+    <View pointerEvents="none" style={styles.splashOverlay}>
+      <Image
+        source={require("../assets/new-splash-icon.png")}
+        style={styles.splashIcon}
+        resizeMode="contain"
+      />
+    </View>
+  );
 }
 
 const SUB_TO_LIFETIME_MODAL_KEY = "@daily_paths_modal_sub_to_lifetime_seen";
@@ -457,6 +477,20 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  splashOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#376662",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 998,
+    elevation: 998,
+  },
+  splashIcon: {
+    // Match `imageWidth: 300` from the expo-splash-screen plugin config in
+    // app.json so the handoff from native splash → JS overlay is invisible.
+    width: 300,
+    height: 300,
   },
   updateBanner: {
     position: "absolute",
