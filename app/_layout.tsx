@@ -356,12 +356,26 @@ function AndroidHardPaywallGate() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gate, loading]);
 
+  // Hold the splash for a short grace period after the gate clears so the
+  // tab tree and Home content have time to render — prevents a one-frame
+  // flash of an empty pearl background between splash and Home.
+  const [splashHeld, setSplashHeld] = useState(true);
+  useEffect(() => {
+    if (loading || gate !== "none") {
+      setSplashHeld(true);
+      return;
+    }
+    const t = setTimeout(() => setSplashHeld(false), 250);
+    return () => clearTimeout(t);
+  }, [loading, gate]);
+
   // Splash overlay — Android-only, hides Home until gate resolves to "none"
-  // or paywall presentation fails. Sits above the Stack so the user never
-  // sees a flash of Home before RC's native paywall slides up.
+  // (plus a short grace period) or paywall presentation fails. Sits above
+  // the Stack so the user never sees a flash of Home before RC's native
+  // paywall slides up.
   if (Platform.OS !== "android") return null;
   if (presentFailed) return null;
-  if (!loading && gate === "none") return null;
+  if (!loading && gate === "none" && !splashHeld) return null;
   return (
     <View pointerEvents="none" style={styles.splashOverlay}>
       <Image
@@ -452,6 +466,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     zIndex: 998,
+    elevation: 998,
   },
   splashImage: {
     width: 200,
