@@ -325,6 +325,7 @@ function AndroidHardPaywallGate() {
         await refresh();
         await new Promise((r) => setTimeout(r, 350));
         await refresh();
+        // gate flips to "none" → other effect hides splash, Home shows.
       } else if (result === PAYWALL_RESULT.RESTORED) {
         trackRestoreCompleted(true);
         await refresh();
@@ -332,7 +333,10 @@ function AndroidHardPaywallGate() {
         await refresh();
       } else {
         // Closed without purchasing/restoring — re-present on next focus / launch.
+        // Hide the splash so the user sees Home behind it (rather than being
+        // stuck on the splash with no paywall on top).
         trackPaywallDismissed();
+        hideNativeSplash();
       }
     } catch (err) {
       qaLog("paywall", "Hard paywall error", { error: String(err) });
@@ -344,16 +348,17 @@ function AndroidHardPaywallGate() {
     }
   };
 
-  // Present whenever gate transitions to paywall and we're not already showing it.
+  // Present whenever gate transitions to paywall. Splash stays up — RC's
+  // native paywall slides up *over* the splash, so the user never sees Home
+  // in the gap. Splash hides only when:
+  //   - gate becomes "none" (purchase/restore) — handled below
+  //   - user closes paywall without buying — hideNativeSplash() in present()
+  //   - paywall presentation throws — catch hides splash
   useEffect(() => {
     if (Platform.OS !== "android") return;
     if (loading) return;
     if (gate !== "paywall") return;
-    // Kick off the paywall, then drop the native splash once the RC native
-    // paywall has had time to slide up — avoids exposing Home in the gap.
     void present();
-    const t = setTimeout(hideNativeSplash, 600);
-    return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gate, loading]);
 
