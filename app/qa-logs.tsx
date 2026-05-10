@@ -53,6 +53,7 @@ import { useSubscriptionContext } from "../contexts/SubscriptionContext";
 import { QA_REFLECTION_IMAGE_OVERRIDE_KEY } from "./(tabs)/home";
 import { useSubscription } from "../hooks/useSubscription";
 import { getRawEntitlements, type RawEntitlements } from "../lib/subscription";
+import Purchases from "react-native-purchases";
 import {
   exportQaTransferToFile,
   importQaTransferPayload,
@@ -84,6 +85,7 @@ export default function QaLogsScreen() {
   const importJsonInputRef = React.useRef<TextInput | null>(null);
   const [isDeveloper, setIsDeveloper] = React.useState(false);
   const [deviceId, setDeviceId] = React.useState<string | null>(null);
+  const [rcUserId, setRcUserId] = React.useState<string | null>(null);
   const [lifetimeOverride, setLifetimeOverrideState] = React.useState<boolean | null>(null);
   const [subscriptionOverride, setSubscriptionOverrideState] = React.useState<boolean>(false);
   const [refreshingLifetime, setRefreshingLifetime] = React.useState(false);
@@ -152,6 +154,12 @@ export default function QaLogsScreen() {
       setLifetimeOverrideState(override);
       const subOverride = await getSubscriptionOverride();
       setSubscriptionOverrideState(subOverride);
+      try {
+        const id = await Purchases.getAppUserID();
+        setRcUserId(id);
+      } catch {
+        setRcUserId(null);
+      }
     };
     void loadDeviceInfo();
   }, []);
@@ -664,6 +672,20 @@ export default function QaLogsScreen() {
           {"\n"}Channel: {expoConfig.extra?.eas?.projectId ? "EAS" : "local"}
           {deviceId && `\nDevice ID: ${deviceId.slice(0, 8)}...`}
         </Text>
+        {rcUserId && (
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => {
+              Clipboard.setString(rcUserId);
+              setCopyStatus("RC user ID copied");
+              setTimeout(() => setCopyStatus(null), 1500);
+            }}
+          >
+            <Text style={styles.meta}>
+              RC User ID: {rcUserId} (tap to copy)
+            </Text>
+          </TouchableOpacity>
+        )}
         
         <View style={[styles.developerRow, { borderColor: colors.mist }]}>
           <Text style={[styles.developerLabel, { color: colors.ink }]}>Developer Mode (exclude from analytics)</Text>
