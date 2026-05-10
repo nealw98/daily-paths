@@ -44,6 +44,11 @@ import {
   clearLifetimeAccessCache,
   getLifetimeAccessDiagnostics,
 } from "../utils/paidAppDetector";
+import {
+  getSubscriptionOverride,
+  enableSubscriptionOverride,
+  clearSubscriptionOverride,
+} from "../utils/subscriptionOverride";
 import { useSubscriptionContext } from "../contexts/SubscriptionContext";
 import { QA_REFLECTION_IMAGE_OVERRIDE_KEY } from "./(tabs)/home";
 import { useSubscription } from "../hooks/useSubscription";
@@ -80,6 +85,7 @@ export default function QaLogsScreen() {
   const [isDeveloper, setIsDeveloper] = React.useState(false);
   const [deviceId, setDeviceId] = React.useState<string | null>(null);
   const [lifetimeOverride, setLifetimeOverrideState] = React.useState<boolean | null>(null);
+  const [subscriptionOverride, setSubscriptionOverrideState] = React.useState<boolean>(false);
   const [refreshingLifetime, setRefreshingLifetime] = React.useState(false);
   const [reflectionImageInput, setReflectionImageInput] = React.useState("");
   const [reflectionImageStatus, setReflectionImageStatus] = React.useState<string | null>(null);
@@ -144,6 +150,8 @@ export default function QaLogsScreen() {
       setDeviceId(id);
       const override = await getLifetimeOverride();
       setLifetimeOverrideState(override);
+      const subOverride = await getSubscriptionOverride();
+      setSubscriptionOverrideState(subOverride);
     };
     void loadDeviceInfo();
   }, []);
@@ -589,6 +597,24 @@ export default function QaLogsScreen() {
     await refreshLifetimeAccess();
   };
 
+  // QA: force getSubscriptionStatus() to report "not subscribed" so the
+  // Android paywall can be exercised even when the active RC entitlement
+  // (rc_promo_lifetime, an active unlimited sub, etc.) would otherwise
+  // grant premium. App reload clears any in-memory caches and re-runs
+  // the gate decision with the override applied.
+  const handleToggleSubscriptionOverride = async () => {
+    if (subscriptionOverride) {
+      await clearSubscriptionOverride();
+      setSubscriptionOverrideState(false);
+      qaLog("freemium", "QA subscription override cleared");
+    } else {
+      await enableSubscriptionOverride();
+      setSubscriptionOverrideState(true);
+      qaLog("freemium", "QA subscription override enabled — forcing not-subscribed");
+    }
+    setTimeout(() => Updates.reloadAsync().catch(() => {}), 250);
+  };
+
   const handleLogLifetimeDiagnostics = async () => {
     setRefreshingLifetime(true);
     try {
@@ -679,60 +705,6 @@ export default function QaLogsScreen() {
           >
             <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Expire Trial</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
-            activeOpacity={0.8}
-            onPress={handlePreviewGrandfatheredModal}
-          >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
-              Preview Modal B (Grandfathered)
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
-            activeOpacity={0.8}
-            onPress={handlePreviewSubToLifetimeModalAnnual}
-          >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
-              Preview Modal A (Annual)
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
-            activeOpacity={0.8}
-            onPress={handlePreviewSubToLifetimeModalMonthly}
-          >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
-              Preview Modal A (Monthly)
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
-            activeOpacity={0.8}
-            onPress={() => void handleResetSubToLifetimeSeenFlag()}
-          >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
-              Reset Modal A Seen Flag
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
-            activeOpacity={0.8}
-            onPress={() => void handlePrimeGrandfatherModalPending()}
-          >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
-              Prime Modal B Pending
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
-            activeOpacity={0.8}
-            onPress={() => void handleResetGrandfather()}
-          >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
-              Reset Grandfather State
-            </Text>
-          </TouchableOpacity>
         </View>
 
         <View style={styles.actionsRow}>
@@ -747,6 +719,17 @@ export default function QaLogsScreen() {
                 : lifetimeOverride === false
                   ? "Lifetime: Clear Override"
                   : "Lifetime: Force ON"}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleToggleSubscriptionOverride}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              {subscriptionOverride
+                ? "Subscription: Restore (clear override)"
+                : "Subscription: Force NOT subscribed"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -834,6 +817,64 @@ export default function QaLogsScreen() {
           >
             <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
               {refreshingLifetime ? "Logging..." : "Log Lifetime Diagnostics"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>Modals</Text>
+        <View style={styles.actionsRow}>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handlePreviewSubToLifetimeModalAnnual}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              Preview Modal A (Annual)
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handlePreviewSubToLifetimeModalMonthly}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              Preview Modal A (Monthly)
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={() => void handleResetSubToLifetimeSeenFlag()}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              Reset Modal A Seen Flag
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handlePreviewGrandfatheredModal}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              Preview Modal B (Grandfathered)
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={() => void handlePrimeGrandfatherModalPending()}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              Prime Modal B Pending
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={() => void handleResetGrandfather()}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              Reset Grandfather State
             </Text>
           </TouchableOpacity>
         </View>
