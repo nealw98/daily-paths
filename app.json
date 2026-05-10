@@ -12,7 +12,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.nealwagner.dailypaths",
-      "buildNumber": "44",
+      "buildNumber": "45",
       "appStoreUrl": "https://apps.apple.com/app/id6755981862",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -25,7 +25,7 @@
         "backgroundColor": "#F7FAFA"
       },
       "package": "com.nealw98.dailypaths",
-      "versionCode": 44,
+      "versionCode": 45,
       "predictiveBackGestureEnabled": false,
       "playStoreUrl": "https://play.google.com/store/apps/details?id=com.nealw98.dailypaths"
     },
@@ -41,15 +41,10 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/new_splash.png",
-          "resizeMode": "cover",
+          "image": "./assets/new-splash-icon.png",
+          "resizeMode": "contain",
           "backgroundColor": "#376662",
-          "android": {
-            "image": "./assets/new_splash.png",
-            "resizeMode": "cover",
-            "backgroundColor": "#376662",
-            "enableFullScreenImage_legacy": true
-          }
+          "imageWidth": 300
         }
       ]
     ],
