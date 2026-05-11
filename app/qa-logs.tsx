@@ -29,6 +29,7 @@ import { resetNotificationCoachmark } from "../utils/coachmarkStorage";
 import { isDeveloperDevice, setDeveloperDevice, getOrCreateDeviceId } from "../utils/deviceIdentity";
 import {
   getTrialStatus,
+  getLegacyTrialMarker,
   resetTrial,
   expireTrial,
 } from "../utils/trialTimer";
@@ -129,17 +130,17 @@ export default function QaLogsScreen() {
     async (label: string) => {
       const [
         currentTrial,
+        legacyTrialMarker,
         raw,
         overrideActive,
-        grandfatherAttempted,
         grandfatherPending,
         grandfatherSeen,
         modalASeen,
       ] = await Promise.all([
         getTrialStatus(),
+        getLegacyTrialMarker(),
         getRawEntitlements(),
         getSubscriptionOverride(),
-        AsyncStorage.getItem("@daily_paths_grandfather_attempted"),
         AsyncStorage.getItem("@daily_paths_grandfather_modal_pending"),
         AsyncStorage.getItem("@daily_paths_grandfather_modal_seen"),
         AsyncStorage.getItem("@daily_paths_modal_sub_to_lifetime_seen"),
@@ -152,10 +153,10 @@ export default function QaLogsScreen() {
         subscriptionStatus: subStatus,
         hasLifetimeAccess,
         trial: currentTrial,
+        legacyTrialMarker,
         rawEntitlements: raw,
         qaSubscriptionOverrideActive: overrideActive,
         grandfatherFlags: {
-          attempted: grandfatherAttempted === "true",
           modalPending: grandfatherPending === "true",
           modalSeen: grandfatherSeen === "true",
         },
@@ -651,7 +652,7 @@ export default function QaLogsScreen() {
       qaLog("qa-action", "Reset Grandfather state", { before, after });
       Alert.alert(
         "Grandfather reset",
-        "Both the attempted flag and modal-pending flag are cleared. On next app open the grant attempt will run again if eligible.",
+        "Local Modal B flags are cleared. The server-side grant status is not changed.",
       );
     } catch (err) {
       qaLog("freemium", "Error resetting grandfather", { error: String(err) });

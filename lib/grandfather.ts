@@ -6,22 +6,20 @@ import { qaLog } from "../utils/qaLog";
 import { trackEvent } from "../utils/trackEvent";
 import { ANALYTICS_EVENTS } from "../utils/analytics";
 import { getRawEntitlements } from "./subscription";
+import { getLegacyTrialMarker } from "../utils/trialTimer";
 
 /**
- * Grandfather flow for pre-2.6.6 Android users.
+ * Grandfather flow for pre-2.7 Android users.
  *
- * On first launch of 2.6.6, calls a Supabase Edge Function which uses the
- * RevenueCat secret key to grant the `lifetime` entitlement to users whose
- * RC subscriber `first_seen` predates the cutoff date. After a successful
- * grant, RC becomes the source of truth — access control just sees a
- * `lifetime`-entitled user.
+ * Calls a Supabase Edge Function with the old 2.6.x local trial marker. The
+ * server records the decision and uses the RevenueCat secret key to grant the
+ * `lifetime` entitlement for eligible non-subscribers. After a grant,
+ * RevenueCat remains the source of truth for access.
  *
  * The local flags here are purely cosmetic / control-flow:
- *   - `attempted` prevents re-calling the edge function on every launch.
  *   - `modal_pending` triggers the one-time grandfather welcome modal.
  */
 
-const GRANDFATHER_ATTEMPTED_KEY = "@daily_paths_grandfather_attempted";
 const GRANDFATHER_MODAL_PENDING_KEY = "@daily_paths_grandfather_modal_pending";
 const GRANDFATHER_MODAL_SEEN_KEY = "@daily_paths_grandfather_modal_seen";
 const FUNCTION_NAME = "grant-grandfather-lifetime";
@@ -30,6 +28,31 @@ function isRevenueCatPromotionalLifetime(productIdentifier: string | null): bool
   if (!productIdentifier) return false;
   const id = productIdentifier.toLowerCase();
   return id.startsWith("rc_promo") || id.includes("promo");
+}
+
+async function queueGrandfatherModalIfUnseen(reason: string): Promise<boolean> {
+  try {
+    const pending = await AsyncStorage.getItem(GRANDFATHER_MODAL_PENDING_KEY);
+    if (pending === "true") return true;
+
+    const seen = await AsyncStorage.getItem(GRANDFATHER_MODAL_SEEN_KEY);
+    if (seen === "true") {
+      qaLog("grandfather-modal", "Not queueing Modal B: already seen locally", {
+        reason,
+      });
+      return false;
+    }
+
+    await AsyncStorage.setItem(GRANDFATHER_MODAL_PENDING_KEY, "true");
+    qaLog("grandfather-modal", "Queued Modal B", { reason });
+    return true;
+  } catch (err) {
+    qaLog("grandfather-modal", "Could not queue Modal B", {
+      reason,
+      error: String(err),
+    });
+    return false;
+  }
 }
 
 /**
@@ -49,9 +72,11 @@ export async function attemptGrandfatherGrantIfEligible(): Promise<boolean> {
   }
 
   try {
-    const attempted = await AsyncStorage.getItem(GRANDFATHER_ATTEMPTED_KEY);
-    if (attempted === "true") {
-      qaLog("grandfather", "Skipping grandfather attempt: already attempted locally");
+    const legacyMarker = await getLegacyTrialMarker();
+    if (!legacyMarker.hasValidMarker || !legacyMarker.trialStartDate) {
+      qaLog("grandfather", "Skipping grandfather attempt: missing old trial marker", {
+        legacyMarker,
+      });
       return false;
     }
 
@@ -61,11 +86,8 @@ export async function attemptGrandfatherGrantIfEligible(): Promise<boolean> {
       unlimitedProductIdentifier,
       lifetimeProductIdentifier,
     } = await getRawEntitlements();
-    if (hasUnlimited || hasLifetime) {
-      // Already entitled — nothing to grant. Mark attempted so we don't keep
-      // calling the edge function on subsequent launches.
-      await AsyncStorage.setItem(GRANDFATHER_ATTEMPTED_KEY, "true");
-      qaLog("grandfather", "Skipping grandfather attempt: already entitled in RevenueCat", {
+    if (hasUnlimited) {
+      qaLog("grandfather", "Skipping free grandfather: active subscription present", {
         hasUnlimited,
         hasLifetime,
         unlimitedProductIdentifier,
@@ -90,7 +112,10 @@ export async function attemptGrandfatherGrantIfEligible(): Promise<boolean> {
     qaLog("grandfather", "Attempting grandfather grant", { appUserId });
 
     const { data, error } = await supabase.functions.invoke(FUNCTION_NAME, {
-      body: { app_user_id: appUserId },
+      body: {
+        app_user_id: appUserId,
+        legacy_trial_start_date: legacyMarker.trialStartDate,
+      },
     });
 
     if (error) {
@@ -101,20 +126,20 @@ export async function attemptGrandfatherGrantIfEligible(): Promise<boolean> {
     }
 
     const granted = !!data?.granted;
+    const grandfathered = !!data?.grandfathered;
     qaLog("grandfather", "Edge function result", {
       appUserId,
       granted,
+      grandfathered,
+      legacyTrialStartDate: legacyMarker.trialStartDate,
       data,
     });
 
-    // Mark attempted so we don't keep calling. Even on `granted=false` the
-    // server has decided the user is ineligible (post-cutoff, missing, etc.) —
-    // no value in retrying.
-    await AsyncStorage.setItem(GRANDFATHER_ATTEMPTED_KEY, "true");
+    if (grandfathered) {
+      await queueGrandfatherModalIfUnseen(data?.reason ?? "grandfathered");
+    }
 
     if (granted) {
-      await AsyncStorage.setItem(GRANDFATHER_MODAL_PENDING_KEY, "true");
-      qaLog("grandfather", "Queued Modal B from fresh edge grant", { appUserId });
       trackEvent(ANALYTICS_EVENTS.LIFETIME_GRANDFATHERED, {
         app_user_id: appUserId,
       }, true);
@@ -201,16 +226,14 @@ export async function queueGrandfatherModalForExistingLifetime(
   }
 }
 
-/** QA helper: reset both the attempted flag and modal-pending flag. */
+/** QA helper: reset local Modal B flags. */
 export async function resetGrandfatherState(): Promise<void> {
-  await AsyncStorage.removeItem(GRANDFATHER_ATTEMPTED_KEY);
   await AsyncStorage.removeItem(GRANDFATHER_MODAL_PENDING_KEY);
   await AsyncStorage.removeItem(GRANDFATHER_MODAL_SEEN_KEY);
 }
 
 /** QA helper: simulate a successful grandfather grant (sets modal pending). */
 export async function simulateGrandfatherGrant(): Promise<void> {
-  await AsyncStorage.setItem(GRANDFATHER_ATTEMPTED_KEY, "true");
   await AsyncStorage.setItem(GRANDFATHER_MODAL_PENDING_KEY, "true");
   await AsyncStorage.removeItem(GRANDFATHER_MODAL_SEEN_KEY);
 }

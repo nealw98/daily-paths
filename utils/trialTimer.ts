@@ -5,15 +5,16 @@ import { ANALYTICS_EVENTS } from "./analytics";
 /**
  * Local 3-day trial timer for the try-before-you-buy model.
  *
- * The clock starts on first app open and is stored as an ISO timestamp in
+ * The clock starts on first 2.7 app open and is stored as an ISO timestamp in
  * AsyncStorage. During the trial window every feature is accessible without
  * an account. After the window expires, a hard paywall blocks the app on
  * Android until the user purchases the lifetime IAP.
  */
 
-const TRIAL_START_KEY = "@daily_paths_trial_start";
-const TRIAL_ENDED_TRACKED_KEY = "@daily_paths_trial_ended_tracked";
-const TRIAL_DAY_TRACKED_PREFIX = "@daily_paths_trial_day_";
+const LEGACY_TRIAL_START_KEY = "@daily_paths_trial_start";
+const TRIAL_START_KEY = "@daily_paths_v27_trial_start";
+const TRIAL_ENDED_TRACKED_KEY = "@daily_paths_v27_trial_ended_tracked";
+const TRIAL_DAY_TRACKED_PREFIX = "@daily_paths_v27_trial_day_";
 const TRIAL_DURATION_DAYS = 3;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const TRIAL_DURATION_MS = TRIAL_DURATION_DAYS * DAY_MS;
@@ -29,6 +30,34 @@ export interface TrialStatus {
   trialStartDate: string | null;
   /** Whole days remaining (0 when expired) */
   daysRemaining: number;
+}
+
+export interface LegacyTrialMarker {
+  /** Old 2.6.x seven-day trial timestamp, if this install opened that app. */
+  trialStartDate: string | null;
+  /** True when the old timestamp parses to a valid date. */
+  hasValidMarker: boolean;
+}
+
+/**
+ * Read the old 2.6.x trial marker. The 2.7 trial must never write this key;
+ * it is now migration evidence for grandfathering existing Android users.
+ */
+export async function getLegacyTrialMarker(): Promise<LegacyTrialMarker> {
+  try {
+    const trialStartDate = await AsyncStorage.getItem(LEGACY_TRIAL_START_KEY);
+    if (!trialStartDate) {
+      return { trialStartDate: null, hasValidMarker: false };
+    }
+
+    return {
+      trialStartDate,
+      hasValidMarker: !Number.isNaN(Date.parse(trialStartDate)),
+    };
+  } catch (err) {
+    console.warn("[trialTimer] getLegacyTrialMarker error:", err);
+    return { trialStartDate: null, hasValidMarker: false };
+  }
 }
 
 /**
