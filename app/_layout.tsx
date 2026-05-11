@@ -43,6 +43,7 @@ import { useAnalytics } from "../utils/analytics";
 import { expireTrial } from "../utils/trialTimer";
 import { getRawEntitlements, restorePurchases } from "../lib/subscription";
 import { clearSubscriptionOverride } from "../utils/subscriptionOverride";
+import Constants from "expo-constants";
 
 console.log("[STARTUP] _layout.tsx module loading...");
 console.log("[STARTUP] Platform:", Platform.OS, Platform.Version);
@@ -133,6 +134,18 @@ export default function RootLayout() {
   useEffect(() => {
     if (fontsLoaded) {
       initMixpanel();
+      qaLog("runtime", "App runtime snapshot", {
+        nativeAppVersion: Constants.nativeAppVersion,
+        nativeBuildVersion: Constants.nativeBuildVersion,
+        expoVersion: Constants.expoConfig?.version,
+        androidVersionCode: Constants.expoConfig?.android?.versionCode,
+        iosBuildNumber: Constants.expoConfig?.ios?.buildNumber,
+        updateId: (Updates as any).updateId ?? null,
+        channel: (Updates as any).channel ?? null,
+        runtimeVersion: (Updates as any).runtimeVersion ?? null,
+        isEmbeddedLaunch: (Updates as any).isEmbeddedLaunch ?? null,
+        createdAt: (Updates as any).createdAt ?? null,
+      });
     }
   }, [fontsLoaded]);
 

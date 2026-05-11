@@ -24,6 +24,7 @@ import {
   attemptGrandfatherGrantIfEligible,
   isGrandfatherModalPending,
   clearGrandfatherModalPending,
+  queueGrandfatherModalForExistingLifetime,
 } from "../lib/grandfather";
 import {
   ensureTrialStarted,
@@ -107,6 +108,26 @@ function hasActiveRevenueCatAccess(raw: {
   return raw.hasUnlimited || raw.hasLifetime;
 }
 
+function summarizeTrialStatus(t: TrialStatus) {
+  return {
+    isInTrial: t.isInTrial,
+    trialExpired: t.trialExpired,
+    neverStarted: t.neverStarted,
+    daysRemaining: t.daysRemaining,
+    trialStartDate: t.trialStartDate,
+  };
+}
+
+function summarizeSubscriptionStatus(s: SubscriptionStatus) {
+  return {
+    isSubscribed: s.isSubscribed,
+    isTrialing: s.isTrialing,
+    expirationDate: s.expirationDate,
+    productIdentifier: s.productIdentifier,
+    willRenew: s.willRenew,
+  };
+}
+
 // ─── Context ─────────────────────────────────────────────────────────────────
 
 const SubscriptionContext = createContext<SubscriptionContextValue | undefined>(
@@ -138,6 +159,9 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
     let cancelled = false;
 
     const init = async () => {
+      qaLog("access-init", "Subscription init started", {
+        platform: Platform.OS,
+      });
       // ── Phase 1: cached / local state (instant) ────────────────────────
 
       // Lifetime access detection (App Store receipt check)
@@ -149,6 +173,10 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       // Cached subscription status (AsyncStorage — fast)
       const cached = await getCachedSubscriptionStatus();
       if (cancelled) return;
+      qaLog("access-init", "Cached subscription status read", {
+        hasCachedStatus: !!cached,
+        cached: cached ? summarizeSubscriptionStatus(cached) : null,
+      });
       if (cached) {
         setStatus(cached);
       }
@@ -158,6 +186,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!lifetimeStatus.hasLifetimeAccess) {
         const trialResult = await getTrialStatus();
         if (cancelled) return;
+        qaLog("access-init", "Initial trial status read", summarizeTrialStatus(trialResult));
         setTrial(trialResult);
         setTrialLoading(false);
 
@@ -165,10 +194,18 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
         // `neverStarted` until ensureTrialStarted runs — otherwise gate can read
         // paywall briefly and auto-present the hard paywall on Android.
         if (cached?.isSubscribed || trialResult.isInTrial) {
+          qaLog("access-init", "Ending initial loading from local state", {
+            reason: cached?.isSubscribed ? "cached_subscribed" : "trial_active",
+          });
           setLoading(false);
+        } else {
+          qaLog("access-init", "Keeping loading until RC/trial start resolves", {
+            reason: cached ? "cached_not_subscribed_and_trial_not_active" : "no_cache_and_trial_not_active",
+          });
         }
       } else {
         // Lifetime user — no trial needed, not loading
+        qaLog("access-init", "Ending loading from platform lifetime access");
         setTrialLoading(false);
         setLoading(false);
       }
@@ -266,6 +303,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!lifetimeStatus.hasLifetimeAccess) {
         await ensureTrialStarted();
         const freshTrial = await getTrialStatus();
+        qaLog("access-init", "Trial status after ensureTrialStarted", summarizeTrialStatus(freshTrial));
         if (!cancelled) {
           setTrial(freshTrial);
           setTrialLoading(false);
@@ -278,10 +316,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
         try {
           const fresh = await getSubscriptionStatus();
           qaLog("subscription", "Fresh RC status", {
-            isSubscribed: fresh.isSubscribed,
-            isTrialing: fresh.isTrialing,
-            expirationDate: fresh.expirationDate,
-            productIdentifier: fresh.productIdentifier,
+            ...summarizeSubscriptionStatus(fresh),
           });
           if (!cancelled) setStatus(fresh);
 
@@ -294,6 +329,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
             !fresh.isSubscribed
           ) {
             const postTrial = await getTrialStatus();
+            qaLog("subscription", "Post-RC trial status before Android silent restore", summarizeTrialStatus(postTrial));
             if (!cancelled && !postTrial.isInTrial) {
               try {
                 qaLog("subscription", "Android silent restore (no RC entitlement, trial not active)");
@@ -304,6 +340,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
                   qaLog("subscription", "Cleared QA subscription override after Android restore");
                 }
                 const after = await getSubscriptionStatus();
+                qaLog("subscription", "Status after Android silent restore", summarizeSubscriptionStatus(after));
                 if (!cancelled) setStatus(after);
               } catch (re) {
                 qaLog("subscription", "Android silent restore skipped", { error: String(re) });
@@ -320,6 +357,14 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
           if (!cancelled) {
             setHasSubAndLifetime(raw.hasUnlimited && raw.hasLifetime);
             setIsAnnualSubscriber(raw.hasUnlimited && isAnnualFromExpiration(raw.unlimitedExpirationDate));
+            const queuedExistingGrandfatherModal =
+              await queueGrandfatherModalForExistingLifetime(raw.lifetimeProductIdentifier);
+            qaLog("access-init", "Raw entitlements processed for modal decisions", {
+              raw,
+              hasSubAndLifetime: raw.hasUnlimited && raw.hasLifetime,
+              isAnnualSubscriber: raw.hasUnlimited && isAnnualFromExpiration(raw.unlimitedExpirationDate),
+              queuedExistingGrandfatherModal,
+            });
           }
         } catch {
           // Non-critical
@@ -329,12 +374,18 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       // Modal B (grandfathered welcome) — set from local pending flag.
       try {
         const pending = await isGrandfatherModalPending();
-        if (!cancelled) setShowGrandfatherModal(pending);
+        if (!cancelled) {
+          qaLog("access-init", "Applying Modal B pending state", { pending });
+          setShowGrandfatherModal(pending);
+        }
       } catch {
         // Non-critical
       }
 
-      if (!cancelled) setLoading(false);
+      if (!cancelled) {
+        qaLog("access-init", "Subscription init completed; clearing loading");
+        setLoading(false);
+      }
 
       // ── Background tasks (don't block gate/content) ────────────────────
       if (!isRevenueCatInitialized()) return;
@@ -381,6 +432,31 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
     }
     return getRequiredGate(status, trial, hasLifetimeAccess);
   }, [status, trial, hasLifetimeAccess]);
+
+  useEffect(() => {
+    qaLog("access-gate", "Gate snapshot", {
+      gate,
+      loading,
+      trialLoading,
+      status: summarizeSubscriptionStatus(status),
+      trial: summarizeTrialStatus(trial),
+      hasLifetimeAccess,
+      hasSubAndLifetime,
+      isAnnualSubscriber,
+      showGrandfatherModal,
+      platform: Platform.OS,
+    });
+  }, [
+    gate,
+    loading,
+    trialLoading,
+    status,
+    trial,
+    hasLifetimeAccess,
+    hasSubAndLifetime,
+    isAnnualSubscriber,
+    showGrandfatherModal,
+  ]);
 
   // ── Actions ────────────────────────────────────────────────────────────
   const purchase = useCallback(

@@ -125,6 +125,50 @@ export default function QaLogsScreen() {
     void refreshRawEntitlements();
   }, [refreshRawEntitlements]);
 
+  const getQaAccessSnapshot = React.useCallback(
+    async (label: string) => {
+      const [
+        currentTrial,
+        raw,
+        overrideActive,
+        grandfatherAttempted,
+        grandfatherPending,
+        grandfatherSeen,
+        modalASeen,
+      ] = await Promise.all([
+        getTrialStatus(),
+        getRawEntitlements(),
+        getSubscriptionOverride(),
+        AsyncStorage.getItem("@daily_paths_grandfather_attempted"),
+        AsyncStorage.getItem("@daily_paths_grandfather_modal_pending"),
+        AsyncStorage.getItem("@daily_paths_grandfather_modal_seen"),
+        AsyncStorage.getItem("@daily_paths_modal_sub_to_lifetime_seen"),
+      ]);
+
+      const snapshot = {
+        label,
+        gate,
+        subscriptionLoading,
+        subscriptionStatus: subStatus,
+        hasLifetimeAccess,
+        trial: currentTrial,
+        rawEntitlements: raw,
+        qaSubscriptionOverrideActive: overrideActive,
+        grandfatherFlags: {
+          attempted: grandfatherAttempted === "true",
+          modalPending: grandfatherPending === "true",
+          modalSeen: grandfatherSeen === "true",
+        },
+        modalASeen: modalASeen === "true",
+        rcUserId,
+        platform: Platform.OS,
+      };
+      qaLog("qa-snapshot", label, snapshot);
+      return snapshot;
+    },
+    [gate, hasLifetimeAccess, rcUserId, subStatus, subscriptionLoading],
+  );
+
   React.useEffect(() => {
     AsyncStorage.getItem(QA_REFLECTION_IMAGE_OVERRIDE_KEY)
       .then((value) => {
@@ -516,9 +560,11 @@ export default function QaLogsScreen() {
 
   const handleResetTrial = async () => {
     try {
+      const before = await getQaAccessSnapshot("before Reset trial");
       await resetTrial();
       await trialStatus.refresh();
-      qaLog("freemium", "Trial reset");
+      const after = await getQaAccessSnapshot("after Reset trial");
+      qaLog("qa-action", "Reset trial", { before, after });
       alert("Trial reset. Restart the app to begin a fresh 3-day trial.");
     } catch (err) {
       qaLog("freemium", "Error resetting trial", { error: String(err) });
@@ -528,9 +574,11 @@ export default function QaLogsScreen() {
 
   const handleExpireTrial = async () => {
     try {
+      const before = await getQaAccessSnapshot("before Expire trial");
       await expireTrial();
       await trialStatus.refresh();
-      qaLog("freemium", "Trial expired manually");
+      const after = await getQaAccessSnapshot("after Expire trial");
+      qaLog("qa-action", "Expire trial", { before, after });
       alert(
         "Trial expired. The gate should switch to paywall; the RevenueCat paywall may open automatically. If not, leave this screen or background/foreground the app.",
       );
@@ -544,14 +592,17 @@ export default function QaLogsScreen() {
    *  Use to verify copy/styling. Does not set the seen-flag, does not affect
    *  real production firing. */
   const handlePreviewGrandfatheredModal = () => {
+    qaLog("qa-action", "Preview Modal B (UI only)");
     setPreviewGrandfathered(true);
   };
 
   const handlePreviewSubToLifetimeModalAnnual = () => {
+    qaLog("qa-action", "Preview Modal A annual (UI only)");
     setPreviewSubAnnual(true);
   };
 
   const handlePreviewSubToLifetimeModalMonthly = () => {
+    qaLog("qa-action", "Preview Modal A monthly (UI only)");
     setPreviewSubMonthly(true);
   };
 
@@ -560,8 +611,10 @@ export default function QaLogsScreen() {
    *  entitlements active in RC for that user. */
   const handleResetSubToLifetimeSeenFlag = async () => {
     try {
+      const before = await getQaAccessSnapshot("before Reset Modal A seen flag");
       await AsyncStorage.removeItem("@daily_paths_modal_sub_to_lifetime_seen");
-      qaLog("freemium", "Sub→Lifetime modal seen flag cleared");
+      const after = await getQaAccessSnapshot("after Reset Modal A seen flag");
+      qaLog("qa-action", "Reset Modal A seen flag", { before, after });
       Alert.alert(
         "Seen flag cleared",
         "On next launch, the real Modal A will fire if your RC user has both `unlimited` AND `lifetime` entitlements active.",
@@ -576,8 +629,10 @@ export default function QaLogsScreen() {
    *  presenter wiring when you don't want to invoke the edge function. */
   const handlePrimeGrandfatherModalPending = async () => {
     try {
+      const before = await getQaAccessSnapshot("before Prime Modal B pending");
       await simulateGrandfatherGrant();
-      qaLog("freemium", "Grandfather modal-pending flag set");
+      const after = await getQaAccessSnapshot("after Prime Modal B pending");
+      qaLog("qa-action", "Prime Modal B pending", { before, after });
       Alert.alert(
         "Pending flag set",
         "On next launch, the real Modal B will fire (Android only).",
@@ -590,8 +645,10 @@ export default function QaLogsScreen() {
 
   const handleResetGrandfather = async () => {
     try {
+      const before = await getQaAccessSnapshot("before Reset Grandfather state");
       await resetGrandfatherState();
-      qaLog("freemium", "Grandfather state reset");
+      const after = await getQaAccessSnapshot("after Reset Grandfather state");
+      qaLog("qa-action", "Reset Grandfather state", { before, after });
       Alert.alert(
         "Grandfather reset",
         "Both the attempted flag and modal-pending flag are cleared. On next app open the grant attempt will run again if eligible.",
@@ -603,20 +660,28 @@ export default function QaLogsScreen() {
   };
 
   const handleToggleLifetimeOverride = async () => {
+    const before = await getQaAccessSnapshot("before Toggle iOS lifetime override");
+    let nextOverride: boolean | null;
     if (lifetimeOverride === true) {
       // Currently forced on → turn off
-      await setLifetimeOverride(false);
-      setLifetimeOverrideState(false);
+      nextOverride = false;
     } else if (lifetimeOverride === false) {
       // Currently forced off → clear override (use receipt detection)
-      await setLifetimeOverride(null);
-      setLifetimeOverrideState(null);
+      nextOverride = null;
     } else {
       // No override → force on
-      await setLifetimeOverride(true);
-      setLifetimeOverrideState(true);
+      nextOverride = true;
     }
+    await setLifetimeOverride(nextOverride);
+    setLifetimeOverrideState(nextOverride);
     await refreshLifetimeAccess();
+    const after = await getQaAccessSnapshot("after Toggle iOS lifetime override");
+    qaLog("qa-action", "Toggle iOS lifetime override", {
+      before,
+      after,
+      previousOverride: lifetimeOverride,
+      nextOverride,
+    });
   };
 
   // QA: force getSubscriptionStatus() to report "not subscribed" so the
@@ -625,25 +690,31 @@ export default function QaLogsScreen() {
   // grant premium. App reload clears any in-memory caches and re-runs
   // the gate decision with the override applied.
   const handleToggleSubscriptionOverride = async () => {
+    const before = await getQaAccessSnapshot("before Toggle Force NOT subscribed");
     if (subscriptionOverride) {
       await clearSubscriptionOverride();
       setSubscriptionOverrideState(false);
-      qaLog("freemium", "QA subscription override cleared");
+      const after = await getQaAccessSnapshot("after Clear Force NOT subscribed");
+      qaLog("qa-action", "Clear Force NOT subscribed", { before, after });
     } else {
       await enableSubscriptionOverride();
       setSubscriptionOverrideState(true);
-      qaLog("freemium", "QA subscription override enabled — forcing not-subscribed");
+      const after = await getQaAccessSnapshot("after Enable Force NOT subscribed");
+      qaLog("qa-action", "Enable Force NOT subscribed", { before, after });
     }
     setTimeout(() => Updates.reloadAsync().catch(() => {}), 250);
   };
 
   const handlePresentRcPaywallFromQa = async () => {
     if (Platform.OS !== "android") return;
+    const before = await getQaAccessSnapshot("before Present RC paywall from QA");
     if (subscriptionLoading) {
+      qaLog("qa-action", "Present RC paywall blocked: subscription loading", { before });
       Alert.alert("Wait", "Subscription state is still loading.");
       return;
     }
     if (gate !== "paywall") {
+      qaLog("qa-action", "Present RC paywall blocked: gate not paywall", { before });
       Alert.alert(
         "Gate is not paywall",
         "Current gate: " +
@@ -654,12 +725,20 @@ export default function QaLogsScreen() {
     }
     setPresentingRcPaywall(true);
     try {
-      qaLog("paywall", "QA manual presentPaywall");
-      await RevenueCatUI.presentPaywall();
+      qaLog("qa-action", "Present RC paywall from QA", { before });
+      const result = await RevenueCatUI.presentPaywall();
+      qaLog("qa-action", "RC paywall from QA returned", { result });
       await refreshSubscription();
       await trialStatus.refresh();
+      const after = await getQaAccessSnapshot("after Present RC paywall from QA");
+      qaLog("qa-action", "Present RC paywall complete", { before, after, result });
     } catch (err) {
-      qaLog("paywall", "QA presentPaywall error", { error: String(err) });
+      const afterError = await getQaAccessSnapshot("after Present RC paywall error");
+      qaLog("qa-action", "Present RC paywall error", {
+        before,
+        after: afterError,
+        error: String(err),
+      });
       Alert.alert("presentPaywall failed", String(err));
     } finally {
       setPresentingRcPaywall(false);

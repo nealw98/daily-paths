@@ -147,7 +147,10 @@ export async function restorePurchases(): Promise<CustomerInfo> {
     qaLog("subscription", "Restoring purchases");
     const customerInfo = await Purchases.restorePurchases();
     qaLog("subscription", "Purchases restored", {
+      appUserId: customerInfo.originalAppUserId,
       entitlements: Object.keys(customerInfo.entitlements.active),
+      activeSubscriptions: customerInfo.activeSubscriptions,
+      allPurchasedProductIdentifiers: customerInfo.allPurchasedProductIdentifiers,
     });
     return customerInfo;
   } catch (err) {
@@ -164,7 +167,10 @@ export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
   try {
     const overrideActive = await getSubscriptionOverride();
     if (overrideActive) {
-      qaLog("subscription", "QA override active — reporting not subscribed");
+      qaLog("subscription-status", "Resolved from QA override", {
+        isSubscribed: false,
+        source: "qa_force_not_subscribed",
+      });
       return {
         isSubscribed: false,
         isTrialing: false,
@@ -181,6 +187,28 @@ export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
     const customerInfo = await Purchases.getCustomerInfo();
     const entitlement = customerInfo.entitlements.active[ENTITLEMENT_ID];
     const lifetimeEntitlement = customerInfo.entitlements.active[LIFETIME_ENTITLEMENT_ID];
+    qaLog("subscription-status", "RevenueCat customer info loaded", {
+      appUserId: customerInfo.originalAppUserId,
+      activeEntitlements: Object.keys(customerInfo.entitlements.active),
+      activeSubscriptions: customerInfo.activeSubscriptions,
+      allPurchasedProductIdentifiers: customerInfo.allPurchasedProductIdentifiers,
+      unlimited: entitlement
+        ? {
+            productIdentifier: entitlement.productIdentifier,
+            periodType: entitlement.periodType,
+            expirationDate: entitlement.expirationDate,
+            willRenew: entitlement.willRenew,
+          }
+        : null,
+      lifetime: lifetimeEntitlement
+        ? {
+            productIdentifier: lifetimeEntitlement.productIdentifier,
+            periodType: lifetimeEntitlement.periodType,
+            expirationDate: lifetimeEntitlement.expirationDate,
+            willRenew: lifetimeEntitlement.willRenew,
+          }
+        : null,
+    });
 
     let result: SubscriptionStatus;
 
@@ -237,6 +265,7 @@ export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
     }
 
     await cacheSubscriptionStatus(result);
+    qaLog("subscription-status", "Resolved subscription status", result);
     return result;
   } catch (err) {
     qaLog("subscription", "Error getting subscription status", {
@@ -321,7 +350,7 @@ export async function getRawEntitlements(): Promise<RawEntitlements> {
     const customerInfo = await Purchases.getCustomerInfo();
     const unlimited = customerInfo.entitlements.active[ENTITLEMENT_ID];
     const lifetime = customerInfo.entitlements.active[LIFETIME_ENTITLEMENT_ID];
-    return {
+    const result = {
       hasUnlimited: unlimited !== undefined,
       hasLifetime: lifetime !== undefined,
       unlimitedExpirationDate: unlimited?.expirationDate ?? null,
@@ -329,6 +358,14 @@ export async function getRawEntitlements(): Promise<RawEntitlements> {
       unlimitedWillRenew: unlimited?.willRenew ?? false,
       lifetimeProductIdentifier: lifetime?.productIdentifier ?? null,
     };
+    qaLog("raw-entitlements", "Read raw RevenueCat entitlements", {
+      appUserId: customerInfo.originalAppUserId,
+      ...result,
+      activeEntitlements: Object.keys(customerInfo.entitlements.active),
+      activeSubscriptions: customerInfo.activeSubscriptions,
+      allPurchasedProductIdentifiers: customerInfo.allPurchasedProductIdentifiers,
+    });
+    return result;
   } catch (err) {
     qaLog("subscription", "Error reading raw entitlements", { error: String(err) });
     return {
