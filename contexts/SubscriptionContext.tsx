@@ -7,6 +7,7 @@ import React, {
   useMemo,
   useRef,
 } from "react";
+import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   initializeRevenueCat,
@@ -152,10 +153,10 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
         setTrial(trialResult);
         setTrialLoading(false);
 
-        if (cached) {
-          setLoading(false);
-        } else if (trialResult.isInTrial) {
-          // No cache, but trial is active → gate = "none" from trial alone
+        // Do not end loading on "cached not subscribed" alone: trial may still be
+        // `neverStarted` until ensureTrialStarted runs — otherwise gate can read
+        // paywall briefly and auto-present the hard paywall on Android.
+        if (cached?.isSubscribed || trialResult.isInTrial) {
           setLoading(false);
         }
       } else {
@@ -275,6 +276,27 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
             productIdentifier: fresh.productIdentifier,
           });
           if (!cancelled) setStatus(fresh);
+
+          // Android: Google Play may already have the lifetime SKU for this Google
+          // account while RevenueCat's anonymous customer is empty until restore.
+          // If we are not in the local trial and RC says not subscribed, sync once.
+          if (
+            Platform.OS === "android" &&
+            !cancelled &&
+            !fresh.isSubscribed
+          ) {
+            const postTrial = await getTrialStatus();
+            if (!cancelled && !postTrial.isInTrial) {
+              try {
+                qaLog("subscription", "Android silent restore (no RC entitlement, trial not active)");
+                await restorePurchases();
+                const after = await getSubscriptionStatus();
+                if (!cancelled) setStatus(after);
+              } catch (re) {
+                qaLog("subscription", "Android silent restore skipped", { error: String(re) });
+              }
+            }
+          }
         } catch (err) {
           qaLog("subscription", "Error fetching fresh RC status", { error: String(err) });
         }

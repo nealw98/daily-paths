@@ -41,6 +41,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { AppDateProvider } from "../contexts/AppDateContext";
 import { useAnalytics } from "../utils/analytics";
 import { expireTrial } from "../utils/trialTimer";
+import { restorePurchases } from "../lib/subscription";
 
 console.log("[STARTUP] _layout.tsx module loading...");
 console.log("[STARTUP] Platform:", Platform.OS, Platform.Version);
@@ -400,6 +401,32 @@ function AndroidHardPaywallGate() {
       }
     } catch (err) {
       qaLog("paywall", "Hard paywall error", { error: String(err) });
+      const errStr = String(err).toLowerCase();
+      const looksLikeAlreadyOwned =
+        errStr.includes("already") ||
+        errStr.includes("owned") ||
+        errStr.includes("active for the user") ||
+        errStr.includes("itemalreadyowned");
+      if (Platform.OS === "android" && looksLikeAlreadyOwned) {
+        try {
+          qaLog("paywall", "Recovering via restorePurchases after already-owned error");
+          await restorePurchases();
+          await refresh();
+          await new Promise((r) => setTimeout(r, 250));
+          await refresh();
+          try {
+            await expireTrial();
+            await trialStatus.refresh();
+          } catch {
+            // Non-critical
+          }
+          trackPaywallPurchaseCompleted();
+          setShowPaywallRetryShell(false);
+          return;
+        } catch (re) {
+          qaLog("paywall", "post-error restore failed", { error: String(re) });
+        }
+      }
       trackPaywallPurchaseCancelled();
       setShowPaywallRetryShell(true);
     } finally {
