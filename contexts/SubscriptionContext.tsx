@@ -33,6 +33,8 @@ import {
 import { detectLifetimeAccess } from "../utils/paidAppDetector";
 import { getRequiredGate, type GateType } from "../utils/accessControl";
 import { qaLog } from "../utils/qaLog";
+import { trackEvent } from "../utils/trackEvent";
+import { ANALYTICS_EVENTS } from "../utils/analytics";
 import Purchases, { type PurchasesPackage } from "react-native-purchases";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -56,10 +58,12 @@ interface SubscriptionContextValue {
   /** True when a grandfather grant just succeeded and the welcome modal
    *  has not yet been shown. */
   showGrandfatherModal: boolean;
+  /** RC offering packages — unused by main UI (Android uses RC Paywall UI). QA / future. */
   packages: PurchasesPackage[];
   loading: boolean;
   purchasing: boolean;
   gate: GateType;
+  /** Programmatic package purchase — Android production IAP uses RC Paywall UI. */
   purchase: (pkg: PurchasesPackage) => Promise<boolean>;
   restore: () => Promise<boolean>;
   refresh: () => Promise<void>;
@@ -386,6 +390,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
   const restore = useCallback(async (): Promise<boolean> => {
     setLoading(true);
     try {
+      await trackEvent(ANALYTICS_EVENTS.RESTORE_INITIATED, {}, true);
       await restorePurchases();
       const newStatus = await getSubscriptionStatus();
       setStatus(newStatus);

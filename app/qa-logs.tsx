@@ -52,7 +52,12 @@ import {
 import { useSubscriptionContext } from "../contexts/SubscriptionContext";
 import { QA_REFLECTION_IMAGE_OVERRIDE_KEY } from "./(tabs)/home";
 import { useSubscription } from "../hooks/useSubscription";
-import { getRawEntitlements, type RawEntitlements } from "../lib/subscription";
+import {
+  getRawEntitlements,
+  isRevenueCatInitialized,
+  type RawEntitlements,
+} from "../lib/subscription";
+import RevenueCatUI from "react-native-purchases-ui";
 import Purchases from "react-native-purchases";
 import {
   exportQaTransferToFile,
@@ -71,7 +76,13 @@ export default function QaLogsScreen() {
   const insets = useSafeAreaInsets();
   const logs = useQaLogs();
   const router = useRouter();
-  const { trialStatus, refreshLifetimeAccess } = useSubscriptionContext();
+  const {
+    trialStatus,
+    refreshLifetimeAccess,
+    gate,
+    loading: subscriptionLoading,
+    refresh: refreshSubscription,
+  } = useSubscriptionContext();
   const { status: subStatus, hasLifetimeAccess } = useSubscription();
   const [updating, setUpdating] = React.useState(false);
   const [updateStatus, setUpdateStatus] = React.useState<string | null>(null);
@@ -100,6 +111,7 @@ export default function QaLogsScreen() {
   // (not through the collapsed `getSubscriptionStatus()` view).
   const [rawEntitlements, setRawEntitlements] = React.useState<RawEntitlements | null>(null);
   const [refreshingEntitlements, setRefreshingEntitlements] = React.useState(false);
+  const [presentingRcPaywall, setPresentingRcPaywall] = React.useState(false);
   const refreshRawEntitlements = React.useCallback(async () => {
     setRefreshingEntitlements(true);
     try {
@@ -519,7 +531,9 @@ export default function QaLogsScreen() {
       await expireTrial();
       await trialStatus.refresh();
       qaLog("freemium", "Trial expired manually");
-      alert("Trial expired. Restart the app to see the hard paywall.");
+      alert(
+        "Trial expired. The gate should switch to paywall; the RevenueCat paywall may open automatically. If not, leave this screen or background/foreground the app.",
+      );
     } catch (err) {
       qaLog("freemium", "Error expiring trial", { error: String(err) });
       alert("Failed to expire trial");
@@ -623,6 +637,35 @@ export default function QaLogsScreen() {
     setTimeout(() => Updates.reloadAsync().catch(() => {}), 250);
   };
 
+  const handlePresentRcPaywallFromQa = async () => {
+    if (Platform.OS !== "android") return;
+    if (subscriptionLoading) {
+      Alert.alert("Wait", "Subscription state is still loading.");
+      return;
+    }
+    if (gate !== "paywall") {
+      Alert.alert(
+        "Gate is not paywall",
+        "Current gate: " +
+          gate +
+          ". Expire the local 3-day trial (or wait), and ensure you are not entitled in RevenueCat—or enable Force NOT subscribed and let the app reload.",
+      );
+      return;
+    }
+    setPresentingRcPaywall(true);
+    try {
+      qaLog("paywall", "QA manual presentPaywall");
+      await RevenueCatUI.presentPaywall();
+      await refreshSubscription();
+      await trialStatus.refresh();
+    } catch (err) {
+      qaLog("paywall", "QA presentPaywall error", { error: String(err) });
+      Alert.alert("presentPaywall failed", String(err));
+    } finally {
+      setPresentingRcPaywall(false);
+    }
+  };
+
   const handleLogLifetimeDiagnostics = async () => {
     setRefreshingLifetime(true);
     try {
@@ -704,45 +747,138 @@ export default function QaLogsScreen() {
           />
         </View>
 
-        <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>Trial Testing</Text>
+        {Platform.OS === "android" ? (
+          <>
+            <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>
+              Android: gate and overrides
+            </Text>
+            <View style={[styles.playbookBlock, { borderColor: colors.mist }]}>
+              <Text style={[styles.playbookLine, { color: colors.ink }]}>
+                <Text style={styles.playbookBold}>App gate: </Text>
+                {subscriptionLoading
+                  ? "Loading…"
+                  : gate === "paywall"
+                    ? "PAYWALL (tabs not mounted)"
+                    : "FULL ACCESS"}
+              </Text>
+              <Text style={[styles.playbookLine, { color: colors.ink }]}>
+                <Text style={styles.playbookBold}>RevenueCat SDK: </Text>
+                {isRevenueCatInitialized() ? "initialized" : "not initialized"}
+              </Text>
+              <Text style={[styles.playbookLine, { color: colors.ink }]}>
+                <Text style={styles.playbookBold}>Force NOT subscribed (QA): </Text>
+                {subscriptionOverride ? "ON (reloads app when toggled)" : "off"}
+              </Text>
+              <Text style={[styles.playbookHint, { color: colors.textSecondary }]}>
+                Green rows below are real RC entitlements. The gate can still be PAYWALL if the QA override is on and the local trial is expired.
+              </Text>
+            </View>
+
+            <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>
+              Scenario playbook
+            </Text>
+            <View style={[styles.playbookBlock, { borderColor: colors.mist }]}>
+              <Text style={[styles.playbookScenarioTitle, { color: colors.deepTeal }]}>A — Fresh 3-day trial</Text>
+              <Text style={[styles.playbookBody, { color: colors.ink }]}>
+                Clear Force NOT subscribed if on. Tap Reset trial, then fully kill the app and reopen. Expect full access.
+              </Text>
+              <Text style={[styles.playbookScenarioTitle, { color: colors.deepTeal }]}>B — Expired trial → paywall</Text>
+              <Text style={[styles.playbookBody, { color: colors.ink }]}>
+                Clear the override if needed. Tap Expire trial. Expect gate PAYWALL; root may present the RC paywall automatically.
+              </Text>
+              <Text style={[styles.playbookScenarioTitle, { color: colors.deepTeal }]}>C — RC entitled but must see paywall</Text>
+              <Text style={[styles.playbookBody, { color: colors.ink }]}>
+                Tap Force NOT subscribed (app reloads). Then Expire trial. RC rows can still show ✓ while gate stays PAYWALL.
+              </Text>
+              <Text style={[styles.playbookScenarioTitle, { color: colors.deepTeal }]}>D — Back to real RC state</Text>
+              <Text style={[styles.playbookBody, { color: colors.ink }]}>
+                Tap Restore (clear override) and reload. Refresh from RevenueCat to update the panel.
+              </Text>
+              <Text style={[styles.playbookScenarioTitle, { color: colors.deepTeal }]}>E — Real Modal A</Text>
+              <Text style={[styles.playbookBody, { color: colors.ink }]}>
+                RC user needs both unlimited + lifetime. Reset Modal A seen flag, then kill and reopen.
+              </Text>
+              <Text style={[styles.playbookScenarioTitle, { color: colors.deepTeal }]}>F — Grandfather / Modal B</Text>
+              <Text style={[styles.playbookBody, { color: colors.ink }]}>
+                Reset Grandfather state to retry the edge function. Prime Modal B only tests local wiring (no server).
+              </Text>
+              <Text style={[styles.playbookScenarioTitle, { color: colors.deepTeal }]}>G — Present RC paywall now</Text>
+              <Text style={[styles.playbookBody, { color: colors.ink }]}>
+                Use the button below only when gate is already PAYWALL (e.g. after B or C).
+              </Text>
+            </View>
+
+            <View style={styles.actionsRow}>
+              <TouchableOpacity
+                style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+                activeOpacity={0.8}
+                disabled={presentingRcPaywall}
+                onPress={() => void handlePresentRcPaywallFromQa()}
+              >
+                <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+                  {presentingRcPaywall ? "Presenting…" : "Present RC paywall now"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        ) : null}
+
+        <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>
+          Local 3-day trial (device storage)
+        </Text>
+        <Text style={[styles.playbookHint, { color: colors.textSecondary, marginBottom: 4 }]}>
+          Reset: clears the start time — kill and reopen the app so a new trial begins. Expire: sets start in the past so the gate becomes paywall (if RC does not grant access).
+        </Text>
         <View style={styles.actionsRow}>
           <TouchableOpacity
             style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
             activeOpacity={0.8}
             onPress={handleShowTrialStatus}
           >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Show Trial Status</Text>
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Show trial status</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
             activeOpacity={0.8}
             onPress={handleResetTrial}
           >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Reset Trial</Text>
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Reset trial</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
             activeOpacity={0.8}
             onPress={handleExpireTrial}
           >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Expire Trial</Text>
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Expire trial</Text>
           </TouchableOpacity>
         </View>
 
+        <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>
+          QA overrides
+        </Text>
+        <Text style={[styles.playbookHint, { color: colors.textSecondary, marginBottom: 4 }]}>
+          Force NOT subscribed makes getSubscriptionStatus() return false even if RC shows lifetime/subscription. Android: use with an expired trial to reach the paywall. Toggling reloads the app.
+        </Text>
         <View style={styles.actionsRow}>
-          <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
-            activeOpacity={0.8}
-            onPress={handleToggleLifetimeOverride}
-          >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
-              {lifetimeOverride === true
-                ? "Lifetime: Force OFF"
-                : lifetimeOverride === false
-                  ? "Lifetime: Clear Override"
-                  : "Lifetime: Force ON"}
+          {Platform.OS === "ios" ? (
+            <TouchableOpacity
+              style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+              activeOpacity={0.8}
+              onPress={handleToggleLifetimeOverride}
+            >
+              <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+                {lifetimeOverride === true
+                  ? "Lifetime: Force OFF"
+                  : lifetimeOverride === false
+                    ? "Lifetime: Clear Override"
+                    : "Lifetime: Force ON"}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <Text style={[styles.playbookHint, { color: colors.textSecondary, flexBasis: "100%" }]}>
+              Paid-download lifetime override: iOS only. On Android use RevenueCat entitlements + Force NOT subscribed.
             </Text>
-          </TouchableOpacity>
+          )}
           <TouchableOpacity
             style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
             activeOpacity={0.8}
@@ -750,8 +886,8 @@ export default function QaLogsScreen() {
           >
             <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
               {subscriptionOverride
-                ? "Subscription: Restore (clear override)"
-                : "Subscription: Force NOT subscribed"}
+                ? "Force NOT subscribed: OFF (reload)"
+                : "Force NOT subscribed: ON (reload)"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -1289,6 +1425,40 @@ const styles = StyleSheet.create({
     fontFamily: fonts.headerFamily,
     fontSize: 16,
     marginBottom: 8,
+  },
+  playbookBlock: {
+    marginTop: 4,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    backgroundColor: "#fff",
+  },
+  playbookLine: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 13,
+    marginBottom: 6,
+  },
+  playbookBold: {
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 13,
+  },
+  playbookHint: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 12,
+    marginTop: 6,
+    lineHeight: 17,
+  },
+  playbookScenarioTitle: {
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 13,
+    marginTop: 8,
+    marginBottom: 2,
+  },
+  playbookBody: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 12,
+    lineHeight: 17,
   },
   accordionHeaderRow: {
     flexDirection: "row",

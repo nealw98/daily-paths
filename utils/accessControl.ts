@@ -5,16 +5,14 @@ import type { TrialStatus } from "./trialTimer";
 /**
  * Access control helpers for Daily Paths.
  *
- * Premium access is granted through one of four mutually exclusive states
- * (checked in priority order):
+ * Android try-before-you-buy: premium if RevenueCat reports subscribed
+ * (`unlimited` or `lifetime`) or the user is inside the local 3-day preview
+ * window (AsyncStorage-backed trial from first app open).
  *
- * 1. Lifetime access  — user paid for the app download (detected via
- *    StoreKit 2 AppTransaction on iOS 16+)
- * 2. Legacy grant      — lifetime entitlement granted manually in RevenueCat
- * 3. Subscription      — active RevenueCat subscription
- * 4. Free trial        — 7-day local trial (unpaid users only)
+ * iOS: paid download — `hasLifetimeAccess` is always treated as premium here
+ * (StoreKit 2 AppTransaction); the hook also short-circuits the platform.
  *
- * If none apply, the user sees a paywall.
+ * If none apply on Android, `getRequiredGate` returns `paywall`.
  */
 
 // ─── Gate type ───────────────────────────────────────────────────────────────
@@ -25,7 +23,7 @@ export type GateType = "none" | "paywall";
  * Premium entitlement check.
  *
  * @param subscription  RevenueCat subscription status
- * @param trial         Local 7-day trial status
+ * @param trial         Local 3-day trial status
  * @param hasLifetimeAccess  Whether the user paid for the app download
  */
 export function hasPremiumEntitlement(

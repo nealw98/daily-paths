@@ -23,7 +23,7 @@ import {
   CormorantGaramond_600SemiBold_Italic,
   CormorantGaramond_700Bold,
 } from "@expo-google-fonts/cormorant-garamond";
-import { fallbackColors } from "../constants/theme";
+import { fallbackColors, fonts } from "../constants/theme";
 import { SettingsProvider } from "../hooks/useSettings";
 import { SubscriptionProvider, useSubscriptionContext } from "../contexts/SubscriptionContext";
 import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform, AppState, AppStateStatus, Image } from "react-native";
@@ -40,6 +40,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { AppDateProvider } from "../contexts/AppDateContext";
 import { useAnalytics } from "../utils/analytics";
+import { expireTrial } from "../utils/trialTimer";
 
 console.log("[STARTUP] _layout.tsx module loading...");
 console.log("[STARTUP] Platform:", Platform.OS, Platform.Version);
@@ -230,49 +231,12 @@ export default function RootLayout() {
       <SettingsProvider>
         <AppDateProvider>
           <SubscriptionProvider>
-            <AndroidHardPaywallGate />
-            <SubscriberToLifetimePresenter />
-            <GrandfatheredLifetimePresenter />
-            {updateReady && (
-              <View style={styles.updateBanner}>
-                <Text style={styles.updateText}>
-                  Update available. Restart to apply.
-                </Text>
-                <View style={styles.updateActions}>
-                  <TouchableOpacity
-                    style={[
-                      styles.updateButtonPrimary,
-                      { backgroundColor: colors.seafoam },
-                    ]}
-                    onPress={handleRestart}
-                    disabled={restarting}
-                    activeOpacity={0.8}
-                  >
-                    <Text
-                      style={[
-                        styles.updateButtonPrimaryText,
-                        { color: colors.deepTeal },
-                      ]}
-                    >
-                      {restarting ? "Restarting..." : "Restart"}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.updateButtonSecondary}
-                    onPress={() => setUpdateReady(false)}
-                    activeOpacity={0.8}
-                    disabled={restarting}
-                  >
-                    <Text style={styles.updateButtonSecondaryText}>Later</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: colors.pearl },
-              }}
+            <SubscriptionTree
+              colors={colors}
+              updateReady={updateReady}
+              setUpdateReady={setUpdateReady}
+              restarting={restarting}
+              handleRestart={handleRestart}
             />
           </SubscriptionProvider>
         </AppDateProvider>
@@ -281,30 +245,108 @@ export default function RootLayout() {
   );
 }
 
+type SubscriptionTreeProps = {
+  colors: typeof fallbackColors;
+  updateReady: boolean;
+  setUpdateReady: (v: boolean) => void;
+  restarting: boolean;
+  handleRestart: () => Promise<void>;
+};
+
+/**
+ * Mounts the tab Stack only when the user is entitled on Android — avoids
+ * painting Home under the paywall / splash handoff.
+ */
+function SubscriptionTree({
+  colors,
+  updateReady,
+  setUpdateReady,
+  restarting,
+  handleRestart,
+}: SubscriptionTreeProps) {
+  const { gate, loading } = useSubscriptionContext();
+  const showMainStack =
+    Platform.OS !== "android" || (!loading && gate !== "paywall");
+
+  return (
+    <View style={{ flex: 1 }}>
+      <AndroidHardPaywallGate />
+      <SubscriberToLifetimePresenter />
+      <GrandfatheredLifetimePresenter />
+      {updateReady && (
+        <View style={styles.updateBanner}>
+          <Text style={styles.updateText}>
+            Update available. Restart to apply.
+          </Text>
+          <View style={styles.updateActions}>
+            <TouchableOpacity
+              style={[
+                styles.updateButtonPrimary,
+                { backgroundColor: colors.seafoam },
+              ]}
+              onPress={handleRestart}
+              disabled={restarting}
+              activeOpacity={0.8}
+            >
+              <Text
+                style={[
+                  styles.updateButtonPrimaryText,
+                  { color: colors.deepTeal },
+                ]}
+              >
+                {restarting ? "Restarting..." : "Restart"}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.updateButtonSecondary}
+              onPress={() => setUpdateReady(false)}
+              activeOpacity={0.8}
+              disabled={restarting}
+            >
+              <Text style={styles.updateButtonSecondaryText}>Later</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+      {showMainStack ? (
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: colors.pearl },
+          }}
+        />
+      ) : (
+        <View style={styles.androidGatePlaceholder} />
+      )}
+    </View>
+  );
+}
 
 /**
  * Root-level hard paywall for Android.
  *
  * When the gate is "paywall" and the app is foreground, presents the
- * RevenueCat-rendered paywall as an overlay above the Stack (so notifications
- * deep-linking still works when the user eventually purchases).  The user
- * cannot dismiss without purchasing or restoring — that's enforced via the
- * RevenueCat dashboard config (Close button disabled). Re-presents if the
- * paywall returns without an entitlement.
+ * RevenueCat-rendered paywall. The main Stack is not mounted while gated, so
+ * Home never flashes. Native splash stays up until just before
+ * `presentPaywall()` so there is no blank gap.
  *
- * Also drives the native splash dismiss: the splash stays up until the
- * gate resolves and (on the paywall path) RC's native paywall has presented,
- * so the user never sees a flash of Home before the paywall slides up.
+ * If the user closes the paywall without purchasing (when RC allows it), a
+ * blocking shell with Retry appears instead of exposing the app.
  */
 function AndroidHardPaywallGate() {
-  const { gate, loading, refresh } = useSubscriptionContext();
-  const { trackPaywallShown, trackPaywallDismissed, trackRestoreCompleted } = useAnalytics();
+  const { gate, loading, refresh, trialStatus } = useSubscriptionContext();
+  const {
+    trackPaywallShown,
+    trackPaywallDismissed,
+    trackPaywallPurchaseInitiated,
+    trackPaywallPurchaseCompleted,
+    trackPaywallPurchaseCancelled,
+    trackRestoreCompleted,
+  } = useAnalytics();
   const presenting = useRef(false);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
-  // Whether the JS splash overlay should still cover Home. False when user
-  // has closed the paywall (so they see Home until the AppState listener
-  // re-presents on next foreground) or when presentation fails.
-  const [paywallDismissed, setPaywallDismissed] = useState(false);
+  /** After RC paywall close/error — show Retry instead of mounting the app. */
+  const [showPaywallRetryShell, setShowPaywallRetryShell] = useState(false);
 
   const hideNativeSplash = () => {
     SplashScreen.hideAsync().catch(() => {
@@ -320,87 +362,131 @@ function AndroidHardPaywallGate() {
 
     presenting.current = true;
     try {
+      trackPaywallPurchaseInitiated();
       trackPaywallShown();
+      hideNativeSplash();
       qaLog("paywall", "Hard paywall presenting");
       const result = await RevenueCatUI.presentPaywall();
       qaLog("paywall", "Hard paywall result", { result });
 
       if (result === PAYWALL_RESULT.PURCHASED) {
+        trackPaywallPurchaseCompleted();
         await refresh();
         await new Promise((r) => setTimeout(r, 350));
         await refresh();
-        // gate flips to "none" → overlay unmounts via render condition below.
+        try {
+          await expireTrial();
+          await trialStatus.refresh();
+        } catch {
+          // Non-critical — entitlement already unlocks the app
+        }
+        setShowPaywallRetryShell(false);
       } else if (result === PAYWALL_RESULT.RESTORED) {
         trackRestoreCompleted(true);
         await refresh();
         await new Promise((r) => setTimeout(r, 350));
         await refresh();
+        try {
+          await expireTrial();
+          await trialStatus.refresh();
+        } catch {
+          // Non-critical
+        }
+        setShowPaywallRetryShell(false);
       } else {
-        // Closed without purchasing/restoring — show Home; AppState listener
-        // will re-present on next foreground.
+        trackPaywallPurchaseCancelled();
         trackPaywallDismissed();
-        setPaywallDismissed(true);
+        setShowPaywallRetryShell(true);
       }
     } catch (err) {
       qaLog("paywall", "Hard paywall error", { error: String(err) });
-      // Drop the overlay so the user isn't trapped on the splash visual.
-      setPaywallDismissed(true);
+      trackPaywallPurchaseCancelled();
+      setShowPaywallRetryShell(true);
     } finally {
       presenting.current = false;
     }
   };
 
-  // Hide the native splash as soon as gate resolves. The JS overlay below
-  // takes over visually with an identical image+bg so the handoff is
-  // imperceptible. We hide the native splash early because RC's paywall is
-  // a native window that may not render correctly while the system splash
-  // is still held — handing off to a React-rendered overlay (which RC's
-  // paywall reliably renders over) is the safer pattern.
+  // Hide native splash when appropriate. On Android paywall path, defer until
+  // `present()` runs (just before RC paywall) so we never show Home/blank.
   useEffect(() => {
     if (loading) return;
+    if (
+      Platform.OS === "android" &&
+      gate === "paywall" &&
+      !showPaywallRetryShell
+    ) {
+      return;
+    }
     hideNativeSplash();
-  }, [loading]);
+  }, [loading, gate, showPaywallRetryShell]);
 
-  // Present paywall when gate flips to "paywall". Reset the dismissed flag
-  // so the overlay covers again on each fresh present cycle.
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    if (gate === "none") {
+      setShowPaywallRetryShell(false);
+    }
+  }, [gate]);
+
+  // Present paywall when gate flips to "paywall".
   useEffect(() => {
     if (Platform.OS !== "android") return;
     if (loading) return;
     if (gate !== "paywall") return;
-    setPaywallDismissed(false);
+    setShowPaywallRetryShell(false);
     void present();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gate, loading]);
 
-  // Re-present on foreground if still gated.
+  // Re-present on foreground if still gated (and not stuck on retry shell).
   useEffect(() => {
     if (Platform.OS !== "android") return;
     const sub = AppState.addEventListener("change", (next) => {
       if (appStateRef.current.match(/inactive|background/) && next === "active") {
-        if (gate === "paywall" && !loading) void present();
+        if (gate === "paywall" && !loading && !showPaywallRetryShell) {
+          void present();
+        }
       }
       appStateRef.current = next;
     });
     return () => sub.remove();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gate, loading]);
+  }, [gate, loading, showPaywallRetryShell]);
 
-  // JS splash overlay — covers Home while gate is loading or while the
-  // paywall flow is in progress on Android. Visually mirrors the native
-  // splash (#376662 + new-splash-icon.png centered) so the handoff from
-  // native splash → JS overlay is invisible. RC's native paywall renders
-  // *over* this overlay (native window is always above RN views), so the
-  // user sees splash → paywall slide-up with no Home flash in between.
   if (Platform.OS !== "android") return null;
-  if (paywallDismissed) return null;
-  if (!loading && gate === "none") return null;
+
+  const showBlockingOverlay =
+    loading || gate === "paywall" || showPaywallRetryShell;
+  if (!showBlockingOverlay) return null;
+
   return (
-    <View pointerEvents="none" style={styles.splashOverlay}>
+    <View
+      pointerEvents={showPaywallRetryShell ? "auto" : "none"}
+      style={styles.splashOverlay}
+    >
       <Image
         source={require("../assets/new-splash-icon.png")}
         style={styles.splashIcon}
         resizeMode="contain"
       />
+      {showPaywallRetryShell ? (
+        <View style={styles.paywallRetryBlock}>
+          <Text style={styles.paywallRetryTitle}>Subscription required</Text>
+          <Text style={styles.paywallRetryBody}>
+            The paywall closed without a purchase. Tap Retry to open it again.
+          </Text>
+          <TouchableOpacity
+            style={styles.paywallRetryButton}
+            activeOpacity={0.85}
+            onPress={() => {
+              setShowPaywallRetryShell(false);
+              void present();
+            }}
+          >
+            <Text style={styles.paywallRetryButtonText}>Retry paywall</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -540,5 +626,42 @@ const styles = StyleSheet.create({
     color: "#e2e8f0",
     fontFamily: "Inter_400Regular",
     fontSize: 13,
+  },
+  androidGatePlaceholder: {
+    flex: 1,
+    backgroundColor: "#376662",
+  },
+  paywallRetryBlock: {
+    marginTop: 24,
+    paddingHorizontal: 24,
+    alignItems: "center",
+    maxWidth: 320,
+    alignSelf: "center",
+  },
+  paywallRetryTitle: {
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 18,
+    color: "#f8fafc",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  paywallRetryBody: {
+    fontFamily: fonts.bodyFamilyRegular,
+    fontSize: 14,
+    color: "#e2e8f0",
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  paywallRetryButton: {
+    backgroundColor: "#7dd3c0",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 999,
+  },
+  paywallRetryButtonText: {
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 15,
+    color: "#0f172a",
   },
 });
