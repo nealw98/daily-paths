@@ -31,6 +31,7 @@ import {
   expireTrial,
   type TrialStatus,
 } from "../utils/trialTimer";
+import { clearSubscriptionOverride } from "../utils/subscriptionOverride";
 import { detectLifetimeAccess } from "../utils/paidAppDetector";
 import { getRequiredGate, type GateType } from "../utils/accessControl";
 import { qaLog } from "../utils/qaLog";
@@ -97,6 +98,13 @@ function isAnnualFromExpiration(expirationIso: string | null): boolean {
   const expiresMs = Date.parse(expirationIso);
   if (Number.isNaN(expiresMs)) return false;
   return expiresMs - Date.now() > ANNUAL_THRESHOLD_DAYS * 24 * 60 * 60 * 1000;
+}
+
+function hasActiveRevenueCatAccess(raw: {
+  hasUnlimited: boolean;
+  hasLifetime: boolean;
+}): boolean {
+  return raw.hasUnlimited || raw.hasLifetime;
 }
 
 // ─── Context ─────────────────────────────────────────────────────────────────
@@ -290,6 +298,11 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
               try {
                 qaLog("subscription", "Android silent restore (no RC entitlement, trial not active)");
                 await restorePurchases();
+                const rawAfterRestore = await getRawEntitlements();
+                if (hasActiveRevenueCatAccess(rawAfterRestore)) {
+                  await clearSubscriptionOverride();
+                  qaLog("subscription", "Cleared QA subscription override after Android restore");
+                }
                 const after = await getSubscriptionStatus();
                 if (!cancelled) setStatus(after);
               } catch (re) {
@@ -414,12 +427,16 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       await trackEvent(ANALYTICS_EVENTS.RESTORE_INITIATED, {}, true);
       await restorePurchases();
+      const rawAfterRestore = await getRawEntitlements();
+      if (hasActiveRevenueCatAccess(rawAfterRestore)) {
+        await clearSubscriptionOverride();
+        qaLog("subscription", "Cleared QA subscription override after restore");
+      }
       const newStatus = await getSubscriptionStatus();
       setStatus(newStatus);
       try {
-        const raw = await getRawEntitlements();
-        setHasSubAndLifetime(raw.hasUnlimited && raw.hasLifetime);
-        setIsAnnualSubscriber(raw.hasUnlimited && isAnnualFromExpiration(raw.unlimitedExpirationDate));
+        setHasSubAndLifetime(rawAfterRestore.hasUnlimited && rawAfterRestore.hasLifetime);
+        setIsAnnualSubscriber(rawAfterRestore.hasUnlimited && isAnnualFromExpiration(rawAfterRestore.unlimitedExpirationDate));
       } catch {
         // Non-critical
       }

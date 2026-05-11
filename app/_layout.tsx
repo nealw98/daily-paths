@@ -41,7 +41,8 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { AppDateProvider } from "../contexts/AppDateContext";
 import { useAnalytics } from "../utils/analytics";
 import { expireTrial } from "../utils/trialTimer";
-import { restorePurchases } from "../lib/subscription";
+import { getRawEntitlements, restorePurchases } from "../lib/subscription";
+import { clearSubscriptionOverride } from "../utils/subscriptionOverride";
 
 console.log("[STARTUP] _layout.tsx module loading...");
 console.log("[STARTUP] Platform:", Platform.OS, Platform.Version);
@@ -372,6 +373,10 @@ function AndroidHardPaywallGate() {
 
       if (result === PAYWALL_RESULT.PURCHASED) {
         trackPaywallPurchaseCompleted();
+        const rawAfterPurchase = await getRawEntitlements();
+        if (rawAfterPurchase.hasUnlimited || rawAfterPurchase.hasLifetime) {
+          await clearSubscriptionOverride();
+        }
         await refresh();
         await new Promise((r) => setTimeout(r, 350));
         await refresh();
@@ -384,6 +389,11 @@ function AndroidHardPaywallGate() {
         setShowPaywallRetryShell(false);
       } else if (result === PAYWALL_RESULT.RESTORED) {
         trackRestoreCompleted(true);
+        const rawAfterRestore = await getRawEntitlements();
+        if (rawAfterRestore.hasUnlimited || rawAfterRestore.hasLifetime) {
+          await clearSubscriptionOverride();
+          qaLog("paywall", "Cleared QA subscription override after paywall restore");
+        }
         await refresh();
         await new Promise((r) => setTimeout(r, 350));
         await refresh();
@@ -411,6 +421,11 @@ function AndroidHardPaywallGate() {
         try {
           qaLog("paywall", "Recovering via restorePurchases after already-owned error");
           await restorePurchases();
+          const rawAfterRestore = await getRawEntitlements();
+          if (rawAfterRestore.hasUnlimited || rawAfterRestore.hasLifetime) {
+            await clearSubscriptionOverride();
+            qaLog("paywall", "Cleared QA subscription override after already-owned restore");
+          }
           await refresh();
           await new Promise((r) => setTimeout(r, 250));
           await refresh();
