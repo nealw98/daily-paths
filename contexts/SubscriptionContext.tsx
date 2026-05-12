@@ -27,6 +27,10 @@ import {
   queueGrandfatherModalForExistingLifetime,
 } from "../lib/grandfather";
 import {
+  attemptSubscriberLifetimeGrantIfEligible,
+  getSubscriberPlanFromRaw,
+} from "../lib/subscriberMigration";
+import {
   ensureTrialStarted,
   getTrialStatus,
   expireTrial,
@@ -89,17 +93,6 @@ const DEFAULT_TRIAL: TrialStatus = {
   trialStartDate: null,
   daysRemaining: 3,
 };
-
-const ANNUAL_THRESHOLD_DAYS = 60;
-
-/** Active unlimited expiration > 60 days out → treat as an annual sub.
- *  Monthly renewals expire within ~30 days; annuals within ~365. */
-function isAnnualFromExpiration(expirationIso: string | null): boolean {
-  if (!expirationIso) return false;
-  const expiresMs = Date.parse(expirationIso);
-  if (Number.isNaN(expiresMs)) return false;
-  return expiresMs - Date.now() > ANNUAL_THRESHOLD_DAYS * 24 * 60 * 60 * 1000;
-}
 
 function hasActiveRevenueCatAccess(raw: {
   hasUnlimited: boolean;
@@ -353,16 +346,30 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
 
         // Detect dual entitlement (sub→lifetime conversion) for Modal A.
         try {
-          const raw = await getRawEntitlements();
+          let raw = await getRawEntitlements();
+          if (raw.hasUnlimited && !raw.hasLifetime) {
+            const migratedSubscriber =
+              await attemptSubscriberLifetimeGrantIfEligible(raw);
+            qaLog("subscription", "Subscriber lifetime migration attempt", {
+              migratedSubscriber,
+              rawBeforeMigration: raw,
+            });
+            if (migratedSubscriber) {
+              const after = await getSubscriptionStatus();
+              if (!cancelled) setStatus(after);
+              raw = await getRawEntitlements();
+            }
+          }
           if (!cancelled) {
             setHasSubAndLifetime(raw.hasUnlimited && raw.hasLifetime);
-            setIsAnnualSubscriber(raw.hasUnlimited && isAnnualFromExpiration(raw.unlimitedExpirationDate));
+            setIsAnnualSubscriber(raw.hasUnlimited && getSubscriberPlanFromRaw(raw) === "annual");
             const queuedExistingGrandfatherModal =
               await queueGrandfatherModalForExistingLifetime(raw.lifetimeProductIdentifier);
             qaLog("access-init", "Raw entitlements processed for modal decisions", {
               raw,
               hasSubAndLifetime: raw.hasUnlimited && raw.hasLifetime,
-              isAnnualSubscriber: raw.hasUnlimited && isAnnualFromExpiration(raw.unlimitedExpirationDate),
+              subscriberPlan: getSubscriberPlanFromRaw(raw),
+              isAnnualSubscriber: raw.hasUnlimited && getSubscriberPlanFromRaw(raw) === "annual",
               queuedExistingGrandfatherModal,
             });
           }
@@ -480,7 +487,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
           try {
             const raw = await getRawEntitlements();
             setHasSubAndLifetime(raw.hasUnlimited && raw.hasLifetime);
-            setIsAnnualSubscriber(raw.hasUnlimited && isAnnualFromExpiration(raw.unlimitedExpirationDate));
+            setIsAnnualSubscriber(raw.hasUnlimited && getSubscriberPlanFromRaw(raw) === "annual");
           } catch {
             // Non-critical
           }
@@ -512,7 +519,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       setStatus(newStatus);
       try {
         setHasSubAndLifetime(rawAfterRestore.hasUnlimited && rawAfterRestore.hasLifetime);
-        setIsAnnualSubscriber(rawAfterRestore.hasUnlimited && isAnnualFromExpiration(rawAfterRestore.unlimitedExpirationDate));
+        setIsAnnualSubscriber(rawAfterRestore.hasUnlimited && getSubscriberPlanFromRaw(rawAfterRestore) === "annual");
       } catch {
         // Non-critical
       }
@@ -530,9 +537,22 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       const newStatus = await getSubscriptionStatus();
       setStatus(newStatus);
       try {
-        const raw = await getRawEntitlements();
+        let raw = await getRawEntitlements();
+        if (raw.hasUnlimited && !raw.hasLifetime) {
+          const migratedSubscriber =
+            await attemptSubscriberLifetimeGrantIfEligible(raw);
+          qaLog("subscription", "Subscriber lifetime migration attempt during refresh", {
+            migratedSubscriber,
+            rawBeforeMigration: raw,
+          });
+          if (migratedSubscriber) {
+            const after = await getSubscriptionStatus();
+            setStatus(after);
+            raw = await getRawEntitlements();
+          }
+        }
         setHasSubAndLifetime(raw.hasUnlimited && raw.hasLifetime);
-        setIsAnnualSubscriber(raw.hasUnlimited && isAnnualFromExpiration(raw.unlimitedExpirationDate));
+        setIsAnnualSubscriber(raw.hasUnlimited && getSubscriberPlanFromRaw(raw) === "annual");
       } catch {
         // Non-critical
       }

@@ -883,6 +883,12 @@ const styles = StyleSheet.create({
   pageIntroCopy: {
     flex: 1,
   },
+  pageCalendarButton: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   pageTitle: {
     // Lora regular (the family's lightest available weight) for an
     // editorial, serif title treatment.
