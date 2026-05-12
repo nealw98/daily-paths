@@ -1,125 +1,234 @@
-# Android try-before-you-buy — QA testing guide
+# Android 2.7 entitlement QA guide
 
-Step-by-step cases for **QA Diagnostics** (production or preview Android builds). Reach QA from **long-press on Settings** or the **Settings developer entry**.
+Use this guide for Android builds on runtime **2.7.0**. Reach **QA Diagnostics** by long-pressing **Settings** or using the Settings developer entry.
 
----
+## 1. What the QA screen is for
 
-## 1. Prerequisites
+The QA screen has two main jobs:
 
-- Android device or emulator with a build that includes QA Diagnostics.
-- Turn **Developer mode** **ON** in QA when you want usage excluded from Mixpanel (`is_developer`).
-- Copy your **RevenueCat App User ID** from the QA header (tap the line) when you need to look up or edit a customer in the RevenueCat dashboard.
-- Optional: Supabase access to **Edge Function logs** for `grant-grandfather-lifetime` when debugging grandfather.
+1. **Troubleshoot a real user**  
+   Use this when someone says they are blocked, did not get lifetime, or saw the wrong modal.
 
----
+2. **Set up test users**  
+   Use this to create the common test states: new user, expired trial, old free user, monthly subscriber, annual subscriber, and lifetime purchaser.
 
-## 2. How the app decides access (read this first)
+The most important button is **Copy Support Report**. It copies a plain-English summary with the RevenueCat user ID, access result, trial state, old app marker, RevenueCat subscription/lifetime state, and modal seen flags.
 
-| Concept | What it means | Where it comes from |
-|--------|----------------|---------------------|
-| **App gate** | **FULL ACCESS** or **PAYWALL** (tabs may be hidden on PAYWALL). | Local **3-day trial** active **or** RevenueCat says subscribed (`unlimited` / `lifetime`), via `getSubscriptionStatus()`. QA **Force NOT subscribed** makes RC look “not subscribed” for that check only. See `utils/accessControl.ts`. |
-| **Access States** (Subscription / Lifetime rows) | Green checkmarks = **real** RevenueCat entitlements. | `getRawEntitlements()` — not affected by “Force NOT subscribed”. You can see **Lifetime ✓** in the panel and still have **gate PAYWALL** if the override is on and trial is expired. |
-| **Grandfather grant** | Server may attach **`lifetime`** in RC for **legacy** Android identities. | App calls `grant-grandfather-lifetime` once per “attempt cycle” (see §4). Not driven by trial on/off in QA. |
+## 2. How access works
 
----
+On Android, the app gives full access if any of these are true:
 
-## 3. User cases — expected results and QA steps
+- The local 3-day 2.7 trial is active.
+- RevenueCat says the user has an active `unlimited` subscription.
+- RevenueCat says the user has `lifetime`.
 
-Use the **Android: gate and overrides** and **Access States** sections on the QA screen while you run these.
+If none are true, the app shows the hard paywall.
 
-### 3.1 First-time app user
+RevenueCat is the final source of truth for paid access. Supabase only records and performs migration grants.
 
-| | |
-|--|--|
-| **User case** | Install (or clear data) and open the app for the first time; no prior local trial timestamp. |
-| **Expected result** | **FULL ACCESS** for the **3-day** local preview from first open. RevenueCat may show no subscription until the SDK runs. After the preview ends and RC still shows no entitlement → **PAYWALL** (hard paywall / RC paywall). |
-| **QA / device steps** | 1. Turn **Force NOT subscribed** **OFF** (if it was on, the app reloads when you clear it). 2. Optional: **Reset trial**, then **fully kill the app and reopen** so a clean trial start is obvious. 3. Confirm **gate FULL ACCESS** and trial copy shows remaining days (or use **Show trial status**). 4. To test paywall later: **Expire trial**; if RC still grants access, turn **Force NOT subscribed** **ON** (reload), then expire trial again. |
+## 3. Important terms
 
-### 3.2 Free trial user (local 3-day trial active)
+| Term | Plain-English meaning |
+|---|---|
+| **3-day trial** | The new 2.7 local trial. Stored on the device as `@daily_paths_v27_trial_start`. |
+| **Old app marker** | Proof that this device opened the old 2.6.x app. Stored on the device as `@daily_paths_trial_start`. |
+| **Grandfather** | Old free users get RevenueCat `lifetime` for free if they have the old app marker and no active subscription. |
+| **Subscriber-to-lifetime** | Old monthly/annual subscribers get RevenueCat `lifetime`. You then cancel their Play subscription renewal manually. |
+| **Modal A** | Subscriber-to-lifetime message. Annual users see the 5 gift-code offer; monthly users do not. |
+| **Modal B** | Grandfathered free-user lifetime message. |
+| **Force NOT subscribed** | QA-only override that makes the app act like RevenueCat says “not subscribed.” It expires after 30 minutes. |
 
-| | |
-|--|--|
-| **User case** | User is inside the AsyncStorage-backed trial window (`isInTrial` true). |
-| **Expected result** | **FULL ACCESS** even if RevenueCat has no active subscription — trial alone unlocks the app. |
-| **QA / device steps** | 1. **Show trial status** — confirm `isInTrial: true`. 2. Keep **Force NOT subscribed** off unless you intentionally want to combine with other tests. 3. **Refresh from RevenueCat** only updates the entitlement panel; it does not end the trial. |
+## 4. Troubleshooting a real user
 
-### 3.3 Free user (no subscription, no trial)
+1. Open **QA Diagnostics**.
+2. Tap **Refresh Access Status**.
+3. Tap **Copy Support Report**.
+4. Paste the report somewhere safe.
+5. If needed, copy the **RevenueCat User ID** from the QA header and look up the user in RevenueCat.
 
-| | |
-|--|--|
-| **User case** | Local trial **expired** (or never in trial and not entitled); RevenueCat has no `unlimited` / `lifetime` (or override forces “not subscribed”). |
-| **Expected result** | **Gate PAYWALL**. Unless a **grandfather** (or other RC) grant applies, the user should not reach tabs until they purchase or restore. |
-| **QA / device steps** | 1. **Expire trial** (after clearing override if you need RC truth for gate). 2. **Refresh from RevenueCat**. 3. Expect **PAYWALL** and, on cold path, RC paywall presentation when gated. |
+Read the support report this way:
 
----
+- **Access: FULL ACCESS** means the app thinks the user can enter.
+- **Access: PAYWALL** means the app thinks the user is blocked.
+- **Why** explains the reason: lifetime, subscription, active trial, or no access.
+- **Old app marker: present** means this device can claim grandfathering.
+- **RevenueCat lifetime: YES** means the durable lifetime entitlement exists.
+- **RevenueCat subscription: YES** means the old subscription is still active.
 
-## 4. Grandfather — how to test it (three tracks)
+For subscribers, your manual Play Console action is triggered by Supabase:
 
-**Critical:** A **real** grandfather grant is **not** produced by trial toggles alone. The Supabase edge function `grant-grandfather-lifetime` grants only when **all** of the following hold (server-side, see `supabase/functions/grant-grandfather-lifetime/index.ts`):
+```text
+android_subscriber_lifetime_grants.status = granted
+```
 
-1. A **RevenueCat subscriber** exists for the current `app_user_id`.
-2. `subscriber.first_seen` is **strictly before** `GRANDFATHER_CUTOFF_DATE` (edge env).
-3. The subscriber has **no active** `lifetime` or `unlimited` entitlement at grant time.
+After that row exists and RevenueCat shows lifetime, match the Play order by product and purchase timestamp, then cancel the Play subscription. Do not refund unless you intentionally want to refund money.
 
-The app (`lib/grandfather.ts`) **skips** calling the edge function if `unlimited` or `lifetime` is already active (and marks attempted). After **any** response from the edge (grant or deny), it sets **`@daily_paths_grandfather_attempted`** so the server is **not** called again until you use QA **Reset Grandfather state**.
+## 5. Test setups
 
-### Track A — Real grant (integration / staging RC user)
+### 5.1 New 2.7 user
 
-**Goal:** Prove end-to-end promotional `lifetime` in RC for an **eligible** legacy identity.
+Goal: prove a new user gets the 3-day trial and is not grandfathered.
 
-1. In **RevenueCat**, use a customer whose **`first_seen`** is **before** the cutoff configured on the edge function (or create a test project / sandbox user that matches your policy).
-2. Ensure that customer has **no** active `unlimited` / `lifetime` when you want the grant to run (or use a fresh anonymous ID that still resolves to an eligible subscriber — usually you work with a known test `app_user_id`).
-3. Open **QA Diagnostics** → **Reset Grandfather state** (clears attempted + modal pending flags).
-4. **Kill the app completely** and reopen (cold start runs RC init → grandfather attempt).
-5. **Expected:** QA logs show `grandfather` / `subscription` messages; **Access States** eventually show **Lifetime**; **gate FULL ACCESS**. **Modal B** (grandfather welcome) may appear once if the app set the modal-pending flag on grant.
-6. **Failure reasons to verify in RC / edge logs:** `post_cutoff` (new user), `subscriber_not_found`, `already_entitled`, `rc_lookup_failed`. After a denied run, use **Reset Grandfather state** before the next attempt.
+Steps:
 
-### Track B — Modal B UI only (no server grant)
+1. Tap **Clear Old App Marker**.
+2. Tap **Reset trial**.
+3. Make sure **Force NOT subscribed** is off.
+4. Kill and reopen the app.
+5. Expected: full access from the 3-day trial.
 
-**Goal:** Verify copy and layout without changing RC.
+To test the paywall, tap **Expire trial**. Expected: paywall unless RevenueCat shows subscription or lifetime.
 
-1. **Preview Modal B (Grandfathered)** — instant UI preview; does not call the server.
-2. Or **Prime Modal B pending** — sets local flags so the **real** presenter can fire on next launch **without** a grant in RC (wiring test only). Do not confuse this with Track A success in RC.
+### 5.2 Old free user gets grandfathered
 
-### Track C — Retry after an ineligible or failed run
+Goal: prove an old free user receives lifetime.
 
-If the edge returned `granted: false` or errored, the app still sets **attempted** — the edge will **not** be called again on every launch.
+Steps:
 
-1. Fix RC test data or cutoff as needed **outside** the app.
-2. QA → **Reset Grandfather state**.
-3. Kill app and reopen to invoke the edge function again.
+1. Use a RevenueCat test user with no active subscription and no lifetime.
+2. Tap **Set Old App Marker**.
+3. Tap **Run Grandfather Check**.
+4. Tap **Refresh Access Status**.
+5. Expected: RevenueCat lifetime becomes YES, access becomes full, and Modal B may show.
 
----
+Server record:
 
-## 5. Mapping phrases to product behavior
+```text
+android_grandfather_grants.status = granted
+```
 
-| Phrase | Meaning | Can you simulate with QA alone? |
-|--------|---------|--------------------------------|
-| **Free trial users → grandfathered** | Legacy **RevenueCat** identity (pre-cutoff) with no entitlement gets promotional `lifetime` when the edge runs — **same server rules** whether they were in a local trial or not on the device. | **No** for the real grant — you need an eligible RC `first_seen`. Trial toggles do not change `first_seen`. |
-| **Free users (no subscription, no trial) → grandfathered** | Same as above: eligibility is **RC + cutoff**, not “trial expired” in the app. | **No** for the real grant — same as Track A. |
-| **First-time app users** | New SDK identity → `first_seen` typically **on or after** cutoff → **`post_cutoff`** → **no** grandfather. They get the **3-day local trial**, then paywall if unpurchased. | **Yes** for trial/paywall path. **Do not** expect grandfather unless RC data was intentionally seeded (e.g. identity migration) to look pre-cutoff. |
+If no grant happens, check the support report and QA logs. Common reasons:
 
----
+- Old app marker missing.
+- User already has lifetime.
+- User has an active subscription, so they belong in the subscriber-to-lifetime flow.
+- Supabase or RevenueCat grant failed.
 
-## 6. Quick reference — QA controls used in this doc
+### 5.3 Old free user is not eligible
 
-| Control | Effect |
-|---------|--------|
-| **Show trial status** | AsyncStorage trial snapshot (alert). |
-| **Reset trial** | Clears trial start; **kill and reopen** app for a clean new trial. |
-| **Expire trial** | Sets start in the past; gate should go **PAYWALL** if RC does not grant access. |
-| **Force NOT subscribed** | QA override on `getSubscriptionStatus()`; **reloads app** when toggled. |
-| **Refresh from RevenueCat** | Refreshes raw entitlement rows in Access States. |
-| **Reset Grandfather state** | Clears attempted + modal pending; next cold start can call the edge again. |
-| **Prime Modal B pending** | Local wiring for Modal B; not a real RC grant. |
-| **Present RC paywall now** | Only when **gate** is already **PAYWALL**; opens RevenueCat paywall UI. |
+Goal: prove no old marker means no grandfather.
 
----
+Steps:
 
-## 7. Related code and docs
+1. Tap **Clear Old App Marker**.
+2. Make sure RevenueCat has no subscription and no lifetime.
+3. Tap **Run Grandfather Check**.
+4. Expected: no lifetime grant.
 
-- Gate logic: `utils/accessControl.ts`, `contexts/SubscriptionContext.tsx`
-- Trial: `utils/trialTimer.ts`
+This matches the business rule: downloaded but never opened the old app does not qualify.
+
+### 5.4 Monthly subscriber becomes lifetime
+
+Goal: prove monthly subscribers are migrated and see monthly Modal A.
+
+Steps:
+
+1. Use a RevenueCat user with active monthly `unlimited` and no `lifetime`.
+2. Tap **Run Subscriber-to-Lifetime Check**.
+3. Tap **Refresh Access Status**.
+4. Expected: RevenueCat lifetime becomes YES and both subscription + lifetime are active.
+5. Tap **Reset Modal A Seen Flag**, then kill and reopen if you need the real modal to fire.
+6. Expected modal: monthly message, no gift-code offer.
+
+Server record:
+
+```text
+android_subscriber_lifetime_grants.status = granted
+android_subscriber_lifetime_grants.subscription_plan = monthly
+```
+
+After the row is granted, cancel the Play subscription renewal manually.
+
+### 5.5 Annual subscriber becomes lifetime
+
+Goal: prove annual subscribers are migrated and see the gift-code offer.
+
+Steps:
+
+1. Use a RevenueCat user with active annual `unlimited` and no `lifetime`.
+2. Tap **Run Subscriber-to-Lifetime Check**.
+3. Tap **Refresh Access Status**.
+4. Expected: RevenueCat lifetime becomes YES and both subscription + lifetime are active.
+5. Tap **Reset Modal A Seen Flag**, then kill and reopen if you need the real modal to fire.
+6. Expected modal: annual message with 5 gift codes.
+
+Server record:
+
+```text
+android_subscriber_lifetime_grants.status = granted
+android_subscriber_lifetime_grants.subscription_plan = annual
+```
+
+Use `subscription_purchased_at` or `subscription_original_purchased_at` to match the Play Console order timestamp, then cancel renewal.
+
+### 5.6 Lifetime purchaser
+
+Goal: prove a one-time purchaser has access and does not need migration.
+
+Steps:
+
+1. Use a RevenueCat user with `lifetime`.
+2. Tap **Refresh Access Status**.
+3. Expected: full access because RevenueCat lifetime is YES.
+
+Do not cancel or refund lifetime purchases. They do not renew.
+
+## 6. Modal testing
+
+Use modal previews only for layout/copy. They do not prove the server grant worked.
+
+- **Preview Modal A Annual**: shows subscriber-to-lifetime annual copy with 5 gift-code offer.
+- **Preview Modal A Monthly**: shows subscriber-to-lifetime monthly copy.
+- **Preview Modal B**: shows grandfathered free-user copy.
+- **Reset Modal A Seen Flag**: lets the real Modal A show again if RevenueCat has both subscription and lifetime.
+- **Prime Modal B Pending**: tests local Modal B wiring only; it does not grant lifetime.
+- **Reset Grandfather State**: clears local Modal B flags only; it does not undo RevenueCat or Supabase.
+
+## 7. Quick reference
+
+| Button | Use it for |
+|---|---|
+| **Copy Support Report** | Best first step for any problem. |
+| **Refresh Access Status** | Re-read RevenueCat and app gate state. |
+| **Set Old App Marker** | Simulate a device that opened the old 2.6.x app. |
+| **Clear Old App Marker** | Simulate a brand-new 2.7 install. |
+| **Run Grandfather Check** | Try free-user grandfather grant now. |
+| **Run Subscriber-to-Lifetime Check** | Try active subscriber lifetime grant now. |
+| **Reset trial** | Clear the 3-day trial and start fresh on next app open. |
+| **Expire trial** | Force the 3-day trial to be over. |
+| **Force NOT subscribed** | Force paywall testing even if RevenueCat has access. Expires after 30 minutes. |
+| **Present RC paywall now** | Open the RevenueCat paywall when the app gate is already paywall. |
+
+## 8. Supabase tables
+
+Grandfather free-user grants:
+
+```text
+android_grandfather_grants
+```
+
+Subscriber-to-lifetime grants:
+
+```text
+android_subscriber_lifetime_grants
+```
+
+For manual subscriber cancellation, look for:
+
+- `status = granted`
+- `subscription_plan`
+- `subscription_product_identifier`
+- `subscription_purchased_at`
+- `subscription_original_purchased_at`
+- `rc_app_user_id`
+
+## 9. Related code
+
+- Gate logic: `utils/accessControl.ts`
+- Trial and old marker: `utils/trialTimer.ts`
+- Subscription orchestration: `contexts/SubscriptionContext.tsx`
+- RevenueCat adapter: `lib/subscription.ts`
 - Grandfather client: `lib/grandfather.ts`
 - Grandfather server: `supabase/functions/grant-grandfather-lifetime/index.ts`
-- Business requirements: `docs/daily-paths-android-try-before-buy-requirements.md`
+- Subscriber migration client: `lib/subscriberMigration.ts`
+- Subscriber migration server: `supabase/functions/grant-subscriber-lifetime/index.ts`
