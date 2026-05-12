@@ -60,6 +60,18 @@ export async function getLegacyTrialMarker(): Promise<LegacyTrialMarker> {
   }
 }
 
+/** QA helper: create the old 2.6.x marker used for grandfather testing. */
+export async function setLegacyTrialMarkerForQa(dateIso?: string): Promise<string> {
+  const marker = dateIso ?? new Date(Date.now() - 7 * DAY_MS).toISOString();
+  await AsyncStorage.setItem(LEGACY_TRIAL_START_KEY, marker);
+  return marker;
+}
+
+/** QA helper: remove the old 2.6.x grandfather marker. */
+export async function clearLegacyTrialMarkerForQa(): Promise<void> {
+  await AsyncStorage.removeItem(LEGACY_TRIAL_START_KEY);
+}
+
 /**
  * Ensure a trial-start timestamp exists.  Safe to call on every launch —
  * only writes if the key doesn't exist yet.

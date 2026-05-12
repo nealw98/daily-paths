@@ -30,13 +30,17 @@ import { isDeveloperDevice, setDeveloperDevice, getOrCreateDeviceId } from "../u
 import {
   getTrialStatus,
   getLegacyTrialMarker,
+  setLegacyTrialMarkerForQa,
+  clearLegacyTrialMarkerForQa,
   resetTrial,
   expireTrial,
 } from "../utils/trialTimer";
 import {
+  attemptGrandfatherGrantIfEligible,
   resetGrandfatherState,
   simulateGrandfatherGrant,
 } from "../lib/grandfather";
+import { attemptSubscriberLifetimeGrantIfEligible, getSubscriberPlanFromRaw } from "../lib/subscriberMigration";
 import { SubscriberToLifetimeModal } from "../components/SubscriberToLifetimeModal";
 import { GrandfatheredLifetimeModal } from "../components/GrandfatheredLifetimeModal";
 import {
@@ -88,6 +92,7 @@ export default function QaLogsScreen() {
   const [updating, setUpdating] = React.useState(false);
   const [updateStatus, setUpdateStatus] = React.useState<string | null>(null);
   const [copyStatus, setCopyStatus] = React.useState<string | null>(null);
+  const [supportStatus, setSupportStatus] = React.useState<string | null>(null);
   const [transferStatus, setTransferStatus] = React.useState<string | null>(null);
   const [showImportJsonModal, setShowImportJsonModal] = React.useState(false);
   const [importJsonText, setImportJsonText] = React.useState("");
@@ -98,6 +103,7 @@ export default function QaLogsScreen() {
   const [isDeveloper, setIsDeveloper] = React.useState(false);
   const [deviceId, setDeviceId] = React.useState<string | null>(null);
   const [rcUserId, setRcUserId] = React.useState<string | null>(null);
+  const [legacyMarkerText, setLegacyMarkerText] = React.useState<string | null>(null);
   const [lifetimeOverride, setLifetimeOverrideState] = React.useState<boolean | null>(null);
   const [subscriptionOverride, setSubscriptionOverrideState] = React.useState<boolean>(false);
   const [refreshingLifetime, setRefreshingLifetime] = React.useState(false);
@@ -211,6 +217,8 @@ export default function QaLogsScreen() {
       setLifetimeOverrideState(override);
       const subOverride = await getSubscriptionOverride();
       setSubscriptionOverrideState(subOverride);
+      const legacyMarker = await getLegacyTrialMarker();
+      setLegacyMarkerText(legacyMarker.trialStartDate);
       try {
         const id = await Purchases.getAppUserID();
         setRcUserId(id);
@@ -257,6 +265,68 @@ export default function QaLogsScreen() {
       setCopyStatus(
         err instanceof Error ? `Copy failed: ${err.message}` : "Copy failed"
       );
+    }
+  };
+
+  const describeAccess = (
+    snapshot: Awaited<ReturnType<typeof getQaAccessSnapshot>>,
+  ): string => {
+    const raw = snapshot.rawEntitlements;
+    if (raw.hasLifetime) return "Full access because RevenueCat shows Lifetime.";
+    if (raw.hasUnlimited) return "Full access because RevenueCat shows an active subscription.";
+    if (snapshot.trial.isInTrial) {
+      return `Full access because the 3-day trial is active (${snapshot.trial.daysRemaining} day(s) remaining).`;
+    }
+    if (snapshot.gate === "paywall") return "Blocked by paywall: no lifetime, no subscription, and no active trial.";
+    return "Full access, but the exact reason needs review in the raw details below.";
+  };
+
+  const handleCopySupportReport = async () => {
+    try {
+      const snapshot = await getQaAccessSnapshot("Copy Support Report");
+      const raw = snapshot.rawEntitlements;
+      const lines = [
+        "Daily Paths Support Report",
+        "",
+        `User: ${snapshot.rcUserId ?? "RevenueCat user ID not available"}`,
+        `Platform: ${snapshot.platform}`,
+        `App version: ${appVersion} (build ${iosBuildNumber})`,
+        "",
+        `Access: ${snapshot.gate === "paywall" ? "PAYWALL" : "FULL ACCESS"}`,
+        `Why: ${describeAccess(snapshot)}`,
+        "",
+        `RevenueCat subscription: ${raw.hasUnlimited ? "YES" : "no"}`,
+        `Subscription product: ${raw.unlimitedProductIdentifier ?? "none"}`,
+        `Subscriber type: ${raw.hasUnlimited ? getSubscriberPlanFromRaw(raw) : "none"}`,
+        `RevenueCat lifetime: ${raw.hasLifetime ? "YES" : "no"}`,
+        `Lifetime product: ${raw.lifetimeProductIdentifier ?? "none"}`,
+        "",
+        `3-day trial: ${
+          snapshot.trial.isInTrial
+            ? `active, ${snapshot.trial.daysRemaining} day(s) left`
+            : snapshot.trial.trialExpired
+              ? "expired"
+              : "not started"
+        }`,
+        `Old app marker: ${
+          snapshot.legacyTrialMarker.hasValidMarker
+            ? `present (${snapshot.legacyTrialMarker.trialStartDate})`
+            : "missing"
+        }`,
+        "",
+        `Grandfather modal seen: ${snapshot.grandfatherFlags.modalSeen ? "yes" : "no"}`,
+        `Subscriber-to-lifetime modal seen: ${snapshot.modalASeen ? "yes" : "no"}`,
+        `Force NOT subscribed override: ${snapshot.qaSubscriptionOverrideActive ? "ON" : "off"}`,
+      ];
+      Clipboard.setString(lines.join("\n"));
+      setSupportStatus("Support report copied");
+      setCopyStatus("Support report copied");
+      qaLog("qa-action", "Copied support report", { snapshot });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setSupportStatus(`Support report failed: ${msg}`);
+      qaLog("qa-action", "Copy support report failed", { error: msg });
+      Alert.alert("Could not copy support report", msg);
     }
   };
 
@@ -589,6 +659,98 @@ export default function QaLogsScreen() {
     }
   };
 
+  const handleSetOldAppMarker = async () => {
+    try {
+      const before = await getQaAccessSnapshot("before Set old app marker");
+      const marker = await setLegacyTrialMarkerForQa();
+      setLegacyMarkerText(marker);
+      const after = await getQaAccessSnapshot("after Set old app marker");
+      qaLog("qa-action", "Set old app marker", { before, after, marker });
+      Alert.alert(
+        "Old app marker set",
+        "This device now looks like it opened the old 2.6.x app. Use this only for grandfather testing.",
+      );
+    } catch (err) {
+      qaLog("qa-action", "Set old app marker failed", { error: String(err) });
+      Alert.alert("Error", "Could not set the old app marker.");
+    }
+  };
+
+  const handleClearOldAppMarker = async () => {
+    try {
+      const before = await getQaAccessSnapshot("before Clear old app marker");
+      await clearLegacyTrialMarkerForQa();
+      setLegacyMarkerText(null);
+      const after = await getQaAccessSnapshot("after Clear old app marker");
+      qaLog("qa-action", "Clear old app marker", { before, after });
+      Alert.alert(
+        "Old app marker cleared",
+        "This device now looks like a new 2.7 install for grandfather testing.",
+      );
+    } catch (err) {
+      qaLog("qa-action", "Clear old app marker failed", { error: String(err) });
+      Alert.alert("Error", "Could not clear the old app marker.");
+    }
+  };
+
+  const handleRunGrandfatherCheck = async () => {
+    try {
+      const before = await getQaAccessSnapshot("before Run grandfather check");
+      const granted = await attemptGrandfatherGrantIfEligible();
+      await refreshSubscription();
+      await refreshRawEntitlements();
+      const after = await getQaAccessSnapshot("after Run grandfather check");
+      qaLog("qa-action", "Run grandfather check", { before, after, granted });
+      Alert.alert(
+        "Grandfather check complete",
+        granted
+          ? "Lifetime was granted. Check RevenueCat and the Supabase grandfather table."
+          : "No new grant happened. Check the support report/logs for the likely reason: missing old marker, active subscription, already lifetime, or server denial.",
+      );
+    } catch (err) {
+      qaLog("qa-action", "Run grandfather check failed", { error: String(err) });
+      Alert.alert("Grandfather check failed", String(err));
+    }
+  };
+
+  const handleRunSubscriberMigration = async () => {
+    try {
+      const before = await getQaAccessSnapshot("before Run subscriber-to-lifetime check");
+      const raw = await getRawEntitlements();
+      if (!raw.hasUnlimited) {
+        Alert.alert(
+          "No active subscription",
+          "RevenueCat does not show an active subscription for this user, so there is no subscriber migration to run.",
+        );
+        qaLog("qa-action", "Subscriber migration blocked: no active subscription", { before, raw });
+        return;
+      }
+      if (raw.hasLifetime) {
+        Alert.alert(
+          "Already lifetime",
+          "RevenueCat already shows Lifetime. You can cancel the Play subscription renewal after matching the order.",
+        );
+        qaLog("qa-action", "Subscriber migration skipped: already lifetime", { before, raw });
+        return;
+      }
+
+      const migrated = await attemptSubscriberLifetimeGrantIfEligible(raw);
+      await refreshSubscription();
+      await refreshRawEntitlements();
+      const after = await getQaAccessSnapshot("after Run subscriber-to-lifetime check");
+      qaLog("qa-action", "Run subscriber-to-lifetime check", { before, after, migrated });
+      Alert.alert(
+        "Subscriber check complete",
+        migrated
+          ? "Lifetime was granted or already confirmed. Use the Supabase subscriber table to match the Play order timestamp, then cancel renewal."
+          : "No migration happened. Check logs/Supabase for the denial or failure reason.",
+      );
+    } catch (err) {
+      qaLog("qa-action", "Run subscriber-to-lifetime check failed", { error: String(err) });
+      Alert.alert("Subscriber check failed", String(err));
+    }
+  };
+
   /** Direct-mount preview: opens the modal regardless of entitlement state.
    *  Use to verify copy/styling. Does not set the seen-flag, does not affect
    *  real production firing. */
@@ -825,6 +987,112 @@ export default function QaLogsScreen() {
             trackColor={{ false: colors.mist, true: colors.deepTeal }}
             thumbColor={isDeveloper ? colors.pearl : '#f4f3f4'}
           />
+        </View>
+
+        <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>
+          Troubleshoot a user
+        </Text>
+        <View style={[styles.playbookBlock, { borderColor: colors.mist }]}>
+          <Text style={[styles.plainStatusTitle, { color: gate === "paywall" ? "#b91c1c" : "#166534" }]}>
+            {subscriptionLoading
+              ? "Checking access..."
+              : gate === "paywall"
+                ? "This user is blocked by the paywall"
+                : "This user has full access"}
+          </Text>
+          <Text style={[styles.playbookLine, { color: colors.ink }]}>
+            <Text style={styles.playbookBold}>Why: </Text>
+            {rawEntitlements?.hasLifetime
+              ? "RevenueCat shows Lifetime."
+              : rawEntitlements?.hasUnlimited
+                ? "RevenueCat shows an active subscription."
+                : trialStatus.isInTrial
+                  ? `The 3-day trial is active (${trialStatus.daysRemaining} day(s) left).`
+                  : gate === "paywall"
+                    ? "No lifetime, no subscription, and no active trial."
+                    : "Refresh the status to confirm the exact reason."}
+          </Text>
+          <Text style={[styles.playbookLine, { color: colors.ink }]}>
+            <Text style={styles.playbookBold}>What to copy for support: </Text>
+            RevenueCat user ID, access reason, subscription/lifetime status, trial status, old app marker, and modal seen flags.
+          </Text>
+          <View style={styles.actionsRow}>
+            <TouchableOpacity
+              style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+              activeOpacity={0.8}
+              onPress={() => void handleCopySupportReport()}
+            >
+              <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+                Copy Support Report
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+              activeOpacity={0.8}
+              onPress={() => {
+                void refreshSubscription();
+                void refreshRawEntitlements();
+              }}
+            >
+              <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+                Refresh Access Status
+              </Text>
+            </TouchableOpacity>
+          </View>
+          {supportStatus ? (
+            <Text style={[styles.meta, { width: "100%" }]}>{supportStatus}</Text>
+          ) : null}
+        </View>
+
+        <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>
+          Set up test users
+        </Text>
+        <View style={[styles.playbookBlock, { borderColor: colors.mist }]}>
+          <Text style={[styles.playbookLine, { color: colors.ink }]}>
+            <Text style={styles.playbookBold}>Old app marker: </Text>
+            {legacyMarkerText ? `present (${legacyMarkerText})` : "missing"}
+          </Text>
+          <Text style={[styles.playbookHint, { color: colors.textSecondary }]}>
+            Set the old app marker to test grandfathering. Clear it to test a brand-new 2.7 user.
+          </Text>
+          <View style={styles.actionsRow}>
+            <TouchableOpacity
+              style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+              activeOpacity={0.8}
+              onPress={() => void handleSetOldAppMarker()}
+            >
+              <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+                Set Old App Marker
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+              activeOpacity={0.8}
+              onPress={() => void handleClearOldAppMarker()}
+            >
+              <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+                Clear Old App Marker
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+              activeOpacity={0.8}
+              onPress={() => void handleRunGrandfatherCheck()}
+            >
+              <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+                Run Grandfather Check
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+              activeOpacity={0.8}
+              onPress={() => void handleRunSubscriberMigration()}
+            >
+              <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+                Run Subscriber-to-Lifetime Check
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {Platform.OS === "android" ? (
@@ -1522,6 +1790,11 @@ const styles = StyleSheet.create({
   playbookBold: {
     fontFamily: fonts.bodyFamilySemiBold,
     fontSize: 13,
+  },
+  plainStatusTitle: {
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 15,
+    marginBottom: 8,
   },
   playbookHint: {
     fontFamily: fonts.bodyFamilyRegular,
