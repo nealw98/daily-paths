@@ -58,6 +58,7 @@ import { useSubscriptionContext } from "../contexts/SubscriptionContext";
 import { QA_REFLECTION_IMAGE_OVERRIDE_KEY } from "./(tabs)/home";
 import { useSubscription } from "../hooks/useSubscription";
 import {
+  clearLocalSubscriptionCache,
   getRawEntitlements,
   isRevenueCatInitialized,
   type RawEntitlements,
@@ -327,6 +328,25 @@ export default function QaLogsScreen() {
       setSupportStatus(`Support report failed: ${msg}`);
       qaLog("qa-action", "Copy support report failed", { error: msg });
       Alert.alert("Could not copy support report", msg);
+    }
+  };
+
+  const handleClearLocalAccessCache = async () => {
+    try {
+      const before = await getQaAccessSnapshot("before Clear local access cache");
+      await clearLocalSubscriptionCache();
+      await clearLifetimeAccessCache();
+      await refreshSubscription();
+      await refreshRawEntitlements();
+      const after = await getQaAccessSnapshot("after Clear local access cache");
+      qaLog("qa-action", "Clear local access cache", { before, after });
+      Alert.alert(
+        "Local access cache cleared",
+        "This only clears what the app stored locally. It does not remove a RevenueCat lifetime entitlement or a Google Play purchase. If Lifetime shows again after refresh, it is coming from RevenueCat or Google Play.",
+      );
+    } catch (err) {
+      qaLog("qa-action", "Clear local access cache failed", { error: String(err) });
+      Alert.alert("Could not clear local access cache", String(err));
     }
   };
 
@@ -1016,6 +1036,9 @@ export default function QaLogsScreen() {
             <Text style={styles.playbookBold}>What to copy for support: </Text>
             RevenueCat user ID, access reason, subscription/lifetime status, trial status, old app marker, and modal seen flags.
           </Text>
+          <Text style={[styles.playbookHint, { color: colors.textSecondary }]}>
+            To check whether Lifetime is only stuck locally, tap Clear Local Access Cache. If Lifetime comes back after refresh, it is not local cache; it is RevenueCat or Google Play.
+          </Text>
           <View style={styles.actionsRow}>
             <TouchableOpacity
               style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
@@ -1036,6 +1059,15 @@ export default function QaLogsScreen() {
             >
               <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
                 Refresh Access Status
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+              activeOpacity={0.8}
+              onPress={() => void handleClearLocalAccessCache()}
+            >
+              <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+                Clear Local Access Cache
               </Text>
             </TouchableOpacity>
           </View>

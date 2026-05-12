@@ -324,6 +324,25 @@ export async function getCachedSubscriptionStatus(): Promise<SubscriptionStatus 
 }
 
 /**
+ * QA helper: clear local subscription caches only.
+ *
+ * This does not remove RevenueCat entitlements or Google Play purchases. If
+ * RevenueCat still has lifetime/subscription on the next refresh, access will
+ * come back.
+ */
+export async function clearLocalSubscriptionCache(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(SUBSCRIPTION_CACHE_KEY);
+    await (Purchases as any).invalidateCustomerInfoCache?.();
+    qaLog("subscription", "Cleared local subscription and RevenueCat customer-info cache");
+  } catch (err) {
+    qaLog("subscription", "Error clearing local subscription cache", {
+      error: String(err),
+    });
+  }
+}
+
+/**
  * Read raw entitlement booleans from RevenueCat.
  *
  * `getSubscriptionStatus()` collapses both entitlements into a single
