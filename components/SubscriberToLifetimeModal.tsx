@@ -3,17 +3,18 @@ import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useTheme } from "../hooks/useTheme";
 import { fonts } from "../constants/theme";
 
-interface GrandfatheredLifetimeModalProps {
+interface SubscriberToLifetimeModalProps {
   visible: boolean;
   onClose: () => void;
 }
 
 /**
- * Shown once on Android to existing 2.6.5 users who were granted lifetime
- * access for free as part of the model change. This is a gift, not a
- * conversion — they never paid anything.
+ * Shown once on Android to users whose subscription has been converted to a
+ * lifetime entitlement. Same copy regardless of monthly or annual — annual
+ * subscribers are being refunded separately, so this modal only needs to
+ * acknowledge the conversion and confirm renewal will be cancelled.
  */
-export const GrandfatheredLifetimeModal: React.FC<GrandfatheredLifetimeModalProps> = ({
+export const SubscriberToLifetimeModal: React.FC<SubscriberToLifetimeModalProps> = ({
   visible,
   onClose,
 }) => {
@@ -24,7 +25,7 @@ export const GrandfatheredLifetimeModal: React.FC<GrandfatheredLifetimeModalProp
         <View style={[styles.card, { backgroundColor: colors.background }]}>
           <Text style={[styles.title, { color: colors.text }]}>You Own Daily Paths</Text>
           <Text style={[styles.message, { color: colors.textSecondary }]}>
-            As a thank-you for being an early adopter, the full app is now yours to keep. No subscription, no purchase, no further billing.
+            Your subscription has been converted to lifetime access. We'll cancel the renewal so you won't be billed again — the app is yours to keep.
           </Text>
           <TouchableOpacity
             style={[styles.button, { backgroundColor: colors.buttonPrimary }]}

@@ -78,7 +78,7 @@ interface SubscriptionContextValue {
   /** Marks the modal acknowledged on the server and clears local state. */
   acknowledgePendingModal: () => Promise<void>;
   /** Records that the first-launch modal was seen so it never fires again. */
-  dismissFirstLaunchModal: (reason: "continued" | "skipped") => Promise<void>;
+  dismissFirstLaunchModal: () => Promise<void>;
 }
 
 const DEFAULT_STATUS: SubscriptionStatus = {
@@ -614,20 +614,14 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
     await acknowledgePendingModal(current.modal);
   }, [pendingModal]);
 
-  const dismissFirstLaunchModal = useCallback(async (reason: "continued" | "skipped") => {
+  const dismissFirstLaunchModal = useCallback(async () => {
     setShowFirstLaunchModal(false);
     try {
       await AsyncStorage.setItem(FIRST_LAUNCH_MODAL_KEY, "true");
     } catch (err) {
       qaLog("access-init", "First-launch modal flag write failed", { error: String(err) });
     }
-    trackEvent(
-      reason === "continued"
-        ? ANALYTICS_EVENTS.FIRST_LAUNCH_MODAL_CONTINUED
-        : ANALYTICS_EVENTS.FIRST_LAUNCH_MODAL_SKIPPED,
-      {},
-      true,
-    );
+    trackEvent(ANALYTICS_EVENTS.FIRST_LAUNCH_MODAL_DISMISSED, {}, true);
   }, []);
 
   // ── Context value ──────────────────────────────────────────────────────

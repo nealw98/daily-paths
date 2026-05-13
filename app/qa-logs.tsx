@@ -43,6 +43,7 @@ import { revokeRcLifetime } from "../lib/revokeLifetime";
 import { fetchQaGrantRows, type QaGrantRows } from "../lib/grantRows";
 import { attemptSubscriberLifetimeGrantIfEligible, getSubscriberPlanFromRaw } from "../lib/subscriberMigration";
 import { GrandfatheredLifetimeModal } from "../components/GrandfatheredLifetimeModal";
+import { SubscriberToLifetimeModal } from "../components/SubscriberToLifetimeModal";
 import {
   setLifetimeOverride,
   getLifetimeOverride,
@@ -113,6 +114,7 @@ export default function QaLogsScreen() {
   // Direct-mount modal previews (bypass entitlement check so we can preview
   // copy/styling without setting up matching RC sandbox state).
   const [previewGrandfathered, setPreviewGrandfathered] = React.useState(false);
+  const [previewSubscriber, setPreviewSubscriber] = React.useState(false);
   // Raw RC entitlement details for the Access States panel — read directly
   // (not through the collapsed `getSubscriptionStatus()` view).
   const [rawEntitlements, setRawEntitlements] = React.useState<RawEntitlements | null>(null);
@@ -777,8 +779,13 @@ export default function QaLogsScreen() {
    *  Use to verify copy/styling. Does not set the seen-flag, does not affect
    *  real production firing. */
   const handlePreviewGrandfatheredModal = () => {
-    qaLog("qa-action", "Preview lifetime modal (UI only)");
+    qaLog("qa-action", "Preview grandfather modal (UI only)");
     setPreviewGrandfathered(true);
+  };
+
+  const handlePreviewSubscriberModal = () => {
+    qaLog("qa-action", "Preview subscriber-to-lifetime modal (UI only)");
+    setPreviewSubscriber(true);
   };
 
   const handleRevokeRcLifetime = async () => {
@@ -1617,7 +1624,16 @@ export default function QaLogsScreen() {
             onPress={handlePreviewGrandfatheredModal}
           >
             <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
-              Preview Lifetime Modal
+              Preview Grandfather Modal
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handlePreviewSubscriberModal}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+              Preview Subscriber Modal
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -1789,10 +1805,14 @@ export default function QaLogsScreen() {
         </View>
       </ScrollView>
 
-      {/* Direct-mount modal preview — bypasses entitlement state */}
+      {/* Direct-mount modal previews — bypass entitlement state */}
       <GrandfatheredLifetimeModal
         visible={previewGrandfathered}
         onClose={() => setPreviewGrandfathered(false)}
+      />
+      <SubscriberToLifetimeModal
+        visible={previewSubscriber}
+        onClose={() => setPreviewSubscriber(false)}
       />
 
       <Modal

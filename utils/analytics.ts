@@ -29,8 +29,7 @@ export const ANALYTICS_EVENTS = {
   MODAL_SHOWN: 'modal_shown',
   LEGACY_USER_IDENTIFIED: 'legacy_user_identified',
   FIRST_LAUNCH_MODAL_SHOWN: 'first_launch_modal_shown',
-  FIRST_LAUNCH_MODAL_CONTINUED: 'first_launch_modal_continued',
-  FIRST_LAUNCH_MODAL_SKIPPED: 'first_launch_modal_skipped',
+  FIRST_LAUNCH_MODAL_DISMISSED: 'first_launch_modal_dismissed',
   // Reminder events
   REMINDER_SET: 'reminder_set',
   REMINDER_CHANGED: 'reminder_changed',

@@ -36,6 +36,7 @@ import { qaLog } from "../utils/qaLog";
 import Purchases from "react-native-purchases";
 import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
 import { GrandfatheredLifetimeModal } from "../components/GrandfatheredLifetimeModal";
+import { SubscriberToLifetimeModal } from "../components/SubscriberToLifetimeModal";
 import { FirstLaunchTrialModal } from "../components/FirstLaunchTrialModal";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { AppDateProvider } from "../contexts/AppDateContext";
@@ -590,10 +591,7 @@ function FirstLaunchTrialPresenter() {
     <FirstLaunchTrialModal
       visible={showFirstLaunchModal}
       onContinue={() => {
-        void dismissFirstLaunchModal("continued");
-      }}
-      onSkip={() => {
-        void dismissFirstLaunchModal("skipped");
+        void dismissFirstLaunchModal();
       }}
     />
   );
@@ -622,21 +620,24 @@ function PendingModalPresenter() {
 
   if (Platform.OS !== "android") return null;
 
-  // Server still distinguishes subscriber_to_lifetime vs grandfathered for
-  // analytics + audit. The client renders the same lifetime-acknowledgment
-  // modal for both cases — there is no longer a plan-specific UI variant or
-  // a gift-code mailto.
-  const showLifetimeModal =
-    pendingModal?.modal === "subscriber_to_lifetime" ||
-    pendingModal?.modal === "grandfathered";
+  const showSubscriberModal = pendingModal?.modal === "subscriber_to_lifetime";
+  const showGrandfatheredModal = pendingModal?.modal === "grandfathered";
 
   return (
-    <GrandfatheredLifetimeModal
-      visible={showLifetimeModal}
-      onClose={() => {
-        void acknowledgePendingModal();
-      }}
-    />
+    <>
+      <SubscriberToLifetimeModal
+        visible={showSubscriberModal}
+        onClose={() => {
+          void acknowledgePendingModal();
+        }}
+      />
+      <GrandfatheredLifetimeModal
+        visible={showGrandfatheredModal}
+        onClose={() => {
+          void acknowledgePendingModal();
+        }}
+      />
+    </>
   );
 }
 

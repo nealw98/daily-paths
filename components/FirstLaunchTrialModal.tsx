@@ -6,22 +6,19 @@ import { fonts } from "../constants/theme";
 interface FirstLaunchTrialModalProps {
   visible: boolean;
   onContinue: () => void;
-  onSkip: () => void;
 }
 
 /**
  * Onboarding modal shown once on first Android launch, explaining the
- * 3-day try-and-buy model. Skippable; skip rate is tracked separately so we
- * can measure how many users opt out of the explainer.
+ * 3-day try-and-buy model. Single dismiss button — no separate Skip path.
  */
 export const FirstLaunchTrialModal: React.FC<FirstLaunchTrialModalProps> = ({
   visible,
   onContinue,
-  onSkip,
 }) => {
   const { colors } = useTheme();
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onSkip}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onContinue}>
       <View style={[styles.backdrop, { backgroundColor: colors.backdrop }]}>
         <View style={[styles.card, { backgroundColor: colors.background }]}>
           <Text style={[styles.title, { color: colors.text }]}>Welcome to Daily Paths</Text>
@@ -34,9 +31,6 @@ export const FirstLaunchTrialModal: React.FC<FirstLaunchTrialModalProps> = ({
             activeOpacity={0.8}
           >
             <Text style={[styles.buttonText, { color: colors.textOnAccent }]}>Continue</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={onSkip} activeOpacity={0.7} style={styles.skipPress}>
-            <Text style={[styles.skipText, { color: colors.textSecondary }]}>Skip</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -76,15 +70,5 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 16,
     fontWeight: "600",
-  },
-  skipPress: {
-    marginTop: 12,
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  skipText: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
-    textDecorationLine: "underline",
   },
 });
