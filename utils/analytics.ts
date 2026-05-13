@@ -28,6 +28,10 @@ export const ANALYTICS_EVENTS = {
   LIFETIME_GRANDFATHERED: 'lifetime_grandfathered',
   MODAL_SHOWN: 'modal_shown',
   LEGACY_USER_IDENTIFIED: 'legacy_user_identified',
+  /** Fires once per device when the one-time RC identity migration runs
+   *  (in-place upgrade from 2.6.x → 2.7). Counts taper as upgrades complete;
+   *  drop to near-zero after ~30 days when migration code can be removed. */
+  RC_IDENTITY_MIGRATION_RAN: 'rc_identity_migration_ran',
   FIRST_LAUNCH_MODAL_SHOWN: 'first_launch_modal_shown',
   FIRST_LAUNCH_MODAL_DISMISSED: 'first_launch_modal_dismissed',
   // Reminder events

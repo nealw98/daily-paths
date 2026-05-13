@@ -261,6 +261,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
               qaLog("subscription", "Supabase session parse error", { error: String(parseErr) });
             }
 
+            let migrationPath: "logIn_with_supabase_session" | "restore_no_session";
             if (oldUserId) {
               qaLog("subscription", "Re-linking RevenueCat with old user ID", { oldUserId });
               const { customerInfo } = await Purchases.logIn(oldUserId);
@@ -268,16 +269,25 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
                 appUserId: oldUserId,
                 activeEntitlements: Object.keys(customerInfo.entitlements.active),
               });
+              migrationPath = "logIn_with_supabase_session";
             } else {
               qaLog("subscription", "No old Supabase session found, trying restorePurchases");
               const customerInfo = await restorePurchases();
               qaLog("subscription", "restorePurchases complete", {
                 activeEntitlements: Object.keys(customerInfo.entitlements.active),
               });
+              migrationPath = "restore_no_session";
             }
 
             await AsyncStorage.setItem(MIGRATION_KEY, "done");
             qaLog("subscription", "Migration key saved");
+
+            // One-time analytics event per device. Counts taper as 2.6.x →
+            // 2.7 in-place upgrades complete; near-zero after ~30 days is
+            // the signal that the migration code can be safely removed.
+            trackEvent(ANALYTICS_EVENTS.RC_IDENTITY_MIGRATION_RAN, {
+              path: migrationPath,
+            }, true);
           }
         } catch (err) {
           qaLog("subscription", "RevenueCat identity migration failed", { error: String(err) });

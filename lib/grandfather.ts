@@ -112,6 +112,7 @@ export async function attemptGrandfatherGrantIfEligible(): Promise<boolean> {
     if (granted) {
       trackEvent(ANALYTICS_EVENTS.LIFETIME_GRANDFATHERED, {
         app_user_id: appUserId,
+        source: "free_grandfather",
       }, true);
       return true;
     }
