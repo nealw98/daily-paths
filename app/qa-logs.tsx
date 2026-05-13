@@ -42,7 +42,6 @@ import { resetModalAcknowledgments } from "../lib/modalDecision";
 import { revokeRcLifetime } from "../lib/revokeLifetime";
 import { fetchQaGrantRows, type QaGrantRows } from "../lib/grantRows";
 import { attemptSubscriberLifetimeGrantIfEligible, getSubscriberPlanFromRaw } from "../lib/subscriberMigration";
-import { SubscriberToLifetimeModal } from "../components/SubscriberToLifetimeModal";
 import { GrandfatheredLifetimeModal } from "../components/GrandfatheredLifetimeModal";
 import {
   setLifetimeOverride,
@@ -113,8 +112,6 @@ export default function QaLogsScreen() {
   const [reflectionImageStatus, setReflectionImageStatus] = React.useState<string | null>(null);
   // Direct-mount modal previews (bypass entitlement check so we can preview
   // copy/styling without setting up matching RC sandbox state).
-  const [previewSubAnnual, setPreviewSubAnnual] = React.useState(false);
-  const [previewSubMonthly, setPreviewSubMonthly] = React.useState(false);
   const [previewGrandfathered, setPreviewGrandfathered] = React.useState(false);
   // Raw RC entitlement details for the Access States panel — read directly
   // (not through the collapsed `getSubscriptionStatus()` view).
@@ -780,18 +777,8 @@ export default function QaLogsScreen() {
    *  Use to verify copy/styling. Does not set the seen-flag, does not affect
    *  real production firing. */
   const handlePreviewGrandfatheredModal = () => {
-    qaLog("qa-action", "Preview Modal B (UI only)");
+    qaLog("qa-action", "Preview lifetime modal (UI only)");
     setPreviewGrandfathered(true);
-  };
-
-  const handlePreviewSubToLifetimeModalAnnual = () => {
-    qaLog("qa-action", "Preview Modal A annual (UI only)");
-    setPreviewSubAnnual(true);
-  };
-
-  const handlePreviewSubToLifetimeModalMonthly = () => {
-    qaLog("qa-action", "Preview Modal A monthly (UI only)");
-    setPreviewSubMonthly(true);
   };
 
   const handleRevokeRcLifetime = async () => {
@@ -1627,28 +1614,10 @@ export default function QaLogsScreen() {
           <TouchableOpacity
             style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
             activeOpacity={0.8}
-            onPress={handlePreviewSubToLifetimeModalAnnual}
-          >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
-              Preview Modal A (Annual)
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
-            activeOpacity={0.8}
-            onPress={handlePreviewSubToLifetimeModalMonthly}
-          >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
-              Preview Modal A (Monthly)
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
-            activeOpacity={0.8}
             onPress={handlePreviewGrandfatheredModal}
           >
             <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
-              Preview Modal B (Grandfathered)
+              Preview Lifetime Modal
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -1820,17 +1789,7 @@ export default function QaLogsScreen() {
         </View>
       </ScrollView>
 
-      {/* Direct-mount modal previews — bypass entitlement state */}
-      <SubscriberToLifetimeModal
-        visible={previewSubAnnual}
-        isAnnual={true}
-        onClose={() => setPreviewSubAnnual(false)}
-      />
-      <SubscriberToLifetimeModal
-        visible={previewSubMonthly}
-        isAnnual={false}
-        onClose={() => setPreviewSubMonthly(false)}
-      />
+      {/* Direct-mount modal preview — bypasses entitlement state */}
       <GrandfatheredLifetimeModal
         visible={previewGrandfathered}
         onClose={() => setPreviewGrandfathered(false)}

@@ -35,7 +35,6 @@ import { initMixpanel } from "../lib/mixpanel";
 import { qaLog } from "../utils/qaLog";
 import Purchases from "react-native-purchases";
 import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
-import { SubscriberToLifetimeModal } from "../components/SubscriberToLifetimeModal";
 import { GrandfatheredLifetimeModal } from "../components/GrandfatheredLifetimeModal";
 import { FirstLaunchTrialModal } from "../components/FirstLaunchTrialModal";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -623,25 +622,21 @@ function PendingModalPresenter() {
 
   if (Platform.OS !== "android") return null;
 
-  const visibleA = pendingModal?.modal === "subscriber_to_lifetime";
-  const visibleB = pendingModal?.modal === "grandfathered";
+  // Server still distinguishes subscriber_to_lifetime vs grandfathered for
+  // analytics + audit. The client renders the same lifetime-acknowledgment
+  // modal for both cases — there is no longer a plan-specific UI variant or
+  // a gift-code mailto.
+  const showLifetimeModal =
+    pendingModal?.modal === "subscriber_to_lifetime" ||
+    pendingModal?.modal === "grandfathered";
 
   return (
-    <>
-      <SubscriberToLifetimeModal
-        visible={visibleA}
-        isAnnual={pendingModal?.plan === "annual"}
-        onClose={() => {
-          void acknowledgePendingModal();
-        }}
-      />
-      <GrandfatheredLifetimeModal
-        visible={visibleB}
-        onClose={() => {
-          void acknowledgePendingModal();
-        }}
-      />
-    </>
+    <GrandfatheredLifetimeModal
+      visible={showLifetimeModal}
+      onClose={() => {
+        void acknowledgePendingModal();
+      }}
+    />
   );
 }
 
