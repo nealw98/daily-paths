@@ -685,7 +685,7 @@ const styles = StyleSheet.create({
   },
   updateText: {
     color: "#e2e8f0",
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Manrope_400Regular",
     fontSize: 14,
   },
   updateActions: {
@@ -699,7 +699,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   updateButtonPrimaryText: {
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Manrope_400Regular",
     fontSize: 13,
     fontWeight: "600",
   },
@@ -712,7 +712,7 @@ const styles = StyleSheet.create({
   },
   updateButtonSecondaryText: {
     color: "#e2e8f0",
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Manrope_400Regular",
     fontSize: 13,
   },
   androidGatePlaceholder: {
