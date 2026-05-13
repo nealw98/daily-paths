@@ -24,6 +24,7 @@ interface RevokeResponse {
   revoked: boolean;
   reason?: string;
   rcStatus?: number;
+  rcBody?: string;
 }
 
 function jsonResponse(body: RevokeResponse, status = 200): Response {
@@ -122,6 +123,8 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // RC requires Content-Type: application/json even on requests with no
+    // body. Omitting it returns RC error code 7227.
     const revokeRes = await fetch(
       `${RC_API_BASE}/subscribers/${encodeURIComponent(appUserId)}/entitlements/${LIFETIME_ENTITLEMENT_ID}/revoke_promotionals`,
       {
@@ -129,6 +132,7 @@ Deno.serve(async (req: Request) => {
         headers: {
           Authorization: `Bearer ${rcSecret}`,
           Accept: "application/json",
+          "Content-Type": "application/json",
         },
       },
     );
@@ -147,10 +151,16 @@ Deno.serve(async (req: Request) => {
         "revoke_failed",
         text,
       );
-      return jsonResponse(
-        { revoked: false, reason: "rc_revoke_failed", rcStatus: revokeRes.status },
-        502,
-      );
+      // Return HTTP 200 with a business-level failure so the client gets
+      // the full reason + RC status. Returning a non-2xx status causes
+      // supabase-js to wrap the response in FunctionsHttpError and drop
+      // the body, leaving the QA panel undiagnosable.
+      return jsonResponse({
+        revoked: false,
+        reason: "rc_revoke_failed",
+        rcStatus: revokeRes.status,
+        rcBody: text,
+      });
     }
 
     await clearModalAcknowledgments(supabaseUrl, serviceRoleKey, appUserId);

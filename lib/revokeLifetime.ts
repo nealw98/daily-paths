@@ -11,7 +11,14 @@ import { qaLog } from "../utils/qaLog";
  * Does not touch real $4.99 IAP lifetime — RC's `revoke_promotionals`
  * endpoint only affects manually-granted promotional entitlements.
  */
-export async function revokeRcLifetime(): Promise<{ ok: boolean; reason?: string }> {
+export interface RevokeRcLifetimeResult {
+  ok: boolean;
+  reason?: string;
+  rcStatus?: number;
+  rcBody?: string;
+}
+
+export async function revokeRcLifetime(): Promise<RevokeRcLifetimeResult> {
   if (Platform.OS !== "android") {
     return { ok: false, reason: "ios_not_supported" };
   }
@@ -31,7 +38,12 @@ export async function revokeRcLifetime(): Promise<{ ok: boolean; reason?: string
     });
     qaLog("revoke-lifetime", "Edge function result", { appUserId, data, error });
     if (error) return { ok: false, reason: String(error) };
-    return { ok: !!data?.revoked, reason: data?.reason };
+    return {
+      ok: !!data?.revoked,
+      reason: data?.reason,
+      rcStatus: data?.rcStatus,
+      rcBody: data?.rcBody,
+    };
   } catch (err) {
     qaLog("revoke-lifetime", "Unexpected error", { error: String(err) });
     return { ok: false, reason: String(err) };

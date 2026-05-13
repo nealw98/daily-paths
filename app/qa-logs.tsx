@@ -812,11 +812,19 @@ export default function QaLogsScreen() {
               await refreshRawEntitlements();
               const after = await getQaAccessSnapshot("after Revoke RC lifetime");
               qaLog("qa-action", "Revoke RC lifetime", { before, after, result });
+              const failureDetail = [
+                result.rcStatus ? `RC ${result.rcStatus}` : null,
+                result.reason ?? "unknown",
+                result.rcBody ? `\n\n${result.rcBody}` : null,
+              ]
+                .filter(Boolean)
+                .join(": ")
+                .replace(": \n\n", "\n\n");
               Alert.alert(
                 result.ok ? "Lifetime revoked" : "Revoke failed",
                 result.ok
                   ? "RC lifetime has been revoked and modal acknowledgments cleared. Pull-to-refresh access status to confirm."
-                  : `Reason: ${result.reason ?? "unknown"}`,
+                  : `Reason: ${failureDetail}`,
               );
             } finally {
               setRevoking(false);
@@ -870,6 +878,50 @@ export default function QaLogsScreen() {
     const after = await getQaAccessSnapshot("after Scenario: Expired trial");
     qaLog("qa-action", "Scenario: Expired trial", { before, after });
     setTimeout(() => Updates.reloadAsync().catch(() => {}), 250);
+  };
+
+  /**
+   * Simulate the experience of an old 2.6.5 free user updating to 2.7:
+   *   - legacy marker present (proves they opened 2.6.x)
+   *   - no 2.7 trial yet
+   *   - no RC promotional lifetime (so the grandfather grant has work to do)
+   *   - server modal acks cleared (so Modal B will fire)
+   *
+   * On reload, the grandfather check runs, RC gets the lifetime entitlement,
+   * `which-modal` returns `grandfathered`, and the trial-start gate skips
+   * `ensureTrialStarted()` because the user is now entitled.
+   */
+  const handleScenarioGrandfatherUpgrade = async () => {
+    Alert.alert(
+      "Simulate 2.6.5 → 2.7 upgrade?",
+      "Sets the old-app marker, clears the 2.7 trial, revokes any RC promotional lifetime, and clears server modal acknowledgments — then reloads. Expected on next launch: grandfather grant fires, RC shows lifetime, Modal B appears, and no 3-day trial runs.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Simulate upgrade",
+          onPress: async () => {
+            const before = await getQaAccessSnapshot("before Scenario: 2.6.5 upgrade");
+            const marker = await setLegacyTrialMarkerForQa();
+            setLegacyMarkerText(marker);
+            await resetTrial();
+            await AsyncStorage.removeItem("@daily_paths_first_launch_modal_seen");
+            await clearSubscriptionOverride();
+            setSubscriptionOverrideState(false);
+            await setLifetimeOverride(null);
+            setLifetimeOverrideState(null);
+            await clearLocalSubscriptionCache();
+            await clearLifetimeAccessCache();
+            // Always attempt revoke — it only affects promotional grants, never
+            // real $4.99 IAP purchases. No-op if there's nothing to revoke.
+            await revokeRcLifetime();
+            await resetModalAcknowledgments();
+            const after = await getQaAccessSnapshot("after Scenario: 2.6.5 upgrade");
+            qaLog("qa-action", "Scenario: 2.6.5 → 2.7 upgrade", { before, after });
+            setTimeout(() => Updates.reloadAsync().catch(() => {}), 250);
+          },
+        },
+      ],
+    );
   };
 
   const handleScenarioPristineReset = async () => {
@@ -1244,6 +1296,15 @@ export default function QaLogsScreen() {
                 >
                   <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
                     Scenario: Expired trial
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+                  activeOpacity={0.8}
+                  onPress={() => void handleScenarioGrandfatherUpgrade()}
+                >
+                  <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+                    Scenario: 2.6.5 → 2.7 upgrade
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
