@@ -42,9 +42,16 @@ export async function attemptGrandfatherGrantIfEligible(): Promise<boolean> {
   }
 
   try {
-    // The server accepts a null marker and falls back to RC first_seen.
-    // We still send the local marker when present so the audit row records it.
+    // No legacy marker means this device never opened 2.6.x — they can't be
+    // a grandfather candidate. Short-circuit before the network call to
+    // shave ~400ms off first-install splash time. The server's `first_seen`
+    // fallback path is no longer exercised (we never want to grandfather a
+    // user whose only "evidence" is a stale anonymous RC user record).
     const legacyMarker = await getLegacyTrialMarker();
+    if (!legacyMarker.hasValidMarker) {
+      qaLog("grandfather", "Skipping grandfather attempt: no legacy marker on device");
+      return false;
+    }
 
     const {
       hasUnlimited,

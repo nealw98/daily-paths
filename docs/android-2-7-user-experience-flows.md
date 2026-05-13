@@ -30,12 +30,9 @@ The Android-only logic lives in:
 4. RC initializes → fresh anonymous user_id, `first_seen` = now.
 5. Migration block: no Supabase session in AsyncStorage, falls through to
    `restorePurchases()` → no purchases. Migration key saved.
-6. `attemptGrandfatherGrantIfEligible()` calls the
-   `grant-grandfather-lifetime` edge function:
-   - No legacy marker → server: `decision_reason: missing_legacy_trial_marker`
-     → **denied**
-   - (RC `first_seen` is post-launch since the user was just created —
-     wouldn't qualify via the fallback either.)
+6. `attemptGrandfatherGrantIfEligible()` short-circuits client-side: no
+   legacy marker on the device → returns false without a network call.
+   (~400ms saved on first install.)
 7. Trial-start gate: `hasLifetime=false, hasUnlimited=false` →
    `skipTrialBecauseEntitled=false` → calls `ensureTrialStarted()`.
 8. `ensureTrialStarted` calls `get-or-create-trial-start` →
@@ -49,8 +46,8 @@ The Android-only logic lives in:
 11. Fresh RC status → not subscribed.
 12. Cold-launch restore → no purchases.
 13. Subscriber-to-lifetime check: `raw.hasUnlimited === false` → skip.
-14. `fetchPendingModal` → server returns `reason: no_lifetime` → no pending
-    congratulatory modal.
+14. Modal decision short-circuits client-side: `getRawEntitlements()`
+    shows `hasLifetime: false` → no network call. (~300ms saved.)
 15. Gate: `hasLifetimeAccess=false`, but `trial.isInTrial=true` →
     `gate: "none"` → app opens.
 
@@ -226,17 +223,16 @@ If the device's AsyncStorage was wiped (factory reset, "Clear data" in
 Settings, or some uninstall paths) before the upgrade to 2.7, the
 legacy marker won't be present.
 
-The current code in `grant-grandfather-lifetime` has a fallback: if RC
-`subscriber.first_seen` predates the launch date, the user still
-qualifies as a grandfather. This catches the wiped-AsyncStorage case for
-devices that Play Services preserves the same RC anonymous user across.
+The current client now requires a legacy marker on the device to even
+attempt a grandfather grant — it never calls the server when the marker
+is missing. The server's old "RC `first_seen` pre-launch" fallback exists
+but is effectively dead because the client never sends a request that
+would trigger it.
 
-**This fallback is flagged for removal** (see deferred discussion in
-the plan history). Once removed, this edge case would route to Persona
-1's flow instead — they would hit the paywall and could either purchase
-$4.99 lifetime or contact support for a manual grant. Volume of
-affected users is expected to be small (factory resets within the
-30-day grandfather window are uncommon).
+So this user routes to **Persona 1's flow**: hits the paywall on day 4,
+either purchases $4.99 lifetime or contacts support for a manual grant.
+Volume is expected to be small (factory resets within the 30-day window
+are uncommon), and case-by-case manual grants are operationally cheap.
 
 ## Quick reference table
 
@@ -245,7 +241,7 @@ affected users is expected to be small (factory resets within the
 | 1. New 2.7 user | Yes (welcome) | No | None | 3 days | Paywall on day 4, pay $4.99 |
 | 2. 2.6.x subscriber | No | Subscriber-to-lifetime | Subscriber modal | No | Lifetime + manual Play cancel |
 | 3. 2.6.x free user with marker | No | Grandfather | Grandfather modal | No | Free lifetime |
-| 3a. 2.6.x free user, marker wiped | Currently no (RC first_seen fallback) | Grandfather (via fallback) | Grandfather modal | No | Free lifetime |
+| 3a. 2.6.x free user, marker wiped | Yes (welcome) | No (no marker on device) | None | 3 days | Same as Persona 1 — paywall day 4 |
 
 ## Operational notes
 

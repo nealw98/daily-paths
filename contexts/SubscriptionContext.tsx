@@ -412,11 +412,21 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       // Server-decided pending modal (Modal A or Modal B — exactly one or
       // none). The server checks RC entitlements + grant tables and returns
       // at most one modal, so collisions are structurally impossible.
+      //
+      // Skip the call when the user has no lifetime entitlement. The server
+      // would return `no_lifetime` anyway, and we can save ~300ms of
+      // first-install splash time for users who can't possibly have a
+      // congratulatory modal pending.
       try {
-        const decision = await fetchPendingModal();
-        if (!cancelled) {
-          qaLog("access-init", "Applying server modal decision", { decision });
-          setPendingModal(decision);
+        const rawForModalDecision = await getRawEntitlements();
+        if (rawForModalDecision.hasLifetime) {
+          const decision = await fetchPendingModal();
+          if (!cancelled) {
+            qaLog("access-init", "Applying server modal decision", { decision });
+            setPendingModal(decision);
+          }
+        } else {
+          qaLog("access-init", "Skipping modal decision: no lifetime entitlement");
         }
       } catch (err) {
         qaLog("access-init", "Pending modal fetch failed", { error: String(err) });
