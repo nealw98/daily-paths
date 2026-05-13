@@ -1,6 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Purchases from "react-native-purchases";
+import { Platform } from "react-native";
 import { trackEvent } from "./trackEvent";
 import { ANALYTICS_EVENTS } from "./analytics";
+import { supabase } from "../lib/supabase";
+import { qaLog } from "./qaLog";
 
 /**
  * Local 3-day trial timer for the try-before-you-buy model.
@@ -73,19 +77,84 @@ export async function clearLegacyTrialMarkerForQa(): Promise<void> {
 }
 
 /**
- * Ensure a trial-start timestamp exists.  Safe to call on every launch —
+ * Ensure a trial-start timestamp exists. Safe to call on every launch —
  * only writes if the key doesn't exist yet.
+ *
+ * On Android, the canonical trial start lives in Supabase (table
+ * `android_trial_starts`) keyed by the RC App User ID. Clearing app data
+ * does not reset the trial — the server replays the original timestamp.
+ * Local AsyncStorage acts as the offline cache.
+ *
+ * If the network call fails (offline first launch), we fall back to the
+ * local timestamp. The server will reconcile on the next launch — using
+ * whichever is older (server keeps the existing row when the client sends
+ * a `fallback_start_at` after a row already exists).
  */
 export async function ensureTrialStarted(): Promise<void> {
+  let local: string | null = null;
   try {
-    const existing = await AsyncStorage.getItem(TRIAL_START_KEY);
-    if (!existing) {
-      await AsyncStorage.setItem(TRIAL_START_KEY, new Date().toISOString());
-      trackEvent(ANALYTICS_EVENTS.TRIAL_STARTED, {}, true);
+    local = await AsyncStorage.getItem(TRIAL_START_KEY);
+  } catch (err) {
+    console.warn("[trialTimer] read local trial start failed:", err);
+  }
+
+  let canonical: string | null = local;
+  // True only when the canonical timestamp is genuinely new (server inserted
+  // a row, or we fell back to a brand-new local timestamp). Restored trials
+  // (server returned an existing row) must NOT fire TRIAL_STARTED.
+  let freshlyCreated = false;
+
+  if (Platform.OS === "android") {
+    try {
+      const appUserId = await Purchases.getAppUserID();
+      if (appUserId) {
+        const { data, error } = await supabase.functions.invoke(
+          "get-or-create-trial-start",
+          {
+            body: {
+              app_user_id: appUserId,
+              fallback_start_at: local ?? null,
+            },
+          },
+        );
+        if (error) {
+          qaLog("trial-server", "get-or-create-trial-start error", {
+            error: String(error),
+          });
+        } else if (data?.trial_start_at) {
+          canonical = data.trial_start_at as string;
+          freshlyCreated = !!data.created && !local;
+          qaLog("trial-server", "Resolved trial start from server", {
+            canonical,
+            local,
+            created: !!data.created,
+            freshlyCreated,
+          });
+        }
+      }
+    } catch (err) {
+      qaLog("trial-server", "get-or-create-trial-start unexpected error", {
+        error: String(err),
+      });
+    }
+  }
+
+  if (!canonical) {
+    // Offline / iOS / failed RC lookup → use a fresh local timestamp.
+    canonical = new Date().toISOString();
+    freshlyCreated = true;
+  }
+
+  try {
+    if (canonical !== local) {
+      await AsyncStorage.setItem(TRIAL_START_KEY, canonical);
     }
   } catch (err) {
-    // AsyncStorage failure should not crash the app
-    console.warn("[trialTimer] ensureTrialStarted error:", err);
+    console.warn("[trialTimer] write local trial start failed:", err);
+  }
+
+  if (freshlyCreated) {
+    trackEvent(ANALYTICS_EVENTS.TRIAL_STARTED, {}, true);
   }
 }
 
@@ -196,9 +265,14 @@ export async function resetTrial(): Promise<void> {
 /**
  * Immediately expire the trial (dev / testing only).
  * Sets the start date past the trial window so it appears expired without
- * needing to manipulate the device clock.
+ * needing to manipulate the device clock. Also clears trial analytics tracking
+ * keys so TRIAL_ENDED and TRIAL_DAY_REACHED refire on the next status read.
  */
 export async function expireTrial(): Promise<void> {
   const expired = new Date(Date.now() - TRIAL_DURATION_MS - DAY_MS);
   await AsyncStorage.setItem(TRIAL_START_KEY, expired.toISOString());
+  await AsyncStorage.removeItem(TRIAL_ENDED_TRACKED_KEY);
+  for (let day = 1; day <= TRIAL_DURATION_DAYS; day++) {
+    await AsyncStorage.removeItem(`${TRIAL_DAY_TRACKED_PREFIX}${day}_tracked`);
+  }
 }

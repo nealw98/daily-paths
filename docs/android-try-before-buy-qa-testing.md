@@ -1,6 +1,6 @@
 # Android 2.7 entitlement QA guide
 
-Use this guide for Android builds on runtime **2.7.0**. Reach **QA Diagnostics** by long-pressing **Settings** or using the Settings developer entry.
+Use this guide for Android builds on runtime **2.7.0**. Reach **QA Diagnostics** by long-pressing the **Version** line at the bottom of **Settings**.
 
 ## 1. What the QA screen is for
 
@@ -30,13 +30,16 @@ RevenueCat is the final source of truth for paid access. Supabase only records a
 
 | Term | Plain-English meaning |
 |---|---|
-| **3-day trial** | The new 2.7 local trial. Stored on the device as `@daily_paths_v27_trial_start`. |
-| **Old app marker** | Proof that this device opened the old 2.6.x app. Stored on the device as `@daily_paths_trial_start`. |
-| **Grandfather** | Old free users get RevenueCat `lifetime` for free if they have the old app marker and no active subscription. |
+| **3-day trial** | The new 2.7 trial. Canonical timestamp lives in Supabase (`android_trial_starts`); device caches it in `@daily_paths_v27_trial_start`. App-data-clear no longer resets the trial. |
+| **Old app marker** | Proof that this device opened the old 2.6.x app. Stored on the device as `@daily_paths_trial_start`. One of two signals the server uses to qualify a user for grandfathering — the other is RC `first_seen` predating launch. |
+| **Grandfather** | Old free users get RevenueCat `lifetime` for free if either the marker or RC `first_seen` predates launch, and they have no active subscription. **Window closes 30 days after launch.** |
 | **Subscriber-to-lifetime** | Old monthly/annual subscribers get RevenueCat `lifetime`. You then cancel their Play subscription renewal manually. |
-| **Modal A** | Subscriber-to-lifetime message. Annual users see the 5 gift-code offer; monthly users do not. |
+| **Modal A** | Subscriber-to-lifetime message. Annual users see the 5 gift-code mailto offer; monthly users do not. |
 | **Modal B** | Grandfathered free-user lifetime message. |
-| **Force NOT subscribed** | QA-only override that makes the app act like RevenueCat says “not subscribed.” It expires after 30 minutes. |
+| **Server modal decision** | A single edge function (`which-modal`) returns at most one modal name. Acknowledgment is server-side (`acknowledge-modal`), so the modal cannot fire twice — even after a reinstall — and Modal A / Modal B can never collide. |
+| **First-launch modal** | One-time skippable onboarding shown on the very first Android open. Skip rate is tracked. |
+| **Force NOT subscribed** | QA-only override that makes the app act like RevenueCat says "not subscribed." It expires after 30 minutes. |
+| **Revoke RC lifetime (QA)** | QA-only button calling `revoke-lifetime` edge function — removes the user's RC promotional lifetime entitlement and clears modal acknowledgments so flows can be replayed. Does NOT touch a real $4.99 IAP purchase. |
 
 ## 4. Troubleshooting a real user
 
@@ -194,8 +197,14 @@ Use modal previews only for layout/copy. They do not prove the server grant work
 | **Clear Old App Marker** | Simulate a brand-new 2.7 install. |
 | **Run Grandfather Check** | Try free-user grandfather grant now. |
 | **Run Subscriber-to-Lifetime Check** | Try active subscriber lifetime grant now. |
+| **Revoke RC lifetime (QA only)** | Remove a promotional lifetime entitlement on RC server. Lets you re-run grandfather / migration flows on the same device. |
+| **Reset Modal Acknowledgments (server)** | Clear server `modal_acknowledged_at` columns so Modal A / B will fire again on next launch. |
+| **Scenario: Fresh 2.7 user** | One-tap: clear marker, reset trial, clear overrides, reload. |
+| **Scenario: Expired trial** | One-tap: clear marker, expire trial (resets analytics keys too), reload. |
+| **Scenario: Pristine reset** | Wipe everything (local + server promotional lifetime + modal acks) and reload. |
+| **Load my grant rows** | Read this device's rows from grandfather + subscriber + trial-start tables. |
 | **Reset trial** | Clear the 3-day trial and start fresh on next app open. |
-| **Expire trial** | Force the 3-day trial to be over. |
+| **Expire trial** | Force the 3-day trial to be over. Also clears `TRIAL_ENDED` / `TRIAL_DAY_REACHED` tracked keys so analytics refire. |
 | **Force NOT subscribed** | Force paywall testing even if RevenueCat has access. Expires after 30 minutes. |
 | **Present RC paywall now** | Open the RevenueCat paywall when the app gate is already paywall. |
 

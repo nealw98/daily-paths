@@ -22,14 +22,15 @@ import {
 } from "../lib/subscription";
 import {
   attemptGrandfatherGrantIfEligible,
-  isGrandfatherModalPending,
-  clearGrandfatherModalPending,
-  queueGrandfatherModalForExistingLifetime,
 } from "../lib/grandfather";
 import {
   attemptSubscriberLifetimeGrantIfEligible,
-  getSubscriberPlanFromRaw,
 } from "../lib/subscriberMigration";
+import {
+  fetchPendingModal,
+  acknowledgePendingModal,
+  type PendingModal,
+} from "../lib/modalDecision";
 import {
   ensureTrialStarted,
   getTrialStatus,
@@ -55,16 +56,13 @@ interface SubscriptionContextValue {
   status: SubscriptionStatus;
   trialStatus: TrialStatusWithMeta;
   hasLifetimeAccess: boolean;
-  /** True when both `unlimited` and `lifetime` entitlements are active —
-   *  legacy subscribers whose subscription has been converted to lifetime. */
-  hasSubAndLifetime: boolean;
-  /** True when the active `unlimited` subscription is annual (expiry >60d
-   *  out). Used to gate the gift-codes offer in Modal A — only annuals get
-   *  it; the single monthly subscriber does not. */
-  isAnnualSubscriber: boolean;
-  /** True when a grandfather grant just succeeded and the welcome modal
-   *  has not yet been shown. */
-  showGrandfatherModal: boolean;
+  /** Server-decided one-time modal to show, or null. The server inspects
+   *  RevenueCat entitlements + grant tables and returns at most one — so
+   *  Modal A and Modal B can never collide. */
+  pendingModal: PendingModal | null;
+  /** True when this is the user's first 2.7 launch and the onboarding
+   *  modal should fire (Android only). */
+  showFirstLaunchModal: boolean;
   /** RC offering packages — unused by main UI (Android uses RC Paywall UI). QA / future. */
   packages: PurchasesPackage[];
   loading: boolean;
@@ -75,7 +73,12 @@ interface SubscriptionContextValue {
   restore: () => Promise<boolean>;
   refresh: () => Promise<void>;
   refreshLifetimeAccess: () => Promise<void>;
-  acknowledgeGrandfatherModal: () => Promise<void>;
+  /** Refetch the server modal decision (after a QA reset, after a fresh grant). */
+  refreshPendingModal: () => Promise<void>;
+  /** Marks the modal acknowledged on the server and clears local state. */
+  acknowledgePendingModal: () => Promise<void>;
+  /** Records that the first-launch modal was seen so it never fires again. */
+  dismissFirstLaunchModal: (reason: "continued" | "skipped") => Promise<void>;
 }
 
 const DEFAULT_STATUS: SubscriptionStatus = {
@@ -85,6 +88,8 @@ const DEFAULT_STATUS: SubscriptionStatus = {
   productIdentifier: null,
   willRenew: false,
 };
+
+const FIRST_LAUNCH_MODAL_KEY = "@daily_paths_first_launch_modal_seen";
 
 const DEFAULT_TRIAL: TrialStatus = {
   isInTrial: false,
@@ -136,9 +141,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
   const [trial, setTrial] = useState<TrialStatus>(DEFAULT_TRIAL);
   const [trialLoading, setTrialLoading] = useState(true);
   const [hasLifetimeAccess, setHasLifetimeAccess] = useState(false);
-  const [hasSubAndLifetime, setHasSubAndLifetime] = useState(false);
-  const [isAnnualSubscriber, setIsAnnualSubscriber] = useState(false);
-  const [showGrandfatherModal, setShowGrandfatherModal] = useState(false);
+  const [pendingModal, setPendingModal] = useState<PendingModal | null>(null);
+  const [showFirstLaunchModal, setShowFirstLaunchModal] = useState(false);
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
@@ -225,6 +229,10 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       // re-identify this device with its original RevenueCat user.
       // If no Supabase session exists (new user), we fall back to
       // restorePurchases() to pick up any App Store receipts.
+      //
+      // TODO(2027-Q1): Remove this block once 2.7 has rolled out widely. It is
+      // needed only for in-place upgraders from 2.6.x → 2.7; new installs and
+      // already-migrated users skip it via the MIGRATION_KEY guard.
       if (isRevenueCatInitialized()) {
         const MIGRATION_KEY = "@daily_paths_rc_identity_migration_v1";
         try {
@@ -292,14 +300,56 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }
 
-      // Start the trial clock only for non-lifetime users
-      if (!lifetimeStatus.hasLifetimeAccess) {
+      // Start the trial clock only for non-entitled users.
+      // Skip iOS paid-download lifetime users AND Android users who already
+      // have a real RC entitlement (active sub or lifetime — including users
+      // just grandfathered above). Starting a trial for them would pollute
+      // the install → trial → paywall → purchase funnel.
+      let skipTrialBecauseEntitled = false;
+      if (!lifetimeStatus.hasLifetimeAccess && isRevenueCatInitialized()) {
+        try {
+          const rawForTrialDecision = await getRawEntitlements();
+          skipTrialBecauseEntitled =
+            rawForTrialDecision.hasLifetime || rawForTrialDecision.hasUnlimited;
+          qaLog("access-init", "Trial-start gate", {
+            hasLifetime: rawForTrialDecision.hasLifetime,
+            hasUnlimited: rawForTrialDecision.hasUnlimited,
+            skipTrialBecauseEntitled,
+          });
+        } catch (err) {
+          qaLog("access-init", "Trial-start gate: raw-entitlements read failed", {
+            error: String(err),
+          });
+        }
+      }
+
+      if (!lifetimeStatus.hasLifetimeAccess && !skipTrialBecauseEntitled) {
+        // Snapshot whether a trial existed before ensureTrialStarted runs.
+        // A pre-existing trial means this isn't the first launch, even if
+        // the welcome modal flag was never written (e.g. upgrading from a
+        // pre-2.7-flag build).
+        const trialBefore = await getTrialStatus();
         await ensureTrialStarted();
         const freshTrial = await getTrialStatus();
         qaLog("access-init", "Trial status after ensureTrialStarted", summarizeTrialStatus(freshTrial));
         if (!cancelled) {
           setTrial(freshTrial);
           setTrialLoading(false);
+        }
+
+        // Fire the first-launch onboarding modal only on Android, only when
+        // the trial was actually just created on this device, and only once
+        // ever (gated by AsyncStorage).
+        if (Platform.OS === "android" && trialBefore.neverStarted && freshTrial.isInTrial) {
+          try {
+            const seen = await AsyncStorage.getItem(FIRST_LAUNCH_MODAL_KEY);
+            if (!seen && !cancelled) {
+              setShowFirstLaunchModal(true);
+              trackEvent(ANALYTICS_EVENTS.FIRST_LAUNCH_MODAL_SHOWN, {}, true);
+            }
+          } catch (err) {
+            qaLog("access-init", "First-launch modal flag read failed", { error: String(err) });
+          }
         }
       }
 
@@ -313,40 +363,35 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
           });
           if (!cancelled) setStatus(fresh);
 
-          // Android: Google Play may already have the lifetime SKU for this Google
-          // account while RevenueCat's anonymous customer is empty until restore.
-          // If we are not in the local trial and RC says not subscribed, sync once.
-          if (
-            Platform.OS === "android" &&
-            !cancelled &&
-            !fresh.isSubscribed
-          ) {
-            const postTrial = await getTrialStatus();
-            qaLog("subscription", "Post-RC trial status before Android silent restore", summarizeTrialStatus(postTrial));
-            if (!cancelled && !postTrial.isInTrial) {
-              try {
-                qaLog("subscription", "Android silent restore (no RC entitlement, trial not active)");
-                await restorePurchases();
-                const rawAfterRestore = await getRawEntitlements();
-                if (hasActiveRevenueCatAccess(rawAfterRestore)) {
-                  await clearSubscriptionOverride();
-                  qaLog("subscription", "Cleared QA subscription override after Android restore");
-                }
-                const after = await getSubscriptionStatus();
-                qaLog("subscription", "Status after Android silent restore", summarizeSubscriptionStatus(after));
-                if (!cancelled) setStatus(after);
-              } catch (re) {
-                qaLog("subscription", "Android silent restore skipped", { error: String(re) });
+          // Android: always run restorePurchases() on cold launch so a user
+          // who has previously purchased on this Google account never sees
+          // the paywall by accident. The previous gated condition missed
+          // reinstalls during an active trial.
+          if (Platform.OS === "android" && !cancelled) {
+            try {
+              qaLog("subscription", "Android cold-launch always-restore");
+              await restorePurchases();
+              const rawAfterRestore = await getRawEntitlements();
+              if (hasActiveRevenueCatAccess(rawAfterRestore)) {
+                await clearSubscriptionOverride();
+                qaLog("subscription", "Cleared QA subscription override after Android restore");
               }
+              const after = await getSubscriptionStatus();
+              qaLog("subscription", "Status after Android cold-launch restore", summarizeSubscriptionStatus(after));
+              if (!cancelled) setStatus(after);
+            } catch (re) {
+              qaLog("subscription", "Android cold-launch restore failed", { error: String(re) });
             }
           }
         } catch (err) {
           qaLog("subscription", "Error fetching fresh RC status", { error: String(err) });
         }
 
-        // Detect dual entitlement (sub→lifetime conversion) for Modal A.
+        // Subscriber-to-lifetime migration attempt (only fires for active
+        // legacy subscribers without lifetime). Modal decision happens via
+        // the server below — no local flag plumbing.
         try {
-          let raw = await getRawEntitlements();
+          const raw = await getRawEntitlements();
           if (raw.hasUnlimited && !raw.hasLifetime) {
             const migratedSubscriber =
               await attemptSubscriberLifetimeGrantIfEligible(raw);
@@ -357,36 +402,24 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
             if (migratedSubscriber) {
               const after = await getSubscriptionStatus();
               if (!cancelled) setStatus(after);
-              raw = await getRawEntitlements();
             }
-          }
-          if (!cancelled) {
-            setHasSubAndLifetime(raw.hasUnlimited && raw.hasLifetime);
-            setIsAnnualSubscriber(raw.hasUnlimited && getSubscriberPlanFromRaw(raw) === "annual");
-            const queuedExistingGrandfatherModal =
-              await queueGrandfatherModalForExistingLifetime(raw.lifetimeProductIdentifier);
-            qaLog("access-init", "Raw entitlements processed for modal decisions", {
-              raw,
-              hasSubAndLifetime: raw.hasUnlimited && raw.hasLifetime,
-              subscriberPlan: getSubscriberPlanFromRaw(raw),
-              isAnnualSubscriber: raw.hasUnlimited && getSubscriberPlanFromRaw(raw) === "annual",
-              queuedExistingGrandfatherModal,
-            });
           }
         } catch {
           // Non-critical
         }
       }
 
-      // Modal B (grandfathered welcome) — set from local pending flag.
+      // Server-decided pending modal (Modal A or Modal B — exactly one or
+      // none). The server checks RC entitlements + grant tables and returns
+      // at most one modal, so collisions are structurally impossible.
       try {
-        const pending = await isGrandfatherModalPending();
+        const decision = await fetchPendingModal();
         if (!cancelled) {
-          qaLog("access-init", "Applying Modal B pending state", { pending });
-          setShowGrandfatherModal(pending);
+          qaLog("access-init", "Applying server modal decision", { decision });
+          setPendingModal(decision);
         }
-      } catch {
-        // Non-critical
+      } catch (err) {
+        qaLog("access-init", "Pending modal fetch failed", { error: String(err) });
       }
 
       if (!cancelled) {
@@ -407,9 +440,34 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
 
     init();
 
+    // RevenueCat pushes a CustomerInfo update whenever entitlements change
+    // (purchase completes, restore lands, promotional grant). Re-read the
+    // collapsed status + raw entitlements + pending modal so the gate and
+    // modal state stay current without manual post-purchase polling.
+    const onCustomerInfoUpdate = async () => {
+      qaLog("subscription", "RC customerInfo update event received");
+      try {
+        const fresh = await getSubscriptionStatus();
+        if (!cancelled) setStatus(fresh);
+
+        // Server may have a new pending modal (e.g. user just bought lifetime
+        // and now has both unlimited + lifetime).
+        try {
+          const decision = await fetchPendingModal();
+          if (!cancelled) setPendingModal(decision);
+        } catch {
+          // Non-critical
+        }
+      } catch (err) {
+        qaLog("subscription", "RC update handler error", { error: String(err) });
+      }
+    };
+    Purchases.addCustomerInfoUpdateListener(onCustomerInfoUpdate);
+
     return () => {
       cancelled = true;
       mounted.current = false;
+      Purchases.removeCustomerInfoUpdateListener(onCustomerInfoUpdate);
     };
   }, []);
 
@@ -448,9 +506,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       status: summarizeSubscriptionStatus(status),
       trial: summarizeTrialStatus(trial),
       hasLifetimeAccess,
-      hasSubAndLifetime,
-      isAnnualSubscriber,
-      showGrandfatherModal,
+      pendingModal,
       platform: Platform.OS,
     });
   }, [
@@ -460,9 +516,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
     status,
     trial,
     hasLifetimeAccess,
-    hasSubAndLifetime,
-    isAnnualSubscriber,
-    showGrandfatherModal,
+    pendingModal,
   ]);
 
   // ── Actions ────────────────────────────────────────────────────────────
@@ -481,15 +535,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
             await expireTrial();
             const freshTrial = await getTrialStatus();
             setTrial(freshTrial);
-          }
-
-          // Refresh dual-entitlement flag — purchase may flip it.
-          try {
-            const raw = await getRawEntitlements();
-            setHasSubAndLifetime(raw.hasUnlimited && raw.hasLifetime);
-            setIsAnnualSubscriber(raw.hasUnlimited && getSubscriberPlanFromRaw(raw) === "annual");
-          } catch {
-            // Non-critical
           }
 
           return newStatus.isSubscribed;
@@ -517,12 +562,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       const newStatus = await getSubscriptionStatus();
       setStatus(newStatus);
-      try {
-        setHasSubAndLifetime(rawAfterRestore.hasUnlimited && rawAfterRestore.hasLifetime);
-        setIsAnnualSubscriber(rawAfterRestore.hasUnlimited && getSubscriberPlanFromRaw(rawAfterRestore) === "annual");
-      } catch {
-        // Non-critical
-      }
       return newStatus.isSubscribed;
     } catch (err) {
       qaLog("subscription", "Restore error", { error: String(err) });
@@ -537,7 +576,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       const newStatus = await getSubscriptionStatus();
       setStatus(newStatus);
       try {
-        let raw = await getRawEntitlements();
+        const raw = await getRawEntitlements();
         if (raw.hasUnlimited && !raw.hasLifetime) {
           const migratedSubscriber =
             await attemptSubscriberLifetimeGrantIfEligible(raw);
@@ -548,11 +587,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
           if (migratedSubscriber) {
             const after = await getSubscriptionStatus();
             setStatus(after);
-            raw = await getRawEntitlements();
           }
         }
-        setHasSubAndLifetime(raw.hasUnlimited && raw.hasLifetime);
-        setIsAnnualSubscriber(raw.hasUnlimited && getSubscriberPlanFromRaw(raw) === "annual");
       } catch {
         // Non-critical
       }
@@ -561,9 +597,37 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, []);
 
-  const acknowledgeGrandfatherModal = useCallback(async () => {
-    await clearGrandfatherModalPending();
-    setShowGrandfatherModal(false);
+  const refreshPendingModal = useCallback(async () => {
+    try {
+      const decision = await fetchPendingModal();
+      setPendingModal(decision);
+      qaLog("modal-decision", "refreshPendingModal", { decision });
+    } catch (err) {
+      qaLog("modal-decision", "refreshPendingModal error", { error: String(err) });
+    }
+  }, []);
+
+  const acknowledgePendingModalAction = useCallback(async () => {
+    const current = pendingModal;
+    if (!current) return;
+    setPendingModal(null);
+    await acknowledgePendingModal(current.modal);
+  }, [pendingModal]);
+
+  const dismissFirstLaunchModal = useCallback(async (reason: "continued" | "skipped") => {
+    setShowFirstLaunchModal(false);
+    try {
+      await AsyncStorage.setItem(FIRST_LAUNCH_MODAL_KEY, "true");
+    } catch (err) {
+      qaLog("access-init", "First-launch modal flag write failed", { error: String(err) });
+    }
+    trackEvent(
+      reason === "continued"
+        ? ANALYTICS_EVENTS.FIRST_LAUNCH_MODAL_CONTINUED
+        : ANALYTICS_EVENTS.FIRST_LAUNCH_MODAL_SKIPPED,
+      {},
+      true,
+    );
   }, []);
 
   // ── Context value ──────────────────────────────────────────────────────
@@ -577,9 +641,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       status,
       trialStatus: trialStatusValue,
       hasLifetimeAccess,
-      hasSubAndLifetime,
-      isAnnualSubscriber,
-      showGrandfatherModal,
+      pendingModal,
+      showFirstLaunchModal,
       packages,
       loading,
       purchasing,
@@ -588,15 +651,16 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       restore,
       refresh,
       refreshLifetimeAccess,
-      acknowledgeGrandfatherModal,
+      refreshPendingModal,
+      acknowledgePendingModal: acknowledgePendingModalAction,
+      dismissFirstLaunchModal,
     }),
     [
       status,
       trialStatusValue,
       hasLifetimeAccess,
-      hasSubAndLifetime,
-      isAnnualSubscriber,
-      showGrandfatherModal,
+      pendingModal,
+      showFirstLaunchModal,
       packages,
       loading,
       purchasing,
@@ -605,7 +669,9 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       restore,
       refresh,
       refreshLifetimeAccess,
-      acknowledgeGrandfatherModal,
+      refreshPendingModal,
+      acknowledgePendingModalAction,
+      dismissFirstLaunchModal,
     ],
   );
 

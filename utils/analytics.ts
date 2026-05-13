@@ -20,7 +20,6 @@ export const ANALYTICS_EVENTS = {
   TRIAL_ENDED: 'trial_ended',
   TRIAL_DAY_REACHED: 'trial_day_reached',
   PAYWALL_SHOWN: 'paywall_shown',
-  PAYWALL_PURCHASE_INITIATED: 'paywall_purchase_initiated',
   PAYWALL_PURCHASE_COMPLETED: 'paywall_purchase_completed',
   PAYWALL_PURCHASE_CANCELLED: 'paywall_purchase_cancelled',
   PAYWALL_DISMISSED: 'paywall_dismissed',
@@ -29,6 +28,9 @@ export const ANALYTICS_EVENTS = {
   LIFETIME_GRANDFATHERED: 'lifetime_grandfathered',
   MODAL_SHOWN: 'modal_shown',
   LEGACY_USER_IDENTIFIED: 'legacy_user_identified',
+  FIRST_LAUNCH_MODAL_SHOWN: 'first_launch_modal_shown',
+  FIRST_LAUNCH_MODAL_CONTINUED: 'first_launch_modal_continued',
+  FIRST_LAUNCH_MODAL_SKIPPED: 'first_launch_modal_skipped',
   // Reminder events
   REMINDER_SET: 'reminder_set',
   REMINDER_CHANGED: 'reminder_changed',
@@ -340,16 +342,6 @@ export function useAnalytics() {
     mp.flush();
   }, [isDeveloper]);
 
-  const trackPaywallPurchaseInitiated = useCallback(() => {
-    const mp = getMixpanel();
-    if (!mp) return;
-    mp.track(ANALYTICS_EVENTS.PAYWALL_PURCHASE_INITIATED, {
-      is_developer: isDeveloper,
-      theme_mode: themeModeRef.current,
-    });
-    mp.flush();
-  }, [isDeveloper]);
-
   const trackPaywallPurchaseCompleted = useCallback(() => {
     const mp = getMixpanel();
     if (!mp) return;
@@ -581,7 +573,6 @@ export function useAnalytics() {
     // Paywall
     trackPaywallShown,
     trackPaywallDismissed,
-    trackPaywallPurchaseInitiated,
     trackPaywallPurchaseCompleted,
     trackPaywallPurchaseCancelled,
     trackRestoreInitiated,

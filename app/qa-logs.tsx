@@ -37,9 +37,10 @@ import {
 } from "../utils/trialTimer";
 import {
   attemptGrandfatherGrantIfEligible,
-  resetGrandfatherState,
-  simulateGrandfatherGrant,
 } from "../lib/grandfather";
+import { resetModalAcknowledgments } from "../lib/modalDecision";
+import { revokeRcLifetime } from "../lib/revokeLifetime";
+import { fetchQaGrantRows, type QaGrantRows } from "../lib/grantRows";
 import { attemptSubscriberLifetimeGrantIfEligible, getSubscriberPlanFromRaw } from "../lib/subscriberMigration";
 import { SubscriberToLifetimeModal } from "../components/SubscriberToLifetimeModal";
 import { GrandfatheredLifetimeModal } from "../components/GrandfatheredLifetimeModal";
@@ -120,6 +121,10 @@ export default function QaLogsScreen() {
   const [rawEntitlements, setRawEntitlements] = React.useState<RawEntitlements | null>(null);
   const [refreshingEntitlements, setRefreshingEntitlements] = React.useState(false);
   const [presentingRcPaywall, setPresentingRcPaywall] = React.useState(false);
+  const [revoking, setRevoking] = React.useState(false);
+  const [grantRows, setGrantRows] = React.useState<QaGrantRows | null>(null);
+  const [grantRowsLoading, setGrantRowsLoading] = React.useState(false);
+  const [grantRowsView, setGrantRowsView] = React.useState<"grandfather" | "subscriber" | "trial_start" | null>(null);
   const refreshRawEntitlements = React.useCallback(async () => {
     setRefreshingEntitlements(true);
     try {
@@ -789,56 +794,135 @@ export default function QaLogsScreen() {
     setPreviewSubMonthly(true);
   };
 
-  /** Clears the sub→lifetime modal seen flag so the *real* modal can fire
-   *  again on the next launch — requires both `unlimited` AND `lifetime`
-   *  entitlements active in RC for that user. */
-  const handleResetSubToLifetimeSeenFlag = async () => {
+  const handleRevokeRcLifetime = async () => {
+    Alert.alert(
+      "Revoke RC lifetime?",
+      "This calls the RevenueCat server and revokes promotional `lifetime` entitlements for this user. Real $4.99 IAP lifetime is not affected. Modal acknowledgments are cleared so flows can be replayed. Continue?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Revoke",
+          style: "destructive",
+          onPress: async () => {
+            setRevoking(true);
+            try {
+              const before = await getQaAccessSnapshot("before Revoke RC lifetime");
+              const result = await revokeRcLifetime();
+              await refreshSubscription();
+              await refreshRawEntitlements();
+              const after = await getQaAccessSnapshot("after Revoke RC lifetime");
+              qaLog("qa-action", "Revoke RC lifetime", { before, after, result });
+              Alert.alert(
+                result.ok ? "Lifetime revoked" : "Revoke failed",
+                result.ok
+                  ? "RC lifetime has been revoked and modal acknowledgments cleared. Pull-to-refresh access status to confirm."
+                  : `Reason: ${result.reason ?? "unknown"}`,
+              );
+            } finally {
+              setRevoking(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleViewGrantRows = async () => {
+    setGrantRowsLoading(true);
     try {
-      const before = await getQaAccessSnapshot("before Reset Modal A seen flag");
-      await AsyncStorage.removeItem("@daily_paths_modal_sub_to_lifetime_seen");
-      const after = await getQaAccessSnapshot("after Reset Modal A seen flag");
-      qaLog("qa-action", "Reset Modal A seen flag", { before, after });
-      Alert.alert(
-        "Seen flag cleared",
-        "On next launch, the real Modal A will fire if your RC user has both `unlimited` AND `lifetime` entitlements active.",
-      );
-    } catch (err) {
-      qaLog("freemium", "Error clearing sub→lifetime modal flag", { error: String(err) });
-      Alert.alert("Error", "Could not clear the modal seen flag.");
+      const rows = await fetchQaGrantRows();
+      setGrantRows(rows);
+      if (!rows) {
+        Alert.alert("Could not load rows", "The edge function call failed. Check QA logs.");
+      }
+    } finally {
+      setGrantRowsLoading(false);
     }
   };
 
-  /** Sets the grandfather modal-pending flag — used to test the modal
-   *  presenter wiring when you don't want to invoke the edge function. */
-  const handlePrimeGrandfatherModalPending = async () => {
-    try {
-      const before = await getQaAccessSnapshot("before Prime Modal B pending");
-      await simulateGrandfatherGrant();
-      const after = await getQaAccessSnapshot("after Prime Modal B pending");
-      qaLog("qa-action", "Prime Modal B pending", { before, after });
-      Alert.alert(
-        "Pending flag set",
-        "On next launch, the real Modal B will fire (Android only).",
-      );
-    } catch (err) {
-      qaLog("freemium", "Error priming grandfather modal", { error: String(err) });
-      Alert.alert("Error", "Could not prime the modal-pending flag.");
-    }
+  const handleScenarioFreshUser = async () => {
+    const before = await getQaAccessSnapshot("before Scenario: Fresh 2.7 user");
+    await clearLegacyTrialMarkerForQa();
+    setLegacyMarkerText(null);
+    await resetTrial();
+    await AsyncStorage.removeItem("@daily_paths_first_launch_modal_seen");
+    await clearSubscriptionOverride();
+    setSubscriptionOverrideState(false);
+    await setLifetimeOverride(null);
+    setLifetimeOverrideState(null);
+    const after = await getQaAccessSnapshot("after Scenario: Fresh 2.7 user");
+    qaLog("qa-action", "Scenario: Fresh 2.7 user", { before, after });
+    setTimeout(() => Updates.reloadAsync().catch(() => {}), 250);
   };
 
-  const handleResetGrandfather = async () => {
-    try {
-      const before = await getQaAccessSnapshot("before Reset Grandfather state");
-      await resetGrandfatherState();
-      const after = await getQaAccessSnapshot("after Reset Grandfather state");
-      qaLog("qa-action", "Reset Grandfather state", { before, after });
+  const handleScenarioExpiredTrial = async () => {
+    const before = await getQaAccessSnapshot("before Scenario: Expired trial");
+    await clearLegacyTrialMarkerForQa();
+    setLegacyMarkerText(null);
+    await expireTrial();
+    await trialStatus.refresh();
+    if (rawEntitlements?.hasUnlimited || rawEntitlements?.hasLifetime) {
       Alert.alert(
-        "Grandfather reset",
-        "Local Modal B flags are cleared. The server-side grant status is not changed.",
+        "Heads-up",
+        "Trial is expired but RC still shows an entitlement. The gate will stay FULL ACCESS until you revoke the entitlement or enable Force NOT subscribed.",
+      );
+    }
+    const after = await getQaAccessSnapshot("after Scenario: Expired trial");
+    qaLog("qa-action", "Scenario: Expired trial", { before, after });
+    setTimeout(() => Updates.reloadAsync().catch(() => {}), 250);
+  };
+
+  const handleScenarioPristineReset = async () => {
+    Alert.alert(
+      "Pristine reset?",
+      "Wipes every trial / marker / modal-ack / override key on this device AND revokes any RC promotional lifetime. Continue?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Reset everything",
+          style: "destructive",
+          onPress: async () => {
+            const before = await getQaAccessSnapshot("before Scenario: Pristine reset");
+            await clearLegacyTrialMarkerForQa();
+            setLegacyMarkerText(null);
+            await resetTrial();
+            await AsyncStorage.removeItem("@daily_paths_first_launch_modal_seen");
+            await clearSubscriptionOverride();
+            setSubscriptionOverrideState(false);
+            await setLifetimeOverride(null);
+            setLifetimeOverrideState(null);
+            await clearLocalSubscriptionCache();
+            await clearLifetimeAccessCache();
+            if (rawEntitlements?.hasLifetime) {
+              await revokeRcLifetime();
+            }
+            await resetModalAcknowledgments();
+            const after = await getQaAccessSnapshot("after Scenario: Pristine reset");
+            qaLog("qa-action", "Scenario: Pristine reset", { before, after });
+            setTimeout(() => Updates.reloadAsync().catch(() => {}), 250);
+          },
+        },
+      ],
+    );
+  };
+
+  const handleResetModalAcknowledgments = async () => {
+    try {
+      const before = await getQaAccessSnapshot("before Reset Modal Acknowledgments");
+      const ok = await resetModalAcknowledgments();
+      await refreshSubscription();
+      await refreshRawEntitlements();
+      const after = await getQaAccessSnapshot("after Reset Modal Acknowledgments");
+      qaLog("qa-action", "Reset Modal Acknowledgments", { before, after, ok });
+      Alert.alert(
+        ok ? "Acknowledgments cleared" : "Reset failed",
+        ok
+          ? "Server modal_acknowledged_at columns were cleared. On next launch the appropriate modal (A or B) will fire if RevenueCat entitlements qualify."
+          : "Could not reach the edge function. Check QA logs for details.",
       );
     } catch (err) {
-      qaLog("freemium", "Error resetting grandfather", { error: String(err) });
-      Alert.alert("Error", "Could not reset grandfather state.");
+      qaLog("qa-action", "Reset Modal Acknowledgments failed", { error: String(err) });
+      Alert.alert("Error", String(err));
     }
   };
 
@@ -1124,7 +1208,125 @@ export default function QaLogsScreen() {
                 Run Subscriber-to-Lifetime Check
               </Text>
             </TouchableOpacity>
+            {Platform.OS === "android" ? (
+              <TouchableOpacity
+                style={[styles.secondaryButton, { borderColor: "#b91c1c" }]}
+                activeOpacity={0.8}
+                disabled={revoking}
+                onPress={() => void handleRevokeRcLifetime()}
+              >
+                <Text style={[styles.secondaryButtonText, { color: "#b91c1c" }]}>
+                  {revoking ? "Revoking…" : "Revoke RC lifetime (QA only)"}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
+
+          {Platform.OS === "android" ? (
+            <>
+              <Text style={[styles.playbookLine, { color: colors.ink, marginTop: 10 }]}>
+                <Text style={styles.playbookBold}>Scenarios: </Text>one-tap composite setups (reloads the app).
+              </Text>
+              <View style={styles.actionsRow}>
+                <TouchableOpacity
+                  style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+                  activeOpacity={0.8}
+                  onPress={() => void handleScenarioFreshUser()}
+                >
+                  <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+                    Scenario: Fresh 2.7 user
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+                  activeOpacity={0.8}
+                  onPress={() => void handleScenarioExpiredTrial()}
+                >
+                  <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+                    Scenario: Expired trial
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.secondaryButton, { borderColor: "#b91c1c" }]}
+                  activeOpacity={0.8}
+                  onPress={() => void handleScenarioPristineReset()}
+                >
+                  <Text style={[styles.secondaryButtonText, { color: "#b91c1c" }]}>
+                    Scenario: Pristine reset
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={[styles.playbookLine, { color: colors.ink, marginTop: 10 }]}>
+                <Text style={styles.playbookBold}>View grant rows: </Text>read this device's server records.
+              </Text>
+              <View style={styles.actionsRow}>
+                <TouchableOpacity
+                  style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+                  activeOpacity={0.8}
+                  disabled={grantRowsLoading}
+                  onPress={() => void handleViewGrantRows()}
+                >
+                  <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+                    {grantRowsLoading ? "Loading…" : "Load my grant rows"}
+                  </Text>
+                </TouchableOpacity>
+                {grantRows ? (
+                  <>
+                    <TouchableOpacity
+                      style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+                      activeOpacity={0.8}
+                      onPress={() => setGrantRowsView("grandfather")}
+                    >
+                      <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+                        Grandfather row
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+                      activeOpacity={0.8}
+                      onPress={() => setGrantRowsView("subscriber")}
+                    >
+                      <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+                        Subscriber row
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+                      activeOpacity={0.8}
+                      onPress={() => setGrantRowsView("trial_start")}
+                    >
+                      <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
+                        Trial-start row
+                      </Text>
+                    </TouchableOpacity>
+                  </>
+                ) : null}
+              </View>
+              {grantRows && grantRowsView ? (
+                <View style={[styles.playbookBlock, { borderColor: colors.mist, marginTop: 8 }]}>
+                  <Text style={[styles.playbookBold, { color: colors.ink }]}>
+                    {grantRowsView === "grandfather"
+                      ? "android_grandfather_grants"
+                      : grantRowsView === "subscriber"
+                        ? "android_subscriber_lifetime_grants"
+                        : "android_trial_starts"}
+                  </Text>
+                  <Text style={[styles.playbookBody, { color: colors.ink, fontFamily: fonts.bodyFamilyRegular }]}>
+                    {JSON.stringify(
+                      grantRowsView === "grandfather"
+                        ? grantRows.grandfather
+                        : grantRowsView === "subscriber"
+                          ? grantRows.subscriber
+                          : grantRows.trialStart,
+                      null,
+                      2,
+                    ) || "no row"}
+                  </Text>
+                </View>
+              ) : null}
+            </>
+          ) : null}
         </View>
 
         {Platform.OS === "android" ? (
@@ -1382,15 +1584,6 @@ export default function QaLogsScreen() {
           <TouchableOpacity
             style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
             activeOpacity={0.8}
-            onPress={() => void handleResetSubToLifetimeSeenFlag()}
-          >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
-              Reset Modal A Seen Flag
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
-            activeOpacity={0.8}
             onPress={handlePreviewGrandfatheredModal}
           >
             <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
@@ -1400,19 +1593,10 @@ export default function QaLogsScreen() {
           <TouchableOpacity
             style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
             activeOpacity={0.8}
-            onPress={() => void handlePrimeGrandfatherModalPending()}
+            onPress={() => void handleResetModalAcknowledgments()}
           >
             <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
-              Prime Modal B Pending
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
-            activeOpacity={0.8}
-            onPress={() => void handleResetGrandfather()}
-          >
-            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>
-              Reset Grandfather State
+              Reset Modal Acknowledgments (server)
             </Text>
           </TouchableOpacity>
         </View>

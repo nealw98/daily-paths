@@ -14,14 +14,11 @@ import { JournalCategoryPicker } from "../../components/journal/JournalCategoryP
 import { JournalEntryEditor } from "../../components/journal/JournalEntryEditor";
 import type { EntryType } from "../../constants/journalCategories";
 import { useJournalStorage } from "../../hooks/useJournalStorage";
-import { useTrialStatus } from "../../hooks/useTrialStatus";
-import { useSubscription } from "../../hooks/useSubscription";
 import { DismissibleToast } from "../../components/DismissibleToast";
 import { markRatePromptShown, recordFirstUseIfNeeded, requestReview } from "../../utils/rateShareTracking";
 import { recordDailyActivity, recordReadingView } from "../../utils/deviceIdentity";
 import { qaLog } from "../../utils/qaLog";
 import { useAnalytics, NavigationMethod } from "../../utils/analytics";
-import { getRequiredGate } from "../../utils/accessControl";
 import { useReading } from "../../hooks/useReading";
 import { useBookmarkManager } from "../../hooks/useBookmarkManager";
 import { hasSeenInstruction, markInstructionSeen } from "../../utils/bookmarkStorage";
@@ -46,17 +43,6 @@ export default function ReadingDetail() {
 
   // Journal entry creation
   const { createEntry } = useJournalStorage();
-
-  const trialStatus = useTrialStatus();
-  const {
-    status: subStatus,
-    hasLifetimeAccess,
-    loading: subscriptionLoading,
-  } = useSubscription();
-  const journalLockedByPaywall =
-    !subscriptionLoading &&
-    !trialStatus.loading &&
-    getRequiredGate(subStatus, trialStatus, hasLifetimeAccess) === "paywall";
 
   // Analytics
   const { trackAppOpened, startReadingView, trackReadingFavorited, trackReadingUnfavorited, updateThemeMode } = useAnalytics();
@@ -336,9 +322,7 @@ export default function ReadingDetail() {
         isBookmarked={isBookmarked}
         onBookmarkToggle={handleBookmarkToggle}
         onShare={handleShare}
-        onNewJournalEntry={
-          journalLockedByPaywall ? undefined : () => setShowJournalPicker(true)
-        }
+        onNewJournalEntry={() => setShowJournalPicker(true)}
         showInstruction={showInstruction}
         onDismissInstruction={handleDismissInstruction}
         onShowInstruction={handleShowInstruction}
@@ -367,9 +351,8 @@ export default function ReadingDetail() {
       {content}
 
       <JournalCategoryPicker
-        visible={showJournalPicker && !journalLockedByPaywall}
+        visible={showJournalPicker}
         onSelect={(entryType) => {
-          if (journalLockedByPaywall) return;
           setShowJournalPicker(false);
           setJournalEntryType(entryType);
         }}

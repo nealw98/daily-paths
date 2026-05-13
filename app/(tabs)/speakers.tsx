@@ -8,10 +8,7 @@ import { useSpeakers } from "../../hooks/useSpeakers";
 import { useAudioPlayer } from "../../hooks/useAudioPlayer";
 import { useAnalytics } from "../../utils/analytics";
 import { useFeatureTimeTracker } from "../../hooks/useFeatureTimeTracker";
-import { useSubscription } from "../../hooks/useSubscription";
-import { useTrialStatus } from "../../hooks/useTrialStatus";
 import { useDownloadedSpeakerIds } from "../../hooks/useSpeakerDownload";
-import { canDownloadSpeakers } from "../../utils/accessControl";
 import { TealHeader } from "../../components/shared/TealHeader";
 import { PageTitle } from "../../components/ui/PageTitle";
 import { SpeakersBrowse } from "../../components/speakers/SpeakersBrowse";
@@ -31,12 +28,12 @@ export default function SpeakersTab() {
   const params = useLocalSearchParams<{ speakerId?: string }>();
   const { speakers, loading, error, refresh } = useSpeakers();
   const { trackSpeakerAudioCompleted } = useAnalytics();
-  const { status: subscriptionStatus, hasLifetimeAccess } = useSubscription();
-  const trialStatus = useTrialStatus();
   const { createEntry } = useJournalStorage();
 
-  // Download access is entitlement-driven.
-  const canDownload = canDownloadSpeakers(subscriptionStatus, trialStatus, hasLifetimeAccess);
+  // Entitlement gating happens at app root (AndroidHardPaywallGate); by the
+  // time this tab mounts, the user already has full access. iOS users are
+  // always entitled via the paid-app receipt.
+  const canDownload = true;
 
   // Track which speakers are downloaded (for browse screen badges)
   const { downloadedIds, refresh: refreshDownloads } = useDownloadedSpeakerIds();

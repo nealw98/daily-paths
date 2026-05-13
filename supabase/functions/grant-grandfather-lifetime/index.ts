@@ -2,20 +2,34 @@ import { corsHeaders } from "../_shared/cors.ts";
 
 /**
  * Grants the `lifetime` promotional entitlement in RevenueCat to existing
- * Android users who opened the 2.6.x free-era app, then move to 2.7 without
- * an active subscription.
+ * Android users who used the 2.6.x free-era app and move to 2.7 without an
+ * active subscription, during the 30-day post-launch migration window.
  *
- * Eligibility:
- *   1. App submits the old 2.6.x local trial start marker.
- *   2. Marker predates GRANDFATHER_CUTOFF_DATE.
- *   3. RC customer has no active `unlimited` subscription or `lifetime`.
+ * Eligibility (any of the marker checks below pass, plus the window check):
+ *   - Local 2.6.x trial start marker exists and predates GRANDFATHER_CUTOFF_DATE.
+ *     OR
+ *   - RC subscriber.first_seen predates GRANDFATHER_LAUNCH_DATE (catches
+ *     legacy users whose AsyncStorage was wiped).
+ *
+ * Window: requests after GRANDFATHER_LAUNCH_DATE + 30 days are denied with
+ * `grandfather_window_closed`. The grandfather program is time-limited.
+ *
+ * Always denied:
+ *   - Active `unlimited` subscription (subscriber-to-lifetime path handles them).
+ *   - Already has `lifetime`.
  *
  * Required env:
  *   REVENUECAT_SECRET_API_KEY     — RC v1 secret key (sk_...)
- *   GRANDFATHER_CUTOFF_DATE       — ISO date, e.g. "2026-05-15T00:00:00Z"
+ *   GRANDFATHER_LAUNCH_DATE       — ISO date, e.g. "2026-05-15T00:00:00Z"
+ *                                   (2.7 launch). Window closes 30 days after.
+ *   GRANDFATHER_CUTOFF_DATE       — ISO date. Legacy markers must predate
+ *                                   this. Typically same as LAUNCH_DATE.
  *   SUPABASE_URL
  *   SUPABASE_SERVICE_ROLE_KEY
  */
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const GRANDFATHER_WINDOW_DAYS = 30;
 
 const RC_API_BASE = "https://api.revenuecat.com/v1";
 const LIFETIME_ENTITLEMENT_ID = "lifetime";
@@ -49,7 +63,7 @@ async function recordGrantStatus(
   serviceRoleKey: string,
   payload: {
     appUserId: string;
-    legacyTrialStartAt: string;
+    legacyTrialStartAt: string | null;
     migrationCutoffAt: string;
     rcFirstSeenAt: string | null;
     status: "granted" | "denied" | "grant_failed";
@@ -129,26 +143,30 @@ Deno.serve(async (req: Request) => {
 
   const rcSecret = Deno.env.get("REVENUECAT_SECRET_API_KEY");
   const cutoffStr = Deno.env.get("GRANDFATHER_CUTOFF_DATE");
+  const launchStr = Deno.env.get("GRANDFATHER_LAUNCH_DATE");
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-  if (!rcSecret || !cutoffStr || !supabaseUrl || !serviceRoleKey) {
+  if (!rcSecret || !cutoffStr || !launchStr || !supabaseUrl || !serviceRoleKey) {
     console.error("[grant-grandfather-lifetime] missing env config");
     return jsonResponse({ granted: false, reason: "server_misconfigured" }, 500);
   }
 
   const cutoffMs = Date.parse(cutoffStr);
-  if (Number.isNaN(cutoffMs)) {
-    console.error("[grant-grandfather-lifetime] invalid GRANDFATHER_CUTOFF_DATE");
+  const launchMs = Date.parse(launchStr);
+  if (Number.isNaN(cutoffMs) || Number.isNaN(launchMs)) {
+    console.error("[grant-grandfather-lifetime] invalid cutoff/launch env values");
     return jsonResponse({ granted: false, reason: "server_misconfigured" }, 500);
   }
 
   let appUserId: string;
-  let legacyTrialStartAt: string;
+  let legacyTrialStartAt: string | null;
   try {
     const body = await req.json();
     appUserId = String(body?.app_user_id ?? "").trim();
-    legacyTrialStartAt = String(body?.legacy_trial_start_date ?? "").trim();
+    const raw = body?.legacy_trial_start_date;
+    legacyTrialStartAt =
+      typeof raw === "string" && raw.trim().length > 0 ? raw.trim() : null;
   } catch {
     return jsonResponse({ granted: false, reason: "bad_request" }, 400);
   }
@@ -156,31 +174,44 @@ Deno.serve(async (req: Request) => {
   if (!appUserId) {
     return jsonResponse({ granted: false, reason: "missing_app_user_id" }, 400);
   }
-  if (!legacyTrialStartAt) {
-    return jsonResponse({ granted: false, reason: "missing_legacy_trial_marker" }, 400);
-  }
 
-  const legacyTrialStartMs = Date.parse(legacyTrialStartAt);
-  if (Number.isNaN(legacyTrialStartMs)) {
-    return jsonResponse({ granted: false, reason: "invalid_legacy_trial_marker" }, 400);
-  }
-  if (legacyTrialStartMs >= cutoffMs) {
+  // 30-day forward window — grandfathering closes 30d after launch.
+  const windowCloseMs = launchMs + GRANDFATHER_WINDOW_DAYS * DAY_MS;
+  if (Date.now() > windowCloseMs) {
     await recordGrantStatus(supabaseUrl, serviceRoleKey, {
       appUserId,
       legacyTrialStartAt,
       migrationCutoffAt: cutoffStr,
       rcFirstSeenAt: null,
       status: "denied",
-      decisionReason: "legacy_marker_post_cutoff",
+      decisionReason: "grandfather_window_closed",
       hasActiveSubscription: false,
       hasLifetime: false,
     });
     return jsonResponse({
       granted: false,
       grandfathered: false,
-      reason: "legacy_marker_post_cutoff",
+      reason: "grandfather_window_closed",
       status: "denied",
     });
+  }
+
+  // Validate the legacy marker when provided; null is accepted because the
+  // RC first_seen fallback (below) can still establish eligibility.
+  let legacyMarkerEligible = false;
+  if (legacyTrialStartAt) {
+    const legacyTrialStartMs = Date.parse(legacyTrialStartAt);
+    if (Number.isNaN(legacyTrialStartMs)) {
+      return jsonResponse({ granted: false, reason: "invalid_legacy_trial_marker" }, 400);
+    }
+    legacyMarkerEligible = legacyTrialStartMs < cutoffMs;
+    if (!legacyMarkerEligible) {
+      // Marker exists but is too new. Don't reject yet — RC first_seen may
+      // still qualify the user. We fall through to the RC subscriber lookup.
+      console.log("[grant-grandfather-lifetime] legacy marker post-cutoff; will check RC first_seen", {
+        appUserId,
+      });
+    }
   }
 
   const existingGrant = await getExistingGrant(supabaseUrl, serviceRoleKey, appUserId);
@@ -228,6 +259,34 @@ Deno.serve(async (req: Request) => {
     const hasLifetime = isActiveEntitlement(entitlements, LIFETIME_ENTITLEMENT_ID);
     const hasActiveSubscription = isActiveEntitlement(entitlements, ENTITLEMENT_ID);
     const rcFirstSeenAt = subscriber.first_seen ?? null;
+
+    // RC first_seen fallback: users who lost their AsyncStorage marker (factory
+    // reset, etc.) can still be grandfathered if RC sees them as pre-launch.
+    const rcFirstSeenMs = rcFirstSeenAt ? Date.parse(rcFirstSeenAt) : NaN;
+    const rcFirstSeenEligible =
+      !Number.isNaN(rcFirstSeenMs) && rcFirstSeenMs < launchMs;
+
+    if (!legacyMarkerEligible && !rcFirstSeenEligible) {
+      const decisionReason = legacyTrialStartAt
+        ? "legacy_marker_post_cutoff"
+        : "missing_legacy_trial_marker";
+      await recordGrantStatus(supabaseUrl, serviceRoleKey, {
+        appUserId,
+        legacyTrialStartAt,
+        migrationCutoffAt: cutoffStr,
+        rcFirstSeenAt,
+        status: "denied",
+        decisionReason,
+        hasActiveSubscription,
+        hasLifetime,
+      });
+      return jsonResponse({
+        granted: false,
+        grandfathered: false,
+        reason: decisionReason,
+        status: "denied",
+      });
+    }
 
     if (hasLifetime) {
       if (existingGrant?.status === "granted") {
@@ -322,13 +381,17 @@ Deno.serve(async (req: Request) => {
       }, 502);
     }
 
+    const decisionReason = legacyMarkerEligible
+      ? "legacy_trial_marker"
+      : "rc_first_seen_pre_launch";
+
     await recordGrantStatus(supabaseUrl, serviceRoleKey, {
       appUserId,
       legacyTrialStartAt,
       migrationCutoffAt: cutoffStr,
       rcFirstSeenAt,
       status: "granted",
-      decisionReason: "legacy_trial_marker",
+      decisionReason,
       hasActiveSubscription,
       hasLifetime: true,
     });
@@ -336,7 +399,7 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({
       granted: true,
       grandfathered: true,
-      reason: "legacy_trial_marker",
+      reason: decisionReason,
       status: "granted",
     });
   } catch (err) {

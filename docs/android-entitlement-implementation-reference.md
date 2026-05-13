@@ -2,13 +2,29 @@
 
 This document describes the current working code for Android 2.7 access control:
 
-- Grandfather free-user lifetime grant and Modal B
-- Subscriber-to-lifetime grant and Modal A
+- Grandfather free-user lifetime grant
+- Subscriber-to-lifetime grant
+- Server-decided Modal A / Modal B (no collisions; survives reinstall)
+- First-launch trial onboarding modal
 - RevenueCat subscription/lifetime access
-- New 3-day trial
+- Server-anchored 3-day trial
+- 30-day grandfather window with RC `first_seen` fallback
+- QA revoke / scenario / grant-row tools
 - The states each access control can be in
 
-RevenueCat is the source of truth for paid access. Supabase records migration decisions and performs promotional lifetime grants using the RevenueCat secret key. Local app storage controls trials, QA setup, and whether a one-time modal has already been shown.
+RevenueCat is the source of truth for paid access. Supabase records migration decisions, anchors the trial start, performs promotional lifetime grants and revokes (QA), and owns one-time modal acknowledgments. Local AsyncStorage acts as a cache for offline reads.
+
+## New / changed in 2.7 (vs. 2.6.x reference)
+
+- **Trial start moved to Supabase** (`android_trial_starts` table + `get-or-create-trial-start` edge function). Local AsyncStorage is the cache. App-data-clear no longer resets the trial.
+- **Modal A / Modal B decision moved to Supabase** (`which-modal` edge function + `acknowledge-modal`). The server returns at most one modal name. Collisions are structurally impossible. Acknowledgment is server-side, so the modal cannot fire twice across reinstalls.
+- **Grandfather has a 30-day window** from `GRANDFATHER_LAUNCH_DATE`; after that, requests are denied with `grandfather_window_closed`.
+- **RC `first_seen` is an eligibility fallback** when the local 2.6.x marker is missing.
+- **`PAYWALL_PURCHASE_INITIATED` analytics event removed.** RC's `presentPaywall()` does not expose a "tapped Buy" callback, so the event was never meaningful.
+- **Always-restore on Android cold launch.** The previous "only restore if no entitlement AND trial expired" condition missed reinstall-during-trial cases.
+- **`Purchases.addCustomerInfoUpdateListener`** replaces the post-purchase `setTimeout(350)` double-refresh dance. The listener fires whenever RC's customer info changes.
+- **First-launch trial modal** (skippable, tracked) explains the model on the very first Android open.
+- **QA: revoke RC lifetime** edge function + button. QA: scenario shortcut buttons. QA: view grant rows inline.
 
 ## Access Decision Summary
 
