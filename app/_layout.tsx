@@ -33,6 +33,7 @@ import * as Updates from "expo-updates";
 import { installGlobalErrorHandler } from "../utils/errorLogger";
 import { initMixpanel } from "../lib/mixpanel";
 import { qaLog } from "../utils/qaLog";
+import { markLaunchPhase } from "../utils/launchTiming";
 import Purchases from "react-native-purchases";
 import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
 import { GrandfatheredLifetimeModal } from "../components/GrandfatheredLifetimeModal";
@@ -88,6 +89,7 @@ try {
 
 export default function RootLayout() {
   console.log("[STARTUP] RootLayout function called");
+  markLaunchPhase("RootLayout component invoked");
   
   // Use fallback palette for loading screen (before SettingsProvider is available)
   const colors = fallbackColors;
@@ -146,6 +148,7 @@ export default function RootLayout() {
   // RevenueCat and trial timer are now managed by SubscriptionContext.
   useEffect(() => {
     if (fontsLoaded) {
+      markLaunchPhase("Fonts loaded");
       initMixpanel();
       qaLog("runtime", "App runtime snapshot", {
         nativeAppVersion: Constants.nativeAppVersion,
@@ -377,6 +380,7 @@ function AndroidHardPaywallGate() {
   const [showPaywallRetryShell, setShowPaywallRetryShell] = useState(false);
 
   const hideNativeSplash = () => {
+    markLaunchPhase("hideNativeSplash() called");
     SplashScreen.hideAsync().catch(() => {
       // Already hidden / unsupported — safe to ignore.
     });
