@@ -33,6 +33,7 @@ import * as Updates from "expo-updates";
 import { installGlobalErrorHandler } from "../utils/errorLogger";
 import { initMixpanel } from "../lib/mixpanel";
 import { qaLog } from "../utils/qaLog";
+import Purchases from "react-native-purchases";
 import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
 import { SubscriberToLifetimeModal } from "../components/SubscriberToLifetimeModal";
 import { GrandfatheredLifetimeModal } from "../components/GrandfatheredLifetimeModal";
@@ -47,6 +48,18 @@ import Constants from "expo-constants";
 
 console.log("[STARTUP] _layout.tsx module loading...");
 console.log("[STARTUP] Platform:", Platform.OS, Platform.Version);
+
+/**
+ * RevenueCat offering identifier to target when presenting the 2.7 hard
+ * paywall. RC offerings are global across SDK versions — so we explicitly
+ * request the lifetime offering here to prevent the 2.6.x binaries (which
+ * call `presentPaywall()` against whatever offering is "current") from
+ * accidentally showing the 2.7 lifetime product if it's activated as
+ * default in RC. Set this constant to the exact identifier of the lifetime
+ * offering in RC dashboard. Fallback to the current/default offering if
+ * the identifier can't be resolved (logged to QA).
+ */
+const TARGET_PAYWALL_OFFERING_ID = "android_unlock";
 
 // Keep the native splash visible until the subscription gate resolves
 // (and, on Android, the hard paywall has presented). Hidden via
@@ -379,8 +392,33 @@ function AndroidHardPaywallGate() {
     try {
       trackPaywallShown();
       hideNativeSplash();
-      qaLog("paywall", "Hard paywall presenting");
-      const result = await RevenueCatUI.presentPaywall();
+
+      // Resolve the target offering by identifier so this 2.7 build never
+      // accidentally renders whatever RC has set as "current" (e.g. a legacy
+      // subscription offering). Falls back to the SDK default if our named
+      // offering isn't found.
+      let targetOffering = null;
+      try {
+        const offerings = await Purchases.getOfferings();
+        targetOffering = offerings.all?.[TARGET_PAYWALL_OFFERING_ID] ?? null;
+        qaLog("paywall", "Resolved target offering", {
+          targetId: TARGET_PAYWALL_OFFERING_ID,
+          found: !!targetOffering,
+          currentId: offerings.current?.identifier ?? null,
+          allIds: Object.keys(offerings.all ?? {}),
+        });
+      } catch (err) {
+        qaLog("paywall", "Failed to fetch offerings — falling back to default", {
+          error: String(err),
+        });
+      }
+
+      qaLog("paywall", "Hard paywall presenting", {
+        offeringId: targetOffering?.identifier ?? "(default)",
+      });
+      const result = targetOffering
+        ? await RevenueCatUI.presentPaywall({ offering: targetOffering })
+        : await RevenueCatUI.presentPaywall();
       qaLog("paywall", "Hard paywall result", { result });
 
       if (result === PAYWALL_RESULT.PURCHASED) {
