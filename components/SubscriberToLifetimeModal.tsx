@@ -25,7 +25,7 @@ export const SubscriberToLifetimeModal: React.FC<SubscriberToLifetimeModalProps>
         <View style={[styles.card, { backgroundColor: colors.background }]}>
           <Text style={[styles.title, { color: colors.text }]}>You Own Daily Paths</Text>
           <Text style={[styles.message, { color: colors.textSecondary }]}>
-            Your subscription has been converted to lifetime access. We'll cancel the renewal so you won't be billed again — the app is yours to keep.
+            Thank you for subscribing to Daily Paths. We've moved from subscriptions to a one-time purchase model — your subscription is now lifetime access, and the app is yours to keep.
           </Text>
           <TouchableOpacity
             style={[styles.button, { backgroundColor: colors.buttonPrimary }]}
