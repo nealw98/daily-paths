@@ -41,7 +41,6 @@ import { clearSubscriptionOverride } from "../utils/subscriptionOverride";
 import { detectLifetimeAccess } from "../utils/paidAppDetector";
 import { getRequiredGate, type GateType } from "../utils/accessControl";
 import { qaLog } from "../utils/qaLog";
-import { markLaunchPhase } from "../utils/launchTiming";
 import { trackEvent } from "../utils/trackEvent";
 import { ANALYTICS_EVENTS } from "../utils/analytics";
 import Purchases, { type PurchasesPackage } from "react-native-purchases";
@@ -157,7 +156,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
     let cancelled = false;
 
     const init = async () => {
-      markLaunchPhase("SubscriptionProvider init started");
       qaLog("access-init", "Subscription init started", {
         platform: Platform.OS,
       });
@@ -193,9 +191,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
         // `neverStarted` until ensureTrialStarted runs — otherwise gate can read
         // paywall briefly and auto-present the hard paywall on Android.
         if (cached?.isSubscribed || trialResult.isInTrial) {
-          markLaunchPhase("loading=false from cached state", {
-            reason: cached?.isSubscribed ? "cached_subscribed" : "trial_active",
-          });
           qaLog("access-init", "Ending initial loading from local state", {
             reason: cached?.isSubscribed ? "cached_subscribed" : "trial_active",
           });
@@ -207,7 +202,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       } else {
         // Lifetime user — no trial needed, not loading
-        markLaunchPhase("loading=false from platform lifetime access");
         qaLog("access-init", "Ending loading from platform lifetime access");
         setTrialLoading(false);
         setLoading(false);
@@ -439,7 +433,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       if (!cancelled) {
-        markLaunchPhase("loading=false from end of init (slow path)");
         qaLog("access-init", "Subscription init completed; clearing loading");
         setLoading(false);
       }
