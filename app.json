@@ -42,7 +42,7 @@
         {
           "image": "./assets/new-splash-icon.png",
           "resizeMode": "contain",
-          "backgroundColor": "#376662",
+          "backgroundColor": "#ffffff",
           "imageWidth": 300
         }
       ]
