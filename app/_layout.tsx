@@ -26,7 +26,7 @@ import {
 import { fallbackColors, fonts } from "../constants/theme";
 import { SettingsProvider } from "../hooks/useSettings";
 import { SubscriptionProvider, useSubscriptionContext } from "../contexts/SubscriptionContext";
-import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform, AppState, AppStateStatus, Image } from "react-native";
+import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform, AppState, AppStateStatus } from "react-native";
 import * as Notifications from "expo-notifications";
 import * as SplashScreen from "expo-splash-screen";
 import * as Updates from "expo-updates";
@@ -391,7 +391,6 @@ function AndroidHardPaywallGate() {
     presenting.current = true;
     try {
       trackPaywallShown();
-      hideNativeSplash();
 
       // Resolve the target offering by identifier so this 2.7 build never
       // accidentally renders whatever RC has set as "current" (e.g. a legacy
@@ -416,6 +415,7 @@ function AndroidHardPaywallGate() {
       qaLog("paywall", "Hard paywall presenting", {
         offeringId: targetOffering?.identifier ?? "(default)",
       });
+      hideNativeSplash();
       const result = targetOffering
         ? await RevenueCatUI.presentPaywall({ offering: targetOffering })
         : await RevenueCatUI.presentPaywall();
@@ -544,38 +544,31 @@ function AndroidHardPaywallGate() {
 
   if (Platform.OS !== "android") return null;
 
-  const showBlockingOverlay =
-    loading || gate === "paywall" || showPaywallRetryShell;
-  if (!showBlockingOverlay) return null;
+  // While loading or while gate=="paywall" the native splash stays up
+  // (preventAutoHideAsync at module load) and the Stack is unmounted by
+  // SubscriptionTree — no JS overlay needed. The only case that needs a
+  // visible JS surface is the rare retry shell when the RC paywall closed
+  // without purchase.
+  if (!showPaywallRetryShell) return null;
 
   return (
-    <View
-      pointerEvents={showPaywallRetryShell ? "auto" : "none"}
-      style={styles.splashOverlay}
-    >
-      <Image
-        source={require("../assets/new-splash-icon.png")}
-        style={styles.splashIcon}
-        resizeMode="contain"
-      />
-      {showPaywallRetryShell ? (
-        <View style={styles.paywallRetryBlock}>
-          <Text style={styles.paywallRetryTitle}>Subscription required</Text>
-          <Text style={styles.paywallRetryBody}>
-            The paywall closed without a purchase. Tap Retry to open it again.
-          </Text>
-          <TouchableOpacity
-            style={styles.paywallRetryButton}
-            activeOpacity={0.85}
-            onPress={() => {
-              setShowPaywallRetryShell(false);
-              void present();
-            }}
-          >
-            <Text style={styles.paywallRetryButtonText}>Retry paywall</Text>
-          </TouchableOpacity>
-        </View>
-      ) : null}
+    <View style={styles.retryOverlay}>
+      <View style={styles.paywallRetryBlock}>
+        <Text style={styles.paywallRetryTitle}>Subscription required</Text>
+        <Text style={styles.paywallRetryBody}>
+          The paywall closed without a purchase. Tap Retry to open it again.
+        </Text>
+        <TouchableOpacity
+          style={styles.paywallRetryButton}
+          activeOpacity={0.85}
+          onPress={() => {
+            setShowPaywallRetryShell(false);
+            void present();
+          }}
+        >
+          <Text style={styles.paywallRetryButtonText}>Retry paywall</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -648,19 +641,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  splashOverlay: {
+  retryOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "#376662",
+    backgroundColor: "#ffffff",
     justifyContent: "center",
     alignItems: "center",
     zIndex: 998,
     elevation: 998,
-  },
-  splashIcon: {
-    // Match `imageWidth: 300` from the expo-splash-screen plugin config in
-    // app.json so the handoff from native splash → JS overlay is invisible.
-    width: 300,
-    height: 300,
   },
   updateBanner: {
     position: "absolute",
@@ -713,10 +700,9 @@ const styles = StyleSheet.create({
   },
   androidGatePlaceholder: {
     flex: 1,
-    backgroundColor: "#376662",
+    backgroundColor: "#F7FAFA",
   },
   paywallRetryBlock: {
-    marginTop: 24,
     paddingHorizontal: 24,
     alignItems: "center",
     maxWidth: 320,
@@ -725,20 +711,20 @@ const styles = StyleSheet.create({
   paywallRetryTitle: {
     fontFamily: fonts.bodyFamilySemiBold,
     fontSize: 18,
-    color: "#f8fafc",
+    color: "#0f172a",
     textAlign: "center",
     marginBottom: 8,
   },
   paywallRetryBody: {
     fontFamily: fonts.bodyFamilyRegular,
     fontSize: 14,
-    color: "#e2e8f0",
+    color: "#334155",
     textAlign: "center",
     lineHeight: 20,
     marginBottom: 16,
   },
   paywallRetryButton: {
-    backgroundColor: "#7dd3c0",
+    backgroundColor: "#376662",
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 999,
@@ -746,6 +732,6 @@ const styles = StyleSheet.create({
   paywallRetryButtonText: {
     fontFamily: fonts.bodyFamilySemiBold,
     fontSize: 15,
-    color: "#0f172a",
+    color: "#ffffff",
   },
 });
