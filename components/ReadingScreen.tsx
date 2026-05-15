@@ -203,24 +203,16 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
     [reading.application]
   );
 
-  // Sizing for the application quote and "Thought for the Day" — was
-  // previously hard-coded (quote 22/27, thought 21 iOS / 28 Android) and
-  // therefore immune to the global text-size setting. Anchor to the
-  // dynamic `bodyLargeFontSize` so the same visual ratios hold at every
-  // text-size tier.
+  // Sizing for the application quote and "Thought for the Day" — anchor
+  // to the dynamic `bodyLargeFontSize` so the same visual ratios hold at
+  // every text-size tier.
   const quoteFontSize = Math.round(typography.bodyLargeFontSize * (22 / 19));
   const quoteLineHeight = Math.round(quoteFontSize * (27 / 22));
   // Decorative open-quote glyph scales with quote text size. Ratio (~2.5×)
   // matches the speaker card glyph proportion at the default text size.
   const quoteGlyphSize = Math.round(quoteFontSize * 2.5) + 4;
-  const thoughtFontSize =
-    Platform.OS === "android"
-      ? Math.round(typography.bodyLargeFontSize * (28 / 19))
-      : Math.round(typography.bodyLargeFontSize * (21 / 19));
-  const thoughtLineHeight =
-    Platform.OS === "android"
-      ? Math.round(thoughtFontSize * (34 / 28))
-      : Math.round(thoughtFontSize * (27 / 21));
+  const thoughtFontSize = Math.round(typography.bodyLargeFontSize * (21 / 19));
+  const thoughtLineHeight = Math.round(thoughtFontSize * (27 / 21));
 
   // Horizontal swipe gesture for previous/next readings
   const SWIPE_THRESHOLD = 48;
