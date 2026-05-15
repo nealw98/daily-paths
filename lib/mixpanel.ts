@@ -11,7 +11,7 @@ export async function initMixpanel(): Promise<void> {
   }
   if (mixpanel) return;
 
-  mixpanel = new Mixpanel(token, false);
+  mixpanel = new Mixpanel(token, true);
   await mixpanel.init();
   console.log('[ANALYTICS] Mixpanel initialized');
 }
