@@ -507,7 +507,10 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                       ]}
                     >
                       <Ionicons name="checkmark" size={14} color={colors.onPrimary} />
-                      <Text style={[styles.journalFooterSaveText, { color: colors.onPrimary }]}>
+                      <Text
+                        style={[styles.journalFooterSaveText, { color: colors.onPrimary }]}
+                        numberOfLines={1}
+                      >
                         {saving ? "Saving..." : "Save to notebook"}
                       </Text>
                     </TouchableOpacity>
@@ -711,7 +714,10 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                   ]}
                 >
                   <Ionicons name="checkmark" size={14} color={colors.onPrimary} />
-                  <Text style={[styles.journalFooterSaveText, { color: colors.onPrimary }]}>
+                  <Text
+                    style={[styles.journalFooterSaveText, { color: colors.onPrimary }]}
+                    numberOfLines={1}
+                  >
                     {saving ? "Saving..." : "Save to notebook"}
                   </Text>
                 </TouchableOpacity>
@@ -842,7 +848,10 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                     ]}
                   >
                     <Ionicons name="checkmark" size={14} color={colors.onPrimary} />
-                    <Text style={[styles.journalFooterSaveText, { color: colors.onPrimary }]}>
+                    <Text
+                      style={[styles.journalFooterSaveText, { color: colors.onPrimary }]}
+                      numberOfLines={1}
+                    >
                       {saving ? "Saving..." : "Save to notebook"}
                     </Text>
                   </TouchableOpacity>
@@ -1057,12 +1066,13 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyFamilySemiBold,
     fontSize: 14,
     lineHeight: 18,
+    ...(Platform.OS === "android" ? { includeFontPadding: false } : {}),
   },
   journalFooterSave: {
     flex: 1,
     borderRadius: 10,
     paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingHorizontal: Platform.OS === "android" ? 12 : 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -1075,6 +1085,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyFamilySemiBold,
     fontSize: 14,
     lineHeight: 18,
+    ...(Platform.OS === "android" ? { includeFontPadding: false } : {}),
   },
   textIntroWrapper: {
     marginHorizontal: 20,
