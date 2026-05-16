@@ -508,6 +508,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                     >
                       <Text
                         style={[styles.journalFooterSaveText, { color: colors.onPrimary }]}
+                        allowFontScaling={false}
                       >
                         {saving ? "Saving..." : "Save to Notebook"}
                       </Text>
@@ -713,6 +714,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                 >
                   <Text
                     style={[styles.journalFooterSaveText, { color: colors.onPrimary }]}
+                    allowFontScaling={false}
                   >
                     {saving ? "Saving..." : "Save to Notebook"}
                   </Text>
@@ -845,6 +847,7 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                   >
                     <Text
                       style={[styles.journalFooterSaveText, { color: colors.onPrimary }]}
+                      allowFontScaling={false}
                     >
                       {saving ? "Saving..." : "Save to Notebook"}
                     </Text>
@@ -1077,6 +1080,8 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyFamilySemiBold,
     fontSize: 14,
     lineHeight: 18,
+    textAlign: "center",
+    width: "100%",
     ...(Platform.OS === "android" ? { includeFontPadding: false } : {}),
   },
   textIntroWrapper: {
