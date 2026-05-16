@@ -506,12 +506,10 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                         (saving || !hasContent) && styles.journalFooterSaveDisabled,
                       ]}
                     >
-                      <Ionicons name="checkmark" size={14} color={colors.onPrimary} />
                       <Text
                         style={[styles.journalFooterSaveText, { color: colors.onPrimary }]}
-                        numberOfLines={1}
                       >
-                        {saving ? "Saving..." : "Save to notebook"}
+                        {saving ? "Saving..." : "Save to Notebook"}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -713,12 +711,10 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                     (saving || !hasContent) && styles.journalFooterSaveDisabled,
                   ]}
                 >
-                  <Ionicons name="checkmark" size={14} color={colors.onPrimary} />
                   <Text
                     style={[styles.journalFooterSaveText, { color: colors.onPrimary }]}
-                    numberOfLines={1}
                   >
-                    {saving ? "Saving..." : "Save to notebook"}
+                    {saving ? "Saving..." : "Save to Notebook"}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -847,12 +843,10 @@ export const JournalEntryEditor: React.FC<JournalEntryEditorProps> = ({
                       (saving || !hasContent) && styles.journalFooterSaveDisabled,
                     ]}
                   >
-                    <Ionicons name="checkmark" size={14} color={colors.onPrimary} />
                     <Text
                       style={[styles.journalFooterSaveText, { color: colors.onPrimary }]}
-                      numberOfLines={1}
                     >
-                      {saving ? "Saving..." : "Save to notebook"}
+                      {saving ? "Saving..." : "Save to Notebook"}
                     </Text>
                   </TouchableOpacity>
                 </View>
