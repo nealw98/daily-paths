@@ -1066,11 +1066,9 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 10,
     paddingVertical: 10,
-    paddingHorizontal: Platform.OS === "android" ? 12 : 16,
-    flexDirection: "row",
+    paddingHorizontal: 16,
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
   },
   journalFooterSaveDisabled: {
     opacity: 0.55,
