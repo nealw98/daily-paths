@@ -26,6 +26,7 @@ import { fonts, fallbackColors } from "../constants/theme";
 import { clearQaLogs, useQaLogs, qaLog } from "../utils/qaLog";
 import { resetRateShareTracking } from "../utils/rateShareTracking";
 import { resetNotificationCoachmark } from "../utils/coachmarkStorage";
+import { clearAgeConfirmation } from "../utils/ageVerification";
 import { isDeveloperDevice, setDeveloperDevice, getOrCreateDeviceId } from "../utils/deviceIdentity";
 import {
   getTrialStatus,
@@ -419,6 +420,16 @@ export default function QaLogsScreen() {
     } catch (err) {
       qaLog('coachmark', 'Error resetting notification coachmark', { error: String(err) });
       alert('Failed to reset notification coachmark');
+    }
+  };
+
+  const handleResetAgeConfirmation = async () => {
+    try {
+      await clearAgeConfirmation();
+      alert('Age confirmation cleared. The 13+ gate will appear again on next app launch.');
+    } catch (err) {
+      qaLog('age', 'Error clearing age confirmation', { error: String(err) });
+      alert('Failed to reset age confirmation');
     }
   };
 
@@ -1686,6 +1697,13 @@ export default function QaLogsScreen() {
             onPress={handleResetNotificationCoachmark}
           >
             <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Reset Notification Coachmark</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}
+            activeOpacity={0.8}
+            onPress={handleResetAgeConfirmation}
+          >
+            <Text style={[styles.secondaryButtonText, { color: colors.deepTeal }]}>Reset Age Confirmation</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.secondaryButton, { borderColor: colors.deepTeal }]}

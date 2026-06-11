@@ -34,6 +34,9 @@ export const ANALYTICS_EVENTS = {
   RC_IDENTITY_MIGRATION_RAN: 'rc_identity_migration_ran',
   FIRST_LAUNCH_MODAL_SHOWN: 'first_launch_modal_shown',
   FIRST_LAUNCH_MODAL_DISMISSED: 'first_launch_modal_dismissed',
+  // Age confirmation (Texas 13+ compliance)
+  AGE_CONFIRMATION_SHOWN: 'age_confirmation_shown',
+  AGE_CONFIRMATION_CONFIRMED: 'age_confirmation_confirmed',
   // Reminder events
   REMINDER_SET: 'reminder_set',
   REMINDER_CHANGED: 'reminder_changed',

@@ -38,6 +38,7 @@ import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
 import { GrandfatheredLifetimeModal } from "../components/GrandfatheredLifetimeModal";
 import { SubscriberToLifetimeModal } from "../components/SubscriberToLifetimeModal";
 import { FirstLaunchTrialModal } from "../components/FirstLaunchTrialModal";
+import { AgeConfirmationGate } from "../components/AgeConfirmationGate";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { AppDateProvider } from "../contexts/AppDateContext";
 import { useAnalytics } from "../utils/analytics";
@@ -346,6 +347,11 @@ function SubscriptionTree({
       ) : (
         <View style={styles.androidGatePlaceholder} />
       )}
+      {/* Texas 13+ age confirmation. Only present once the main app is
+          mounted — on Android this means after the hard paywall resolves, so
+          the JS modal never competes with the native RC paywall. On iOS the
+          stack mounts immediately, so it shows on first launch. */}
+      {showMainStack && <AgeConfirmationGate />}
     </View>
   );
 }
