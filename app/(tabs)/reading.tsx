@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -20,20 +20,33 @@ import { recordDailyActivity, recordReadingView } from "../../utils/deviceIdenti
 import { qaLog } from "../../utils/qaLog";
 import { useAnalytics, NavigationMethod } from "../../utils/analytics";
 import { useReading } from "../../hooks/useReading";
+import { useAvailableDates } from "../../hooks/useAvailableDates";
 import { useBookmarkManager } from "../../hooks/useBookmarkManager";
 import { hasSeenInstruction, markInstructionSeen } from "../../utils/bookmarkStorage";
-import { formatDateLocal, parseDateLocal } from "../../utils/dateUtils";
+import { getScheduledDayOfYear } from "../../utils/dateUtils";
+import { useReadingDate } from "../../contexts/ReadingDateContext";
 import { useTheme } from "../../hooks/useTheme";
 import * as Notifications from "expo-notifications";
 import { SanctuaryButton } from "../../components/ui/Sanctuary";
 
+function addDays(date: Date, amount: number): Date {
+  const next = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  next.setDate(next.getDate() + amount);
+  return next;
+}
+
 export default function ReadingDetail() {
   const { colors, colorScheme, isDark } = useTheme();
   const router = useRouter();
-  const params = useLocalSearchParams<{ jump?: string; ts?: string; selectedDate?: string }>();
+  const params = useLocalSearchParams<{ jump?: string; ts?: string }>();
 
-  // Start with today's date
-  const [currentDate, setCurrentDate] = useState(new Date());
+  // The viewed day lives in a provider so the date picker and Favorites —
+  // both of which sit outside the tab navigator — can change it directly.
+  const {
+    selectedDate: currentDate,
+    setSelectedDate: setCurrentDate,
+    goToToday,
+  } = useReadingDate();
   const [showInstruction, setShowInstruction] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [navigationMethod, setNavigationMethod] = useState<NavigationMethod>('app_open');
@@ -52,6 +65,7 @@ export default function ReadingDetail() {
   }, [colorScheme, updateThemeMode]);
 
   const { reading, loading, error } = useReading(currentDate);
+  const { availableDaysOfYear } = useAvailableDates();
   const {
     isBookmarked,
     toggleBookmark,
@@ -66,28 +80,18 @@ export default function ReadingDetail() {
       Notifications.DEFAULT_ACTION_IDENTIFIER
     ) {
       setNavigationMethod('notification');
-      setCurrentDate(new Date());
+      goToToday();
     }
-  }, [lastNotificationResponse]);
+  }, [lastNotificationResponse, goToToday]);
 
   useEffect(() => {
     if (params?.jump !== "today") return;
     const token = params?.ts ?? "__no_ts__";
     if (handledJumpTokenRef.current === token) return;
     handledJumpTokenRef.current = token;
-    setCurrentDate(new Date());
+    goToToday();
     router.setParams({ jump: undefined, ts: undefined });
-  }, [params?.jump, params?.ts, router]);
-
-  useEffect(() => {
-    if (!params?.selectedDate) return;
-    const token = `${params.selectedDate}:${params?.ts ?? "__no_ts__"}`;
-    if (handledJumpTokenRef.current === token) return;
-    handledJumpTokenRef.current = token;
-    setNavigationMethod("date_picker");
-    setCurrentDate(parseDateLocal(params.selectedDate));
-    router.setParams({ selectedDate: undefined, ts: undefined });
-  }, [params?.selectedDate, params?.ts, router]);
+  }, [params?.jump, params?.ts, router, goToToday]);
 
   useEffect(() => {
     if (error && reading) {
@@ -163,15 +167,41 @@ export default function ReadingDetail() {
   }, [startReadingView]);
 
   const handleOpenDatePicker = () => {
-    router.push({
-      pathname: "/select-date",
-      params: { selectedDate: formatDateLocal(currentDate) },
-    });
+    router.push({ pathname: "/select-date" });
   };
 
   const handleGoToToday = () => {
-    setCurrentDate(new Date());
+    goToToday();
   };
+
+  // Previous/next day navigation. An arrow is disabled when the adjacent day
+  // has no reading published for it. `availableDaysOfYear` is empty while the
+  // list is still loading (or when offline), so treat that as "allow" and let
+  // the reading screen's own empty state handle a genuine miss.
+  const isDayAvailable = useCallback(
+    (date: Date) =>
+      availableDaysOfYear.length === 0 ||
+      availableDaysOfYear.includes(getScheduledDayOfYear(date)),
+    [availableDaysOfYear]
+  );
+
+  const previousDate = useMemo(() => addDays(currentDate, -1), [currentDate]);
+  const nextDate = useMemo(() => addDays(currentDate, 1), [currentDate]);
+
+  const canGoPrevious = isDayAvailable(previousDate);
+  const canGoNext = isDayAvailable(nextDate);
+
+  const handlePreviousDay = useCallback(() => {
+    if (!canGoPrevious) return;
+    setNavigationMethod("prev_button");
+    setCurrentDate(previousDate);
+  }, [canGoPrevious, previousDate, setCurrentDate]);
+
+  const handleNextDay = useCallback(() => {
+    if (!canGoNext) return;
+    setNavigationMethod("next_button");
+    setCurrentDate(nextDate);
+  }, [canGoNext, nextDate, setCurrentDate]);
 
   const handleDismissInstruction = async () => {
     setShowInstruction(false);
@@ -319,6 +349,10 @@ export default function ReadingDetail() {
         onHeaderPress={handleGoToToday}
         onOpenDatePicker={handleOpenDatePicker}
         onOpenFavorites={handleOpenFavorites}
+        onPreviousDay={handlePreviousDay}
+        onNextDay={handleNextDay}
+        canGoPrevious={canGoPrevious}
+        canGoNext={canGoNext}
         isBookmarked={isBookmarked}
         onBookmarkToggle={handleBookmarkToggle}
         onShare={handleShare}

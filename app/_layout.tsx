@@ -40,6 +40,7 @@ import { SubscriberToLifetimeModal } from "../components/SubscriberToLifetimeMod
 import { FirstLaunchTrialModal } from "../components/FirstLaunchTrialModal";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { AppDateProvider } from "../contexts/AppDateContext";
+import { ReadingDateProvider } from "../contexts/ReadingDateContext";
 import { useAnalytics } from "../utils/analytics";
 import { expireTrial } from "../utils/trialTimer";
 import { getRawEntitlements, restorePurchases } from "../lib/subscription";
@@ -258,15 +259,17 @@ export default function RootLayout() {
     <KeyboardProvider>
       <SettingsProvider>
         <AppDateProvider>
-          <SubscriptionProvider>
-            <SubscriptionTree
-              colors={colors}
-              updateReady={updateReady}
-              setUpdateReady={setUpdateReady}
-              restarting={restarting}
-              handleRestart={handleRestart}
-            />
-          </SubscriptionProvider>
+          <ReadingDateProvider>
+            <SubscriptionProvider>
+              <SubscriptionTree
+                colors={colors}
+                updateReady={updateReady}
+                setUpdateReady={setUpdateReady}
+                restarting={restarting}
+                handleRestart={handleRestart}
+              />
+            </SubscriptionProvider>
+          </ReadingDateProvider>
         </AppDateProvider>
       </SettingsProvider>
     </KeyboardProvider>

@@ -8,14 +8,16 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
+import { useAppDate } from "../contexts/AppDateContext";
+import { useReadingDate } from "../contexts/ReadingDateContext";
 import { useTheme } from "../hooks/useTheme";
 import { useTypography } from "../hooks/useTypography";
 import { useAvailableDates } from "../hooks/useAvailableDates";
 import { useReading } from "../hooks/useReading";
 import { fonts } from "../constants/theme";
 import { FieldShell, SanctuaryButton, SanctuaryCard } from "../components/ui/Sanctuary";
-import { formatDateLocal, getScheduledDayOfYear, parseDateLocal } from "../utils/dateUtils";
+import { formatDateLocal, getScheduledDayOfYear } from "../utils/dateUtils";
 import { getBookmarks, type BookmarkData } from "../utils/bookmarkStorage";
 
 function startOfMonth(date: Date) {
@@ -24,19 +26,19 @@ function startOfMonth(date: Date) {
 
 export default function SelectDateScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ selectedDate?: string }>();
-  const initialDate = params.selectedDate
-    ? parseDateLocal(params.selectedDate)
-    : new Date();
+  const { selectedDate: viewedDate, setSelectedDate: setViewedDate } =
+    useReadingDate();
 
   const { colors } = useTheme();
   const { typography } = useTypography();
   const { availableDaysOfYear } = useAvailableDates();
-  const [selectedDate, setSelectedDate] = useState(initialDate);
-  const [currentMonth, setCurrentMonth] = useState(startOfMonth(initialDate));
+  // Local selection — only committed to the shared reading date on "View".
+  const [selectedDate, setSelectedDate] = useState(viewedDate);
+  const [currentMonth, setCurrentMonth] = useState(startOfMonth(viewedDate));
   const [bookmarks, setBookmarks] = useState<BookmarkData[]>([]);
   const { reading } = useReading(selectedDate);
-  const todayKey = formatDateLocal(new Date());
+  // Use the app-wide today so the "today" ring advances across local midnight.
+  const { todayKey } = useAppDate();
 
   useEffect(() => {
     (async () => {
@@ -49,13 +51,6 @@ export default function SelectDateScreen() {
     () => new Map(bookmarks.map((bookmark) => [bookmark.date, bookmark])),
     [bookmarks]
   );
-
-  useEffect(() => {
-    if (!params.selectedDate) return;
-    const parsed = parseDateLocal(params.selectedDate);
-    setSelectedDate(parsed);
-    setCurrentMonth(startOfMonth(parsed));
-  }, [params.selectedDate]);
 
   const monthLabel = currentMonth.toLocaleDateString("en-US", {
     month: "long",
@@ -87,13 +82,12 @@ export default function SelectDateScreen() {
   }, [availableDaysOfYear, bookmarkMap, currentMonth, selectedDate, todayKey]);
 
   const handleRevisitReading = () => {
-    router.replace({
-      pathname: "/(tabs)/reading",
-      params: {
-        selectedDate: formatDateLocal(selectedDate),
-        ts: String(Date.now()),
-      },
-    });
+    // Hand the date to the reading screen through the shared provider and pop
+    // back to it. Passing it as route params never worked here: `reading` is a
+    // hidden tab, so `router.replace("/(tabs)/reading", ...)` didn't deliver
+    // params to the already-mounted screen and it stayed on today's reading.
+    setViewedDate(selectedDate);
+    router.back();
   };
 
   const selectedBookmark = bookmarkMap.get(formatDateLocal(selectedDate));

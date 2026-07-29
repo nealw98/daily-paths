@@ -9,6 +9,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { useReadingDate } from "../contexts/ReadingDateContext";
 import { useTheme } from "../hooks/useTheme";
 import { useTypography } from "../hooks/useTypography";
 import { fonts } from "../constants/theme";
@@ -30,6 +31,7 @@ function formatDateLabel(dateKey: string): string {
 
 export default function FavoritesScreen() {
   const router = useRouter();
+  const { setSelectedDate: setViewedDate } = useReadingDate();
   const { colors } = useTheme();
   const { typography } = useTypography();
   const [bookmarks, setBookmarks] = useState<BookmarkData[]>([]);
@@ -51,13 +53,10 @@ export default function FavoritesScreen() {
   );
 
   const handleOpen = (bookmark: BookmarkData) => {
-    router.replace({
-      pathname: "/(tabs)/reading",
-      params: {
-        selectedDate: bookmark.date,
-        ts: String(Date.now()),
-      },
-    });
+    // Same as the date picker: set the shared reading date and pop back,
+    // rather than replacing into the hidden `reading` tab with params.
+    setViewedDate(parseDateLocal(bookmark.date));
+    router.back();
   };
 
   return (

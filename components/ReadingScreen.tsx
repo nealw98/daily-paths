@@ -92,6 +92,14 @@ interface ReadingScreenProps {
   onHeaderPress?: () => void;
   onOpenDatePicker: () => void;
   onOpenFavorites?: () => void;
+  /** Move to the previous day's reading. */
+  onPreviousDay?: () => void;
+  /** Move to the next day's reading. */
+  onNextDay?: () => void;
+  /** False when no reading is published for the previous day. */
+  canGoPrevious?: boolean;
+  /** False when no reading is published for the next day. */
+  canGoNext?: boolean;
   isBookmarked?: boolean;
   onBookmarkToggle?: () => Promise<void>;
   onHighlight?: () => void;
@@ -110,6 +118,10 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   onHeaderPress,
   onOpenDatePicker,
   onOpenFavorites,
+  onPreviousDay,
+  onNextDay,
+  canGoPrevious = true,
+  canGoNext = true,
   isBookmarked = false,
   onBookmarkToggle,
   onHighlight,
@@ -214,8 +226,13 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   const thoughtFontSize = Math.round(typography.bodyLargeFontSize * (21 / 19));
   const thoughtLineHeight = Math.round(thoughtFontSize * (27 / 21));
 
-  // Horizontal swipe gesture for previous/next readings
+  // Horizontal swipe gesture for previous/next readings.
+  // The responder is created once, so its release handler reads the day
+  // navigation callbacks through a ref rather than closing over the first
+  // render's copies.
   const SWIPE_THRESHOLD = 48;
+  const swipeNavRef = useRef({ onPreviousDay, onNextDay, canGoPrevious, canGoNext });
+  swipeNavRef.current = { onPreviousDay, onNextDay, canGoPrevious, canGoNext };
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_evt, gestureState) => {
@@ -244,9 +261,21 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
       },
       onPanResponderRelease: (_evt, gestureState) => {
         const { dx } = gestureState;
-        if (Math.abs(dx) > SWIPE_THRESHOLD) {
-          Haptics.selectionAsync().catch(() => {});
+        const nav = swipeNavRef.current;
+
+        // Swiping left pulls the next day in; swiping right goes back a day.
+        let advance: (() => void) | undefined;
+        if (dx <= -SWIPE_THRESHOLD && nav.canGoNext) {
+          advance = nav.onNextDay;
+        } else if (dx >= SWIPE_THRESHOLD && nav.canGoPrevious) {
+          advance = nav.onPreviousDay;
         }
+
+        if (advance) {
+          Haptics.selectionAsync().catch(() => {});
+          advance();
+        }
+
         Animated.spring(translateX, {
           toValue: 0,
           useNativeDriver: true,
@@ -410,6 +439,64 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
             onLayout={coachmark.scrollProps.onLayout}
           >
             <Pressable onPress={handleContentPress}>
+              {/* Previous / calendar / next — day navigation sits above the
+                  title so moving between readings is always one tap away. */}
+              <View style={styles.dayNav}>
+                <TouchableOpacity
+                  onPress={onPreviousDay}
+                  disabled={!onPreviousDay || !canGoPrevious}
+                  style={styles.dayNavButton}
+                  hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Previous day's reading"
+                  accessibilityState={{ disabled: !onPreviousDay || !canGoPrevious }}
+                >
+                  <Ionicons
+                    name="chevron-back"
+                    size={22}
+                    color={
+                      onPreviousDay && canGoPrevious
+                        ? colors.onSurfaceVariant
+                        : colors.outlineVariant
+                    }
+                  />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={onOpenDatePicker}
+                  style={styles.dayNavButton}
+                  hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Choose a date"
+                >
+                  <Ionicons
+                    name="calendar-outline"
+                    size={22}
+                    color={colors.onSurfaceVariant}
+                  />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={onNextDay}
+                  disabled={!onNextDay || !canGoNext}
+                  style={styles.dayNavButton}
+                  hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Next day's reading"
+                  accessibilityState={{ disabled: !onNextDay || !canGoNext }}
+                >
+                  <Ionicons
+                    name="chevron-forward"
+                    size={22}
+                    color={
+                      onNextDay && canGoNext
+                        ? colors.onSurfaceVariant
+                        : colors.outlineVariant
+                    }
+                  />
+                </TouchableOpacity>
+              </View>
+
               <View style={styles.pageIntro}>
                 <View style={styles.pageIntroCopy}>
                   <Text style={[styles.pageTitle, pageTitleType, { color: colors.primaryContainer }]}>
@@ -428,13 +515,6 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                     {fullDateLabel}
                   </Text>
                 </View>
-                <TouchableOpacity
-                  onPress={onOpenDatePicker}
-                  style={styles.pageCalendarButton}
-                  hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
-                >
-                  <Ionicons name="calendar-outline" size={28} color={colors.primaryContainer} />
-                </TouchableOpacity>
               </View>
 
               {!!applicationQuote && (
@@ -865,6 +945,18 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 40,
   },
+  dayNav: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  dayNavButton: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   pageIntro: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -874,12 +966,6 @@ const styles = StyleSheet.create({
   },
   pageIntroCopy: {
     flex: 1,
-  },
-  pageCalendarButton: {
-    width: 40,
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
   },
   pageTitle: {
     // Lora regular (the family's lightest available weight) for an
