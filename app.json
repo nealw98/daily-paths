@@ -17,6 +17,16 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": ["audio"]
+      },
+      "entitlements": {
+        "com.apple.developer.icloud-container-environment": "Production",
+        "com.apple.developer.icloud-container-identifiers": [
+          "iCloud.com.nealwagner.dailypaths"
+        ],
+        "com.apple.developer.icloud-services": ["CloudDocuments"],
+        "com.apple.developer.ubiquity-container-identifiers": [
+          "iCloud.com.nealwagner.dailypaths"
+        ]
       }
     },
     "android": {

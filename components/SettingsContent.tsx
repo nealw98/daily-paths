@@ -240,6 +240,25 @@ export const SettingsContent: React.FC<{
 
           <View style={[styles.sectionCard, { backgroundColor: colors.cloud }]}>
             <View style={[styles.sectionHeader, { borderBottomColor: colors.mist }]}>
+              <Ionicons name="cloud-outline" size={22} color={colors.deepTeal} />
+              <View style={styles.sectionHeaderText}>
+                <Text style={[styles.sectionTitle, { fontSize: sectionTitleFontSize, color: colors.deepTeal }]}>Backup</Text>
+              </View>
+            </View>
+            <View style={styles.sectionBody}>
+              <TouchableOpacity
+                style={[styles.secondaryButton, { borderColor: colors.mist, backgroundColor: colors.pearl }]}
+                onPress={() => router.push("/backup")}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="cloud-upload-outline" size={18} color={colors.deepTeal} />
+                <Text style={[styles.secondaryButtonText, { fontSize: bodyFontSize, color: colors.deepTeal }]}>Backup & Restore</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={[styles.sectionCard, { backgroundColor: colors.cloud }]}>
+            <View style={[styles.sectionHeader, { borderBottomColor: colors.mist }]}>
               <Ionicons name="star-outline" size={22} color={colors.deepTeal} />
               <View style={styles.sectionHeaderText}>
                 <Text style={[styles.sectionTitle, { fontSize: sectionTitleFontSize, color: colors.deepTeal }]}>Rate & Share</Text>

@@ -25,6 +25,7 @@ import {
 } from "@expo-google-fonts/cormorant-garamond";
 import { fallbackColors, fonts } from "../constants/theme";
 import { SettingsProvider } from "../hooks/useSettings";
+import { CloudSyncGate } from "../hooks/useCloudSync";
 import { SubscriptionProvider, useSubscriptionContext } from "../contexts/SubscriptionContext";
 import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform, AppState, AppStateStatus } from "react-native";
 import * as Notifications from "expo-notifications";
@@ -302,6 +303,7 @@ function SubscriptionTree({
   return (
     <View style={{ flex: 1 }}>
       <AndroidHardPaywallGate />
+      <CloudSyncGate />
       <FirstLaunchTrialPresenter />
       <PendingModalPresenter />
       {updateReady && (
