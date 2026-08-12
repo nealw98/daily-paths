@@ -330,8 +330,13 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
           )}
 
           {player.loadError && (
-            <View style={styles.errorRow}>
-              <Ionicons name="alert-circle-outline" size={Math.round(18 * scale)} color={colors.danger} />
+            <TouchableOpacity
+              style={styles.errorRow}
+              onPress={() => player.play()}
+              accessibilityRole="button"
+              accessibilityLabel="Playback stopped. Tap to resume."
+            >
+              <Ionicons name="refresh" size={Math.round(18 * scale)} color={colors.danger} />
               <Text
                 style={[
                   styles.errorText,
@@ -342,9 +347,9 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
                   },
                 ]}
               >
-                Failed to load audio. Please try again.
+                Playback stopped. Tap to resume where you left off.
               </Text>
-            </View>
+            </TouchableOpacity>
           )}
 
           {/* Progress bar */}
