@@ -450,9 +450,9 @@ function ToolkitPage({
           ))}
         </View>
         <View style={styles.offerBlock}>
-          <Text style={styles.offerTitle}>Everything for $4.99 once.</Text>
+          <Text style={styles.offerTitle}>Lifetime access — $4.99</Text>
           <Text style={styles.offerCopy}>
-            Lifetime access. No subscription or recurring charge.
+            One payment. No subscription or recurring charges.
           </Text>
         </View>
       </ScrollView>
