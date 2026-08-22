@@ -363,6 +363,9 @@ function ReflectionsPage({
       >
         <Text style={styles.pageContext}>What's inside</Text>
         <Text style={styles.pageOneHeadline}>A thoughtful reflection for every day</Text>
+        <Text style={styles.pageOneBenefit}>
+          A few quiet minutes to feel grounded, encouraged, and ready for the next right step.
+        </Text>
 
         <View ref={cardRef} collapsable={false} style={styles.sampleCardShadow}>
           <TouchableOpacity
@@ -609,12 +612,20 @@ const styles = StyleSheet.create({
   },
   pageOneHeadline: {
     marginHorizontal: 4,
-    marginBottom: 20,
+    marginBottom: 9,
     fontFamily: fonts.cormorantGaramondMedium,
     fontSize: 34,
     lineHeight: 43,
     letterSpacing: -0.5,
     color: colors.onSurface,
+  },
+  pageOneBenefit: {
+    marginHorizontal: 4,
+    marginBottom: 20,
+    fontFamily: fonts.bodyFamily,
+    fontSize: 15,
+    lineHeight: 23,
+    color: colors.onSurfaceVariant,
   },
   sampleCardShadow: {
     borderRadius: 16,
