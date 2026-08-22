@@ -451,7 +451,7 @@ function ToolkitPage({
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.pageContext}>What's inside</Text>
-        <Text style={styles.toolkitHeadline}>A complete toolkit for daily recovery</Text>
+        <Text style={styles.toolkitHeadline}>Practical tools to support your daily program</Text>
         {FEATURE_GROUPS.map((group) => (
           <View key={group.title} style={styles.featureGroup}>
             <Text style={styles.featureGroupTitle}>{group.title}</Text>
@@ -476,7 +476,7 @@ function ToolkitPage({
       </ScrollView>
       <View style={styles.pinnedActionArea}>
         <PrimaryButton
-          label={paywallBusy ? "Opening checkout…" : "Unlock everything"}
+          label={paywallBusy ? "Opening checkout…" : "Unlock the app"}
           onPress={onUnlock}
           disabled={paywallBusy}
         />
@@ -738,7 +738,21 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     color: colors.onSurface,
   },
-  offerBlock: { marginTop: 3, alignItems: "center", paddingVertical: 10 },
+  offerBlock: {
+    marginTop: 3,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    alignItems: "center",
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(45,76,71,0.14)",
+    backgroundColor: colors.surfaceContainerLowest,
+    shadowColor: colors.heroGradientStart,
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
+  },
   offerTitle: {
     fontFamily: fonts.bodyFamilyBold,
     fontSize: 20,
