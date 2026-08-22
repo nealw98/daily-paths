@@ -27,6 +27,7 @@ import {
   Feather,
   LeafOnWater,
   Microphone,
+  MoonOnWater,
   Play,
   Seedling,
   SoftExhale,
@@ -57,7 +58,8 @@ const FEATURE_GROUPS: Array<{
     features: [
       { label: "Private journal", Icon: Feather },
       { label: "Gratitude practice", Icon: Seedling },
-      { label: "Spot checks and nightly reviews", Icon: SoftExhale },
+      { label: "Spot check inventory", Icon: SoftExhale },
+      { label: "Nightly Reviews", Icon: MoonOnWater },
     ],
   },
   {
