@@ -362,9 +362,9 @@ function ReflectionsPage({
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.pageContext}>What's inside</Text>
-        <Text style={styles.pageOneHeadline}>A thoughtful reflection for every day</Text>
+        <Text style={styles.pageOneHeadline}>A thoughtful reading to guide your day</Text>
         <Text style={styles.pageOneBenefit}>
-          A few quiet minutes to feel grounded, encouraged, and ready for the next right step.
+          Deepen your understanding and put each reading into practice throughout your day.
         </Text>
 
         <View ref={cardRef} collapsable={false} style={styles.sampleCardShadow}>
