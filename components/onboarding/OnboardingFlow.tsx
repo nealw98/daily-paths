@@ -374,6 +374,7 @@ function ReflectionsPage({
         contentContainerStyle={styles.reflectionsContent}
         showsVerticalScrollIndicator={false}
       >
+        <Text style={styles.pageContext}>What's inside</Text>
         <Text style={styles.pageOneHeadline}>A thoughtful reflection for every day</Text>
 
         <View ref={cardRef} collapsable={false} style={styles.sampleCardShadow}>
@@ -613,6 +614,16 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.76)",
   },
   reflectionsContent: { flexGrow: 1, paddingHorizontal: 16, paddingTop: 26, paddingBottom: 22 },
+  pageContext: {
+    marginHorizontal: 4,
+    marginBottom: 7,
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 12,
+    lineHeight: 18,
+    letterSpacing: 1.25,
+    textTransform: "uppercase",
+    color: colors.accent,
+  },
   pageOneHeadline: {
     marginHorizontal: 4,
     marginBottom: 20,
