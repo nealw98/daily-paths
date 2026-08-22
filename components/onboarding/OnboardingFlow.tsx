@@ -450,6 +450,7 @@ function ToolkitPage({
         contentContainerStyle={styles.toolkitContent}
         showsVerticalScrollIndicator={false}
       >
+        <Text style={styles.pageContext}>What's inside</Text>
         <Text style={styles.toolkitHeadline}>A complete toolkit for daily recovery</Text>
         {FEATURE_GROUPS.map((group) => (
           <View key={group.title} style={styles.featureGroup}>
