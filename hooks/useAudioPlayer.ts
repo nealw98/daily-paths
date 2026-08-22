@@ -32,6 +32,13 @@ export function useAudioPlayer() {
   // Track the speaker ID for progress persistence
   const currentSpeakerIdRef = useRef<string | null>(null);
 
+  // Last load request, kept so we can rebuild the sound after it dies.
+  // Playback can end without the user asking: a streaming stall, an audio
+  // session interruption, or Android suspending the process in the background.
+  // expo-av gives us no way to revive an unloaded sound, so recovery means
+  // loading the same URI again from the saved position.
+  const lastRequestRef = useRef<{ uri: string; speakerId?: string } | null>(null);
+
   // Throttle progress saves: at most once every 5 seconds
   const lastSaveRef = useRef<number>(0);
 
@@ -91,6 +98,31 @@ export function useAudioPlayer() {
       if ("error" in status && status.error) {
         qaLog("audio", "Playback error", { error: status.error });
         setLoadError(status.error);
+        setIsPlaying(false);
+        setIsBuffering(false);
+
+        // The sound object is dead. Drop our references so play()/load() build
+        // a fresh one instead of calling into an unloaded sound — without this
+        // the play button silently does nothing and re-entering the speaker
+        // hits load()'s same-URI early return, leaving the user stuck until
+        // they force-quit the app.
+        const dead = soundRef.current;
+        soundRef.current = null;
+        currentUriRef.current = null;
+        dead?.unloadAsync().catch(() => {});
+
+        // Force-save the last known position so recovery resumes where the
+        // audio actually stopped rather than up to 5s earlier.
+        const speakerId = currentSpeakerIdRef.current;
+        if (speakerId) {
+          lastSaveRef.current = Date.now();
+          saveSpeakerProgress(speakerId, {
+            positionMs: positionRef.current,
+            durationMs: durationRef.current,
+            rate: rateRef.current,
+            didFinish: false,
+          }).catch(() => {});
+        }
       }
       return;
     }
@@ -139,6 +171,8 @@ export function useAudioPlayer() {
   const load = useCallback(
     async (uri: string, autoPlay = false, speakerId?: string) => {
       try {
+        lastRequestRef.current = { uri, speakerId };
+
         // If the same URI is already loaded, just toggle play state
         if (currentUriRef.current === uri && soundRef.current) {
           if (autoPlay) {
@@ -214,13 +248,35 @@ export function useAudioPlayer() {
     [rate, onStatusUpdate, saveProgress]
   );
 
+  // Rebuild the sound from the last load request. load() restores the saved
+  // position, so playback picks up where it stopped.
+  const rebuildAndPlay = useCallback(async () => {
+    const req = lastRequestRef.current;
+    if (!req) return;
+    soundRef.current = null;
+    currentUriRef.current = null;
+    qaLog("audio", "Rebuilding sound after playback ended unexpectedly", {
+      speakerId: req.speakerId,
+      positionMs: positionRef.current,
+    });
+    await load(req.uri, true, req.speakerId);
+  }, [load]);
+
   const play = useCallback(async () => {
-    try {
-      await soundRef.current?.playAsync();
-    } catch (err) {
-      qaLog("audio", "Failed to play", { error: String(err) });
+    // A missing sound means playback died on its own — a stream stall, an
+    // audio session interruption, or Android reclaiming the app in the
+    // background. Rebuild rather than no-op, so the play button always works.
+    if (!soundRef.current) {
+      await rebuildAndPlay();
+      return;
     }
-  }, []);
+    try {
+      await soundRef.current.playAsync();
+    } catch (err) {
+      qaLog("audio", "Failed to play; rebuilding", { error: String(err) });
+      await rebuildAndPlay();
+    }
+  }, [rebuildAndPlay]);
 
   const pause = useCallback(async () => {
     try {
@@ -274,6 +330,9 @@ export function useAudioPlayer() {
         soundRef.current = null;
         currentUriRef.current = null;
         currentSpeakerIdRef.current = null;
+        // Explicit stop — don't leave a request behind that play() would
+        // treat as an interrupted session and resurrect.
+        lastRequestRef.current = null;
         setIsLoaded(false);
         setIsPlaying(false);
         setIsBuffering(false);
