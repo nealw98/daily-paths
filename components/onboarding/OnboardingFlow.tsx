@@ -51,7 +51,7 @@ type FeatureIcon = React.ComponentType<{
 const FEATURES: Array<{ label: string; Icon: FeatureIcon }> = [
   { label: "Private journal", Icon: Feather },
   { label: "Gratitude practice", Icon: Seedling },
-  { label: "Spot check inventory", Icon: SoftExhale },
+  { label: "Spot check tool", Icon: SoftExhale },
   { label: "Nightly Reviews", Icon: MoonOnWater },
   { label: "Essential prayers", Icon: LeafOnWater },
   { label: "Speaker talks & downloads", Icon: Microphone },
