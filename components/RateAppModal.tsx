@@ -100,7 +100,7 @@ export const RateAppModal: React.FC<RateAppModalProps> = ({
   // Dynamic message based on usage
   const getMessage = () => {
     if (daysUsed >= 30) {
-      return `You've been reading Daily Paths for ${daysUsed} days!\n\nIf it's been helpful in your Al-Anon journey, would you rate it?\n\nYour rating helps others discover Daily Paths.`;
+      return `You've been reading Daily Paths for ${daysUsed} days!\n\nIf it's been helpful in your recovery journey, would you rate it?\n\nYour rating helps others discover Daily Paths.`;
     }
     if (daysUsed >= 7) {
       return `You've read Daily Paths for ${daysUsed} days!\n\nIf it's been helpful in your recovery journey, would you rate it?\n\nYour rating helps others discover Daily Paths.`;

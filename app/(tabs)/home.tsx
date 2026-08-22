@@ -266,7 +266,7 @@ export default function HomeTab() {
           day: "numeric",
           year: "numeric",
         })}
-        eyebrow="Al-Anon Daily Paths"
+        eyebrow="Daily Paths"
         hideIcon
       />
       <ScrollView

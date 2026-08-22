@@ -23,6 +23,10 @@ export const ANALYTICS_EVENTS = {
   PAYWALL_PURCHASE_COMPLETED: 'paywall_purchase_completed',
   PAYWALL_PURCHASE_CANCELLED: 'paywall_purchase_cancelled',
   PAYWALL_DISMISSED: 'paywall_dismissed',
+  ONBOARDING_STEP_VIEWED: 'onboarding_step_viewed',
+  ONBOARDING_SAMPLE_OPENED: 'onboarding_sample_opened',
+  ONBOARDING_SAMPLE_CLOSED: 'onboarding_sample_closed',
+  ONBOARDING_CHECKOUT_TAPPED: 'onboarding_checkout_tapped',
   RESTORE_INITIATED: 'restore_initiated',
   RESTORE_COMPLETED: 'restore_completed',
   LIFETIME_GRANDFATHERED: 'lifetime_grandfathered',
@@ -365,6 +369,48 @@ export function useAnalytics() {
     mp.flush();
   }, [isDeveloper]);
 
+  const trackOnboardingStepViewed = useCallback((step: 'reflections' | 'toolkit') => {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.ONBOARDING_STEP_VIEWED, {
+      step,
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+    mp.flush();
+  }, [isDeveloper]);
+
+  const trackOnboardingSampleOpened = useCallback(() => {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.ONBOARDING_SAMPLE_OPENED, {
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+    mp.flush();
+  }, [isDeveloper]);
+
+  const trackOnboardingSampleClosed = useCallback(() => {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.ONBOARDING_SAMPLE_CLOSED, {
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+    mp.flush();
+  }, [isDeveloper]);
+
+  const trackOnboardingCheckoutTapped = useCallback((origin: 'reflections' | 'toolkit') => {
+    const mp = getMixpanel();
+    if (!mp) return;
+    mp.track(ANALYTICS_EVENTS.ONBOARDING_CHECKOUT_TAPPED, {
+      origin,
+      is_developer: isDeveloper,
+      theme_mode: themeModeRef.current,
+    });
+    mp.flush();
+  }, [isDeveloper]);
+
   const trackRestoreInitiated = useCallback(() => {
     const mp = getMixpanel();
     if (!mp) return;
@@ -578,6 +624,10 @@ export function useAnalytics() {
     trackPaywallDismissed,
     trackPaywallPurchaseCompleted,
     trackPaywallPurchaseCancelled,
+    trackOnboardingStepViewed,
+    trackOnboardingSampleOpened,
+    trackOnboardingSampleClosed,
+    trackOnboardingCheckoutTapped,
     trackRestoreInitiated,
     trackRestoreCompleted,
     trackModalShown,

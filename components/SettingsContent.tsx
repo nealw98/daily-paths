@@ -139,7 +139,7 @@ export const SettingsContent: React.FC<{
     if (success) {
       Alert.alert(
         "Thank you!",
-        "Your feedback has been submitted. We appreciate you helping us improve Al-Anon Daily Paths.",
+        "Your feedback has been submitted. We appreciate you helping us improve Daily Paths.",
         [{ text: "OK" }]
       );
       setShowFeedbackModal(false);
@@ -815,5 +815,4 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
-
 

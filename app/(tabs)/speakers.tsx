@@ -30,7 +30,7 @@ export default function SpeakersTab() {
   const { trackSpeakerAudioCompleted } = useAnalytics();
   const { createEntry } = useJournalStorage();
 
-  // Entitlement gating happens at app root (AndroidHardPaywallGate); by the
+  // Entitlement gating happens at app root (Android onboarding flow); by the
   // time this tab mounts, the user already has full access. iOS users are
   // always entitled via the paid-app receipt.
   const canDownload = true;

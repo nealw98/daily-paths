@@ -8,3 +8,5 @@ export { MoonOnWater } from "./MoonOnWater";
 export { FourSquares } from "./FourSquares";
 export { Nautilus } from "./Nautilus";
 export { Microphone } from "./Microphone";
+export { Book } from "./Book";
+export { Play } from "./Play";

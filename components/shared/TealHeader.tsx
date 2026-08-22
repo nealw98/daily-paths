@@ -14,7 +14,7 @@ interface TealHeaderProps {
   rightAction?: React.ReactNode;
   /** If true, hides the back button (used on home screen). */
   hideIcon?: boolean;
-  /** When provided, renders above the title (home brand "Al-Anon Daily Paths"). */
+  /** When provided, renders above the title (home brand "Daily Paths"). */
   eyebrow?: string;
   /** Custom back handler. Falls back to router.back(). */
   onBack?: () => void;
@@ -119,7 +119,7 @@ export const TealHeader: React.FC<TealHeaderProps> = ({
           )}
         </View>
         <Text numberOfLines={1} style={styles.brand}>
-          Al-Anon Daily Paths
+          Daily Paths
         </Text>
         <View style={styles.sideRight}>{rightAction ?? null}</View>
       </View>

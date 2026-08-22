@@ -23,49 +23,31 @@ import {
   CormorantGaramond_600SemiBold_Italic,
   CormorantGaramond_700Bold,
 } from "@expo-google-fonts/cormorant-garamond";
-import { fallbackColors, fonts } from "../constants/theme";
+import { fallbackColors } from "../constants/theme";
 import { SettingsProvider } from "../hooks/useSettings";
 import { CloudSyncGate } from "../hooks/useCloudSync";
 import { SubscriptionProvider, useSubscriptionContext } from "../contexts/SubscriptionContext";
-import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform, AppState, AppStateStatus } from "react-native";
+import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import * as SplashScreen from "expo-splash-screen";
 import * as Updates from "expo-updates";
 import { installGlobalErrorHandler } from "../utils/errorLogger";
 import { initMixpanel } from "../lib/mixpanel";
 import { qaLog } from "../utils/qaLog";
-import Purchases from "react-native-purchases";
-import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
 import { GrandfatheredLifetimeModal } from "../components/GrandfatheredLifetimeModal";
 import { SubscriberToLifetimeModal } from "../components/SubscriberToLifetimeModal";
-import { FirstLaunchTrialModal } from "../components/FirstLaunchTrialModal";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { AppDateProvider } from "../contexts/AppDateContext";
 import { ReadingDateProvider } from "../contexts/ReadingDateContext";
 import { useAnalytics } from "../utils/analytics";
-import { expireTrial } from "../utils/trialTimer";
-import { getRawEntitlements, restorePurchases } from "../lib/subscription";
-import { clearSubscriptionOverride } from "../utils/subscriptionOverride";
 import Constants from "expo-constants";
+import { OnboardingFlow } from "../components/onboarding/OnboardingFlow";
 
 console.log("[STARTUP] _layout.tsx module loading...");
 console.log("[STARTUP] Platform:", Platform.OS, Platform.Version);
 
-/**
- * RevenueCat offering identifier to target when presenting the 2.7 hard
- * paywall. RC offerings are global across SDK versions — so we explicitly
- * request the lifetime offering here to prevent the 2.6.x binaries (which
- * call `presentPaywall()` against whatever offering is "current") from
- * accidentally showing the 2.7 lifetime product if it's activated as
- * default in RC. Set this constant to the exact identifier of the lifetime
- * offering in RC dashboard. Fallback to the current/default offering if
- * the identifier can't be resolved (logged to QA).
- */
-const TARGET_PAYWALL_OFFERING_ID = "android_unlock";
-
 // Keep the native splash visible until the subscription gate resolves
-// (and, on Android, the hard paywall has presented). Hidden via
-// SplashScreen.hideAsync() in AndroidHardPaywallGate / SubscriptionGateSplash.
+// before either onboarding or the entitled app is ready to render.
 SplashScreen.preventAutoHideAsync().catch(() => {
   // No-op: already hidden or unsupported. Safe to ignore.
 });
@@ -286,8 +268,9 @@ type SubscriptionTreeProps = {
 };
 
 /**
- * Mounts the tab Stack only when the user is entitled on Android — avoids
- * painting Home under the paywall / splash handoff.
+ * Mounts the tab Stack only when the user is entitled on Android. New Android
+ * users see the two-page product introduction and open RevenueCat checkout
+ * from there; iOS remains a paid download and enters the app directly.
  */
 function SubscriptionTree({
   colors,
@@ -298,13 +281,19 @@ function SubscriptionTree({
 }: SubscriptionTreeProps) {
   const { gate, loading } = useSubscriptionContext();
   const showMainStack =
-    Platform.OS !== "android" || (!loading && gate !== "paywall");
+    Platform.OS !== "android" || (!loading && gate === "none");
+  const showOnboarding =
+    Platform.OS === "android" && !loading && gate === "paywall";
+
+  useEffect(() => {
+    if (!loading) {
+      SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [loading]);
 
   return (
     <View style={{ flex: 1 }}>
-      <AndroidHardPaywallGate />
-      <CloudSyncGate />
-      <FirstLaunchTrialPresenter />
+      {showMainStack ? <CloudSyncGate /> : null}
       <PendingModalPresenter />
       {updateReady && (
         <View style={styles.updateBanner}>
@@ -341,7 +330,9 @@ function SubscriptionTree({
           </View>
         </View>
       )}
-      {showMainStack ? (
+      {showOnboarding ? (
+        <OnboardingFlow />
+      ) : showMainStack ? (
         <Stack
           screenOptions={{
             headerShown: false,
@@ -352,246 +343,6 @@ function SubscriptionTree({
         <View style={styles.androidGatePlaceholder} />
       )}
     </View>
-  );
-}
-
-/**
- * Root-level hard paywall for Android.
- *
- * When the gate is "paywall" and the app is foreground, presents the
- * RevenueCat-rendered paywall. The main Stack is not mounted while gated, so
- * Home never flashes. Native splash stays up until just before
- * `presentPaywall()` so there is no blank gap.
- *
- * The RC paywall is configured **non-dismissable** in the dashboard for 2.7.
- * The retry shell below is a defensive fallback in case that config is ever
- * lost — it should not normally render.
- */
-function AndroidHardPaywallGate() {
-  const { gate, loading, refresh, trialStatus } = useSubscriptionContext();
-  const {
-    trackPaywallShown,
-    trackPaywallDismissed,
-    trackPaywallPurchaseCompleted,
-    trackPaywallPurchaseCancelled,
-    trackRestoreCompleted,
-  } = useAnalytics();
-  const presenting = useRef(false);
-  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
-  /** After RC paywall close/error — show Retry instead of mounting the app. */
-  const [showPaywallRetryShell, setShowPaywallRetryShell] = useState(false);
-
-  const hideNativeSplash = () => {
-    SplashScreen.hideAsync().catch(() => {
-      // Already hidden / unsupported — safe to ignore.
-    });
-  };
-
-  const present = async () => {
-    if (Platform.OS !== "android") return;
-    if (presenting.current) return;
-    if (loading) return;
-    if (gate !== "paywall") return;
-
-    presenting.current = true;
-    try {
-      trackPaywallShown();
-
-      // Resolve the target offering by identifier so this 2.7 build never
-      // accidentally renders whatever RC has set as "current" (e.g. a legacy
-      // subscription offering). Falls back to the SDK default if our named
-      // offering isn't found.
-      let targetOffering = null;
-      try {
-        const offerings = await Purchases.getOfferings();
-        targetOffering = offerings.all?.[TARGET_PAYWALL_OFFERING_ID] ?? null;
-        qaLog("paywall", "Resolved target offering", {
-          targetId: TARGET_PAYWALL_OFFERING_ID,
-          found: !!targetOffering,
-          currentId: offerings.current?.identifier ?? null,
-          allIds: Object.keys(offerings.all ?? {}),
-        });
-      } catch (err) {
-        qaLog("paywall", "Failed to fetch offerings — falling back to default", {
-          error: String(err),
-        });
-      }
-
-      qaLog("paywall", "Hard paywall presenting", {
-        offeringId: targetOffering?.identifier ?? "(default)",
-      });
-      hideNativeSplash();
-      const result = targetOffering
-        ? await RevenueCatUI.presentPaywall({ offering: targetOffering })
-        : await RevenueCatUI.presentPaywall();
-      qaLog("paywall", "Hard paywall result", { result });
-
-      if (result === PAYWALL_RESULT.PURCHASED) {
-        trackPaywallPurchaseCompleted();
-        const rawAfterPurchase = await getRawEntitlements();
-        if (rawAfterPurchase.hasUnlimited || rawAfterPurchase.hasLifetime) {
-          await clearSubscriptionOverride();
-        }
-        // RC's CustomerInfo listener in SubscriptionContext fires on its own
-        // when the entitlement actually lands. Trigger one refresh to cover
-        // the case where the listener hasn't seen the event yet.
-        await refresh();
-        try {
-          await expireTrial();
-          await trialStatus.refresh();
-        } catch {
-          // Non-critical — entitlement already unlocks the app
-        }
-        setShowPaywallRetryShell(false);
-      } else if (result === PAYWALL_RESULT.RESTORED) {
-        trackRestoreCompleted(true);
-        const rawAfterRestore = await getRawEntitlements();
-        if (rawAfterRestore.hasUnlimited || rawAfterRestore.hasLifetime) {
-          await clearSubscriptionOverride();
-          qaLog("paywall", "Cleared QA subscription override after paywall restore");
-        }
-        await refresh();
-        try {
-          await expireTrial();
-          await trialStatus.refresh();
-        } catch {
-          // Non-critical
-        }
-        setShowPaywallRetryShell(false);
-      } else {
-        trackPaywallPurchaseCancelled();
-        trackPaywallDismissed();
-        setShowPaywallRetryShell(true);
-      }
-    } catch (err) {
-      qaLog("paywall", "Hard paywall error", { error: String(err) });
-      const errStr = String(err).toLowerCase();
-      const looksLikeAlreadyOwned =
-        errStr.includes("already") ||
-        errStr.includes("owned") ||
-        errStr.includes("active for the user") ||
-        errStr.includes("itemalreadyowned");
-      if (Platform.OS === "android" && looksLikeAlreadyOwned) {
-        try {
-          qaLog("paywall", "Recovering via restorePurchases after already-owned error");
-          await restorePurchases();
-          const rawAfterRestore = await getRawEntitlements();
-          if (rawAfterRestore.hasUnlimited || rawAfterRestore.hasLifetime) {
-            await clearSubscriptionOverride();
-            qaLog("paywall", "Cleared QA subscription override after already-owned restore");
-          }
-          await refresh();
-          try {
-            await expireTrial();
-            await trialStatus.refresh();
-          } catch {
-            // Non-critical
-          }
-          trackPaywallPurchaseCompleted();
-          setShowPaywallRetryShell(false);
-          return;
-        } catch (re) {
-          qaLog("paywall", "post-error restore failed", { error: String(re) });
-        }
-      }
-      trackPaywallPurchaseCancelled();
-      setShowPaywallRetryShell(true);
-    } finally {
-      presenting.current = false;
-    }
-  };
-
-  // Hide native splash when appropriate. On Android paywall path, defer until
-  // `present()` runs (just before RC paywall) so we never show Home/blank.
-  useEffect(() => {
-    if (loading) return;
-    if (
-      Platform.OS === "android" &&
-      gate === "paywall" &&
-      !showPaywallRetryShell
-    ) {
-      return;
-    }
-    hideNativeSplash();
-  }, [loading, gate, showPaywallRetryShell]);
-
-  useEffect(() => {
-    if (Platform.OS !== "android") return;
-    if (gate === "none") {
-      setShowPaywallRetryShell(false);
-    }
-  }, [gate]);
-
-  // Present paywall when gate flips to "paywall".
-  useEffect(() => {
-    if (Platform.OS !== "android") return;
-    if (loading) return;
-    if (gate !== "paywall") return;
-    setShowPaywallRetryShell(false);
-    void present();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gate, loading]);
-
-  // Re-present on foreground if still gated (and not stuck on retry shell).
-  useEffect(() => {
-    if (Platform.OS !== "android") return;
-    const sub = AppState.addEventListener("change", (next) => {
-      if (appStateRef.current.match(/inactive|background/) && next === "active") {
-        if (gate === "paywall" && !loading && !showPaywallRetryShell) {
-          void present();
-        }
-      }
-      appStateRef.current = next;
-    });
-    return () => sub.remove();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gate, loading, showPaywallRetryShell]);
-
-  if (Platform.OS !== "android") return null;
-
-  // While loading or while gate=="paywall" the native splash stays up
-  // (preventAutoHideAsync at module load) and the Stack is unmounted by
-  // SubscriptionTree — no JS overlay needed. The only case that needs a
-  // visible JS surface is the rare retry shell when the RC paywall closed
-  // without purchase.
-  if (!showPaywallRetryShell) return null;
-
-  return (
-    <View style={styles.retryOverlay}>
-      <View style={styles.paywallRetryBlock}>
-        <Text style={styles.paywallRetryTitle}>Subscription required</Text>
-        <Text style={styles.paywallRetryBody}>
-          The paywall closed without a purchase. Tap Retry to open it again.
-        </Text>
-        <TouchableOpacity
-          style={styles.paywallRetryButton}
-          activeOpacity={0.85}
-          onPress={() => {
-            setShowPaywallRetryShell(false);
-            void present();
-          }}
-        >
-          <Text style={styles.paywallRetryButtonText}>Retry paywall</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
-
-/**
- * Onboarding modal shown once on first Android launch. Renders nothing on
- * iOS or after the user has acknowledged it once.
- */
-function FirstLaunchTrialPresenter() {
-  const { showFirstLaunchModal, dismissFirstLaunchModal } = useSubscriptionContext();
-  if (Platform.OS !== "android") return null;
-  return (
-    <FirstLaunchTrialModal
-      visible={showFirstLaunchModal}
-      onContinue={() => {
-        void dismissFirstLaunchModal();
-      }}
-    />
   );
 }
 
@@ -646,14 +397,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  retryOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "#ffffff",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 998,
-    elevation: 998,
-  },
   updateBanner: {
     position: "absolute",
     bottom: 12,
@@ -706,37 +449,5 @@ const styles = StyleSheet.create({
   androidGatePlaceholder: {
     flex: 1,
     backgroundColor: "#F7FAFA",
-  },
-  paywallRetryBlock: {
-    paddingHorizontal: 24,
-    alignItems: "center",
-    maxWidth: 320,
-    alignSelf: "center",
-  },
-  paywallRetryTitle: {
-    fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 18,
-    color: "#0f172a",
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  paywallRetryBody: {
-    fontFamily: fonts.bodyFamilyRegular,
-    fontSize: 14,
-    color: "#334155",
-    textAlign: "center",
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  paywallRetryButton: {
-    backgroundColor: "#376662",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 999,
-  },
-  paywallRetryButtonText: {
-    fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 15,
-    color: "#ffffff",
   },
 });

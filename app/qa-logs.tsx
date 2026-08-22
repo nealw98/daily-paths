@@ -279,10 +279,7 @@ export default function QaLogsScreen() {
     const raw = snapshot.rawEntitlements;
     if (raw.hasLifetime) return "Full access because RevenueCat shows Lifetime.";
     if (raw.hasUnlimited) return "Full access because RevenueCat shows an active subscription.";
-    if (snapshot.trial.isInTrial) {
-      return `Full access because the 3-day trial is active (${snapshot.trial.daysRemaining} day(s) remaining).`;
-    }
-    if (snapshot.gate === "paywall") return "Blocked by paywall: no lifetime, no subscription, and no active trial.";
+    if (snapshot.gate === "paywall") return "Onboarding required: no lifetime purchase or active subscription.";
     return "Full access, but the exact reason needs review in the raw details below.";
   };
 
@@ -306,7 +303,7 @@ export default function QaLogsScreen() {
         `RevenueCat lifetime: ${raw.hasLifetime ? "YES" : "no"}`,
         `Lifetime product: ${raw.lifetimeProductIdentifier ?? "none"}`,
         "",
-        `3-day trial: ${
+        `Legacy trial marker (does not grant access): ${
           snapshot.trial.isInTrial
             ? `active, ${snapshot.trial.daysRemaining} day(s) left`
             : snapshot.trial.trialExpired
@@ -660,7 +657,7 @@ export default function QaLogsScreen() {
       await trialStatus.refresh();
       const after = await getQaAccessSnapshot("after Reset trial");
       qaLog("qa-action", "Reset trial", { before, after });
-      alert("Trial reset. Restart the app to begin a fresh 3-day trial.");
+      alert("Legacy trial marker reset. This does not grant access in 2.8.");
     } catch (err) {
       qaLog("freemium", "Error resetting trial", { error: String(err) });
       alert("Failed to reset trial");
@@ -674,9 +671,7 @@ export default function QaLogsScreen() {
       await trialStatus.refresh();
       const after = await getQaAccessSnapshot("after Expire trial");
       qaLog("qa-action", "Expire trial", { before, after });
-      alert(
-        "Trial expired. The gate should switch to paywall; the RevenueCat paywall may open automatically. If not, leave this screen or background/foreground the app.",
-      );
+      alert("Legacy trial marker expired. This does not change access in 2.8.");
     } catch (err) {
       qaLog("freemium", "Error expiring trial", { error: String(err) });
       alert("Failed to expire trial");
@@ -1156,10 +1151,8 @@ export default function QaLogsScreen() {
               ? "RevenueCat shows Lifetime."
               : rawEntitlements?.hasUnlimited
                 ? "RevenueCat shows an active subscription."
-                : trialStatus.isInTrial
-                  ? `The 3-day trial is active (${trialStatus.daysRemaining} day(s) left).`
-                  : gate === "paywall"
-                    ? "No lifetime, no subscription, and no active trial."
+                : gate === "paywall"
+                    ? "No lifetime purchase or active subscription."
                     : "Refresh the status to confirm the exact reason."}
           </Text>
           <Text style={[styles.playbookLine, { color: colors.ink }]}>
@@ -1407,7 +1400,7 @@ export default function QaLogsScreen() {
                 {subscriptionOverride ? "ON (reloads app when toggled)" : "off"}
               </Text>
               <Text style={[styles.playbookHint, { color: colors.textSecondary }]}>
-                Green rows below are real RC entitlements. The gate can still be PAYWALL if the QA override is on and the local trial is expired.
+                Green rows below are real RC entitlements. The gate can still require onboarding if the QA override is on. Legacy trial state never grants access in 2.8.
               </Text>
             </View>
 
@@ -1415,17 +1408,17 @@ export default function QaLogsScreen() {
               Scenario playbook
             </Text>
             <View style={[styles.playbookBlock, { borderColor: colors.mist }]}>
-              <Text style={[styles.playbookScenarioTitle, { color: colors.deepTeal }]}>A — Fresh 3-day trial</Text>
+              <Text style={[styles.playbookScenarioTitle, { color: colors.deepTeal }]}>A — Fresh unentitled install</Text>
               <Text style={[styles.playbookBody, { color: colors.ink }]}>
-                Clear Force NOT subscribed if on. Tap Reset trial, then fully kill the app and reopen. Expect full access.
+                Clear local access state, then fully kill the app and reopen. Expect onboarding page 1, not full access.
               </Text>
-              <Text style={[styles.playbookScenarioTitle, { color: colors.deepTeal }]}>B — Expired trial → paywall</Text>
+              <Text style={[styles.playbookScenarioTitle, { color: colors.deepTeal }]}>B — Onboarding → checkout</Text>
               <Text style={[styles.playbookBody, { color: colors.ink }]}>
-                Clear the override if needed. Tap Expire trial. Expect gate PAYWALL; root may present the RC paywall automatically.
+                Continue to page 2 or tap Skip. Expect the RevenueCat paywall only after that explicit action.
               </Text>
               <Text style={[styles.playbookScenarioTitle, { color: colors.deepTeal }]}>C — RC entitled but must see paywall</Text>
               <Text style={[styles.playbookBody, { color: colors.ink }]}>
-                Tap Force NOT subscribed (app reloads). Then Expire trial. RC rows can still show ✓ while gate stays PAYWALL.
+                Tap Force NOT subscribed (app reloads). RC rows can still show ✓ while the app shows onboarding.
               </Text>
               <Text style={[styles.playbookScenarioTitle, { color: colors.deepTeal }]}>D — Back to real RC state</Text>
               <Text style={[styles.playbookBody, { color: colors.ink }]}>
@@ -1441,7 +1434,7 @@ export default function QaLogsScreen() {
               </Text>
               <Text style={[styles.playbookScenarioTitle, { color: colors.deepTeal }]}>G — Present RC paywall now</Text>
               <Text style={[styles.playbookBody, { color: colors.ink }]}>
-                Use the button below only when gate is already PAYWALL (e.g. after B or C).
+                Use the button below only when the gate already requires onboarding.
               </Text>
             </View>
 
@@ -1461,10 +1454,10 @@ export default function QaLogsScreen() {
         ) : null}
 
         <Text style={[styles.sectionHeader, { marginTop: 16, color: colors.deepTeal }]}>
-          Local 3-day trial (device storage)
+          Legacy trial marker (device storage; no access)
         </Text>
         <Text style={[styles.playbookHint, { color: colors.textSecondary, marginBottom: 4 }]}>
-          Reset: clears the start time — kill and reopen the app so a new trial begins. Expire: sets start in the past so the gate becomes paywall (if RC does not grant access).
+          Retained only for upgrade diagnostics. Resetting or expiring this marker does not change access in 2.8.
         </Text>
         <View style={styles.actionsRow}>
           <TouchableOpacity
@@ -1494,7 +1487,7 @@ export default function QaLogsScreen() {
           QA overrides
         </Text>
         <Text style={[styles.playbookHint, { color: colors.textSecondary, marginBottom: 4 }]}>
-          Force NOT subscribed makes getSubscriptionStatus() return false even if RC shows lifetime/subscription. Android: use with an expired trial to reach the paywall. Toggling reloads the app.
+          Force NOT subscribed makes getSubscriptionStatus() return false even if RC shows lifetime/subscription. Android then shows onboarding. Toggling reloads the app.
         </Text>
         <View style={styles.actionsRow}>
           {Platform.OS === "ios" ? (
@@ -1582,7 +1575,7 @@ export default function QaLogsScreen() {
               {trialStatus.isInTrial ? "\u2713" : "\u2717"}
             </Text>
             <Text style={[styles.stateLabel, { color: trialStatus.isInTrial ? colors.ink : colors.textSecondary }]}>
-              3-Day Trial{trialStatus.isInTrial
+              Legacy Trial Marker{trialStatus.isInTrial
                 ? ` (${trialStatus.daysRemaining}d remaining)`
                 : trialStatus.trialExpired
                   ? " (expired)"
@@ -2115,5 +2108,3 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
 });
-
-

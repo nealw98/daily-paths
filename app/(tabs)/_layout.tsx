@@ -10,9 +10,8 @@ import { SpeakersProvider } from "../../hooks/useSpeakers";
 /**
  * Tab navigation layout.
  *
- * In the try-before-you-buy model, gating happens at the app root via
- * <AndroidHardPaywallGate /> (see app/_layout.tsx). Non-entitled users
- * never reach this tab bar — they're held on the paywall — so per-tab
+ * On Android, gating happens at the app root via the onboarding flow
+ * (see app/_layout.tsx). Non-entitled users never reach this tab bar, so per-tab
  * crown badges and tab-press interception are no longer needed.
  */
 export default function TabLayout() {

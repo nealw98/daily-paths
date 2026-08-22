@@ -32,7 +32,6 @@ import {
   type PendingModal,
 } from "../lib/modalDecision";
 import {
-  ensureTrialStarted,
   getTrialStatus,
   expireTrial,
   type TrialStatus,
@@ -60,9 +59,6 @@ interface SubscriptionContextValue {
    *  RevenueCat entitlements + grant tables and returns at most one — so
    *  Modal A and Modal B can never collide. */
   pendingModal: PendingModal | null;
-  /** True when this is the user's first 2.7 launch and the onboarding
-   *  modal should fire (Android only). */
-  showFirstLaunchModal: boolean;
   /** RC offering packages — unused by main UI (Android uses RC Paywall UI). QA / future. */
   packages: PurchasesPackage[];
   loading: boolean;
@@ -77,8 +73,6 @@ interface SubscriptionContextValue {
   refreshPendingModal: () => Promise<void>;
   /** Marks the modal acknowledged on the server and clears local state. */
   acknowledgePendingModal: () => Promise<void>;
-  /** Records that the first-launch modal was seen so it never fires again. */
-  dismissFirstLaunchModal: () => Promise<void>;
 }
 
 const DEFAULT_STATUS: SubscriptionStatus = {
@@ -88,8 +82,6 @@ const DEFAULT_STATUS: SubscriptionStatus = {
   productIdentifier: null,
   willRenew: false,
 };
-
-const FIRST_LAUNCH_MODAL_KEY = "@daily_paths_first_launch_modal_seen";
 
 const DEFAULT_TRIAL: TrialStatus = {
   isInTrial: false,
@@ -142,7 +134,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
   const [trialLoading, setTrialLoading] = useState(true);
   const [hasLifetimeAccess, setHasLifetimeAccess] = useState(false);
   const [pendingModal, setPendingModal] = useState<PendingModal | null>(null);
-  const [showFirstLaunchModal, setShowFirstLaunchModal] = useState(false);
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
@@ -178,8 +169,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
         setStatus(cached);
       }
 
-      // Trial status (AsyncStorage — fast)
-      // Only relevant for non-lifetime users.
+      // Legacy trial status remains readable for grandfathering and QA, but
+      // no longer grants access or starts for new installs.
       if (!lifetimeStatus.hasLifetimeAccess) {
         const trialResult = await getTrialStatus();
         if (cancelled) return;
@@ -187,17 +178,16 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
         setTrial(trialResult);
         setTrialLoading(false);
 
-        // Do not end loading on "cached not subscribed" alone: trial may still be
-        // `neverStarted` until ensureTrialStarted runs — otherwise gate can read
-        // paywall briefly and auto-present the hard paywall on Android.
-        if (cached?.isSubscribed || trialResult.isInTrial) {
+        // Only a cached entitlement can resolve access before RevenueCat has
+        // refreshed. A legacy local trial must never open the full app.
+        if (cached?.isSubscribed) {
           qaLog("access-init", "Ending initial loading from local state", {
-            reason: cached?.isSubscribed ? "cached_subscribed" : "trial_active",
+            reason: "cached_subscribed",
           });
           setLoading(false);
         } else {
-          qaLog("access-init", "Keeping loading until RC/trial start resolves", {
-            reason: cached ? "cached_not_subscribed_and_trial_not_active" : "no_cache_and_trial_not_active",
+          qaLog("access-init", "Keeping loading until RevenueCat resolves", {
+            reason: cached ? "cached_not_subscribed" : "no_cache",
           });
         }
       } else {
@@ -310,58 +300,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }
 
-      // Start the trial clock only for non-entitled users.
-      // Skip iOS paid-download lifetime users AND Android users who already
-      // have a real RC entitlement (active sub or lifetime — including users
-      // just grandfathered above). Starting a trial for them would pollute
-      // the install → trial → paywall → purchase funnel.
-      let skipTrialBecauseEntitled = false;
-      if (!lifetimeStatus.hasLifetimeAccess && isRevenueCatInitialized()) {
-        try {
-          const rawForTrialDecision = await getRawEntitlements();
-          skipTrialBecauseEntitled =
-            rawForTrialDecision.hasLifetime || rawForTrialDecision.hasUnlimited;
-          qaLog("access-init", "Trial-start gate", {
-            hasLifetime: rawForTrialDecision.hasLifetime,
-            hasUnlimited: rawForTrialDecision.hasUnlimited,
-            skipTrialBecauseEntitled,
-          });
-        } catch (err) {
-          qaLog("access-init", "Trial-start gate: raw-entitlements read failed", {
-            error: String(err),
-          });
-        }
-      }
-
-      if (!lifetimeStatus.hasLifetimeAccess && !skipTrialBecauseEntitled) {
-        // Snapshot whether a trial existed before ensureTrialStarted runs.
-        // A pre-existing trial means this isn't the first launch, even if
-        // the welcome modal flag was never written (e.g. upgrading from a
-        // pre-2.7-flag build).
-        const trialBefore = await getTrialStatus();
-        await ensureTrialStarted();
-        const freshTrial = await getTrialStatus();
-        qaLog("access-init", "Trial status after ensureTrialStarted", summarizeTrialStatus(freshTrial));
-        if (!cancelled) {
-          setTrial(freshTrial);
-          setTrialLoading(false);
-        }
-
-        // Fire the first-launch onboarding modal only on Android, only when
-        // the trial was actually just created on this device, and only once
-        // ever (gated by AsyncStorage).
-        if (Platform.OS === "android" && trialBefore.neverStarted && freshTrial.isInTrial) {
-          try {
-            const seen = await AsyncStorage.getItem(FIRST_LAUNCH_MODAL_KEY);
-            if (!seen && !cancelled) {
-              setShowFirstLaunchModal(true);
-              trackEvent(ANALYTICS_EVENTS.FIRST_LAUNCH_MODAL_SHOWN, {}, true);
-            }
-          } catch (err) {
-            qaLog("access-init", "First-launch modal flag read failed", { error: String(err) });
-          }
-        }
-      }
+      qaLog("access-init", "Local trial creation disabled for onboarding release");
 
       // Fetch fresh status from RC — RevenueCat is the sole source of
       // truth for all entitlements including legacy grants.
@@ -507,11 +446,9 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
   // ── Gate computation ───────────────────────────────────────────────────
   const gate = useMemo<GateType>(() => {
     if (hasLifetimeAccess) return "none";
-    // RC not yet initialized: trust the trial; otherwise fall back to a
-    // cached entitlement (handled inside getSubscriptionStatus on error).
-    // Final fallback: paywall (fail-closed without cache or trial).
+    // RC not yet initialized: trust only a cached entitlement. Final fallback
+    // is onboarding/checkout (fail-closed without an entitlement).
     if (!isRevenueCatInitialized()) {
-      if (trial.isInTrial) return "none";
       if (status.isSubscribed) return "none";
       return "paywall";
     }
@@ -634,16 +571,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
     await acknowledgePendingModal(current.modal);
   }, [pendingModal]);
 
-  const dismissFirstLaunchModal = useCallback(async () => {
-    setShowFirstLaunchModal(false);
-    try {
-      await AsyncStorage.setItem(FIRST_LAUNCH_MODAL_KEY, "true");
-    } catch (err) {
-      qaLog("access-init", "First-launch modal flag write failed", { error: String(err) });
-    }
-    trackEvent(ANALYTICS_EVENTS.FIRST_LAUNCH_MODAL_DISMISSED, {}, true);
-  }, []);
-
   // ── Context value ──────────────────────────────────────────────────────
   const trialStatusValue = useMemo<TrialStatusWithMeta>(
     () => ({ ...trial, loading: trialLoading, refresh: refreshTrial }),
@@ -656,7 +583,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       trialStatus: trialStatusValue,
       hasLifetimeAccess,
       pendingModal,
-      showFirstLaunchModal,
       packages,
       loading,
       purchasing,
@@ -667,14 +593,12 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       refreshLifetimeAccess,
       refreshPendingModal,
       acknowledgePendingModal: acknowledgePendingModalAction,
-      dismissFirstLaunchModal,
     }),
     [
       status,
       trialStatusValue,
       hasLifetimeAccess,
       pendingModal,
-      showFirstLaunchModal,
       packages,
       loading,
       purchasing,
@@ -685,7 +609,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       refreshLifetimeAccess,
       refreshPendingModal,
       acknowledgePendingModalAction,
-      dismissFirstLaunchModal,
     ],
   );
 

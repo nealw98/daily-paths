@@ -359,7 +359,7 @@ export const PrayersScreen: React.FC = () => {
       prayer.text,
       "",
       "-----",
-      "Shared from Al-Anon Daily Paths",
+      "Shared from Daily Paths",
     ].join("\n");
     try {
       await Share.share({ message });
