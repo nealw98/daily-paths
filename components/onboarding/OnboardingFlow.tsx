@@ -475,7 +475,7 @@ function ToolkitPage({
       </ScrollView>
       <View style={styles.pinnedActionArea}>
         <PrimaryButton
-          label={paywallBusy ? "Opening checkout…" : "Unlock everything — $4.99"}
+          label={paywallBusy ? "Opening checkout…" : "Unlock everything"}
           onPress={onUnlock}
           disabled={paywallBusy}
         />
