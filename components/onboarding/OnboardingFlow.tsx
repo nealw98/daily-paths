@@ -452,7 +452,7 @@ function ToolkitPage({
         <View style={styles.offerBlock}>
           <Text style={styles.offerTitle}>Lifetime access — $4.99</Text>
           <Text style={styles.offerCopy}>
-            One payment. No subscription or recurring charges.
+            One-time payment. No subscription or recurring charges.
           </Text>
         </View>
       </ScrollView>
