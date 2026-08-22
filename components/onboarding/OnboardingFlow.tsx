@@ -28,7 +28,6 @@ import {
   LeafOnWater,
   Microphone,
   MoonOnWater,
-  Play,
   Seedling,
   SoftExhale,
 } from "../icons";
@@ -49,27 +48,13 @@ type FeatureIcon = React.ComponentType<{
   strokeWidth?: number;
 }>;
 
-const FEATURE_GROUPS: Array<{
-  title: string;
-  features: Array<{ label: string; Icon: FeatureIcon }>;
-}> = [
-  {
-    title: "Reflect and write",
-    features: [
-      { label: "Private journal", Icon: Feather },
-      { label: "Gratitude practice", Icon: Seedling },
-      { label: "Spot check inventory", Icon: SoftExhale },
-      { label: "Nightly Reviews", Icon: MoonOnWater },
-    ],
-  },
-  {
-    title: "Support whenever you need it",
-    features: [
-      { label: "Essential prayers", Icon: LeafOnWater },
-      { label: "Growing speaker library", Icon: Microphone },
-      { label: "Downloadable recordings", Icon: Play },
-    ],
-  },
+const FEATURES: Array<{ label: string; Icon: FeatureIcon }> = [
+  { label: "Private journal", Icon: Feather },
+  { label: "Gratitude practice", Icon: Seedling },
+  { label: "Spot check inventory", Icon: SoftExhale },
+  { label: "Nightly Reviews", Icon: MoonOnWater },
+  { label: "Essential prayers", Icon: LeafOnWater },
+  { label: "Speaker talks & downloads", Icon: Microphone },
 ];
 
 export function OnboardingFlow() {
@@ -454,21 +439,16 @@ function ToolkitPage({
       >
         <Text style={styles.pageContext}>What's inside</Text>
         <Text style={styles.toolkitHeadline}>Practical tools to support your daily program</Text>
-        {FEATURE_GROUPS.map((group) => (
-          <View key={group.title} style={styles.featureGroup}>
-            <Text style={styles.featureGroupTitle}>{group.title}</Text>
-            <View style={styles.featureList}>
-              {group.features.map(({ label, Icon }) => (
-                <View key={label} style={styles.featureRow}>
-                  <View style={styles.featureIconBox}>
-                    <Icon size={20} color={colors.heroGradientStart} />
-                  </View>
-                  <Text style={styles.featureLabel}>{label}</Text>
-                </View>
-              ))}
+        <View style={styles.featureGrid}>
+          {FEATURES.map(({ label, Icon }) => (
+            <View key={label} style={styles.featureTile}>
+              <View style={styles.featureIconBox}>
+                <Icon size={20} color={colors.heroGradientStart} />
+              </View>
+              <Text style={styles.featureLabel}>{label}</Text>
             </View>
-          </View>
-        ))}
+          ))}
+        </View>
         <View style={styles.offerBlock}>
           <Text style={styles.offerTitle}>Everything for $4.99 once.</Text>
           <Text style={styles.offerCopy}>
@@ -713,18 +693,22 @@ const styles = StyleSheet.create({
     letterSpacing: -0.35,
     color: colors.onSurface,
   },
-  featureGroup: { marginBottom: 22 },
-  featureGroupTitle: {
-    marginBottom: 10,
-    fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 13,
-    lineHeight: 20,
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-    color: colors.accent,
+  featureGrid: {
+    marginBottom: 22,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
   },
-  featureList: { gap: 12 },
-  featureRow: { minHeight: 40, flexDirection: "row", alignItems: "center", gap: 14 },
+  featureTile: {
+    width: "48%",
+    minHeight: 92,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    borderRadius: 12,
+    backgroundColor: colors.surfaceContainerLowest,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(45,76,71,0.11)",
+  },
   featureIconBox: {
     width: 38,
     height: 38,
@@ -734,10 +718,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.highlight,
   },
   featureLabel: {
-    flex: 1,
+    marginTop: 8,
     fontFamily: fonts.bodyFamilyMedium,
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 14,
+    lineHeight: 19,
     color: colors.onSurface,
   },
   offerBlock: {
