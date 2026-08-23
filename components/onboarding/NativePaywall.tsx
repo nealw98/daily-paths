@@ -37,7 +37,7 @@ const FALLBACK_PRICE = "$4.99";
 const REVIEWS = [
   {
     title: "Life saver",
-    copy: "I found this app by chance. Was it chance or was it god? But I wanted something to help me keep focus at the beginning of my day. It is easy to use and I like that it follows the Al-anon literature. If you are looking for a little help to start your day or anytime reminder through the day this app will do it. Thanks.",
+    copy: "I found this app by chance. Was it chance or was it God? But I wanted something to help me keep focus at the beginning of my day. It is easy to use and I like that it follows the Al-anon literature. If you are looking for a little help to start your day or anytime reminder through the day this app will do it. Thanks.",
     reviewer: "Ilww99",
   },
   {
