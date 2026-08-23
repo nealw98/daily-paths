@@ -333,8 +333,25 @@ export function NativePaywall({
             One-time payment. No subscription or recurring charges.
           </Text>
           <View style={styles.ratingSummary} accessibilityLabel="5.0 out of 5 from 29 ratings">
-            <Text style={styles.ratingStars}>★★★★★</Text>
-            <Text style={styles.ratingText}>5.0 · 29 ratings</Text>
+            <View style={styles.ratingScoreGroup}>
+              <Ionicons
+                name="leaf-outline"
+                size={30}
+                color={colors.accent}
+                style={styles.ratingLeafLeft}
+              />
+              <Text style={styles.ratingScore}>5.0</Text>
+              <Ionicons
+                name="leaf-outline"
+                size={30}
+                color={colors.accent}
+                style={styles.ratingLeafRight}
+              />
+            </View>
+            <View style={styles.ratingDetails}>
+              <Text style={styles.ratingStars}>★★★★★</Text>
+              <Text style={styles.ratingText}>29 ratings</Text>
+            </View>
           </View>
 
           <ScrollView
@@ -499,26 +516,47 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   ratingSummary: {
-    marginTop: 13,
+    marginTop: 18,
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    gap: 7,
+    gap: 18,
+  },
+  ratingScoreGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+  },
+  ratingLeafLeft: {
+    transform: [{ rotate: "-34deg" }, { scaleX: -1 }],
+  },
+  ratingLeafRight: {
+    transform: [{ rotate: "34deg" }],
+  },
+  ratingScore: {
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 42,
+    lineHeight: 48,
+    letterSpacing: -1.2,
+    color: colors.accent,
+  },
+  ratingDetails: {
+    alignItems: "flex-start",
   },
   ratingStars: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: 14,
-    lineHeight: 20,
-    letterSpacing: 1.3,
-    color: "#D6922B",
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 19,
+    lineHeight: 23,
+    letterSpacing: 2,
+    color: colors.accent,
   },
   ratingText: {
     fontFamily: fonts.bodyFamilyMedium,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 13,
+    lineHeight: 19,
     color: colors.onSurfaceVariant,
   },
-  reviewCarousel: { marginTop: 15 },
+  reviewCarousel: { marginTop: 18 },
   reviewSlide: { paddingHorizontal: 20 },
   reviewCard: {
     minHeight: 210,
