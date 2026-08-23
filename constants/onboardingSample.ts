@@ -9,6 +9,6 @@ export const ONBOARDING_SAMPLE = {
     "I'd never seen it that way. The trait that makes me insufferable about small decisions also keeps me showing up to meetings even when I don't want to. Maybe God isn't trying to remove my intensity. Maybe God is trying to redirect it—from obsessing over things that don't matter to dedicating myself to things that do.",
   ],
   practice:
-    "I can look at my main character defect and ask: What asset might be hidden in this fault? My controlling might hide leadership. My people-pleasing might hide genuine care. I can look at my faults to find the potential hidden asset. Then I can ask God to refine and redirect.",
+    "I can look at my main character defect and ask: What asset might be hidden in this fault? I can look at my faults to find the potential hidden asset. Then I can ask God to refine and redirect.",
   thought: "God may transform my faults not just remove them.",
 } as const;
