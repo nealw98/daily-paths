@@ -28,8 +28,8 @@ import { clearSubscriptionOverride } from "../../utils/subscriptionOverride";
 import { useSubscriptionContext } from "../../contexts/SubscriptionContext";
 import { useAnalytics } from "../../utils/analytics";
 import { qaLog } from "../../utils/qaLog";
-import { isDeveloperDevice } from "../../utils/deviceIdentity";
 import { setLifetimeOverride } from "../../utils/paidAppDetector";
+import { isPreviewBuild } from "../../utils/buildProfile";
 
 const TARGET_OFFERING_ID = "android_unlock";
 const FALLBACK_PRICE = "$4.99";
@@ -86,7 +86,7 @@ export function NativePaywall({
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [reviewIndex, setReviewIndex] = useState(0);
-  const [isDeveloper, setIsDeveloper] = useState(__DEV__);
+  const showPreviewControls = isPreviewBuild();
   const { refresh, refreshLifetimeAccess } = useSubscriptionContext();
   const {
     trackPaywallShown,
@@ -96,16 +96,6 @@ export function NativePaywall({
     trackRestoreInitiated,
     trackRestoreCompleted,
   } = useAnalytics();
-
-  useEffect(() => {
-    let active = true;
-    void isDeveloperDevice().then((developer) => {
-      if (active) setIsDeveloper(developer);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
 
   const loadPackage = useCallback(async () => {
     setLoadingPackage(true);
@@ -246,7 +236,7 @@ export function NativePaywall({
   }, [busyAction, onClose, trackPaywallDismissed]);
 
   const handleDevSkip = useCallback(async () => {
-    if (!isDeveloper || busyAction) return;
+    if (!showPreviewControls || busyAction) return;
     setBusyAction("dev");
     setMessage(null);
     try {
@@ -261,7 +251,7 @@ export function NativePaywall({
     } finally {
       setBusyAction(null);
     }
-  }, [busyAction, isDeveloper, onAccessGranted, refreshLifetimeAccess]);
+  }, [busyAction, onAccessGranted, refreshLifetimeAccess, showPreviewControls]);
 
   const handleReviewScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const nextIndex = Math.round(event.nativeEvent.contentOffset.x / reviewWidth);
@@ -295,7 +285,7 @@ export function NativePaywall({
         <StatusBar style="light" backgroundColor={colors.secondary} />
         <SafeAreaView edges={["top"]} style={styles.headerSafeArea}>
           <View style={styles.header}>
-            {isDeveloper ? (
+            {showPreviewControls ? (
               <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={() => void handleDevSkip()}

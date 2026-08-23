@@ -1,22 +1,47 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { AppState, AppStateStatus } from "react-native";
-import { Audio, AVPlaybackStatus } from "expo-av";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AppState, type AppStateStatus } from "react-native";
+import {
+  setAudioModeAsync,
+  useAudioPlayer as useExpoAudioPlayer,
+  useAudioPlayerStatus,
+  type AudioMetadata,
+} from "expo-audio";
+
 import { qaLog } from "../utils/qaLog";
 import { getSpeakerProgress, saveSpeakerProgress } from "../utils/speakerProgress";
 
+export interface SpeakerAudioMetadata {
+  title: string;
+  artist?: string;
+  albumTitle?: string;
+  artworkUrl?: string;
+}
+
+type LoadRequest = {
+  id: number;
+  uri: string;
+  speakerId?: string;
+  metadata?: SpeakerAudioMetadata;
+};
+
+type PendingSetup = LoadRequest & {
+  autoPlay: boolean;
+  savedPositionMs: number;
+  savedRate: number;
+};
+
 /**
- * Hook that wraps expo-av Audio.Sound for speaker playback.
- *
- * Designed to live at the tab level (speakers.tsx) so playback persists
- * across browse/detail view switches and across tab switches.
- *
- * Playback progress (position, duration, rate, completion) is persisted
- * to AsyncStorage so users can resume where they left off.
- *
- * Audio only stops when the user explicitly pauses or when the hook unmounts.
+ * Speaker player backed by expo-audio. Activating lock-screen controls also
+ * starts Expo's Android foreground media service, which keeps long speaker
+ * recordings alive after the app is backgrounded or the screen is locked.
  */
 export function useAudioPlayer() {
-  const soundRef = useRef<Audio.Sound | null>(null);
+  const nativePlayer = useExpoAudioPlayer(null, {
+    updateInterval: 500,
+    keepAudioSessionActive: true,
+  });
+  const status = useAudioPlayerStatus(nativePlayer);
+
   const [isLoaded, setIsLoaded] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isBuffering, setIsBuffering] = useState(false);
@@ -26,28 +51,32 @@ export function useAudioPlayer() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [didJustFinish, setDidJustFinish] = useState(false);
 
-  // Track the currently loaded URI so we can avoid reloading the same file
   const currentUriRef = useRef<string | null>(null);
-
-  // Track the speaker ID for progress persistence
   const currentSpeakerIdRef = useRef<string | null>(null);
-
-  // Last load request, kept so we can rebuild the sound after it dies.
-  // Playback can end without the user asking: a streaming stall, an audio
-  // session interruption, or Android suspending the process in the background.
-  // expo-av gives us no way to revive an unloaded sound, so recovery means
-  // loading the same URI again from the saved position.
-  const lastRequestRef = useRef<{ uri: string; speakerId?: string } | null>(null);
-
-  // Throttle progress saves: at most once every 5 seconds
-  const lastSaveRef = useRef<number>(0);
-
-  // Refs for latest values (used by save helpers to avoid stale closures)
+  const lastRequestRef = useRef<LoadRequest | null>(null);
+  const pendingSetupRef = useRef<PendingSetup | null>(null);
+  const setupInProgressRef = useRef<number | null>(null);
+  const requestIdRef = useRef(0);
+  const finishedRequestRef = useRef<number | null>(null);
+  const lastSaveRef = useRef(0);
   const positionRef = useRef(0);
   const durationRef = useRef(0);
   const rateRef = useRef(1);
 
-  // ── Persistence helpers ─────────────────────────────────────────────
+  const lockScreenMetadata = useCallback((request: LoadRequest): AudioMetadata => ({
+    title: request.metadata?.title ?? "Speaker talk",
+    artist: request.metadata?.artist ?? "Daily Paths",
+    albumTitle: request.metadata?.albumTitle ?? "Daily Paths",
+    artworkUrl: request.metadata?.artworkUrl,
+  }), []);
+
+  const activateBackgroundPlayback = useCallback((request: LoadRequest) => {
+    nativePlayer.setActiveForLockScreen(
+      true,
+      lockScreenMetadata(request),
+      { showSeekBackward: true, showSeekForward: true },
+    );
+  }, [lockScreenMetadata, nativePlayer]);
 
   const saveProgress = useCallback(
     async (opts?: { didFinish?: boolean; force?: boolean }) => {
@@ -65,301 +94,261 @@ export function useAudioPlayer() {
           rate: rateRef.current,
           didFinish: opts?.didFinish ?? false,
         });
-      } catch (err) {
-        qaLog("audio", "Failed to save progress", { error: String(err) });
+      } catch (error) {
+        qaLog("audio", "Failed to save progress", { error: String(error) });
       }
     },
-    []
+    [],
   );
 
-  // Configure audio mode — called on mount and whenever the app resumes from
-  // background so iOS doesn't silently drop the audio session after interruptions
-  // (phone calls, Siri, etc.).
   const applyAudioMode = useCallback(() => {
-    Audio.setAudioModeAsync({
-      staysActiveInBackground: true,
-      playsInSilentModeIOS: true,
-    }).catch((err) => {
-      qaLog("audio", "Failed to set audio mode", { error: String(err) });
+    void setAudioModeAsync({
+      playsInSilentMode: true,
+      shouldPlayInBackground: true,
+      interruptionMode: "doNotMix",
+    }).catch((error) => {
+      qaLog("audio", "Failed to set audio mode", { error: String(error) });
     });
   }, []);
 
   useEffect(() => {
     applyAudioMode();
-    const sub = AppState.addEventListener("change", (state: AppStateStatus) => {
-      if (state === "active") applyAudioMode();
-    });
-    return () => sub.remove();
-  }, [applyAudioMode]);
-
-  const onStatusUpdate = useCallback((status: AVPlaybackStatus) => {
-    if (!status.isLoaded) {
-      setIsLoaded(false);
-      if ("error" in status && status.error) {
-        qaLog("audio", "Playback error", { error: status.error });
-        setLoadError(status.error);
-        setIsPlaying(false);
-        setIsBuffering(false);
-
-        // The sound object is dead. Drop our references so play()/load() build
-        // a fresh one instead of calling into an unloaded sound — without this
-        // the play button silently does nothing and re-entering the speaker
-        // hits load()'s same-URI early return, leaving the user stuck until
-        // they force-quit the app.
-        const dead = soundRef.current;
-        soundRef.current = null;
-        currentUriRef.current = null;
-        dead?.unloadAsync().catch(() => {});
-
-        // Force-save the last known position so recovery resumes where the
-        // audio actually stopped rather than up to 5s earlier.
-        const speakerId = currentSpeakerIdRef.current;
-        if (speakerId) {
-          lastSaveRef.current = Date.now();
-          saveSpeakerProgress(speakerId, {
-            positionMs: positionRef.current,
-            durationMs: durationRef.current,
-            rate: rateRef.current,
-            didFinish: false,
-          }).catch(() => {});
+    const subscription = AppState.addEventListener(
+      "change",
+      (nextState: AppStateStatus) => {
+        if (nextState !== "active") return;
+        applyAudioMode();
+        const request = lastRequestRef.current;
+        if (request && currentUriRef.current) {
+          try {
+            activateBackgroundPlayback(request);
+          } catch (error) {
+            qaLog("audio", "Failed to restore media controls", { error: String(error) });
+          }
         }
-      }
-      return;
-    }
-    setIsLoaded(true);
-    setIsPlaying(status.isPlaying);
-    setIsBuffering(status.isBuffering);
-    setPositionMs(status.positionMillis);
-    setDurationMs(status.durationMillis ?? 0);
-    setLoadError(null);
+      },
+    );
+    return () => subscription.remove();
+  }, [activateBackgroundPlayback, applyAudioMode]);
 
-    // Keep refs in sync for save helpers
-    positionRef.current = status.positionMillis;
-    durationRef.current = status.durationMillis ?? 0;
+  useEffect(() => {
+    const nextPositionMs = Math.max(0, status.currentTime * 1000);
+    const nextDurationMs = Math.max(0, status.duration * 1000);
+
+    setIsLoaded(status.isLoaded);
+    setIsPlaying(status.playing);
+    setIsBuffering(status.isBuffering);
+    setPositionMs(nextPositionMs);
+    setDurationMs(nextDurationMs);
+    positionRef.current = nextPositionMs;
+    durationRef.current = nextDurationMs;
+
+    const pending = pendingSetupRef.current;
+    if (status.isLoaded && pending && setupInProgressRef.current !== pending.id) {
+      setupInProgressRef.current = pending.id;
+      void (async () => {
+        try {
+          nativePlayer.setPlaybackRate(pending.savedRate);
+          if (pending.savedPositionMs > 0) {
+            await nativePlayer.seekTo(pending.savedPositionMs / 1000);
+          }
+          if (lastRequestRef.current?.id !== pending.id) return;
+          activateBackgroundPlayback(pending);
+          setLoadError(null);
+          if (pending.autoPlay) nativePlayer.play();
+          qaLog("audio", "Sound loaded with foreground playback", {
+            speakerId: pending.speakerId,
+            autoPlay: pending.autoPlay,
+            restoredPositionMs: pending.savedPositionMs,
+          });
+        } catch (error) {
+          qaLog("audio", "Failed to initialize sound", { error: String(error) });
+          setLoadError(String(error));
+          setIsBuffering(false);
+        } finally {
+          if (pendingSetupRef.current?.id === pending.id) pendingSetupRef.current = null;
+          if (setupInProgressRef.current === pending.id) setupInProgressRef.current = null;
+        }
+      })();
+    }
 
     if (status.didJustFinish) {
       setDidJustFinish(true);
-      // Immediate save on completion
-      const speakerId = currentSpeakerIdRef.current;
-      if (speakerId) {
-        saveSpeakerProgress(speakerId, {
-          positionMs: status.durationMillis ?? status.positionMillis,
-          durationMs: status.durationMillis ?? 0,
-          rate: rateRef.current,
-          didFinish: true,
-        }).catch(() => {});
+      const requestId = lastRequestRef.current?.id ?? null;
+      if (requestId !== null && finishedRequestRef.current !== requestId) {
+        finishedRequestRef.current = requestId;
+        positionRef.current = nextDurationMs || nextPositionMs;
+        void saveProgress({ didFinish: true, force: true });
       }
     } else {
       setDidJustFinish(false);
-
-      // Throttled save during playback
-      if (status.isPlaying && currentSpeakerIdRef.current) {
-        const now = Date.now();
-        if (now - lastSaveRef.current >= 5_000) {
-          lastSaveRef.current = now;
-          saveSpeakerProgress(currentSpeakerIdRef.current, {
-            positionMs: status.positionMillis,
-            durationMs: status.durationMillis ?? 0,
-            rate: rateRef.current,
-            didFinish: false,
-          }).catch(() => {});
-        }
-      }
+      if (status.playing) void saveProgress();
     }
-  }, []);
+  }, [activateBackgroundPlayback, nativePlayer, saveProgress, status]);
 
   const load = useCallback(
-    async (uri: string, autoPlay = false, speakerId?: string) => {
-      try {
-        lastRequestRef.current = { uri, speakerId };
+    async (
+      uri: string,
+      autoPlay = false,
+      speakerId?: string,
+      metadata?: SpeakerAudioMetadata,
+    ) => {
+      const id = ++requestIdRef.current;
+      const request: LoadRequest = { id, uri, speakerId, metadata };
+      lastRequestRef.current = request;
 
-        // If the same URI is already loaded, just toggle play state
-        if (currentUriRef.current === uri && soundRef.current) {
-          if (autoPlay) {
-            await soundRef.current.playAsync();
-          }
+      try {
+        if (currentUriRef.current === uri && status.isLoaded) {
+          activateBackgroundPlayback(request);
+          if (autoPlay) nativePlayer.play();
           return;
         }
 
-        // Save progress for the outgoing speaker before switching
-        if (currentSpeakerIdRef.current) {
-          await saveProgress({ force: true });
-        }
+        if (currentSpeakerIdRef.current) await saveProgress({ force: true });
+        if (lastRequestRef.current?.id !== id) return;
 
         setLoadError(null);
         setIsBuffering(true);
         setIsLoaded(false);
         setPositionMs(0);
         setDurationMs(0);
+        setDidJustFinish(false);
+        finishedRequestRef.current = null;
+        nativePlayer.clearLockScreenControls();
 
-        // Unload previous sound
-        if (soundRef.current) {
-          await soundRef.current.unloadAsync();
-          soundRef.current = null;
-          currentUriRef.current = null;
-        }
-
-        // Update speaker ID for persistence
-        currentSpeakerIdRef.current = speakerId ?? null;
-
-        // Restore saved progress for this speaker
-        let savedRate = rate;
-        let savedPosition = 0;
+        let savedRate = rateRef.current;
+        let savedPositionMs = 0;
         if (speakerId) {
           const saved = await getSpeakerProgress(speakerId);
+          if (lastRequestRef.current?.id !== id) return;
           if (saved) {
             savedRate = saved.rate;
-            setRateState(saved.rate);
-            rateRef.current = saved.rate;
-            // Only restore position if not finished
-            if (!saved.didFinish) {
-              savedPosition = saved.positionMs;
-            }
+            if (!saved.didFinish) savedPositionMs = saved.positionMs;
             qaLog("audio", "Restored progress", {
               speakerId,
-              positionMs: savedPosition,
+              positionMs: savedPositionMs,
               rate: savedRate,
               didFinish: saved.didFinish,
             });
           }
         }
 
-        const { sound } = await Audio.Sound.createAsync(
-          { uri },
-          {
-            shouldPlay: autoPlay,
-            rate: savedRate,
-            shouldCorrectPitch: true,
-            positionMillis: savedPosition,
-          },
-          onStatusUpdate
-        );
-
-        soundRef.current = sound;
+        setRateState(savedRate);
+        rateRef.current = savedRate;
+        currentSpeakerIdRef.current = speakerId ?? null;
         currentUriRef.current = uri;
-
-        qaLog("audio", "Sound loaded", { uri: uri.substring(uri.length - 30), autoPlay, speakerId });
-      } catch (err) {
-        qaLog("audio", "Failed to load sound", { error: String(err) });
-        setLoadError(String(err));
+        pendingSetupRef.current = {
+          ...request,
+          autoPlay,
+          savedPositionMs,
+          savedRate,
+        };
+        nativePlayer.replace({ uri });
+      } catch (error) {
+        qaLog("audio", "Failed to load sound", { error: String(error) });
+        setLoadError(String(error));
         setIsBuffering(false);
       }
     },
-    [rate, onStatusUpdate, saveProgress]
+    [activateBackgroundPlayback, nativePlayer, saveProgress, status.isLoaded],
   );
 
-  // Rebuild the sound from the last load request. load() restores the saved
-  // position, so playback picks up where it stopped.
   const rebuildAndPlay = useCallback(async () => {
-    const req = lastRequestRef.current;
-    if (!req) return;
-    soundRef.current = null;
+    const request = lastRequestRef.current;
+    if (!request) return;
     currentUriRef.current = null;
     qaLog("audio", "Rebuilding sound after playback ended unexpectedly", {
-      speakerId: req.speakerId,
+      speakerId: request.speakerId,
       positionMs: positionRef.current,
     });
-    await load(req.uri, true, req.speakerId);
-  }, [load]);
+    await saveProgress({ force: true });
+    await load(request.uri, true, request.speakerId, request.metadata);
+  }, [load, saveProgress]);
 
   const play = useCallback(async () => {
-    // A missing sound means playback died on its own — a stream stall, an
-    // audio session interruption, or Android reclaiming the app in the
-    // background. Rebuild rather than no-op, so the play button always works.
-    if (!soundRef.current) {
-      await rebuildAndPlay();
-      return;
-    }
+    const request = lastRequestRef.current;
+    if (!request) return;
     try {
-      await soundRef.current.playAsync();
-    } catch (err) {
-      qaLog("audio", "Failed to play; rebuilding", { error: String(err) });
+      if (!status.isLoaded) {
+        await rebuildAndPlay();
+        return;
+      }
+      activateBackgroundPlayback(request);
+      nativePlayer.play();
+    } catch (error) {
+      qaLog("audio", "Failed to play; rebuilding", { error: String(error) });
       await rebuildAndPlay();
     }
-  }, [rebuildAndPlay]);
+  }, [activateBackgroundPlayback, nativePlayer, rebuildAndPlay, status.isLoaded]);
 
   const pause = useCallback(async () => {
     try {
-      await soundRef.current?.pauseAsync();
-      // Immediate save on pause
+      nativePlayer.pause();
       await saveProgress({ force: true });
-    } catch (err) {
-      qaLog("audio", "Failed to pause", { error: String(err) });
+    } catch (error) {
+      qaLog("audio", "Failed to pause", { error: String(error) });
     }
-  }, [saveProgress]);
+  }, [nativePlayer, saveProgress]);
 
   const seekTo = useCallback(async (ms: number) => {
     try {
-      await soundRef.current?.setPositionAsync(ms);
-    } catch (err) {
-      qaLog("audio", "Failed to seek", { error: String(err) });
+      await nativePlayer.seekTo(Math.max(0, ms) / 1000);
+    } catch (error) {
+      qaLog("audio", "Failed to seek", { error: String(error) });
     }
-  }, []);
+  }, [nativePlayer]);
 
-  const seekBy = useCallback(
-    async (seconds: number) => {
-      const target = Math.max(0, Math.min(positionMs + seconds * 1000, durationMs));
-      try {
-        await soundRef.current?.setPositionAsync(target);
-      } catch (err) {
-        qaLog("audio", "Failed to seekBy", { error: String(err) });
-      }
-    },
-    [positionMs, durationMs]
-  );
+  const seekBy = useCallback(async (seconds: number) => {
+    const targetMs = Math.max(
+      0,
+      Math.min(positionRef.current + seconds * 1000, durationRef.current),
+    );
+    await seekTo(targetMs);
+  }, [seekTo]);
 
   const setRate = useCallback(async (newRate: number) => {
     setRateState(newRate);
     rateRef.current = newRate;
     try {
-      await soundRef.current?.setRateAsync(newRate, true); // shouldCorrectPitch = true
-      // Save immediately so rate preference persists
+      nativePlayer.setPlaybackRate(newRate);
       await saveProgress({ force: true });
-    } catch (err) {
-      qaLog("audio", "Failed to set rate", { error: String(err) });
+    } catch (error) {
+      qaLog("audio", "Failed to set rate", { error: String(error) });
     }
-  }, [saveProgress]);
+  }, [nativePlayer, saveProgress]);
 
   const unload = useCallback(async () => {
     try {
-      // Save final progress before unloading
       await saveProgress({ force: true });
-
-      if (soundRef.current) {
-        await soundRef.current.unloadAsync();
-        soundRef.current = null;
-        currentUriRef.current = null;
-        currentSpeakerIdRef.current = null;
-        // Explicit stop — don't leave a request behind that play() would
-        // treat as an interrupted session and resurrect.
-        lastRequestRef.current = null;
-        setIsLoaded(false);
-        setIsPlaying(false);
-        setIsBuffering(false);
-        setPositionMs(0);
-        setDurationMs(0);
-      }
-    } catch (err) {
-      qaLog("audio", "Failed to unload", { error: String(err) });
+      nativePlayer.pause();
+      nativePlayer.clearLockScreenControls();
+      nativePlayer.replace(null);
+      currentUriRef.current = null;
+      currentSpeakerIdRef.current = null;
+      lastRequestRef.current = null;
+      pendingSetupRef.current = null;
+      setIsLoaded(false);
+      setIsPlaying(false);
+      setIsBuffering(false);
+      setPositionMs(0);
+      setDurationMs(0);
+    } catch (error) {
+      qaLog("audio", "Failed to unload", { error: String(error) });
     }
-  }, [saveProgress]);
+  }, [nativePlayer, saveProgress]);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      // Best-effort save before unmount
-      const speakerId = currentSpeakerIdRef.current;
-      if (speakerId) {
-        saveSpeakerProgress(speakerId, {
-          positionMs: positionRef.current,
-          durationMs: durationRef.current,
-          rate: rateRef.current,
-          didFinish: false,
-        }).catch(() => {});
-      }
-      soundRef.current?.unloadAsync();
-    };
-  }, []);
+  useEffect(() => () => {
+    const speakerId = currentSpeakerIdRef.current;
+    if (speakerId) {
+      void saveSpeakerProgress(speakerId, {
+        positionMs: positionRef.current,
+        durationMs: durationRef.current,
+        rate: rateRef.current,
+        didFinish: false,
+      });
+    }
+    nativePlayer.clearLockScreenControls();
+  }, [nativePlayer]);
 
   return {
     load,

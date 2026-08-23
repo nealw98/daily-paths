@@ -7,8 +7,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "jsEngine": "hermes",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.nealwagner.dailypaths",
@@ -16,20 +14,25 @@
       "appStoreUrl": "https://apps.apple.com/app/id6755981862",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "UIBackgroundModes": ["audio"]
+        "UIBackgroundModes": [
+          "audio"
+        ]
       },
       "entitlements": {
         "com.apple.developer.icloud-container-environment": "Production",
         "com.apple.developer.icloud-container-identifiers": [
           "iCloud.com.nealwagner.dailypaths"
         ],
-        "com.apple.developer.icloud-services": ["CloudDocuments"],
+        "com.apple.developer.icloud-services": [
+          "CloudDocuments"
+        ],
         "com.apple.developer.ubiquity-container-identifiers": [
           "iCloud.com.nealwagner.dailypaths"
         ]
       }
     },
     "android": {
+      "blockedPermissions": ["android.permission.RECORD_AUDIO"],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#F7FAFA"
@@ -46,7 +49,6 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-av",
       [
         "expo-splash-screen",
         {
@@ -55,7 +57,18 @@
           "backgroundColor": "#F7FAFA",
           "imageWidth": 100
         }
-      ]
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "enableBackgroundPlayback": true
+        }
+      ],
+      "@react-native-community/datetimepicker",
+      "expo-sharing",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true

@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { qaLog } from "./qaLog";
+import { isPreviewBuild } from "./buildProfile";
 
 const CACHE_KEY = "@daily_paths_lifetime_access_v1";
 
@@ -114,9 +115,11 @@ async function getNativeTransactionInfo(): Promise<{
  */
 export async function detectLifetimeAccess(): Promise<LifetimeAccessStatus> {
   // 0. Dev/QA override takes priority
-  const override = await getLifetimeOverride();
+  // A preview-build purchase bypass must never carry into a store build after
+  // an update. Production ignores the stored QA override completely.
+  const override = isPreviewBuild() ? await getLifetimeOverride() : null;
   if (override !== null) {
-    const status = {
+    const status: LifetimeAccessStatus = {
       hasLifetimeAccess: override,
       originalAppVersion: null,
       originalPurchaseDate: null,
@@ -165,7 +168,7 @@ export async function detectLifetimeAccess(): Promise<LifetimeAccessStatus> {
       error: String(err),
     });
     // Module not available (e.g. Expo Go) — no lifetime access
-    const status = {
+    const status: LifetimeAccessStatus = {
       hasLifetimeAccess: false,
       originalAppVersion: null,
       originalPurchaseDate: null,

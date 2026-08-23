@@ -33,7 +33,7 @@ import { OnboardingFlow } from "../../components/onboarding/OnboardingFlow";
 import { useFeaturedSpeaker } from "../../hooks/useFeaturedSpeaker";
 import { computeJournalStreak } from "../../utils/journalStreak";
 import { getScheduledDayOfYear } from "../../utils/dateUtils";
-import { isDeveloperDevice } from "../../utils/deviceIdentity";
+import { isPreviewBuild } from "../../utils/buildProfile";
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -109,18 +109,8 @@ export default function HomeTab() {
   const { entries: journalEntries, createEntry } = useJournalStorage();
   const [journalEntryType, setJournalEntryType] = useState<EntryType | null>(null);
   const [reflectionImageOverride, setReflectionImageOverride] = useState<number | null>(null);
-  const [isDeveloper, setIsDeveloper] = useState(__DEV__);
+  const showPreviewControls = isPreviewBuild();
   const [devPaywallFlowVisible, setDevPaywallFlowVisible] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    void isDeveloperDevice().then((developer) => {
-      if (active) setIsDeveloper(developer);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
 
   useEffect(() => {
     AsyncStorage.getItem(QA_REFLECTION_IMAGE_OVERRIDE_KEY)
@@ -283,7 +273,7 @@ export default function HomeTab() {
         })}
         eyebrow="Daily Paths"
         hideIcon
-        rightAction={isDeveloper ? (
+        rightAction={showPreviewControls ? (
           <TouchableOpacity
             activeOpacity={0.75}
             onPress={() => setDevPaywallFlowVisible(true)}
@@ -635,7 +625,10 @@ export default function HomeTab() {
         presentationStyle="fullScreen"
         onRequestClose={() => setDevPaywallFlowVisible(false)}
       >
-        <OnboardingFlow initialPaywallOrigin="toolkit" />
+        <OnboardingFlow
+          initialPaywallOrigin="toolkit"
+          onAccessGranted={() => setDevPaywallFlowVisible(false)}
+        />
       </Modal>
     </SafeAreaView>
   );

@@ -77,7 +77,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
   // Scale factor: medium bodyFontSize (18) is the baseline (1.0)
   const textMetrics = useMemo(() => getTextSizeMetrics(settings.textSize), [settings.textSize]);
   const scale = textMetrics.bodyFontSize / 18;
-  const hasLoadedRef = useRef(false);
+  const loadedSpeakerIdRef = useRef<string | null>(null);
 
   const titleType = useMemo(() => {
     // Additive scaling around the Medium preset so title jumps mirror the
@@ -99,18 +99,18 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
 
   // Load audio on mount (or when speaker changes), preferring local file
   useEffect(() => {
-    if (!hasLoadedRef.current) {
-      hasLoadedRef.current = true;
-      resolveAudioUri(speaker.id, audioUrl).then((uri) => {
-        player.load(uri, autoPlay, speaker.id);
+    if (loadedSpeakerIdRef.current === speaker.id) return;
+    loadedSpeakerIdRef.current = speaker.id;
+    resolveAudioUri(speaker.id, audioUrl).then((uri) => {
+      // Ignore a slow download lookup if the user selected another talk.
+      if (loadedSpeakerIdRef.current !== speaker.id) return;
+      player.load(uri, autoPlay, speaker.id, {
+        title: speaker.title,
+        artist: speaker.speaker,
+        albumTitle: "Daily Paths",
       });
-    }
+    });
   }, [speaker.id]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Reset load tracking when speaker changes
-  useEffect(() => {
-    hasLoadedRef.current = false;
-  }, [speaker.id]);
 
   // ─── Download Actions ────────────────────────────────────────────────────
 

@@ -53,9 +53,13 @@ const FEATURES: Array<{ label: string; Icon: FeatureIcon }> = [
 
 interface OnboardingFlowProps {
   initialPaywallOrigin?: Page | null;
+  onAccessGranted?: () => void;
 }
 
-export function OnboardingFlow({ initialPaywallOrigin = null }: OnboardingFlowProps = {}) {
+export function OnboardingFlow({
+  initialPaywallOrigin = null,
+  onAccessGranted,
+}: OnboardingFlowProps = {}) {
   const [page, setPage] = useState<Page>("reflections");
   const [previewVisible, setPreviewVisible] = useState(false);
   const [cardRect, setCardRect] = useState<CardRect | null>(null);
@@ -182,7 +186,10 @@ export function OnboardingFlow({ initialPaywallOrigin = null }: OnboardingFlowPr
         visible={paywallOrigin !== null}
         origin={paywallOrigin}
         onClose={() => setPaywallOrigin(null)}
-        onAccessGranted={() => setPaywallOrigin(null)}
+        onAccessGranted={() => {
+          setPaywallOrigin(null);
+          onAccessGranted?.();
+        }}
       />
 
       {previewVisible ? (
