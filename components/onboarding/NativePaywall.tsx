@@ -28,6 +28,8 @@ import { clearSubscriptionOverride } from "../../utils/subscriptionOverride";
 import { useSubscriptionContext } from "../../contexts/SubscriptionContext";
 import { useAnalytics } from "../../utils/analytics";
 import { qaLog } from "../../utils/qaLog";
+import { isDeveloperDevice } from "../../utils/deviceIdentity";
+import { setLifetimeOverride } from "../../utils/paidAppDetector";
 
 const TARGET_OFFERING_ID = "android_unlock";
 const FALLBACK_PRICE = "$4.99";
@@ -55,7 +57,7 @@ const REVIEWS = [
   },
 ] as const;
 
-type BusyAction = "purchase" | "restore" | null;
+type BusyAction = "purchase" | "restore" | "dev" | null;
 
 interface NativePaywallProps {
   visible: boolean;
@@ -79,7 +81,8 @@ export function NativePaywall({
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [reviewIndex, setReviewIndex] = useState(0);
-  const { refresh } = useSubscriptionContext();
+  const [isDeveloper, setIsDeveloper] = useState(__DEV__);
+  const { refresh, refreshLifetimeAccess } = useSubscriptionContext();
   const {
     trackPaywallShown,
     trackPaywallDismissed,
@@ -88,6 +91,16 @@ export function NativePaywall({
     trackRestoreInitiated,
     trackRestoreCompleted,
   } = useAnalytics();
+
+  useEffect(() => {
+    let active = true;
+    void isDeveloperDevice().then((developer) => {
+      if (active) setIsDeveloper(developer);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const loadPackage = useCallback(async () => {
     setLoadingPackage(true);
@@ -227,6 +240,24 @@ export function NativePaywall({
     onClose();
   }, [busyAction, onClose, trackPaywallDismissed]);
 
+  const handleDevSkip = useCallback(async () => {
+    if (!isDeveloper || busyAction) return;
+    setBusyAction("dev");
+    setMessage(null);
+    try {
+      await clearSubscriptionOverride();
+      await setLifetimeOverride(true);
+      await refreshLifetimeAccess();
+      qaLog("paywall", "Developer skipped native paywall");
+      onAccessGranted();
+    } catch (error) {
+      qaLog("paywall", "Developer skip failed", { error: String(error) });
+      setMessage("Developer skip failed. Please try again.");
+    } finally {
+      setBusyAction(null);
+    }
+  }, [busyAction, isDeveloper, onAccessGranted, refreshLifetimeAccess]);
+
   const handleReviewScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const nextIndex = Math.round(event.nativeEvent.contentOffset.x / reviewWidth);
     setReviewIndex(Math.max(0, Math.min(REVIEWS.length - 1, nextIndex)));
@@ -259,27 +290,30 @@ export function NativePaywall({
         <StatusBar style="light" backgroundColor={colors.secondary} />
         <SafeAreaView edges={["top"]} style={styles.headerSafeArea}>
           <View style={styles.header}>
+            {isDeveloper ? (
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => void handleDevSkip()}
+                disabled={busyAction !== null}
+                style={styles.headerSide}
+                accessibilityRole="button"
+                accessibilityLabel="Developer skip"
+              >
+                <Text style={styles.devSkipText}>Dev Skip</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.headerSide} />
+            )}
+            <Text style={styles.wordmark}>Daily Paths</Text>
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={handleClose}
               disabled={busyAction !== null}
-              style={styles.headerSide}
+              style={[styles.headerSide, styles.headerSideRight]}
               accessibilityRole="button"
               accessibilityLabel="Close paywall"
             >
               <Ionicons name="close" size={24} color="rgba(255,255,255,0.88)" />
-            </TouchableOpacity>
-            <Text style={styles.wordmark}>Daily Paths</Text>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => void handleRestore()}
-              disabled={busyAction !== null}
-              style={[styles.headerSide, styles.headerSideRight]}
-              accessibilityRole="button"
-            >
-              <Text style={styles.restoreText}>
-                {busyAction === "restore" ? "Restoring…" : "Restore Purchase"}
-              </Text>
             </TouchableOpacity>
           </View>
         </SafeAreaView>
@@ -375,6 +409,15 @@ export function NativePaywall({
             <View style={styles.legalRow}>
               <TouchableOpacity
                 activeOpacity={0.7}
+                onPress={() => void handleRestore()}
+                disabled={busyAction !== null}
+              >
+                <Text style={styles.legalText}>
+                  {busyAction === "restore" ? "Restoring…" : "Restore Purchase"}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.7}
                 onPress={() => Linking.openURL("https://play.google.com/intl/en_us/about/play-terms/")}
               >
                 <Text style={styles.legalText}>Terms</Text>
@@ -418,12 +461,11 @@ const styles = StyleSheet.create({
     lineHeight: 27,
     color: "rgba(255,255,255,0.96)",
   },
-  restoreText: {
+  devSkipText: {
     fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 11,
-    lineHeight: 17,
+    fontSize: 12,
+    lineHeight: 18,
     color: "rgba(255,255,255,0.88)",
-    textAlign: "right",
   },
   contentScroll: { flex: 1 },
   content: { paddingTop: 24, paddingBottom: 20 },
