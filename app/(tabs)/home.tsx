@@ -28,9 +28,11 @@ import { JournalEntryEditor } from "../../components/journal/JournalEntryEditor"
 import { useJournalStorage } from "../../hooks/useJournalStorage";
 import { TealHeader } from "../../components/shared/TealHeader";
 import { CollectionLinkRow } from "../../components/shared/CollectionLinkRow";
+import { NativePaywall } from "../../components/onboarding/NativePaywall";
 import { useFeaturedSpeaker } from "../../hooks/useFeaturedSpeaker";
 import { computeJournalStreak } from "../../utils/journalStreak";
 import { getScheduledDayOfYear } from "../../utils/dateUtils";
+import { isDeveloperDevice } from "../../utils/deviceIdentity";
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -106,6 +108,18 @@ export default function HomeTab() {
   const { entries: journalEntries, createEntry } = useJournalStorage();
   const [journalEntryType, setJournalEntryType] = useState<EntryType | null>(null);
   const [reflectionImageOverride, setReflectionImageOverride] = useState<number | null>(null);
+  const [isDeveloper, setIsDeveloper] = useState(__DEV__);
+  const [devPaywallVisible, setDevPaywallVisible] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void isDeveloperDevice().then((developer) => {
+      if (active) setIsDeveloper(developer);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     AsyncStorage.getItem(QA_REFLECTION_IMAGE_OVERRIDE_KEY)
@@ -268,6 +282,17 @@ export default function HomeTab() {
         })}
         eyebrow="Daily Paths"
         hideIcon
+        rightAction={isDeveloper ? (
+          <TouchableOpacity
+            activeOpacity={0.75}
+            onPress={() => setDevPaywallVisible(true)}
+            style={styles.devPaywallButton}
+            accessibilityRole="button"
+            accessibilityLabel="Open paywall for testing"
+          >
+            <Text style={styles.devPaywallText}>Paywall</Text>
+          </TouchableOpacity>
+        ) : null}
       />
       <ScrollView
         style={[styles.scroll, { backgroundColor: colors.surface }]}
@@ -603,6 +628,12 @@ export default function HomeTab() {
         {/* Bottom spacing */}
         <View style={{ height: 32 }} />
       </ScrollView>
+      <NativePaywall
+        visible={devPaywallVisible}
+        origin="toolkit"
+        onClose={() => setDevPaywallVisible(false)}
+        onAccessGranted={() => setDevPaywallVisible(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -616,6 +647,21 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: 24,
+  },
+  devPaywallButton: {
+    minHeight: 34,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.55)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  devPaywallText: {
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 12,
+    lineHeight: 17,
+    color: "rgba(255,255,255,0.95)",
   },
 
   // Welcome greeting
