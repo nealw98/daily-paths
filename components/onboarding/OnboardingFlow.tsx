@@ -368,13 +368,7 @@ function ReflectionsPage({
         </Text>
 
         <View ref={cardRef} collapsable={false} style={styles.sampleCardShadow}>
-          <TouchableOpacity
-            activeOpacity={0.88}
-            onPress={onOpenPreview}
-            style={styles.sampleCard}
-            accessibilityRole="button"
-            accessibilityLabel="Preview the reflection Assets Hidden in Faults"
-          >
+          <View style={styles.sampleCard}>
             <ImageBackground
               source={SAMPLE_IMAGE}
               resizeMode="cover"
@@ -395,13 +389,19 @@ function ReflectionsPage({
             </ImageBackground>
             <View style={styles.sampleCardBottom}>
               <Text style={styles.sampleThought}>“{ONBOARDING_SAMPLE.hook}”</Text>
-              <View style={styles.sampleCtaRow}>
-                <Text style={styles.sampleCtaText}>Preview the reflection</Text>
-                <Ionicons name="chevron-forward" size={18} color={colors.accent} />
-              </View>
             </View>
-          </TouchableOpacity>
+          </View>
         </View>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={onOpenPreview}
+          style={styles.sampleCtaRow}
+          accessibilityRole="button"
+          accessibilityLabel="Preview the reflection Assets Hidden in Faults"
+        >
+          <Text style={styles.sampleCtaText}>Preview the reflection</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.accent} />
+        </TouchableOpacity>
       </ScrollView>
       <View style={styles.pinnedActionArea}>
         <PrimaryButton label="Continue" onPress={onContinue} />
@@ -665,10 +665,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   sampleCtaRow: {
-    marginTop: 13,
+    minHeight: 44,
+    marginTop: 5,
+    paddingHorizontal: 4,
+    alignSelf: "flex-end",
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "flex-end",
+    justifyContent: "center",
     gap: 2,
   },
   sampleCtaText: {
