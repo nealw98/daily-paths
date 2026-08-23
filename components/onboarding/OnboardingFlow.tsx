@@ -441,7 +441,7 @@ function ToolkitPage({
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.pageContext}>What's inside</Text>
-        <Text style={styles.toolkitHeadline}>Practical tools to support your daily program</Text>
+        <Text style={styles.toolkitHeadline}>Keep your program with you throughout the day</Text>
         <View style={styles.featureGrid}>
           {FEATURES.map(({ label, Icon }) => (
             <View key={label} style={styles.featureTile}>
