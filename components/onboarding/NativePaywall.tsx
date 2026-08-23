@@ -41,7 +41,7 @@ const REVIEWS = [
     reviewer: "Ilww99",
   },
   {
-    title: "A helpful app when without AFG readers, or anytime with the iPad!",
+    title: "A reading anytime I want",
     copy: "Whether I’m out running errands, or even at home, it’s nice to pull up the app and have a reading anytime I want. And so much more—speakers, journal, prayers! Wow, an excellent resource!",
     reviewer: "martymouse56",
   },
@@ -318,7 +318,7 @@ export function NativePaywall({
               accessibilityRole="button"
               accessibilityLabel="Close paywall"
             >
-              <Ionicons name="close" size={24} color="rgba(255,255,255,0.88)" />
+              <Ionicons name="close" size={22} color="rgba(255,255,255,0.88)" />
             </TouchableOpacity>
           </View>
         </SafeAreaView>
@@ -329,29 +329,10 @@ export function NativePaywall({
           showsVerticalScrollIndicator={false}
         >
           <Text style={styles.title}>Lifetime access</Text>
-          <Text style={styles.subtitle}>
-            One-time payment. No subscription or recurring charges.
-          </Text>
           <View style={styles.ratingSummary} accessibilityLabel="5.0 out of 5 from 29 ratings">
-            <View style={styles.ratingScoreGroup}>
-              <Ionicons
-                name="leaf-outline"
-                size={30}
-                color={colors.accent}
-                style={styles.ratingLeafLeft}
-              />
-              <Text style={styles.ratingScore}>5.0</Text>
-              <Ionicons
-                name="leaf-outline"
-                size={30}
-                color={colors.accent}
-                style={styles.ratingLeafRight}
-              />
-            </View>
-            <View style={styles.ratingDetails}>
-              <Text style={styles.ratingStars}>★★★★★</Text>
-              <Text style={styles.ratingText}>29 ratings</Text>
-            </View>
+            <Text style={styles.ratingStars}>★★★★★</Text>
+            <Text style={styles.ratingValue}>5.0</Text>
+            <Text style={styles.ratingText}>· 29 ratings</Text>
           </View>
 
           <ScrollView
@@ -428,10 +409,7 @@ export function NativePaywall({
                 <Text style={styles.purchaseText}>{purchaseLabel}</Text>
               </LinearGradient>
             </TouchableOpacity>
-            <View style={styles.secureRow}>
-              <Ionicons name="lock-closed-outline" size={13} color={colors.onSurfaceVariant} />
-              <Text style={styles.secureText}>Secure purchase through Google Play</Text>
-            </View>
+            <Text style={styles.checkoutNote}>No subscription or recurring charges.</Text>
             <View style={styles.legalRow}>
               <TouchableOpacity
                 activeOpacity={0.7}
@@ -467,8 +445,8 @@ const styles = StyleSheet.create({
   headerSafeArea: { backgroundColor: colors.secondary },
   header: {
     minHeight: 62,
-    paddingHorizontal: 16,
-    paddingBottom: 13,
+    paddingHorizontal: 18,
+    paddingBottom: 14,
     flexDirection: "row",
     alignItems: "flex-end",
   },
@@ -494,73 +472,46 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.88)",
   },
   contentScroll: { flex: 1 },
-  content: { paddingTop: 24, paddingBottom: 20 },
+  content: { paddingTop: 20, paddingBottom: 16 },
   title: {
     paddingHorizontal: 20,
-    fontFamily: fonts.cormorantGaramondSemiBold,
-    fontSize: 36,
+    fontFamily: fonts.cormorantGaramondMedium,
+    fontSize: 34,
     lineHeight: 43,
-    letterSpacing: -0.55,
-    color: colors.accent,
-    textAlign: "center",
-  },
-  subtitle: {
-    maxWidth: 320,
-    marginTop: 7,
-    paddingHorizontal: 20,
-    alignSelf: "center",
-    fontFamily: fonts.bodyFamily,
-    fontSize: 14,
-    lineHeight: 22,
-    color: colors.onSurfaceVariant,
-    textAlign: "center",
+    letterSpacing: -0.5,
+    color: colors.onSurface,
   },
   ratingSummary: {
-    marginTop: 18,
+    marginTop: 14,
     flexDirection: "row",
     justifyContent: "center",
-    alignItems: "center",
-    gap: 18,
-  },
-  ratingScoreGroup: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-  },
-  ratingLeafLeft: {
-    transform: [{ rotate: "-34deg" }, { scaleX: -1 }],
-  },
-  ratingLeafRight: {
-    transform: [{ rotate: "34deg" }],
-  },
-  ratingScore: {
-    fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 42,
-    lineHeight: 48,
-    letterSpacing: -1.2,
-    color: colors.accent,
-  },
-  ratingDetails: {
-    alignItems: "flex-start",
+    alignItems: "baseline",
+    gap: 7,
   },
   ratingStars: {
     fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 19,
-    lineHeight: 23,
+    fontSize: 13,
+    lineHeight: 18,
     letterSpacing: 2,
-    color: colors.accent,
+    color: "#D6922B",
+  },
+  ratingValue: {
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.onSurface,
   },
   ratingText: {
     fontFamily: fonts.bodyFamilyMedium,
     fontSize: 13,
-    lineHeight: 19,
+    lineHeight: 18,
     color: colors.onSurfaceVariant,
   },
-  reviewCarousel: { marginTop: 18 },
+  reviewCarousel: { marginTop: 14 },
   reviewSlide: { paddingHorizontal: 20 },
   reviewCard: {
-    minHeight: 210,
-    padding: 20,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
     borderRadius: 17,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(45,76,71,0.12)",
@@ -573,27 +524,27 @@ const styles = StyleSheet.create({
   },
   stars: {
     fontFamily: fonts.bodyFamily,
-    fontSize: 17,
-    lineHeight: 22,
+    fontSize: 15,
+    lineHeight: 19,
     letterSpacing: 2,
     color: "#D6922B",
   },
   reviewTitle: {
-    marginTop: 10,
+    marginTop: 8,
     fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: 15,
+    lineHeight: 21,
     color: colors.onSurface,
   },
   reviewCopy: {
-    marginTop: 7,
+    marginTop: 6,
     fontFamily: fonts.loraRegular,
-    fontSize: 16,
-    lineHeight: 25,
+    fontSize: 15,
+    lineHeight: 23,
     color: colors.onSurface,
   },
   reviewer: {
-    marginTop: 10,
+    marginTop: 8,
     fontFamily: fonts.bodyFamily,
     fontSize: 12,
     lineHeight: 18,
@@ -613,7 +564,7 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: "rgba(45,76,71,0.11)",
   },
-  checkout: { paddingHorizontal: 20, paddingTop: 15, paddingBottom: 10 },
+  checkout: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 10 },
   messageRow: { marginBottom: 9, alignItems: "center" },
   message: {
     fontFamily: fonts.bodyFamily,
@@ -660,18 +611,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   disabled: { opacity: 0.66 },
-  secureRow: {
+  checkoutNote: {
     marginTop: 8,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 5,
-  },
-  secureText: {
     fontFamily: fonts.bodyFamily,
-    fontSize: 11,
-    lineHeight: 17,
+    fontSize: 12,
+    lineHeight: 18,
     color: colors.onSurfaceVariant,
+    textAlign: "center",
   },
   legalRow: {
     marginTop: 9,

@@ -32,7 +32,7 @@ import { useAnalytics } from "../../utils/analytics";
 import { qaLog } from "../../utils/qaLog";
 import { NativePaywall } from "./NativePaywall";
 
-const SAMPLE_IMAGE = require("../../assets/reflections/reflections-31.webp");
+const SAMPLE_IMAGE = require("../../assets/reflections/reflections-20.webp");
 
 type Page = "reflections" | "toolkit";
 type CardRect = { top: number; left: number; width: number; height: number };
@@ -291,7 +291,13 @@ function ReflectionsPage({
         </Text>
 
         <View ref={cardRef} collapsable={false} style={styles.sampleCardShadow}>
-          <View style={styles.sampleCard}>
+          <TouchableOpacity
+            activeOpacity={0.88}
+            onPress={onOpenPreview}
+            style={styles.sampleCard}
+            accessibilityRole="button"
+            accessibilityLabel="Preview the reading Assets Hidden in Faults"
+          >
             <ImageBackground
               source={SAMPLE_IMAGE}
               resizeMode="cover"
@@ -313,7 +319,7 @@ function ReflectionsPage({
             <View style={styles.sampleCardBottom}>
               <Text style={styles.sampleThought}>“{ONBOARDING_SAMPLE.hook}”</Text>
             </View>
-          </View>
+          </TouchableOpacity>
         </View>
         <TouchableOpacity
           activeOpacity={0.7}
@@ -323,7 +329,7 @@ function ReflectionsPage({
           accessibilityLabel="Preview the reading Assets Hidden in Faults"
         >
           <Text style={styles.sampleCtaText}>Preview the reading</Text>
-          <Ionicons name="chevron-forward" size={18} color={colors.accent} />
+          <Ionicons name="chevron-forward" size={16} color={colors.heroGradientEnd} />
         </TouchableOpacity>
       </ScrollView>
       <View style={styles.pinnedActionArea}>
@@ -372,16 +378,10 @@ function ToolkitPage({
             </View>
           ))}
         </View>
-        <View style={styles.offerBlock}>
-          <Text style={styles.offerTitle}>Lifetime access — $4.99</Text>
-          <Text style={styles.offerCopy}>
-            One-time payment. No subscription or recurring charges.
-          </Text>
-        </View>
       </ScrollView>
       <View style={styles.pinnedActionArea}>
         <PrimaryButton
-          label="Unlock the app"
+          label="Continue"
           onPress={onUnlock}
         />
       </View>
@@ -575,19 +575,21 @@ const styles = StyleSheet.create({
   },
   sampleCtaRow: {
     minHeight: 44,
-    marginTop: 5,
-    paddingHorizontal: 4,
-    alignSelf: "flex-end",
+    marginTop: 14,
+    paddingHorizontal: 22,
+    alignSelf: "center",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 2,
+    gap: 4,
+    borderRadius: 999,
+    backgroundColor: colors.highlight,
   },
   sampleCtaText: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: 13,
-    lineHeight: 20,
-    color: colors.accent,
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 15,
+    lineHeight: 22,
+    color: colors.heroGradientEnd,
   },
   pinnedActionArea: {
     paddingHorizontal: 20,
@@ -646,37 +648,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 19,
     color: colors.onSurface,
-  },
-  offerBlock: {
-    marginTop: 3,
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-    alignItems: "center",
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(45,76,71,0.14)",
-    backgroundColor: colors.surfaceContainerLowest,
-    shadowColor: colors.heroGradientStart,
-    shadowOpacity: 0.07,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
-  },
-  offerTitle: {
-    fontFamily: fonts.bodyFamilyBold,
-    fontSize: 20,
-    lineHeight: 27,
-    letterSpacing: -0.2,
-    color: colors.onSurface,
-    textAlign: "center",
-  },
-  offerCopy: {
-    marginTop: 5,
-    fontFamily: fonts.bodyFamily,
-    fontSize: 14,
-    lineHeight: 22,
-    color: colors.onSurfaceVariant,
-    textAlign: "center",
   },
   previewOverlay: {
     position: "absolute",
