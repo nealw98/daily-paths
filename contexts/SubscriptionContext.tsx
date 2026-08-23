@@ -59,12 +59,12 @@ interface SubscriptionContextValue {
    *  RevenueCat entitlements + grant tables and returns at most one — so
    *  Modal A and Modal B can never collide. */
   pendingModal: PendingModal | null;
-  /** RC offering packages — unused by main UI (Android uses RC Paywall UI). QA / future. */
+  /** RC offering packages retained for QA and legacy callers. */
   packages: PurchasesPackage[];
   loading: boolean;
   purchasing: boolean;
   gate: GateType;
-  /** Programmatic package purchase — Android production IAP uses RC Paywall UI. */
+  /** Programmatic package purchase used by native purchase surfaces. */
   purchase: (pkg: PurchasesPackage) => Promise<boolean>;
   restore: () => Promise<boolean>;
   refresh: () => Promise<void>;

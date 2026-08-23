@@ -4,7 +4,6 @@ import {
   Animated,
   BackHandler,
   ImageBackground,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -17,8 +16,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import Purchases from "react-native-purchases";
-import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
 
 import { fallbackColors as colors, fonts } from "../../constants/theme";
 import { ONBOARDING_SAMPLE } from "../../constants/onboardingSample";
@@ -31,13 +28,10 @@ import {
   Seedling,
   SoftExhale,
 } from "../icons";
-import { useSubscriptionContext } from "../../contexts/SubscriptionContext";
 import { useAnalytics } from "../../utils/analytics";
-import { getRawEntitlements, restorePurchases } from "../../lib/subscription";
-import { clearSubscriptionOverride } from "../../utils/subscriptionOverride";
 import { qaLog } from "../../utils/qaLog";
+import { NativePaywall } from "./NativePaywall";
 
-const TARGET_PAYWALL_OFFERING_ID = "android_unlock";
 const SAMPLE_IMAGE = require("../../assets/reflections/reflections-21.webp");
 
 type Page = "reflections" | "toolkit";
@@ -62,18 +56,12 @@ export function OnboardingFlow() {
   const [previewVisible, setPreviewVisible] = useState(false);
   const [cardRect, setCardRect] = useState<CardRect | null>(null);
   const [reduceMotion, setReduceMotion] = useState(false);
-  const [paywallBusy, setPaywallBusy] = useState(false);
+  const [paywallOrigin, setPaywallOrigin] = useState<Page | null>(null);
   const previewProgress = useRef(new Animated.Value(0)).current;
   const cardRef = useRef<View>(null);
   const lastTrackedPage = useRef<Page | null>(null);
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
-  const { refresh } = useSubscriptionContext();
   const {
-    trackPaywallShown,
-    trackPaywallDismissed,
-    trackPaywallPurchaseCompleted,
-    trackPaywallPurchaseCancelled,
-    trackRestoreCompleted,
     trackOnboardingStepViewed,
     trackOnboardingSampleOpened,
     trackOnboardingSampleClosed,
@@ -150,83 +138,13 @@ export function OnboardingFlow() {
     return () => subscription.remove();
   }, [page, previewVisible]);
 
-  const presentPaywall = useCallback(
-    async (origin: Page) => {
-      if (Platform.OS !== "android" || paywallBusy) return;
-      setPaywallBusy(true);
-      qaLog("onboarding", "Opening RevenueCat paywall", { origin });
+  const openPaywall = useCallback(
+    (origin: Page) => {
+      qaLog("onboarding", "Opening native paywall", { origin });
       trackOnboardingCheckoutTapped(origin);
-      try {
-        trackPaywallShown();
-        const offerings = await Purchases.getOfferings();
-        const offering = offerings.all?.[TARGET_PAYWALL_OFFERING_ID] ?? null;
-        qaLog("paywall", "Onboarding offering resolved", {
-          targetId: TARGET_PAYWALL_OFFERING_ID,
-          found: !!offering,
-          currentId: offerings.current?.identifier ?? null,
-        });
-        const result = offering
-          ? await RevenueCatUI.presentPaywall({ offering })
-          : await RevenueCatUI.presentPaywall();
-
-        if (result === PAYWALL_RESULT.PURCHASED) {
-          trackPaywallPurchaseCompleted();
-          const raw = await getRawEntitlements();
-          if (raw.hasLifetime || raw.hasUnlimited) {
-            await clearSubscriptionOverride();
-          }
-          await refresh();
-        } else if (result === PAYWALL_RESULT.RESTORED) {
-          trackRestoreCompleted(true);
-          const raw = await getRawEntitlements();
-          if (raw.hasLifetime || raw.hasUnlimited) {
-            await clearSubscriptionOverride();
-          }
-          await refresh();
-        } else {
-          trackPaywallPurchaseCancelled();
-          trackPaywallDismissed();
-          qaLog("onboarding", "Paywall closed; returning to origin", { origin, result });
-        }
-      } catch (error) {
-        const errorText = String(error).toLowerCase();
-        const alreadyOwned =
-          errorText.includes("already") ||
-          errorText.includes("owned") ||
-          errorText.includes("itemalreadyowned");
-        if (alreadyOwned) {
-          try {
-            await restorePurchases();
-            const raw = await getRawEntitlements();
-            if (raw.hasLifetime || raw.hasUnlimited) {
-              await clearSubscriptionOverride();
-            }
-            await refresh();
-            trackPaywallPurchaseCompleted();
-          } catch (restoreError) {
-            qaLog("onboarding", "Already-owned recovery failed", {
-              error: String(restoreError),
-            });
-            trackPaywallPurchaseCancelled();
-          }
-        } else {
-          qaLog("onboarding", "RevenueCat paywall failed", { error: String(error) });
-          trackPaywallPurchaseCancelled();
-        }
-      } finally {
-        setPaywallBusy(false);
-      }
+      setPaywallOrigin(origin);
     },
-    [
-      paywallBusy,
-      refresh,
-      trackPaywallDismissed,
-      trackPaywallPurchaseCancelled,
-      trackPaywallPurchaseCompleted,
-      trackPaywallShown,
-      trackRestoreCompleted,
-      trackOnboardingCheckoutTapped,
-    ],
+    [trackOnboardingCheckoutTapped],
   );
 
   const rect = cardRect ?? {
@@ -247,16 +165,21 @@ export function OnboardingFlow() {
             qaLog("onboarding", "Advanced to toolkit page");
             setPage("toolkit");
           }}
-          onSkip={() => void presentPaywall("reflections")}
-          paywallBusy={paywallBusy}
+          onSkip={() => openPaywall("reflections")}
         />
       ) : (
         <ToolkitPage
           onBack={() => setPage("reflections")}
-          onUnlock={() => void presentPaywall("toolkit")}
-          paywallBusy={paywallBusy}
+          onUnlock={() => openPaywall("toolkit")}
         />
       )}
+
+      <NativePaywall
+        visible={paywallOrigin !== null}
+        origin={paywallOrigin}
+        onClose={() => setPaywallOrigin(null)}
+        onAccessGranted={() => setPaywallOrigin(null)}
+      />
 
       {previewVisible ? (
         <Animated.View
@@ -332,13 +255,11 @@ function ReflectionsPage({
   onOpenPreview,
   onContinue,
   onSkip,
-  paywallBusy,
 }: {
   cardRef: React.RefObject<View | null>;
   onOpenPreview: () => void;
   onContinue: () => void;
   onSkip: () => void;
-  paywallBusy: boolean;
 }) {
   return (
     <View style={styles.page}>
@@ -347,12 +268,11 @@ function ReflectionsPage({
         right={
           <TouchableOpacity
             onPress={onSkip}
-            disabled={paywallBusy}
             style={styles.bandAction}
             accessibilityRole="button"
             accessibilityLabel="Skip onboarding and open checkout"
           >
-            <Text style={styles.bandActionText}>{paywallBusy ? "Opening…" : "Skip"}</Text>
+            <Text style={styles.bandActionText}>Skip</Text>
           </TouchableOpacity>
         }
       />
@@ -412,11 +332,9 @@ function ReflectionsPage({
 function ToolkitPage({
   onBack,
   onUnlock,
-  paywallBusy,
 }: {
   onBack: () => void;
   onUnlock: () => void;
-  paywallBusy: boolean;
 }) {
   return (
     <View style={styles.page}>
@@ -459,9 +377,8 @@ function ToolkitPage({
       </ScrollView>
       <View style={styles.pinnedActionArea}>
         <PrimaryButton
-          label={paywallBusy ? "Opening checkout…" : "Unlock the app"}
+          label="Unlock the app"
           onPress={onUnlock}
-          disabled={paywallBusy}
         />
       </View>
     </View>

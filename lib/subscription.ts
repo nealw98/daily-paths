@@ -12,7 +12,7 @@ import { ANALYTICS_EVENTS } from "../utils/analytics";
 
 /**
  * RevenueCat entitlement management.
- * Android: $4.99 one-time lifetime IAP (3-day in-app trial).
+ * Android: one-time lifetime IAP presented by the native onboarding paywall.
  * iOS: paid download — entitlement granted via App Store receipt.
  */
 
@@ -98,7 +98,7 @@ export async function getOfferings(): Promise<PurchasesPackage[]> {
 }
 
 /**
- * Purchase a subscription package.
+ * Purchase a RevenueCat package (lifetime IAP or legacy subscription).
  */
 export async function purchasePackage(
   pkg: PurchasesPackage
@@ -397,5 +397,4 @@ export async function getRawEntitlements(): Promise<RawEntitlements> {
     };
   }
 }
-
 
