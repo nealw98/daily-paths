@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   ImageBackground,
+  Modal,
   Platform,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -28,7 +29,7 @@ import { JournalEntryEditor } from "../../components/journal/JournalEntryEditor"
 import { useJournalStorage } from "../../hooks/useJournalStorage";
 import { TealHeader } from "../../components/shared/TealHeader";
 import { CollectionLinkRow } from "../../components/shared/CollectionLinkRow";
-import { NativePaywall } from "../../components/onboarding/NativePaywall";
+import { OnboardingFlow } from "../../components/onboarding/OnboardingFlow";
 import { useFeaturedSpeaker } from "../../hooks/useFeaturedSpeaker";
 import { computeJournalStreak } from "../../utils/journalStreak";
 import { getScheduledDayOfYear } from "../../utils/dateUtils";
@@ -109,7 +110,7 @@ export default function HomeTab() {
   const [journalEntryType, setJournalEntryType] = useState<EntryType | null>(null);
   const [reflectionImageOverride, setReflectionImageOverride] = useState<number | null>(null);
   const [isDeveloper, setIsDeveloper] = useState(__DEV__);
-  const [devPaywallVisible, setDevPaywallVisible] = useState(false);
+  const [devPaywallFlowVisible, setDevPaywallFlowVisible] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -285,7 +286,7 @@ export default function HomeTab() {
         rightAction={isDeveloper ? (
           <TouchableOpacity
             activeOpacity={0.75}
-            onPress={() => setDevPaywallVisible(true)}
+            onPress={() => setDevPaywallFlowVisible(true)}
             style={styles.devPaywallButton}
             accessibilityRole="button"
             accessibilityLabel="Open paywall for testing"
@@ -628,12 +629,14 @@ export default function HomeTab() {
         {/* Bottom spacing */}
         <View style={{ height: 32 }} />
       </ScrollView>
-      <NativePaywall
-        visible={devPaywallVisible}
-        origin="toolkit"
-        onClose={() => setDevPaywallVisible(false)}
-        onAccessGranted={() => setDevPaywallVisible(false)}
-      />
+      <Modal
+        visible={devPaywallFlowVisible}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={() => setDevPaywallFlowVisible(false)}
+      >
+        <OnboardingFlow initialPaywallOrigin="toolkit" />
+      </Modal>
     </SafeAreaView>
   );
 }

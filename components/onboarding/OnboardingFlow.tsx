@@ -51,12 +51,16 @@ const FEATURES: Array<{ label: string; Icon: FeatureIcon }> = [
   { label: "Speaker talks & downloads", Icon: Microphone },
 ];
 
-export function OnboardingFlow() {
+interface OnboardingFlowProps {
+  initialPaywallOrigin?: Page | null;
+}
+
+export function OnboardingFlow({ initialPaywallOrigin = null }: OnboardingFlowProps = {}) {
   const [page, setPage] = useState<Page>("reflections");
   const [previewVisible, setPreviewVisible] = useState(false);
   const [cardRect, setCardRect] = useState<CardRect | null>(null);
   const [reduceMotion, setReduceMotion] = useState(false);
-  const [paywallOrigin, setPaywallOrigin] = useState<Page | null>(null);
+  const [paywallOrigin, setPaywallOrigin] = useState<Page | null>(initialPaywallOrigin);
   const previewProgress = useRef(new Animated.Value(0)).current;
   const cardRef = useRef<View>(null);
   const lastTrackedPage = useRef<Page | null>(null);
