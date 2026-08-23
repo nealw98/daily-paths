@@ -41,6 +41,11 @@ const REVIEWS = [
     reviewer: "Ilww99",
   },
   {
+    title: "A helpful app when without AFG readers, or anytime with the iPad!",
+    copy: "Whether I’m out running errands, or even at home, it’s nice to pull up the app and have a reading anytime I want. And so much more—speakers, journal, prayers! Wow, an excellent resource!",
+    reviewer: "martymouse56",
+  },
+  {
     title: "Interesting Sharings",
     copy: "The daily readings are brief, interesting, practical, and I think about them more than once as I continue my day.",
     reviewer: "Patron of the Program",
