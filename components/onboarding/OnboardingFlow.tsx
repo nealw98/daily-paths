@@ -361,7 +361,6 @@ function ReflectionsPage({
         contentContainerStyle={styles.reflectionsContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.pageContext}>What's inside</Text>
         <Text style={styles.pageOneHeadline}>Bring focus and insight to your day</Text>
         <Text style={styles.pageOneBenefit}>
           Brief, practical readings that deepen your understanding and help you put the program into practice.
@@ -440,7 +439,6 @@ function ToolkitPage({
         contentContainerStyle={styles.toolkitContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.pageContext}>What's inside</Text>
         <Text style={styles.toolkitHeadline}>Keep your program with you throughout the day</Text>
         <View style={styles.featureGrid}>
           {FEATURES.map(({ label, Icon }) => (
@@ -600,16 +598,6 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.76)",
   },
   reflectionsContent: { flexGrow: 1, paddingHorizontal: 16, paddingTop: 26, paddingBottom: 22 },
-  pageContext: {
-    marginHorizontal: 4,
-    marginBottom: 7,
-    fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 12,
-    lineHeight: 18,
-    letterSpacing: 1.25,
-    textTransform: "uppercase",
-    color: colors.accent,
-  },
   pageOneHeadline: {
     marginHorizontal: 4,
     marginBottom: 9,
