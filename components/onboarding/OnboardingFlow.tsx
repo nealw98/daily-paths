@@ -32,7 +32,7 @@ import { useAnalytics } from "../../utils/analytics";
 import { qaLog } from "../../utils/qaLog";
 import { NativePaywall } from "./NativePaywall";
 
-const SAMPLE_IMAGE = require("../../assets/reflections/reflections-21.webp");
+const SAMPLE_IMAGE = require("../../assets/reflections/reflections-31.webp");
 
 type Page = "reflections" | "toolkit";
 type CardRect = { top: number; left: number; width: number; height: number };
