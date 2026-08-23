@@ -327,6 +327,10 @@ export function NativePaywall({
           <Text style={styles.subtitle}>
             One-time payment. No subscription or recurring charges.
           </Text>
+          <View style={styles.ratingSummary} accessibilityLabel="5.0 out of 5 from 29 ratings">
+            <Text style={styles.ratingStars}>★★★★★</Text>
+            <Text style={styles.ratingText}>5.0 · 29 ratings</Text>
+          </View>
 
           <ScrollView
             ref={reviewScrollRef}
@@ -489,7 +493,27 @@ const styles = StyleSheet.create({
     color: colors.onSurfaceVariant,
     textAlign: "center",
   },
-  reviewCarousel: { marginTop: 22 },
+  ratingSummary: {
+    marginTop: 13,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 7,
+  },
+  ratingStars: {
+    fontFamily: fonts.bodyFamily,
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: 1.3,
+    color: "#D6922B",
+  },
+  ratingText: {
+    fontFamily: fonts.bodyFamilyMedium,
+    fontSize: 12,
+    lineHeight: 18,
+    color: colors.onSurfaceVariant,
+  },
+  reviewCarousel: { marginTop: 15 },
   reviewSlide: { paddingHorizontal: 20 },
   reviewCard: {
     minHeight: 210,
