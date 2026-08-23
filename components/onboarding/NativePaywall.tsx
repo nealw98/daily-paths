@@ -37,7 +37,7 @@ const FALLBACK_PRICE = "$4.99";
 const REVIEWS = [
   {
     title: "Life saver",
-    copy: "A little help to start your day or an anytime reminder throughout the day.",
+    copy: "I found this app by chance. Was it chance or was it god? But I wanted something to help me keep focus at the beginning of my day. It is easy to use and I like that it follows the Al-anon literature. If you are looking for a little help to start your day or anytime reminder through the day this app will do it. Thanks.",
     reviewer: "Ilww99",
   },
   {
@@ -47,17 +47,17 @@ const REVIEWS = [
   },
   {
     title: "Interesting Sharings",
-    copy: "The daily readings are brief, interesting, practical, and I think about them more than once as I continue my day.",
+    copy: "The daily readings are brief and a visual sharing of ways to understand how the Program works. I find them interesting, practical, and think about them more than once as I continue my day.",
     reviewer: "Patron of the Program",
   },
   {
     title: "Putting it all together…",
-    copy: "I appreciate the space to collect my thoughts. This is really supportive of my journey.",
+    copy: "Having been in the program for nearly a year, I was finding it hard to keep all my reflections, readings and such all together. I was also looking for something to provide me with prompts… this nails it and I love it so much. I appreciate the space to collect my thoughts. This is really supportive of my journey. Thank you.",
     reviewer: "noodleheadpig",
   },
   {
     title: "Great app",
-    copy: "The daily reflections, prayers, and gratitude journal help keep me firmly planted in today.",
+    copy: "This app helps keep me grounded in my al-anon program. It’s daily reflections, prayers, gratitude journal etc help jeep me firmly planted in today.",
     reviewer: "roksteezy",
   },
 ] as const;
