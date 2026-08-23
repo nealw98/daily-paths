@@ -397,9 +397,9 @@ function ReflectionsPage({
           onPress={onOpenPreview}
           style={styles.sampleCtaRow}
           accessibilityRole="button"
-          accessibilityLabel="Preview the reflection Assets Hidden in Faults"
+          accessibilityLabel="Preview the reading Assets Hidden in Faults"
         >
-          <Text style={styles.sampleCtaText}>Preview the reflection</Text>
+          <Text style={styles.sampleCtaText}>Preview the reading</Text>
           <Ionicons name="chevron-forward" size={18} color={colors.accent} />
         </TouchableOpacity>
       </ScrollView>
