@@ -27,6 +27,7 @@ import { PageTitle } from "../ui/PageTitle";
 import { JournalCategoryPicker } from "../journal/JournalCategoryPicker";
 import { JournalEntryEditor } from "../journal/JournalEntryEditor";
 import { FieldShell, SanctuaryButton, SanctuaryCard } from "../ui/Sanctuary";
+import { notifyUserDataChanged } from "../../lib/syncEvents";
 
 const BUILTIN_PRAYER_OVERRIDES_KEY = "@daily_paths_builtin_prayer_overrides_v1";
 const HIDDEN_BUILTIN_PRAYERS_KEY = "@daily_paths_hidden_builtin_prayers_v1";
@@ -302,6 +303,7 @@ export const PrayersScreen: React.FC = () => {
       };
       setBuiltinOverrides(nextOverrides);
       await AsyncStorage.setItem(BUILTIN_PRAYER_OVERRIDES_KEY, JSON.stringify(nextOverrides));
+      notifyUserDataChanged();
     } else {
       await updatePrayer(editingId, editTitle, editText);
     }
@@ -343,6 +345,7 @@ export const PrayersScreen: React.FC = () => {
           const nextHidden = [...new Set([...hiddenBuiltinPrayerIds, prayer.id])];
           setHiddenBuiltinPrayerIds(nextHidden);
           await AsyncStorage.setItem(HIDDEN_BUILTIN_PRAYERS_KEY, JSON.stringify(nextHidden));
+          notifyUserDataChanged();
           if (expandedPrayer === prayer.id) setExpandedPrayer(null);
           if (editingId === prayer.id) handleCancelEdit();
         },

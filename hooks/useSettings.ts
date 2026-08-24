@@ -321,5 +321,3 @@ export function getTextSizeMetrics(textSize: TextSize): {
   }
 }
 
-
-

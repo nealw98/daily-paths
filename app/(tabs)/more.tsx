@@ -316,6 +316,23 @@ export default function MoreTab() {
         </View>
 
         {/* ── 3. Support & Share ─────────────────────────── */}
+        <Text allowFontScaling={false} style={[styles.sectionLabel, sectionTitleType, { color: colors.onSurface }]}>Your Data</Text>
+        <View style={[styles.card, { backgroundColor: colors.surfaceContainerLowest }]}>
+          <View style={styles.supportActions}>
+            <TouchableOpacity
+              style={[styles.supportAction, { borderColor: colors.ghostBorder, backgroundColor: colors.surfaceContainerLowest }]}
+              onPress={() => router.push("/backup")}
+              activeOpacity={0.8}
+            >
+              <View style={styles.supportActionLeft}>
+                <Ionicons name="cloud-upload-outline" size={18} color={colors.deepTeal} />
+                <Text style={[styles.supportActionText, { fontSize: supportActionFontSize, lineHeight: supportActionLineHeight, color: colors.deepTeal }]}>Backup & Restore</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.seafoam} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
         <Text allowFontScaling={false} style={[styles.sectionLabel, sectionTitleType, { color: colors.onSurface }]}>Support & Share</Text>
         <View style={[styles.card, { backgroundColor: colors.surfaceContainerLowest }]}>
           <View style={styles.supportActions}>

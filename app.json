@@ -68,7 +68,14 @@
       ],
       "@react-native-community/datetimepicker",
       "expo-sharing",
-      "expo-asset"
+      "expo-asset",
+      [
+        "react-native-cloud-storage",
+        {
+          "iCloudContainerEnvironment": "Production",
+          "iCloudContainerIdentifier": "iCloud.com.nealwagner.dailypaths"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

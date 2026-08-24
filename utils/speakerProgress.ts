@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { notifyUserDataChanged } from "../lib/syncEvents";
 
 const STORAGE_KEY = "@daily_paths_speaker_progress";
 
@@ -23,6 +24,7 @@ async function readMap(): Promise<ProgressMap> {
 
 async function writeMap(map: ProgressMap): Promise<void> {
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+  notifyUserDataChanged();
 }
 
 /**

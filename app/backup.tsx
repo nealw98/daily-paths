@@ -1,20 +1,13 @@
-// Backup & Restore. One JSON snapshot of the user's data in their own private
-// cloud: iCloud on iOS (no sign-in), Google Drive on Android (connect a Google
-// account once; automatic backup runs silently after).
-//
-// Core lives in lib/cloudSync.ts + lib/userDataSync.ts (+ lib/googleDriveAuth.ts).
-// Automatic push/pull is driven by <CloudSyncGate /> in app/_layout.tsx; this
-// screen is the manual surface and the Android connect flow.
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
   ActivityIndicator,
   Alert,
   Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -24,116 +17,78 @@ import { useTypography } from "../hooks/useTypography";
 import { TealHeader } from "../components/shared/TealHeader";
 import { PageTitle } from "../components/ui/PageTitle";
 import { layout } from "../constants/theme";
-import { countStoredItems } from "../lib/userDataSync";
 import {
   CLOUD_NAME,
   cloudAvailable,
   cloudBackupSupported,
   deleteCloudBackup,
   isSyncPaused,
-  lastSyncedAt,
-  pullFromCloud,
-  pushToCloud,
   setSyncPaused,
+  syncWithCloud,
 } from "../lib/cloudSync";
-import {
-  getDriveAccessToken,
-  getDriveAccountEmail,
-  isDriveSignedIn,
-  signOutDrive,
-} from "../lib/googleDriveAuth";
+import { getDriveAccessToken, isDriveSignedIn, signOutDrive } from "../lib/googleDriveAuth";
 
-const reloadApp = async () => {
+async function reloadApp(): Promise<void> {
   try {
     const Updates = await import("expo-updates");
     await Updates.reloadAsync();
   } catch {
-    /* dev client / no updates module */
+    // Development clients reflect synchronized storage on their next launch.
   }
-};
-
-function formatWhen(d: Date | null): string {
-  if (!d) return "Never";
-  return d.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
 }
 
 export default function BackupScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { typography: typ } = useTypography();
-
   const isAndroid = Platform.OS === "android";
   const supported = cloudBackupSupported();
 
   const [busy, setBusy] = useState(false);
-  const [count, setCount] = useState<number | null>(null);
-  const [syncedAt, setSyncedAt] = useState<Date | null>(null);
-  const [available, setAvailable] = useState<boolean | null>(null); // iOS: iCloud signed in
-  const [connected, setConnected] = useState<boolean | null>(null); // Android: Google account
-  const [email, setEmail] = useState<string | null>(null);
+  const [available, setAvailable] = useState<boolean | null>(null);
+  const [connected, setConnected] = useState<boolean | null>(null);
+  const [paused, setPaused] = useState(false);
 
-  const refreshStatus = useCallback(() => {
-    countStoredItems().then(setCount).catch(() => {});
-    lastSyncedAt().then(setSyncedAt).catch(() => {});
+  const refreshStatus = useCallback(async () => {
+    setPaused(await isSyncPaused());
     if (!supported) return;
     if (isAndroid) {
-      isDriveSignedIn()
-        .then((s) => {
-          setConnected(s);
-          if (s) getDriveAccountEmail().then(setEmail).catch(() => {});
-        })
-        .catch(() => setConnected(false));
+      setConnected(await isDriveSignedIn().catch(() => false));
     } else {
-      cloudAvailable().then(setAvailable).catch(() => setAvailable(false));
+      setAvailable(await cloudAvailable().catch(() => false));
     }
-  }, [supported, isAndroid]);
+  }, [isAndroid, supported]);
 
-  useEffect(refreshStatus, [refreshStatus]);
+  useEffect(() => {
+    void refreshStatus();
+  }, [refreshStatus]);
 
-  const backupNow = async () => {
+  const syncNow = async () => {
     setBusy(true);
     try {
-      await setSyncPaused(false); // an explicit backup resumes automatic sync
-      const ok = await pushToCloud(true);
-      refreshStatus();
-      Alert.alert(
-        ok ? `Backed up to ${CLOUD_NAME}` : `${CLOUD_NAME} unavailable`,
-        ok
-          ? `Your writing is saved to ${CLOUD_NAME}. It will come back automatically if you reinstall or set up a new device.`
-          : isAndroid
-            ? "Connect your Google account, then try again."
-            : "Sign in to iCloud in your device Settings, then try again.",
-      );
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const restoreNow = async () => {
-    setBusy(true);
-    try {
-      const restored = await pullFromCloud(true); // force past the newer-than gate
-      refreshStatus();
-      if (restored) {
-        Alert.alert("Restored", "Daily Paths will reload.", [
+      await setSyncPaused(false);
+      setPaused(false);
+      const result = await syncWithCloud(false, true);
+      await refreshStatus();
+      if (!result.success) {
+        Alert.alert(
+          `${CLOUD_NAME} unavailable`,
+          isAndroid
+            ? "Reconnect Google Drive and try again."
+            : "Make sure you are signed into iCloud and iCloud Drive is turned on.",
+        );
+      } else if (result.localChanged) {
+        Alert.alert("Sync complete", "Changes from another device are ready.", [
           { text: "OK", onPress: reloadApp },
         ]);
       } else {
-        Alert.alert("Nothing to restore", `No ${CLOUD_NAME} backup was found yet.`);
+        Alert.alert("Up to date", `Your Daily Paths data is synchronized with ${CLOUD_NAME}.`);
       }
     } finally {
       setBusy(false);
     }
   };
 
-  // Android: connect a Google account, then do the right thing immediately —
-  // restore if this account already holds a backup (the reinstall / new-phone
-  // case), otherwise seed the first backup. Automatic sync takes over after.
   const connectDrive = async () => {
     setBusy(true);
     try {
@@ -143,38 +98,45 @@ export default function BackupScreen() {
         return;
       }
       setConnected(true);
-      getDriveAccountEmail().then(setEmail).catch(() => {});
-      const restored = await pullFromCloud();
-      if (restored) {
-        Alert.alert("Backup found", "Your writing was restored. Daily Paths will reload.", [
+      await setSyncPaused(false);
+      setPaused(false);
+      const result = await syncWithCloud(false, true);
+      if (!result.success) {
+        Alert.alert("Couldn't sync", "Google Drive connected, but synchronization didn't complete. Please try again.");
+      } else if (result.localChanged) {
+        Alert.alert("Google Drive connected", "Your data from Google Drive is ready.", [
           { text: "OK", onPress: reloadApp },
         ]);
       } else {
-        await setSyncPaused(false);
-        const ok = await pushToCloud(true);
-        refreshStatus();
-        if (ok) {
-          Alert.alert(
-            "Google Drive connected",
-            "Your writing is backed up and will stay backed up automatically.",
-          );
-        }
+        Alert.alert("Google Drive connected", "Your data will now stay synchronized automatically.");
       }
+      await refreshStatus();
     } finally {
       setBusy(false);
     }
   };
 
-  const disconnectDrive = async () => {
-    await signOutDrive();
-    setConnected(false);
-    setEmail(null);
+  const confirmDisconnect = () => {
+    Alert.alert(
+      "Disconnect Google Drive?",
+      "Your data will remain on this device and in Google Drive, but it will stop synchronizing here.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Disconnect",
+          onPress: async () => {
+            await signOutDrive();
+            setConnected(false);
+          },
+        },
+      ],
+    );
   };
 
   const confirmDelete = () => {
     Alert.alert(
-      "Delete backup",
-      `This removes your backup from ${CLOUD_NAME}. Everything on this device stays where it is.`,
+      "Delete cloud data?",
+      `This removes Daily Paths data from ${CLOUD_NAME} and turns off synchronization. Data already on this device will remain.`,
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -183,8 +145,14 @@ export default function BackupScreen() {
           onPress: async () => {
             setBusy(true);
             try {
-              await deleteCloudBackup();
-              refreshStatus();
+              const deleted = await deleteCloudBackup();
+              if (deleted) {
+                setPaused(true);
+                Alert.alert("Cloud data deleted", "Your data remains on this device. Automatic sync is off.");
+              } else {
+                Alert.alert("Couldn't delete cloud data", `Please check your ${CLOUD_NAME} connection and try again.`);
+              }
+              await refreshStatus();
             } finally {
               setBusy(false);
             }
@@ -194,128 +162,111 @@ export default function BackupScreen() {
     );
   };
 
-  const statusLabel = isAndroid
-    ? connected === false
-      ? "Not connected"
-      : connected
-        ? email ?? "Connected"
-        : "Checking…"
-    : available === false
-      ? "Not signed in to iCloud"
-      : available
-        ? "On"
-        : "Checking…";
-
-  const renderButton = (
-    label: string,
-    icon: keyof typeof Ionicons.glyphMap,
-    onPress: () => void,
-    primary = false,
-  ) => (
-    <TouchableOpacity
-      style={[
-        styles.button,
-        primary
-          ? { backgroundColor: colors.secondary }
-          : { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.outlineVariant, borderWidth: 1 },
-      ]}
-      onPress={onPress}
-      disabled={busy}
-      activeOpacity={0.8}
-    >
-      <Ionicons
-        name={icon}
-        size={18}
-        color={primary ? colors.onSecondary : colors.secondary}
-      />
-      <Text
-        style={[
-          styles.buttonText,
-          {
-            fontSize: typ.body.fontSize,
-            color: primary ? colors.onSecondary : colors.secondary,
-          },
-        ]}
-      >
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
+  const checking = supported && (isAndroid ? connected === null : available === null);
+  const serviceReady = isAndroid ? connected === true : available === true;
+  const syncOn = serviceReady && !paused;
+  const statusText = checking ? "Checking…" : syncOn ? "On" : paused ? "Off" : isAndroid ? "Not connected" : "Unavailable";
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]} edges={[]}>
       <TealHeader onBack={() => router.back()} />
-      <PageTitle title="Backup" subtitle={`Keep your writing safe in ${CLOUD_NAME}`} size="lg" />
+      <PageTitle
+        title="Backup & Sync"
+        subtitle="Your data stays protected automatically"
+        size="lg"
+      />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <Text style={[styles.intro, { color: colors.text, fontSize: typ.body.fontSize, lineHeight: typ.body.lineHeight }]}>
+          Your journal, gratitude entries, prayers, bookmarks and listening progress are saved automatically and stay up to date across your devices.
+        </Text>
+
         {!supported ? (
-          <Text style={[styles.body, { color: colors.textSecondary, fontSize: typ.body.fontSize }]}>
-            Backup isn't available in this build yet. It arrives with the next
-            update from the {Platform.OS === "ios" ? "App Store" : "Play Store"}.
-          </Text>
+          <View style={[styles.notice, { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.outlineVariant }]}>
+            <Ionicons name="cloud-offline-outline" size={24} color={colors.textSecondary} />
+            <Text style={[styles.noticeText, { color: colors.textSecondary, fontSize: typ.bodySmall.fontSize, lineHeight: typ.bodySmall.lineHeight }]}>
+              Backup & Sync requires the latest version of Daily Paths from the {isAndroid ? "Play Store" : "App Store"}.
+            </Text>
+          </View>
         ) : (
           <>
-            <View
-              style={[
-                styles.card,
-                { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.outlineVariant },
-              ]}
-            >
-              <View style={styles.statusRow}>
-                <Text style={[styles.statusKey, { color: colors.textSecondary, fontSize: typ.bodySmall.fontSize }]}>
-                  {CLOUD_NAME}
+            <View style={[styles.statusCard, { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.outlineVariant }]}>
+              <View style={[styles.iconTile, { backgroundColor: colors.secondaryContainer }]}>
+                {checking || busy ? (
+                  <ActivityIndicator color={colors.secondary} />
+                ) : (
+                  <Ionicons
+                    name={syncOn ? "cloud-done-outline" : "cloud-offline-outline"}
+                    size={26}
+                    color={syncOn ? colors.secondary : colors.textSecondary}
+                  />
+                )}
+              </View>
+              <View style={styles.statusCopy}>
+                <Text style={[styles.statusTitle, { color: colors.text, fontSize: typ.body.fontSize }]}>
+                  {CLOUD_NAME} Sync
                 </Text>
-                <Text style={[styles.statusValue, { color: colors.text, fontSize: typ.bodySmall.fontSize }]}>
-                  {statusLabel}
+                <Text style={[styles.statusState, { color: syncOn ? colors.secondary : colors.textSecondary, fontSize: typ.bodySmall.fontSize }]}>
+                  {statusText}
                 </Text>
               </View>
-              <View style={styles.statusRow}>
-                <Text style={[styles.statusKey, { color: colors.textSecondary, fontSize: typ.bodySmall.fontSize }]}>
-                  Last backed up
-                </Text>
-                <Text style={[styles.statusValue, { color: colors.text, fontSize: typ.bodySmall.fontSize }]}>
-                  {formatWhen(syncedAt)}
-                </Text>
-              </View>
-              {count !== null && (
-                <View style={styles.statusRow}>
-                  <Text style={[styles.statusKey, { color: colors.textSecondary, fontSize: typ.bodySmall.fontSize }]}>
-                    Items on this device
-                  </Text>
-                  <Text style={[styles.statusValue, { color: colors.text, fontSize: typ.bodySmall.fontSize }]}>
-                    {count}
-                  </Text>
-                </View>
-              )}
             </View>
 
-            <Text style={[styles.body, { color: colors.textSecondary, fontSize: typ.bodySmall.fontSize }]}>
-              Your journal, gratitude lists, prayers, bookmarks and settings are
-              saved to your own {CLOUD_NAME} account — not to our servers. We
-              can't read it.
-            </Text>
+            {!isAndroid && available === false ? (
+              <Text style={[styles.help, { color: colors.textSecondary, fontSize: typ.bodySmall.fontSize, lineHeight: typ.bodySmall.lineHeight }]}>
+                Sign into iCloud and turn on iCloud Drive in your device Settings to protect your data.
+              </Text>
+            ) : null}
 
-            {busy && <ActivityIndicator style={styles.spinner} color={colors.secondary} />}
-
-            {isAndroid && connected === false
-              ? renderButton("Connect Google account", "logo-google", connectDrive, true)
-              : renderButton("Back up now", "cloud-upload-outline", backupNow, true)}
-
-            {renderButton("Restore from backup", "cloud-download-outline", restoreNow)}
-
-            {isAndroid && connected ? (
-              <TouchableOpacity onPress={disconnectDrive} disabled={busy} style={styles.link}>
-                <Text style={[styles.linkText, { color: colors.textSecondary, fontSize: typ.bodySmall.fontSize }]}>
-                  Disconnect Google account
+            {isAndroid && connected === false ? (
+              <TouchableOpacity
+                style={[styles.primaryButton, { backgroundColor: colors.secondary }]}
+                onPress={connectDrive}
+                disabled={busy}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="logo-google" size={18} color={colors.onSecondary} />
+                <Text style={[styles.primaryButtonText, { color: colors.onSecondary, fontSize: typ.body.fontSize }]}>
+                  Connect Google Drive
                 </Text>
               </TouchableOpacity>
             ) : null}
 
-            <TouchableOpacity onPress={confirmDelete} disabled={busy} style={styles.link}>
-              <Text style={[styles.linkText, { color: colors.danger, fontSize: typ.bodySmall.fontSize }]}>
-                Delete backup from {CLOUD_NAME}
-              </Text>
-            </TouchableOpacity>
+            {paused && serviceReady ? (
+              <TouchableOpacity
+                style={[styles.primaryButton, { backgroundColor: colors.secondary }]}
+                onPress={syncNow}
+                disabled={busy}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="cloud-upload-outline" size={18} color={colors.onSecondary} />
+                <Text style={[styles.primaryButtonText, { color: colors.onSecondary, fontSize: typ.body.fontSize }]}>Turn On Sync</Text>
+              </TouchableOpacity>
+            ) : null}
+
+            <Text style={[styles.privacy, { color: colors.textSecondary, fontSize: typ.bodySmall.fontSize, lineHeight: typ.bodySmall.lineHeight }]}>
+              Your data stays in your private {CLOUD_NAME} account and is never sent to our servers. Device settings, purchases and downloaded audio are not included.
+            </Text>
+
+            {serviceReady ? (
+              <View style={[styles.manageRow, { borderTopColor: colors.outlineVariant }]}>
+                <TouchableOpacity onPress={syncNow} disabled={busy} style={styles.linkButton}>
+                  <Text style={[styles.linkText, { color: colors.secondary, fontSize: typ.bodySmall.fontSize }]}>Sync now</Text>
+                </TouchableOpacity>
+                {isAndroid ? (
+                  <>
+                    <Text style={[styles.dot, { color: colors.textSecondary }]}>·</Text>
+                    <TouchableOpacity onPress={confirmDisconnect} disabled={busy} style={styles.linkButton}>
+                      <Text style={[styles.linkText, { color: colors.textSecondary, fontSize: typ.bodySmall.fontSize }]}>Disconnect</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : null}
+                <Text style={[styles.dot, { color: colors.textSecondary }]}>·</Text>
+                <TouchableOpacity onPress={confirmDelete} disabled={busy} style={styles.linkButton}>
+                  <Text style={[styles.linkText, { color: colors.danger, fontSize: typ.bodySmall.fontSize }]}>Delete cloud data</Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
           </>
         )}
       </ScrollView>
@@ -328,28 +279,56 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: layout.spacing.lg,
     paddingBottom: layout.spacing.xl,
+    gap: layout.spacing.lg,
+  },
+  intro: {},
+  notice: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: layout.spacing.md,
-  },
-  card: {
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
-    padding: layout.spacing.md,
-    gap: layout.spacing.sm,
+    padding: layout.spacing.lg,
   },
-  statusRow: { flexDirection: "row", justifyContent: "space-between", gap: layout.spacing.md },
-  statusKey: { flexShrink: 0 },
-  statusValue: { flexShrink: 1, textAlign: "right", fontWeight: "600" },
-  body: { lineHeight: 22 },
-  button: {
+  noticeText: { flex: 1 },
+  statusCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: layout.spacing.md,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: layout.spacing.lg,
+  },
+  iconTile: {
+    width: 52,
+    height: 52,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statusCopy: { flex: 1, gap: 3 },
+  statusTitle: { fontWeight: "700" },
+  statusState: { fontWeight: "600" },
+  help: {},
+  primaryButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: layout.spacing.sm,
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: 14,
+    paddingVertical: 15,
   },
-  buttonText: { fontWeight: "600" },
-  link: { alignItems: "center", paddingVertical: layout.spacing.sm },
-  linkText: { textDecorationLine: "underline" },
-  spinner: { marginVertical: layout.spacing.sm },
+  primaryButtonText: { fontWeight: "700" },
+  privacy: {},
+  manageRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    justifyContent: "center",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: layout.spacing.md,
+  },
+  linkButton: { paddingHorizontal: 8, paddingVertical: 8 },
+  linkText: { fontWeight: "600" },
+  dot: { fontSize: 14 },
 });

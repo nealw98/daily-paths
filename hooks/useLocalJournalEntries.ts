@@ -6,6 +6,7 @@ import { ANALYTICS_EVENTS } from "../utils/analytics";
 import type { EntryType } from "../constants/journalCategories";
 import { parseDateLocal } from "../utils/dateUtils";
 import { useAppDate } from "../contexts/AppDateContext";
+import { notifyUserDataChanged } from "../lib/syncEvents";
 
 export type { EntryType };
 
@@ -44,6 +45,7 @@ async function readEntries(): Promise<JournalEntry[]> {
 
 async function writeEntries(entries: JournalEntry[]): Promise<void> {
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  notifyUserDataChanged();
 }
 
 /**

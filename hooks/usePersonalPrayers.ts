@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { notifyUserDataChanged } from "../lib/syncEvents";
 
 const STORAGE_KEY = "@daily_paths_personal_prayers_v1";
 
@@ -25,6 +26,7 @@ async function readAll(): Promise<PersonalPrayer[]> {
 
 async function writeAll(prayers: PersonalPrayer[]): Promise<void> {
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(prayers));
+  notifyUserDataChanged();
 }
 
 export function usePersonalPrayers() {

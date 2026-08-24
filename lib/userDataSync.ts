@@ -1,114 +1,106 @@
-// User-data backup core. Provider-agnostic: it (de)serializes the user's data
-// to and from a single JSON snapshot. lib/cloudSync.ts carries that snapshot to
-// the user's own cloud (iCloud on iOS, Google Drive on Android).
-//
-// IMPORTANT: this is an explicit ALLOWLIST of user-created data — never "back
-// up everything". Device-local state (caches, entitlements, trial timers, the
-// analytics device id, dev flags) is deliberately excluded so it never travels
-// between devices.
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  SYNC_DATA_KEYS,
+  SYNC_SCHEMA_VERSION,
+  buildLocalSnapshot,
+  syncDataEqual,
+  upgradeSnapshot,
+  type SyncClocks,
+  type SyncSnapshot,
+} from "./syncMerge";
 
-export const SYNC_KEYS: string[] = [
-  // ── things the user wrote ──
-  "@daily_paths_local_journal",
-  "@daily_paths_gratitude_entries",
-  "@daily_paths_personal_prayers_v1",
-  // Edits to, and hiding of, the built-in prayers are user intent too.
-  "@daily_paths_builtin_prayer_overrides_v1",
-  "@daily_paths_hidden_builtin_prayers_v1",
-  // ── things the user marked ──
-  "@daily_paths_bookmarks",
-  "@daily_paths_speaker_progress", // resume positions + completion
-  // ── preferences ──
-  "daily_paths_settings_v2", // text size, theme, colour scheme, reminder time
-];
+/** User-owned data only. Entitlements, trials, caches and device state stay local. */
+export const SYNC_KEYS: string[] = [...SYNC_DATA_KEYS];
+export const BACKUP_SCHEMA_VERSION = SYNC_SCHEMA_VERSION;
 
-/**
- * Deliberately NOT backed up, and why — kept here so the next person doesn't
- * "helpfully" add them back:
- *
- *   @daily_paths_device_id            analytics/feedback identity, must stay per-device
- *   @daily_paths_trial_start,
- *   @daily_paths_v27_trial_*          trial timers — restoring these would move a
- *                                     trial window between devices
- *   @daily_paths_lifetime_access_v1,
- *   @daily_paths_lifetime_override,
- *   @daily_paths_subscription_override,
- *   @daily_paths_rc_identity_migration_v1
- *                                     entitlement state — derived from RevenueCat
- *                                     and the App Store receipt, never from a backup
- *   @daily_paths_journal_migrations   migration high-water mark. Excluded on purpose:
- *                                     a backup from a pre-migration device would
- *                                     otherwise restore a "already migrated" flag and
- *                                     its entries would never migrate. Leaving it out
- *                                     lets migrations re-run, which is idempotent.
- *   @daily_paths_reading_v6_*,
- *   @daily_paths_gratitude_quote_v1_*,
- *   @daily_paths_journal_quotes_list_v1
- *                                     content caches, refetched from Supabase
- *   @daily_paths_featured_pick,
- *   @daily_paths_featured_speaker_ids date-rotation state, regenerates daily
- *   speaker_downloads                 downloaded audio files — large, redownloadable
- *   @daily_paths_first_launch_modal_seen,
- *   @daily_paths_notification_coachmark_shown,
- *   @daily_paths_bookmark_instruction_seen
- *                                     coachmarks — per-device so a new device still
- *                                     gets its own first-run guidance
- *   @daily_paths_qa_logs_v1,
- *   @daily_paths_is_developer         dev-only
- *   daily_paths_settings_v1           legacy, superseded by v2
- */
+const SYNC_METADATA_KEY = "@daily_paths_sync_metadata_v2";
+const SYNC_DEVICE_ID_KEY = "@daily_paths_sync_device_id_v2";
 
-export const BACKUP_SCHEMA_VERSION = 1;
-
-export type BackupSnapshot = {
-  app: "daily-paths";
-  schemaVersion: number;
-  exportedAt: number;
-  data: Record<string, string>;
-};
-
-// Read the allowlisted keys into a JSON backup string.
-export async function serializeUserData(keys: string[] = SYNC_KEYS): Promise<string> {
-  const pairs = await AsyncStorage.multiGet(keys);
-  const data: Record<string, string> = {};
-  for (const [k, v] of pairs) if (v != null) data[k] = v;
-  const snapshot: BackupSnapshot = {
-    app: "daily-paths",
-    schemaVersion: BACKUP_SCHEMA_VERSION,
-    exportedAt: Date.now(),
-    data,
-  };
-  return JSON.stringify(snapshot);
+function randomId(): string {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (character) => {
+    const random = (Math.random() * 16) | 0;
+    const value = character === "x" ? random : (random & 0x3) | 0x8;
+    return value.toString(16);
+  });
 }
 
-// Restore a backup string into AsyncStorage, overwriting the allowlisted keys
-// present in it. Returns the count written. The app should reload afterwards so
-// every hook re-reads storage on mount.
-export async function restoreUserData(
-  json: string,
-  allowed: string[] = SYNC_KEYS,
-): Promise<number> {
-  let snapshot: any;
+export async function getSyncDeviceId(): Promise<string> {
+  const existing = await AsyncStorage.getItem(SYNC_DEVICE_ID_KEY);
+  if (existing) return existing;
+  const created = randomId();
+  await AsyncStorage.setItem(SYNC_DEVICE_ID_KEY, created);
+  return created;
+}
+
+export async function readSyncData(): Promise<Record<string, string>> {
+  const pairs = await AsyncStorage.multiGet(SYNC_KEYS);
+  return Object.fromEntries(pairs.filter((pair): pair is [string, string] => pair[1] != null));
+}
+
+async function readSyncClocks(): Promise<SyncClocks> {
   try {
-    snapshot = JSON.parse(json);
+    const raw = await AsyncStorage.getItem(SYNC_METADATA_KEY);
+    return raw ? (JSON.parse(raw) as SyncClocks) : {};
+  } catch {
+    return {};
+  }
+}
+
+export async function persistSyncClocks(clocks: SyncClocks): Promise<void> {
+  await AsyncStorage.setItem(SYNC_METADATA_KEY, JSON.stringify(clocks));
+}
+
+/**
+ * Scans storage against the last synchronized record clocks. Changed hashes
+ * receive a new clock and missing records become durable deletion tombstones.
+ */
+export async function createLocalSyncSnapshot(bootstrapAt?: number): Promise<SyncSnapshot> {
+  const [deviceId, data, previousClocks] = await Promise.all([
+    getSyncDeviceId(),
+    readSyncData(),
+    readSyncClocks(),
+  ]);
+  const snapshot = buildLocalSnapshot({ deviceId, data, previousClocks, bootstrapAt });
+  await persistSyncClocks(snapshot.clocks);
+  return snapshot;
+}
+
+/** Apply an exact merged view and retain tombstones for future device merges. */
+export async function applySyncSnapshot(snapshot: SyncSnapshot): Promise<boolean> {
+  const before = await readSyncData();
+  const toSet: [string, string][] = [];
+  const toRemove: string[] = [];
+  for (const key of SYNC_KEYS) {
+    const value = snapshot.data[key];
+    if (value == null) toRemove.push(key);
+    else toSet.push([key, value]);
+  }
+  if (toSet.length) await AsyncStorage.multiSet(toSet);
+  if (toRemove.length) await AsyncStorage.multiRemove(toRemove);
+  await persistSyncClocks(snapshot.clocks);
+  return !syncDataEqual(before, snapshot.data);
+}
+
+/** Compatibility export for diagnostics and older callers. */
+export async function serializeUserData(): Promise<string> {
+  return JSON.stringify(await createLocalSyncSnapshot());
+}
+
+/** Compatibility restore; current cloud sync merges rather than force-replacing. */
+export async function restoreUserData(json: string): Promise<number> {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(json);
   } catch {
     throw new Error("That doesn't look like a backup (not valid JSON).");
   }
-  if (!snapshot || snapshot.app !== "daily-paths" || typeof snapshot.data !== "object") {
-    throw new Error("That isn't a Daily Paths backup.");
-  }
-  const entries = Object.entries(snapshot.data).filter(
-    ([k, v]) => allowed.includes(k) && typeof v === "string",
-  ) as [string, string][];
-  if (entries.length === 0) throw new Error("The backup had no recognizable data.");
-
-  await AsyncStorage.multiSet(entries);
-  return entries.length;
+  const snapshot = upgradeSnapshot(parsed, "legacy-restore");
+  if (!snapshot) throw new Error("That isn't a Daily Paths backup.");
+  await applySyncSnapshot(snapshot);
+  return Object.keys(snapshot.data).length;
 }
 
-// How many allowlisted keys currently hold data (for the Backup screen summary).
 export async function countStoredItems(): Promise<number> {
   const pairs = await AsyncStorage.multiGet(SYNC_KEYS);
-  return pairs.filter(([, v]) => v != null).length;
+  return pairs.filter(([, value]) => value != null).length;
 }

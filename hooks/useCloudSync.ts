@@ -1,57 +1,76 @@
-// Drives cloud backup at the app level: on launch AND on return-to-foreground,
-// pull from the cloud (iCloud on iOS, Google Drive on Android) and restore +
-// reload if the cloud copy is newer — that covers restore-on-reinstall, moving
-// to a new device, and picking up a snapshot another device pushed. When the app
-// goes to the background, push this device's state up.
-//
-// On Android everything silently no-ops until the user connects a Google
-// account from the Backup screen. On iOS it works as soon as the user is signed
-// in to iCloud, with no prompt.
-//
-// Mount <CloudSyncGate /> once at the app root.
 import { useEffect, useRef } from "react";
 import { AppState, type AppStateStatus } from "react-native";
-import { pullFromCloud, pushToCloud } from "../lib/cloudSync";
+import { syncWithCloud } from "../lib/cloudSync";
+import { subscribeToUserDataChanges } from "../lib/syncEvents";
+
+// Speaker position is saved every few seconds during playback. Ten seconds
+// means ordinary edits sync promptly while continuous playback coalesces into
+// one sync after pausing; leaving the app still forces an immediate sync.
+const CHANGE_DEBOUNCE_MS = 10_000;
+
+async function reloadForRemoteChanges(): Promise<boolean> {
+  try {
+    const Updates = await import("expo-updates");
+    await Updates.reloadAsync();
+    return true;
+  } catch {
+    // Development clients reflect merged storage on their next cold start.
+    return false;
+  }
+}
 
 export function useCloudSync() {
   const started = useRef(false);
   const prevState = useRef<AppStateStatus>(AppState.currentState);
+  const reloadStarted = useRef(false);
 
   useEffect(() => {
     if (started.current) return;
     started.current = true;
+    let changeTimer: ReturnType<typeof setTimeout> | null = null;
 
-    // Pull, and if the cloud copy was genuinely newer, reload so every hook
-    // (they all read AsyncStorage on mount) picks up the restored data. The
-    // newer-than-local check lives in pullFromCloud, so this is safe to call
-    // often — it no-ops when there's nothing new.
-    const pullAndReload = async () => {
-      const restored = await pullFromCloud();
-      if (restored) {
-        try {
-          const Updates = await import("expo-updates");
-          await Updates.reloadAsync();
-        } catch {
-          /* dev client / no updates module — the next cold start reflects it */
-        }
+    const syncAndRefresh = async () => {
+      const result = await syncWithCloud();
+      if (result.localChanged && !reloadStarted.current) {
+        reloadStarted.current = true;
+        const reloaded = await reloadForRemoteChanges();
+        if (!reloaded) reloadStarted.current = false;
       }
     };
 
-    // Cold-start pull: restore-on-reinstall / new device.
-    pullAndReload();
+    // Restore on reinstall and merge changes made by another device.
+    void syncAndRefresh();
 
-    const sub = AppState.addEventListener("change", (state) => {
-      const prev = prevState.current;
+    const unsubscribeChanges = subscribeToUserDataChanges(() => {
+      if (changeTimer) clearTimeout(changeTimer);
+      changeTimer = setTimeout(() => {
+        changeTimer = null;
+        void syncAndRefresh();
+      }, CHANGE_DEBOUNCE_MS);
+    });
+
+    const appStateSubscription = AppState.addEventListener("change", (state) => {
+      const previous = prevState.current;
       prevState.current = state;
-      if (state === "background" || state === "inactive") {
-        pushToCloud();
-      } else if (state === "active" && (prev === "background" || prev === "inactive")) {
-        // Returning to the foreground: refresh if another device pushed a newer
-        // snapshot while we were away. No-ops when nothing changed.
-        pullAndReload();
+
+      // Only one sync when leaving active, rather than separate inactive and
+      // background writes. The shared queue also prevents lifecycle races.
+      if (previous === "active" && state !== "active") {
+        if (changeTimer) {
+          clearTimeout(changeTimer);
+          changeTimer = null;
+        }
+        void syncWithCloud();
+      } else if (state === "active" && previous !== "active") {
+        void syncAndRefresh();
       }
     });
-    return () => sub.remove();
+
+    return () => {
+      if (changeTimer) clearTimeout(changeTimer);
+      unsubscribeChanges();
+      appStateSubscription.remove();
+    };
   }, []);
 }
 

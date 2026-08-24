@@ -37,7 +37,7 @@ const FALLBACK_PRICE = "$4.99";
 const REVIEWS = [
   {
     title: "Life saver",
-    copy: "I found this app by chance. Was it chance or was it God? But I wanted something to help me keep focus at the beginning of my day. It is easy to use and I like that it follows the Al-Anon literature. If you are looking for a little help to start your day or an anytime reminder throughout the day, this app will do it. Thanks.",
+    copy: "I found this app by chance. Was it chance or was it God? I wanted something to help me keep focus at the beginning of my day. It is easy to use and I like that it follows the Al-Anon literature. If you are looking for a little help to start your day or an anytime reminder throughout the day, this app will do it. Thanks.",
     reviewer: "Ilww99",
   },
   {
@@ -78,7 +78,7 @@ export function NativePaywall({
   onAccessGranted,
 }: NativePaywallProps) {
   const { width } = useWindowDimensions();
-  const reviewWidth = Math.max(280, width - 40);
+  const reviewWidth = width;
   const reviewScrollRef = useRef<ScrollView>(null);
   const shownForOpen = useRef(false);
   const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage | null>(null);
@@ -272,7 +272,7 @@ export function NativePaywall({
         ? "Loading purchase…"
         : !selectedPackage
           ? "Purchase unavailable"
-          : "Unlock everything";
+          : `Unlock everything — ${price}`;
 
   return (
     <Modal
@@ -319,10 +319,16 @@ export function NativePaywall({
           showsVerticalScrollIndicator={false}
         >
           <Text style={styles.title}>Lifetime access</Text>
-          <View style={styles.ratingSummary} accessibilityLabel="5.0 out of 5 from 29 ratings">
+          <View style={styles.offerRow}>
+            <Text style={styles.offerPrice} numberOfLines={1}>
+              {price}
+              <Text style={styles.offerNote}> pay once</Text>
+            </Text>
+          </View>
+          <View style={styles.ratingSummary} accessibilityLabel="4.9 out of 5 from 84 ratings">
             <Text style={styles.ratingStars}>★★★★★</Text>
-            <Text style={styles.ratingValue}>5.0</Text>
-            <Text style={styles.ratingText}>· 29 ratings</Text>
+            <Text style={styles.ratingValue}>4.9</Text>
+            <Text style={styles.ratingText}>· 84 ratings</Text>
           </View>
 
           <ScrollView
@@ -337,14 +343,8 @@ export function NativePaywall({
           >
             {REVIEWS.map((review) => (
               <View key={review.title} style={[styles.reviewSlide, { width: reviewWidth }]}>
-                <View style={styles.reviewCard}>
-                  <Text style={styles.stars} accessibilityLabel="5 out of 5 stars">
-                    ★★★★★
-                  </Text>
-                  <Text style={styles.reviewTitle}>{review.title}</Text>
-                  <Text style={styles.reviewCopy}>“{review.copy}”</Text>
-                  <Text style={styles.reviewer}>— {review.reviewer}</Text>
-                </View>
+                <Text style={styles.reviewCopy}>“{review.copy}”</Text>
+                <Text style={styles.reviewer}>— {review.reviewer}</Text>
               </View>
             ))}
           </ScrollView>
@@ -375,10 +375,6 @@ export function NativePaywall({
                 ) : null}
               </View>
             ) : null}
-            <View style={styles.priceRow}>
-              <Text style={styles.price}>{price}</Text>
-              <Text style={styles.priceNote}>pay once</Text>
-            </View>
             <TouchableOpacity
               activeOpacity={0.86}
               onPress={() => void handlePurchase()}
@@ -471,8 +467,24 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
     color: colors.onSurface,
   },
+  offerRow: {
+    marginTop: 4,
+    paddingHorizontal: 20,
+  },
+  offerPrice: {
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 21,
+    lineHeight: 28,
+    color: colors.accent,
+  },
+  offerNote: {
+    fontFamily: fonts.bodyFamily,
+    fontSize: 14,
+    lineHeight: 21,
+    color: colors.onSurfaceVariant,
+  },
   ratingSummary: {
-    marginTop: 14,
+    marginTop: 26,
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "baseline",
@@ -497,51 +509,25 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     color: colors.onSurfaceVariant,
   },
-  reviewCarousel: { marginTop: 14 },
-  reviewSlide: { paddingHorizontal: 20 },
-  reviewCard: {
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-    borderRadius: 17,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(45,76,71,0.12)",
-    backgroundColor: "#FFFFFF",
-    shadowColor: colors.heroGradientStart,
-    shadowOpacity: 0.09,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-  },
-  stars: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: 15,
-    lineHeight: 19,
-    letterSpacing: 2,
-    color: "#D6922B",
-  },
-  reviewTitle: {
-    marginTop: 8,
-    fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 15,
-    lineHeight: 21,
-    color: colors.onSurface,
-  },
+  reviewCarousel: { marginTop: 16 },
+  reviewSlide: { paddingHorizontal: 34, alignItems: "center" },
   reviewCopy: {
-    marginTop: 6,
-    fontFamily: fonts.loraRegular,
-    fontSize: 15,
-    lineHeight: 23,
+    fontFamily: fonts.loraItalic,
+    fontSize: 17,
+    lineHeight: 27,
     color: colors.onSurface,
+    textAlign: "center",
   },
   reviewer: {
-    marginTop: 8,
-    fontFamily: fonts.bodyFamily,
+    marginTop: 9,
+    fontFamily: fonts.bodyFamilyMedium,
     fontSize: 12,
     lineHeight: 18,
     color: colors.onSurfaceVariant,
+    textAlign: "center",
   },
   dots: {
-    minHeight: 38,
+    minHeight: 30,
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
@@ -552,9 +538,9 @@ const styles = StyleSheet.create({
   checkoutSafeArea: {
     backgroundColor: colors.surface,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(45,76,71,0.11)",
+    borderTopColor: "rgba(45,76,71,0.10)",
   },
-  checkout: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 10 },
+  checkout: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 22 },
   messageRow: { marginBottom: 9, alignItems: "center" },
   message: {
     fontFamily: fonts.bodyFamily,
@@ -571,20 +557,7 @@ const styles = StyleSheet.create({
     color: colors.accent,
     textDecorationLine: "underline",
   },
-  priceRow: { flexDirection: "row", justifyContent: "center", alignItems: "baseline", gap: 8 },
-  price: {
-    fontFamily: fonts.bodyFamilySemiBold,
-    fontSize: 27,
-    lineHeight: 32,
-    color: colors.onSurface,
-  },
-  priceNote: {
-    fontFamily: fonts.bodyFamily,
-    fontSize: 13,
-    lineHeight: 20,
-    color: colors.onSurfaceVariant,
-  },
-  purchaseOuter: { marginTop: 12, borderRadius: 13, overflow: "hidden" },
+  purchaseOuter: { borderRadius: 12, overflow: "hidden" },
   purchaseButton: {
     minHeight: 56,
     paddingHorizontal: 18,

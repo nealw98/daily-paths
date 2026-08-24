@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { formatDateLocal } from "./dateUtils";
+import { notifyUserDataChanged } from "../lib/syncEvents";
 
 const BOOKMARKS_KEY = "@daily_paths_bookmarks";
 const INSTRUCTION_SEEN_KEY = "@daily_paths_bookmark_instruction_seen";
@@ -69,6 +70,7 @@ export async function addBookmark(
         JSON.stringify([...bookmarks, newBookmark])
       );
     }
+    notifyUserDataChanged();
   } catch (error) {
     console.error("Error adding bookmark:", error);
     throw error;
@@ -84,6 +86,7 @@ export async function removeBookmark(date: Date): Promise<void> {
     const dateStr = formatDateLocal(date); // Use local timezone
     const filtered = bookmarks.filter((bookmark) => bookmark.date !== dateStr);
     await AsyncStorage.setItem(BOOKMARKS_KEY, JSON.stringify(filtered));
+    notifyUserDataChanged();
   } catch (error) {
     console.error("Error removing bookmark:", error);
     throw error;
@@ -132,4 +135,3 @@ export async function markInstructionSeen(): Promise<void> {
     console.error("Error marking instruction seen:", error);
   }
 }
-

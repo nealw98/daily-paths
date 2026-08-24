@@ -32,7 +32,7 @@ import { useAnalytics } from "../../utils/analytics";
 import { qaLog } from "../../utils/qaLog";
 import { NativePaywall } from "./NativePaywall";
 
-const SAMPLE_IMAGE = require("../../assets/reflections/reflections-20.webp");
+const SAMPLE_IMAGE = require("../../assets/reflections/reflections-41.webp");
 
 type Page = "reflections" | "toolkit";
 type CardRect = { top: number; left: number; width: number; height: number };
@@ -185,7 +185,10 @@ export function OnboardingFlow({
       <NativePaywall
         visible={paywallOrigin !== null}
         origin={paywallOrigin}
-        onClose={() => setPaywallOrigin(null)}
+        onClose={() => {
+          setPaywallOrigin(null);
+          setPage("reflections");
+        }}
         onAccessGranted={() => {
           setPaywallOrigin(null);
           onAccessGranted?.();

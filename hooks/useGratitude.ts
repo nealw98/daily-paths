@@ -6,6 +6,7 @@ import { ANALYTICS_EVENTS } from "../utils/analytics";
 import { useDailyGratitudeQuote } from "./useDailyGratitudeQuote";
 import type { GratitudeQuote as CachedGratitudeQuote } from "../utils/gratitudeQuoteCache";
 import { useAppDate } from "../contexts/AppDateContext";
+import { notifyUserDataChanged } from "../lib/syncEvents";
 
 const STORAGE_KEY = "@daily_paths_gratitude_entries";
 
@@ -35,6 +36,7 @@ async function readAllEntries(): Promise<GratitudeEntry[]> {
 
 async function writeAllEntries(entries: GratitudeEntry[]): Promise<void> {
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+  notifyUserDataChanged();
 }
 
 // ── Hook ────────────────────────────────────────────────────────────────────
