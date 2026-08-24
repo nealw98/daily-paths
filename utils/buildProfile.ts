@@ -12,16 +12,7 @@ export function isPreviewBuild(): boolean {
   );
 }
 
-/**
- * Builds allowed to expose purchase-testing controls.
- *
- * The explicit environment flag is intended for a runtime-scoped OTA sent to
- * an internal-test production binary. Never set it for a public release OTA.
- */
+/** Builds allowed to expose purchase-testing controls. */
 export function isInternalBuild(): boolean {
-  return (
-    __DEV__ ||
-    isPreviewBuild() ||
-    process.env.EXPO_PUBLIC_ENABLE_INTERNAL_CONTROLS === "true"
-  );
+  return __DEV__ || isPreviewBuild();
 }
