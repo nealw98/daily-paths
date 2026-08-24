@@ -31,7 +31,6 @@ import {
   acknowledgePendingModal,
   type PendingModal,
 } from "../lib/modalDecision";
-import { clearSubscriptionOverride, getSubscriptionOverride } from "../utils/subscriptionOverride";
 import { detectLifetimeAccess } from "../utils/paidAppDetector";
 import { getRequiredGate, type GateType } from "../utils/accessControl";
 import { qaLog } from "../utils/qaLog";
@@ -70,13 +69,6 @@ const DEFAULT_STATUS: SubscriptionStatus = {
   productIdentifier: null,
   willRenew: false,
 };
-
-function hasActiveRevenueCatAccess(raw: {
-  hasUnlimited: boolean;
-  hasLifetime: boolean;
-}): boolean {
-  return raw.hasUnlimited || raw.hasLifetime;
-}
 
 function summarizeSubscriptionStatus(s: SubscriptionStatus) {
   return {
@@ -117,6 +109,13 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       qaLog("access-init", "Subscription init started", {
         platform: Platform.OS,
       });
+      // Retire old QA access overrides. Store receipts and RevenueCat are
+      // authoritative; a local developer setting must never suppress them.
+      await AsyncStorage.multiRemove([
+        "@daily_paths_subscription_override",
+        "@daily_paths_ignore_grandfather_for_testing",
+      ]);
+
       // ── Phase 1: cached / local state (instant) ────────────────────────
 
       // Lifetime access detection (App Store receipt check)
@@ -276,12 +275,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
             try {
               qaLog("subscription", "Android cold-launch always-restore");
               await restorePurchases();
-              const rawAfterRestore = await getRawEntitlements();
-              const accessOverrideActive = await getSubscriptionOverride();
-              if (hasActiveRevenueCatAccess(rawAfterRestore) && !accessOverrideActive) {
-                await clearSubscriptionOverride();
-                qaLog("subscription", "Cleared QA subscription override after Android restore");
-              }
               const after = await getSubscriptionStatus();
               qaLog("subscription", "Status after Android cold-launch restore", summarizeSubscriptionStatus(after));
               if (!cancelled) setStatus(after);
@@ -451,11 +444,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       await trackEvent(ANALYTICS_EVENTS.RESTORE_INITIATED, {}, true);
       await restorePurchases();
-      const rawAfterRestore = await getRawEntitlements();
-      if (hasActiveRevenueCatAccess(rawAfterRestore)) {
-        await clearSubscriptionOverride();
-        qaLog("subscription", "Cleared QA subscription override after restore");
-      }
       const newStatus = await getSubscriptionStatus();
       setStatus(newStatus);
       return newStatus.isSubscribed;

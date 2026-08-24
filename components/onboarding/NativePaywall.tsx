@@ -16,7 +16,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import Purchases, { type PurchasesPackage } from "react-native-purchases";
+import Purchases, {
+  type CustomerInfo,
+  type PurchasesError,
+  type PurchasesPackage,
+} from "react-native-purchases";
 
 import { fallbackColors as colors, fonts } from "../../constants/theme";
 import {
@@ -24,7 +28,6 @@ import {
   purchasePackage,
   restorePurchases,
 } from "../../lib/subscription";
-import { clearSubscriptionOverride } from "../../utils/subscriptionOverride";
 import { useSubscriptionContext } from "../../contexts/SubscriptionContext";
 import { useAnalytics } from "../../utils/analytics";
 import { qaLog } from "../../utils/qaLog";
@@ -144,19 +147,20 @@ export function NativePaywall({
     void loadPackage();
   }, [loadPackage, trackPaywallShown, visible]);
 
-  const finishAccess = useCallback(async (): Promise<boolean> => {
-    const raw = await getRawEntitlements();
-    const entitled = raw.hasLifetime || raw.hasUnlimited;
+  const finishAccess = useCallback(async (customerInfo?: CustomerInfo): Promise<boolean> => {
+    const entitled = customerInfo
+      ? customerInfo.entitlements.active.lifetime !== undefined ||
+        customerInfo.entitlements.active.unlimited !== undefined
+      : await getRawEntitlements().then((raw) => raw.hasLifetime || raw.hasUnlimited);
     if (!entitled) return false;
-    await clearSubscriptionOverride();
     await refresh();
     onAccessGranted();
     return true;
   }, [onAccessGranted, refresh]);
 
   const restoreAccess = useCallback(async (): Promise<boolean> => {
-    await restorePurchases();
-    return finishAccess();
+    const customerInfo = await restorePurchases();
+    return finishAccess(customerInfo);
   }, [finishAccess]);
 
   const handlePurchase = useCallback(async () => {
@@ -169,15 +173,17 @@ export function NativePaywall({
         trackPaywallPurchaseCancelled();
         return;
       }
-      const entitled = await finishAccess();
+      const entitled = await finishAccess(customerInfo);
       if (entitled) {
         trackPaywallPurchaseCompleted();
       } else {
         setMessage("Your purchase completed, but access is still syncing. Try Restore Purchase.");
       }
     } catch (error) {
-      const errorText = String(error).toLowerCase();
+      const purchasesError = error as Partial<PurchasesError>;
+      const errorText = `${purchasesError.message ?? ""} ${purchasesError.underlyingErrorMessage ?? ""} ${String(error)}`.toLowerCase();
       const alreadyOwned =
+        purchasesError.code === Purchases.PURCHASES_ERROR_CODE.PRODUCT_ALREADY_PURCHASED_ERROR ||
         errorText.includes("already") ||
         errorText.includes("owned") ||
         errorText.includes("itemalreadyowned");
@@ -188,13 +194,25 @@ export function NativePaywall({
             trackPaywallPurchaseCompleted();
             return;
           }
+          qaLog("paywall", "Owned Google Play product restored without an active entitlement", {
+            code: purchasesError.code ?? null,
+            message: purchasesError.message ?? String(error),
+          });
+          setMessage(
+            "Google Play confirms you own this product, but lifetime access was not returned. Open the Developer Console and copy the troubleshooting log.",
+          );
+          return;
         } catch (restoreError) {
           qaLog("paywall", "Native already-owned recovery failed", {
             error: String(restoreError),
           });
         }
       }
-      qaLog("paywall", "Native purchase failed", { error: String(error) });
+      qaLog("paywall", "Native purchase failed", {
+        code: purchasesError.code ?? null,
+        message: purchasesError.message ?? String(error),
+        underlyingErrorMessage: purchasesError.underlyingErrorMessage ?? null,
+      });
       trackPaywallPurchaseCancelled();
       setMessage("The purchase could not be completed. Please try again.");
     } finally {
@@ -240,7 +258,6 @@ export function NativePaywall({
     setBusyAction("dev");
     setMessage(null);
     try {
-      await clearSubscriptionOverride();
       await setLifetimeOverride(true);
       await refreshLifetimeAccess();
       qaLog("paywall", "Developer skipped native paywall");

@@ -6,7 +6,6 @@ import { trackEvent } from "../utils/trackEvent";
 import { ANALYTICS_EVENTS } from "../utils/analytics";
 import { getRawEntitlements } from "./subscription";
 import { getLegacyInstallEvidence } from "../utils/legacyInstallEvidence";
-import { getGrandfatherOverride } from "../utils/grandfatherOverride";
 
 /**
  * Grandfather flow for pre-2.7 Android users.
@@ -38,11 +37,6 @@ export async function attemptGrandfatherGrantIfEligible(): Promise<boolean> {
     qaLog("grandfather", "Skipping grandfather attempt: non-Android platform", {
       platform: Platform.OS,
     });
-    return false;
-  }
-
-  if (await getGrandfatherOverride()) {
-    qaLog("grandfather", "Skipping grandfather attempt: preview override active");
     return false;
   }
 

@@ -3,6 +3,7 @@ import { Platform, Dimensions, PixelRatio } from 'react-native';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import { supabase } from '../lib/supabase';
+import { getRawEntitlements } from '../lib/subscription';
 import { getOrCreateDeviceId } from '../utils/deviceIdentity';
 import { qaLog } from '../utils/qaLog';
 
@@ -24,16 +25,29 @@ export function useAppFeedback() {
 
     try {
       setSubmitting(true);
-      const deviceId = await getOrCreateDeviceId();
+      const [deviceId, access] = await Promise.all([
+        getOrCreateDeviceId(),
+        getRawEntitlements(),
+      ]);
       
       const expoConfig: any = Constants.expoConfig ?? {};
       const appVersion = expoConfig.version ?? Constants.nativeAppVersion ?? 'dev';
       const buildNumber = expoConfig.ios?.buildNumber ?? Constants.nativeBuildVersion ?? 'dev';
 
       const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+      const currentEntitlement = access.hasLifetime && access.hasUnlimited
+        ? 'Lifetime + legacy subscription'
+        : access.hasLifetime
+          ? 'Lifetime'
+          : access.hasUnlimited
+            ? 'Legacy subscription'
+            : 'None';
 
       const feedbackData = {
         device_id: deviceId,
+        revenuecat_app_user_id: access.appUserId,
+        purchase_history: access.purchasedProductIdentifiers,
+        current_entitlement: currentEntitlement,
         feedback_text: feedbackText.trim(),
         contact_info: contactInfo?.trim() || null,
         app_version: appVersion,
@@ -52,6 +66,7 @@ export function useAppFeedback() {
         hasContact: !!contactInfo,
         platform: Platform.OS,
         version: appVersion,
+        currentEntitlement,
       });
 
       const { error } = await supabase
@@ -83,7 +98,6 @@ export function useAppFeedback() {
     submitFeedback,
   };
 }
-
 
 
 

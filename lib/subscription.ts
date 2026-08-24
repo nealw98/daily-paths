@@ -6,7 +6,6 @@ import Purchases, {
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { qaLog } from "../utils/qaLog";
-import { getSubscriptionOverride } from "../utils/subscriptionOverride";
 import { trackEvent } from "../utils/trackEvent";
 import { ANALYTICS_EVENTS } from "../utils/analytics";
 
@@ -133,7 +132,12 @@ export async function purchasePackage(
       qaLog("subscription", "Purchase cancelled by user");
       return null;
     }
-    qaLog("subscription", "Purchase error", { error: String(err) });
+    qaLog("subscription", "Purchase error", {
+      code: err?.code ?? null,
+      message: err?.message ?? String(err),
+      underlyingErrorMessage: err?.underlyingErrorMessage ?? null,
+      readableErrorCode: err?.userInfo?.readableErrorCode ?? err?.readableErrorCode ?? null,
+    });
     throw err;
   }
 }
@@ -162,25 +166,6 @@ export async function restorePurchases(): Promise<CustomerInfo> {
  * Get current subscription status.
  */
 export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
-  // QA override: skip RevenueCat and report "not subscribed"
-  try {
-    const overrideActive = await getSubscriptionOverride();
-    if (overrideActive) {
-      qaLog("subscription-status", "Resolved from QA override", {
-        isSubscribed: false,
-        source: "qa_force_not_subscribed",
-      });
-      return {
-        isSubscribed: false,
-        expirationDate: null,
-        productIdentifier: null,
-        willRenew: false,
-      };
-    }
-  } catch {
-    // Override check failed — fall through to real RevenueCat
-  }
-
   try {
     const customerInfo = await Purchases.getCustomerInfo();
     const entitlement = customerInfo.entitlements.active[ENTITLEMENT_ID];
@@ -350,6 +335,7 @@ export async function clearLocalSubscriptionCache(): Promise<void> {
  * within ~30).
  */
 export interface RawEntitlements {
+  appUserId: string | null;
   hasUnlimited: boolean;
   hasLifetime: boolean;
   purchasedProductIdentifiers: string[];
@@ -365,6 +351,7 @@ export async function getRawEntitlements(): Promise<RawEntitlements> {
     const unlimited = customerInfo.entitlements.active[ENTITLEMENT_ID];
     const lifetime = customerInfo.entitlements.active[LIFETIME_ENTITLEMENT_ID];
     const result = {
+      appUserId: customerInfo.originalAppUserId || null,
       hasUnlimited: unlimited !== undefined,
       hasLifetime: lifetime !== undefined,
       purchasedProductIdentifiers: customerInfo.allPurchasedProductIdentifiers,
@@ -374,7 +361,6 @@ export async function getRawEntitlements(): Promise<RawEntitlements> {
       lifetimeProductIdentifier: lifetime?.productIdentifier ?? null,
     };
     qaLog("raw-entitlements", "Read raw RevenueCat entitlements", {
-      appUserId: customerInfo.originalAppUserId,
       ...result,
       activeEntitlements: Object.keys(customerInfo.entitlements.active),
       activeSubscriptions: customerInfo.activeSubscriptions,
@@ -384,6 +370,7 @@ export async function getRawEntitlements(): Promise<RawEntitlements> {
   } catch (err) {
     qaLog("subscription", "Error reading raw entitlements", { error: String(err) });
     return {
+      appUserId: null,
       hasUnlimited: false,
       hasLifetime: false,
       purchasedProductIdentifiers: [],

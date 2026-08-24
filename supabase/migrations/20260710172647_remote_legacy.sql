@@ -1,0 +1,2 @@
+-- Legacy migration already applied to the linked database before migrations
+-- were tracked in this repository. Kept as a version-history placeholder.

@@ -11,7 +11,6 @@ import {
   View,
 } from "react-native";
 import Constants from "expo-constants";
-import * as Updates from "expo-updates";
 import { Ionicons } from "@expo/vector-icons";
 import Clipboard from "@react-native-clipboard/clipboard";
 import { useRouter } from "expo-router";
@@ -23,15 +22,8 @@ import { fetchAccessGrantRows, type AccessGrantRows } from "../lib/accessDiagnos
 import { getRawEntitlements, type RawEntitlements } from "../lib/subscription";
 import { isInternalBuild } from "../utils/buildProfile";
 import { isDeveloperDevice, setDeveloperDevice } from "../utils/deviceIdentity";
-import { getGrandfatherOverride, setGrandfatherOverride } from "../utils/grandfatherOverride";
 import { getLegacyInstallEvidence } from "../utils/legacyInstallEvidence";
-import { setLifetimeOverride } from "../utils/paidAppDetector";
 import { clearQaLogs, qaLog, useQaLogs } from "../utils/qaLog";
-import {
-  clearSubscriptionOverride,
-  enableSubscriptionOverride,
-  getSubscriptionOverride,
-} from "../utils/subscriptionOverride";
 
 export default function DeveloperConsoleScreen() {
   const router = useRouter();
@@ -44,8 +36,6 @@ export default function DeveloperConsoleScreen() {
   const [rawEntitlements, setRawEntitlements] = useState<RawEntitlements | null>(null);
   const [grantRows, setGrantRows] = useState<AccessGrantRows | null>(null);
   const [hasLegacyInstallEvidence, setHasLegacyInstallEvidence] = useState(false);
-  const [ignoreGrandfather, setIgnoreGrandfatherState] = useState(false);
-  const [ignoreAccess, setIgnoreAccessState] = useState(false);
 
   const forcedDeveloperBuild = isInternalBuild();
   const appVersion = Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? "dev";
@@ -65,18 +55,14 @@ export default function DeveloperConsoleScreen() {
   const refreshAccessStatus = async () => {
     setAccessLoading(true);
     try {
-      const [raw, grants, legacyInstall, grandfatherOverride, accessOverride] = await Promise.all([
+      const [raw, grants, legacyInstall] = await Promise.all([
         getRawEntitlements(),
         fetchAccessGrantRows(),
         getLegacyInstallEvidence(),
-        getGrandfatherOverride(),
-        getSubscriptionOverride(),
       ]);
       setRawEntitlements(raw);
       setGrantRows(grants);
       setHasLegacyInstallEvidence(legacyInstall.isValid);
-      setIgnoreGrandfatherState(grandfatherOverride);
-      setIgnoreAccessState(accessOverride);
     } finally {
       setAccessLoading(false);
     }
@@ -130,35 +116,11 @@ export default function DeveloperConsoleScreen() {
     ]);
   };
 
-  const handleGrandfatherOverride = async (value: boolean) => {
-    setIgnoreGrandfatherState(value);
-    await setGrandfatherOverride(value);
-  };
-
-  const handleAccessOverride = (value: boolean) => {
-    Alert.alert(
-      value ? "Ignore purchase and entitlements?" : "Use real access again?",
-      value
-        ? "For 30 minutes, this preview build will behave as if there is no purchase or RevenueCat entitlement. Nothing is revoked or deleted. The app will restart."
-        : "The test override will be removed and the app will restart using the real store and RevenueCat status.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: value ? "Ignore for testing" : "Use real access",
-          onPress: async () => {
-            if (value) {
-              await enableSubscriptionOverride();
-              await setLifetimeOverride(false);
-            } else {
-              await clearSubscriptionOverride();
-              await setLifetimeOverride(null);
-            }
-            setIgnoreAccessState(value);
-            await Updates.reloadAsync();
-          },
-        },
-      ],
-    );
+  const copyRevenueCatId = () => {
+    const appUserId = rawEntitlements?.appUserId;
+    if (!appUserId) return;
+    Clipboard.setString(appUserId);
+    Alert.alert("RevenueCat ID copied");
   };
 
   const grandfatherStatus = grantRows?.grandfather?.status === "granted"
@@ -166,9 +128,6 @@ export default function DeveloperConsoleScreen() {
     : hasLegacyInstallEvidence
       ? "Eligible install detected"
       : "Not grandfathered";
-  const purchaseStatus = rawEntitlements?.purchasedProductIdentifiers.length
-    ? rawEntitlements.purchasedProductIdentifiers.join(", ")
-    : "No store purchase found";
   const entitlementStatus = rawEntitlements?.hasLifetime && rawEntitlements?.hasUnlimited
     ? "Lifetime + legacy subscription"
     : rawEntitlements?.hasLifetime
@@ -176,6 +135,15 @@ export default function DeveloperConsoleScreen() {
       : rawEntitlements?.hasUnlimited
         ? "Legacy subscription"
         : "None";
+  const currentProductIds = new Set([
+    rawEntitlements?.hasLifetime ? rawEntitlements.lifetimeProductIdentifier : null,
+    rawEntitlements?.hasUnlimited ? rawEntitlements.unlimitedProductIdentifier : null,
+  ].filter((identifier): identifier is string => Boolean(identifier)));
+  const purchaseHistory = rawEntitlements?.purchasedProductIdentifiers.length
+    ? rawEntitlements.purchasedProductIdentifiers
+        .map((identifier) => currentProductIds.has(identifier) ? `${identifier} (current)` : identifier)
+        .join(", ")
+    : "None found";
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
@@ -239,48 +207,17 @@ export default function DeveloperConsoleScreen() {
       >
         <AccessStatusRow label="Grandfathered access" value={grandfatherStatus} colors={colors} />
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
-        <AccessStatusRow label="Purchase status" value={purchaseStatus} colors={colors} />
+        <AccessStatusRow label="Purchase history" value={purchaseHistory} colors={colors} />
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
         <AccessStatusRow label="RevenueCat entitlement" value={entitlementStatus} colors={colors} />
-      </View>
-
-      <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>ACCESS TESTING</Text>
-      <View
-        style={[
-          styles.card,
-          shadows.ambient,
-          { backgroundColor: "#FFFFFF", borderColor: colors.border },
-        ]}
-      >
-        <View style={styles.toggleRow}>
-          <View style={styles.rowCopy}>
-            <Text style={[styles.rowTitle, { color: colors.text }]}>Ignore grandfathering</Text>
-            <Text style={[styles.rowDescription, { color: colors.textSecondary }]}>
-              Prevents a grandfather grant while testing. It does not revoke one already granted.
-            </Text>
-          </View>
-          <Switch
-            value={ignoreGrandfather}
-            onValueChange={handleGrandfatherOverride}
-            trackColor={{ false: colors.mist, true: colors.deepTeal }}
-            thumbColor={colors.pearl}
-          />
-        </View>
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
-        <View style={styles.toggleRow}>
-          <View style={styles.rowCopy}>
-            <Text style={[styles.rowTitle, { color: colors.text }]}>Ignore purchase and entitlements</Text>
-            <Text style={[styles.rowDescription, { color: colors.textSecondary }]}>
-              Temporarily makes this developer device behave as an unentitled user. Your real purchase remains untouched.
-            </Text>
-          </View>
-          <Switch
-            value={ignoreAccess}
-            onValueChange={handleAccessOverride}
-            trackColor={{ false: colors.mist, true: colors.deepTeal }}
-            thumbColor={colors.pearl}
-          />
-        </View>
+        <AccessStatusRow
+          label="RevenueCat App User ID"
+          value={rawEntitlements?.appUserId ?? "Unavailable"}
+          colors={colors}
+          actionLabel="Copy"
+          onAction={rawEntitlements?.appUserId ? copyRevenueCatId : undefined}
+        />
       </View>
 
       <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>TEST THE CURRENT EXPERIENCE</Text>
@@ -301,7 +238,7 @@ export default function DeveloperConsoleScreen() {
         <View style={styles.rowCopy}>
           <Text style={[styles.rowTitle, { color: colors.text }]}>Run onboarding again</Text>
           <Text style={[styles.rowDescription, { color: colors.textSecondary }]}>
-            Opens the complete onboarding and paywall journey from page 1. Your purchase status is not changed.
+            Opens the complete onboarding and paywall journey from page 1. Your access is not changed.
           </Text>
         </View>
         <Ionicons name="chevron-forward" size={21} color={colors.textSecondary} />
@@ -374,15 +311,32 @@ function AccessStatusRow({
   label,
   value,
   colors,
+  actionLabel,
+  onAction,
 }: {
   label: string;
   value: string;
   colors: typeof fallbackColors;
+  actionLabel?: string;
+  onAction?: () => void;
 }) {
   return (
     <View style={styles.statusRow}>
       <Text style={[styles.statusLabel, { color: colors.textSecondary }]}>{label}</Text>
-      <Text style={[styles.statusValue, { color: colors.text }]}>{value}</Text>
+      <View style={styles.statusValueRow}>
+        <Text selectable style={[styles.statusValue, styles.statusValueFlexible, { color: colors.text }]}>
+          {value}
+        </Text>
+        {actionLabel && onAction ? (
+          <TouchableOpacity
+            onPress={onAction}
+            accessibilityRole="button"
+            accessibilityLabel={`${actionLabel} ${label}`}
+          >
+            <Text style={[styles.statusAction, { color: colors.deepTeal }]}>{actionLabel}</Text>
+          </TouchableOpacity>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -480,6 +434,17 @@ const styles = StyleSheet.create({
   statusValue: {
     fontFamily: fonts.bodyFamilySemiBold,
     fontSize: 16,
+    lineHeight: 21,
+  },
+  statusValueRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 14,
+  },
+  statusValueFlexible: { flex: 1 },
+  statusAction: {
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 13,
     lineHeight: 21,
   },
   divider: { height: StyleSheet.hairlineWidth, marginVertical: 14 },
