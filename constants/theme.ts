@@ -88,8 +88,8 @@ function withAlpha(hex: string, alpha: string): string {
 }
 
 /**
- * Terracotta subscription palette — same across color schemes so paywall / trial
- * UI stays visually consistent (home unlock pill, trial sheet, etc.).
+ * Terracotta purchase palette — shared across color schemes so purchase UI
+ * stays visually consistent.
  */
 const SUBSCRIPTION_BAR_HEX = "#8F5546";
 
@@ -100,13 +100,13 @@ export const subscriptionTerracottaColors = {
   subscriptionAccent: "#C58B7B",
   /** Text on `subscriptionBar` (and inverse surfaces like the Subscribe chip). */
   subscriptionOnBar: "#FFFFFF",
-  /** Headlines on subscription / trial sheets (deep terracotta). */
+  /** Headlines on purchase sheets (deep terracotta). */
   subscriptionTitle: "#6B3D2E",
   /** Same hue as `subscriptionBar` at ~10% opacity (8‑digit hex) for secondary CTAs. */
   subscriptionSecondaryPill: withAlpha(SUBSCRIPTION_BAR_HEX, "1A"),
   /** Body copy on subscription sheets; use `onSurface` in components when the sheet is dark. */
   subscriptionSheetText: "#1A1A1A",
-  /** Cream CTA surface (home unlock chip, trial sheet primary). */
+  /** Cream CTA surface for purchase actions. */
   subscriptionCtaCream: "#E8D8D0",
   /** Text on cream CTA — dark for contrast on the light chip. */
   subscriptionOnCream: "#1C2524",

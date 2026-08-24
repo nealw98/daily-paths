@@ -54,11 +54,14 @@ const FEATURES: Array<{ label: string; Icon: FeatureIcon }> = [
 interface OnboardingFlowProps {
   initialPaywallOrigin?: Page | null;
   onAccessGranted?: () => void;
+  /** Developer replay only. Consumer onboarding does not supply this. */
+  onExit?: () => void;
 }
 
 export function OnboardingFlow({
   initialPaywallOrigin = null,
   onAccessGranted,
+  onExit,
 }: OnboardingFlowProps = {}) {
   const [page, setPage] = useState<Page>("reflections");
   const [previewVisible, setPreviewVisible] = useState(false);
@@ -168,6 +171,7 @@ export function OnboardingFlow({
       {page === "reflections" ? (
         <ReflectionsPage
           cardRef={cardRef}
+          onExit={onExit}
           onOpenPreview={openPreview}
           onContinue={() => {
             qaLog("onboarding", "Advanced to toolkit page");
@@ -266,11 +270,13 @@ function OnboardingBand({
 
 function ReflectionsPage({
   cardRef,
+  onExit,
   onOpenPreview,
   onContinue,
   onSkip,
 }: {
   cardRef: React.RefObject<View | null>;
+  onExit?: () => void;
   onOpenPreview: () => void;
   onContinue: () => void;
   onSkip: () => void;
@@ -278,7 +284,21 @@ function ReflectionsPage({
   return (
     <View style={styles.page}>
       <OnboardingBand
-        left={<Text style={styles.bandMeta}>1 of 2</Text>}
+        left={
+          onExit ? (
+            <TouchableOpacity
+              onPress={onExit}
+              style={styles.replayExitAction}
+              accessibilityRole="button"
+              accessibilityLabel="Close onboarding replay"
+            >
+              <Ionicons name="close" size={20} color="rgba(255,255,255,0.96)" />
+              <Text style={styles.bandMeta}>1 of 2</Text>
+            </TouchableOpacity>
+          ) : (
+            <Text style={styles.bandMeta}>1 of 2</Text>
+          )
+        }
         right={
           <TouchableOpacity
             onPress={onSkip}
@@ -513,6 +533,13 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: "rgba(255,255,255,0.74)",
     marginBottom: 4,
+  },
+  replayExitAction: {
+    minHeight: 44,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 7,
+    paddingBottom: 4,
   },
   bandAction: { minHeight: 44, justifyContent: "flex-end", paddingHorizontal: 3, paddingBottom: 3 },
   bandActionText: {

@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { qaLog } from "./qaLog";
-import { isPreviewBuild } from "./buildProfile";
+import { isInternalBuild } from "./buildProfile";
 
 const CACHE_KEY = "@daily_paths_lifetime_access_v1";
 
@@ -117,7 +117,7 @@ export async function detectLifetimeAccess(): Promise<LifetimeAccessStatus> {
   // 0. Dev/QA override takes priority
   // A preview-build purchase bypass must never carry into a store build after
   // an update. Production ignores the stored QA override completely.
-  const override = isPreviewBuild() ? await getLifetimeOverride() : null;
+  const override = isInternalBuild() ? await getLifetimeOverride() : null;
   if (override !== null) {
     const status: LifetimeAccessStatus = {
       hasLifetimeAccess: override,

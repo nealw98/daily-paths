@@ -31,12 +31,7 @@ import {
   acknowledgePendingModal,
   type PendingModal,
 } from "../lib/modalDecision";
-import {
-  getTrialStatus,
-  expireTrial,
-  type TrialStatus,
-} from "../utils/trialTimer";
-import { clearSubscriptionOverride } from "../utils/subscriptionOverride";
+import { clearSubscriptionOverride, getSubscriptionOverride } from "../utils/subscriptionOverride";
 import { detectLifetimeAccess } from "../utils/paidAppDetector";
 import { getRequiredGate, type GateType } from "../utils/accessControl";
 import { qaLog } from "../utils/qaLog";
@@ -46,14 +41,8 @@ import Purchases, { type PurchasesPackage } from "react-native-purchases";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-interface TrialStatusWithMeta extends TrialStatus {
-  loading: boolean;
-  refresh: () => Promise<void>;
-}
-
 interface SubscriptionContextValue {
   status: SubscriptionStatus;
-  trialStatus: TrialStatusWithMeta;
   hasLifetimeAccess: boolean;
   /** Server-decided one-time modal to show, or null. The server inspects
    *  RevenueCat entitlements + grant tables and returns at most one — so
@@ -77,18 +66,9 @@ interface SubscriptionContextValue {
 
 const DEFAULT_STATUS: SubscriptionStatus = {
   isSubscribed: false,
-  isTrialing: false,
   expirationDate: null,
   productIdentifier: null,
   willRenew: false,
-};
-
-const DEFAULT_TRIAL: TrialStatus = {
-  isInTrial: false,
-  trialExpired: false,
-  neverStarted: true,
-  trialStartDate: null,
-  daysRemaining: 3,
 };
 
 function hasActiveRevenueCatAccess(raw: {
@@ -98,20 +78,9 @@ function hasActiveRevenueCatAccess(raw: {
   return raw.hasUnlimited || raw.hasLifetime;
 }
 
-function summarizeTrialStatus(t: TrialStatus) {
-  return {
-    isInTrial: t.isInTrial,
-    trialExpired: t.trialExpired,
-    neverStarted: t.neverStarted,
-    daysRemaining: t.daysRemaining,
-    trialStartDate: t.trialStartDate,
-  };
-}
-
 function summarizeSubscriptionStatus(s: SubscriptionStatus) {
   return {
     isSubscribed: s.isSubscribed,
-    isTrialing: s.isTrialing,
     expirationDate: s.expirationDate,
     productIdentifier: s.productIdentifier,
     willRenew: s.willRenew,
@@ -130,8 +99,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [status, setStatus] = useState<SubscriptionStatus>(DEFAULT_STATUS);
-  const [trial, setTrial] = useState<TrialStatus>(DEFAULT_TRIAL);
-  const [trialLoading, setTrialLoading] = useState(true);
   const [hasLifetimeAccess, setHasLifetimeAccess] = useState(false);
   const [pendingModal, setPendingModal] = useState<PendingModal | null>(null);
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
@@ -169,17 +136,9 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
         setStatus(cached);
       }
 
-      // Legacy trial status remains readable for grandfathering and QA, but
-      // no longer grants access or starts for new installs.
       if (!lifetimeStatus.hasLifetimeAccess) {
-        const trialResult = await getTrialStatus();
-        if (cancelled) return;
-        qaLog("access-init", "Initial trial status read", summarizeTrialStatus(trialResult));
-        setTrial(trialResult);
-        setTrialLoading(false);
-
         // Only a cached entitlement can resolve access before RevenueCat has
-        // refreshed. A legacy local trial must never open the full app.
+        // refreshed.
         if (cached?.isSubscribed) {
           qaLog("access-init", "Ending initial loading from local state", {
             reason: "cached_subscribed",
@@ -191,9 +150,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
           });
         }
       } else {
-        // Lifetime user — no trial needed, not loading
+        // Lifetime user — local access is already resolved.
         qaLog("access-init", "Ending loading from platform lifetime access");
-        setTrialLoading(false);
         setLoading(false);
       }
 
@@ -300,8 +258,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }
 
-      qaLog("access-init", "Local trial creation disabled for onboarding release");
-
       // Fetch fresh status from RC — RevenueCat is the sole source of
       // truth for all entitlements including legacy grants.
       if (isRevenueCatInitialized()) {
@@ -315,13 +271,14 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
           // Android: always run restorePurchases() on cold launch so a user
           // who has previously purchased on this Google account never sees
           // the paywall by accident. The previous gated condition missed
-          // reinstalls during an active trial.
+          // reinstalls and device changes.
           if (Platform.OS === "android" && !cancelled) {
             try {
               qaLog("subscription", "Android cold-launch always-restore");
               await restorePurchases();
               const rawAfterRestore = await getRawEntitlements();
-              if (hasActiveRevenueCatAccess(rawAfterRestore)) {
+              const accessOverrideActive = await getSubscriptionOverride();
+              if (hasActiveRevenueCatAccess(rawAfterRestore) && !accessOverrideActive) {
                 await clearSubscriptionOverride();
                 qaLog("subscription", "Cleared QA subscription override after Android restore");
               }
@@ -430,12 +387,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, []);
 
-  // ── Trial refresh ──────────────────────────────────────────────────────
-  const refreshTrial = useCallback(async () => {
-    const s = await getTrialStatus();
-    setTrial(s);
-  }, []);
-
   // ── Lifetime access refresh (for QA override toggle) ──────────────────
   const refreshLifetimeAccess = useCallback(async () => {
     const result = await detectLifetimeAccess();
@@ -452,16 +403,14 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       if (status.isSubscribed) return "none";
       return "paywall";
     }
-    return getRequiredGate(status, trial, hasLifetimeAccess);
-  }, [status, trial, hasLifetimeAccess]);
+    return getRequiredGate(status, hasLifetimeAccess);
+  }, [status, hasLifetimeAccess]);
 
   useEffect(() => {
     qaLog("access-gate", "Gate snapshot", {
       gate,
       loading,
-      trialLoading,
       status: summarizeSubscriptionStatus(status),
-      trial: summarizeTrialStatus(trial),
       hasLifetimeAccess,
       pendingModal,
       platform: Platform.OS,
@@ -469,9 +418,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [
     gate,
     loading,
-    trialLoading,
     status,
-    trial,
     hasLifetimeAccess,
     pendingModal,
   ]);
@@ -485,14 +432,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
         if (customerInfo) {
           const newStatus = await getSubscriptionStatus();
           setStatus(newStatus);
-
-          // Expire the local trial once the user becomes entitled (sub or
-          // lifetime), so the entitlement takes over immediately.
-          if (newStatus.isSubscribed) {
-            await expireTrial();
-            const freshTrial = await getTrialStatus();
-            setTrial(freshTrial);
-          }
 
           return newStatus.isSubscribed;
         }
@@ -572,15 +511,9 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [pendingModal]);
 
   // ── Context value ──────────────────────────────────────────────────────
-  const trialStatusValue = useMemo<TrialStatusWithMeta>(
-    () => ({ ...trial, loading: trialLoading, refresh: refreshTrial }),
-    [trial, trialLoading, refreshTrial],
-  );
-
   const value = useMemo<SubscriptionContextValue>(
     () => ({
       status,
-      trialStatus: trialStatusValue,
       hasLifetimeAccess,
       pendingModal,
       packages,
@@ -596,7 +529,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
     }),
     [
       status,
-      trialStatusValue,
       hasLifetimeAccess,
       pendingModal,
       packages,

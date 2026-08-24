@@ -33,7 +33,7 @@ import { OnboardingFlow } from "../../components/onboarding/OnboardingFlow";
 import { useFeaturedSpeaker } from "../../hooks/useFeaturedSpeaker";
 import { computeJournalStreak } from "../../utils/journalStreak";
 import { getScheduledDayOfYear } from "../../utils/dateUtils";
-import { isPreviewBuild } from "../../utils/buildProfile";
+import { isInternalBuild } from "../../utils/buildProfile";
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -109,7 +109,7 @@ export default function HomeTab() {
   const { entries: journalEntries, createEntry } = useJournalStorage();
   const [journalEntryType, setJournalEntryType] = useState<EntryType | null>(null);
   const [reflectionImageOverride, setReflectionImageOverride] = useState<number | null>(null);
-  const showPreviewControls = isPreviewBuild();
+  const showPreviewControls = isInternalBuild();
   const [devPaywallFlowVisible, setDevPaywallFlowVisible] = useState(false);
 
   useEffect(() => {

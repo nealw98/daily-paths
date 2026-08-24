@@ -9,7 +9,7 @@ import {
   type SyncSnapshot,
 } from "./syncMerge";
 
-/** User-owned data only. Entitlements, trials, caches and device state stay local. */
+/** User-owned data only. Entitlements, caches and device state stay local. */
 export const SYNC_KEYS: string[] = [...SYNC_DATA_KEYS];
 export const BACKUP_SCHEMA_VERSION = SYNC_SCHEMA_VERSION;
 

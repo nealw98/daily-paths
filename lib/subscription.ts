@@ -28,7 +28,6 @@ const SUBSCRIPTION_CACHE_KEY = "@daily_paths_subscription_status_v1";
 
 export interface SubscriptionStatus {
   isSubscribed: boolean;
-  isTrialing: boolean;
   expirationDate: string | null;
   productIdentifier: string | null;
   willRenew: boolean;
@@ -173,7 +172,6 @@ export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
       });
       return {
         isSubscribed: false,
-        isTrialing: false,
         expirationDate: null,
         productIdentifier: null,
         willRenew: false,
@@ -219,7 +217,6 @@ export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
     if (lifetimeEntitlement) {
       result = {
         isSubscribed: true,
-        isTrialing: false,
         expirationDate: null,
         productIdentifier: lifetimeEntitlement.productIdentifier,
         willRenew: false,
@@ -227,7 +224,6 @@ export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
     } else if (!entitlement) {
       result = {
         isSubscribed: false,
-        isTrialing: false,
         expirationDate: null,
         productIdentifier: null,
         willRenew: false,
@@ -235,7 +231,6 @@ export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
     } else {
       result = {
         isSubscribed: true,
-        isTrialing: entitlement.periodType === "TRIAL",
         expirationDate: entitlement.expirationDate,
         productIdentifier: entitlement.productIdentifier,
         willRenew: entitlement.willRenew,
@@ -281,7 +276,6 @@ export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
 
     return {
       isSubscribed: false,
-      isTrialing: false,
       expirationDate: null,
       productIdentifier: null,
       willRenew: false,
@@ -358,6 +352,7 @@ export async function clearLocalSubscriptionCache(): Promise<void> {
 export interface RawEntitlements {
   hasUnlimited: boolean;
   hasLifetime: boolean;
+  purchasedProductIdentifiers: string[];
   unlimitedExpirationDate: string | null;
   unlimitedProductIdentifier: string | null;
   unlimitedWillRenew: boolean;
@@ -372,6 +367,7 @@ export async function getRawEntitlements(): Promise<RawEntitlements> {
     const result = {
       hasUnlimited: unlimited !== undefined,
       hasLifetime: lifetime !== undefined,
+      purchasedProductIdentifiers: customerInfo.allPurchasedProductIdentifiers,
       unlimitedExpirationDate: unlimited?.expirationDate ?? null,
       unlimitedProductIdentifier: unlimited?.productIdentifier ?? null,
       unlimitedWillRenew: unlimited?.willRenew ?? false,
@@ -390,6 +386,7 @@ export async function getRawEntitlements(): Promise<RawEntitlements> {
     return {
       hasUnlimited: false,
       hasLifetime: false,
+      purchasedProductIdentifiers: [],
       unlimitedExpirationDate: null,
       unlimitedProductIdentifier: null,
       unlimitedWillRenew: false,
@@ -397,4 +394,3 @@ export async function getRawEntitlements(): Promise<RawEntitlements> {
     };
   }
 }
-

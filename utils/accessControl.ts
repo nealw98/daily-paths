@@ -1,6 +1,5 @@
 import { Platform } from "react-native";
 import type { SubscriptionStatus } from "../lib/subscription";
-import type { TrialStatus } from "./trialTimer";
 
 /**
  * Access control helpers for Daily Paths.
@@ -23,16 +22,14 @@ export type GateType = "none" | "paywall";
  * Premium entitlement check.
  *
  * @param subscription  RevenueCat subscription status
- * @param trial         Legacy trial status (accepted for API compatibility; never grants access)
  * @param hasLifetimeAccess  Whether the user paid for the app download
  */
 export function hasPremiumEntitlement(
   subscription: SubscriptionStatus,
-  _trial: TrialStatus,
   hasLifetimeAccess: boolean,
 ): boolean {
-  // iOS is a paid download — always premium, regardless of subscription /
-  // trial / receipt state. Belt-and-suspenders guard so paywall logic can
+  // iOS is a paid download — always premium, regardless of subscription or
+  // receipt state. Belt-and-suspenders guard so paywall logic can
   // never accidentally fire on iOS.
   if (Platform.OS === "ios") return true;
 
@@ -45,10 +42,9 @@ export function hasPremiumEntitlement(
  */
 export function getRequiredGate(
   subscription: SubscriptionStatus,
-  trial: TrialStatus,
   hasLifetimeAccess: boolean,
 ): GateType {
-  return hasPremiumEntitlement(subscription, trial, hasLifetimeAccess)
+  return hasPremiumEntitlement(subscription, hasLifetimeAccess)
     ? "none"
     : "paywall";
 }
@@ -58,8 +54,7 @@ export function getRequiredGate(
  */
 export function canDownloadSpeakers(
   subscription: SubscriptionStatus,
-  trial: TrialStatus,
   hasLifetimeAccess: boolean,
 ): boolean {
-  return hasPremiumEntitlement(subscription, trial, hasLifetimeAccess);
+  return hasPremiumEntitlement(subscription, hasLifetimeAccess);
 }

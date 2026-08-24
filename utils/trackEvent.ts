@@ -11,7 +11,7 @@ let cachedIsDeveloper: boolean | null = null;
  * Automatically attaches is_developer and theme_mode common properties.
  *
  * Use this in useJournalEntries, useLocalJournalEntries, useGratitude,
- * lib/subscription.ts, utils/trialTimer.ts, utils/legacyUserMigration.ts, etc.
+ * lib/subscription.ts, utils/legacyUserMigration.ts, etc.
  *
  * For component code, use the useAnalytics() hook instead.
  */

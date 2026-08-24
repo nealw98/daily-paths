@@ -29,7 +29,7 @@ import { useSubscriptionContext } from "../../contexts/SubscriptionContext";
 import { useAnalytics } from "../../utils/analytics";
 import { qaLog } from "../../utils/qaLog";
 import { setLifetimeOverride } from "../../utils/paidAppDetector";
-import { isPreviewBuild } from "../../utils/buildProfile";
+import { isInternalBuild } from "../../utils/buildProfile";
 
 const TARGET_OFFERING_ID = "android_unlock";
 const FALLBACK_PRICE = "$4.99";
@@ -86,7 +86,7 @@ export function NativePaywall({
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [reviewIndex, setReviewIndex] = useState(0);
-  const showPreviewControls = isPreviewBuild();
+  const showPreviewControls = isInternalBuild();
   const { refresh, refreshLifetimeAccess } = useSubscriptionContext();
   const {
     trackPaywallShown,

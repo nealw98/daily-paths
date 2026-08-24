@@ -127,7 +127,7 @@ export default function RootLayout() {
   }
 
   // Initialize analytics once fonts are loaded.
-  // RevenueCat and trial timer are now managed by SubscriptionContext.
+  // RevenueCat access is managed by SubscriptionContext.
   useEffect(() => {
     if (fontsLoaded) {
       initMixpanel();

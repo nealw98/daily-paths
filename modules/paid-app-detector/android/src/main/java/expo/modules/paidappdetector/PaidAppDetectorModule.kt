@@ -8,7 +8,7 @@ class PaidAppDetectorModule : Module() {
     Name("PaidAppDetector")
 
     // Android: no paid app download — always return unavailable.
-    // All Android users go through trial/subscription.
+    // Android access is determined by RevenueCat.
     AsyncFunction("getAppTransactionInfo") {
       return@AsyncFunction mapOf(
         "originalAppVersion" to null,

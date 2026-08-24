@@ -42,7 +42,7 @@ Other top-level routes: `app/select-date.tsx`, `app/favorites.tsx`, `app/qa-logs
 | Provider | Surface | Notes |
 |---|---|---|
 | `SettingsProvider` (`hooks/useSettings.ts`) | text size, theme, daily reminder time, color scheme | Persists to AsyncStorage. `useSettings()` is the only consumer; `useTheme()` and `useTypography()` derive from it. |
-| `SubscriptionContext` (`contexts/SubscriptionContext.tsx`) | RevenueCat status, trial state, lifetime detection, grandfather grant flow, `gate` | The `gate` value is the source of truth for "what to show this user" (`none`, `paywall`, etc.) — see `utils/accessControl.ts`. Android-only logic: subscription, trial, grandfather. iOS users always have lifetime access via `paid-app-detector` (a local Swift module under `modules/`). |
+| `SubscriptionContext` (`contexts/SubscriptionContext.tsx`) | RevenueCat status, lifetime detection, grandfather grant flow, `gate` | The `gate` value is the source of truth for "what to show this user" (`none`, `paywall`, etc.) — see `utils/accessControl.ts`. Android-only logic: legacy subscriptions, lifetime purchases, and grandfathering. iOS users always have lifetime access via `paid-app-detector` (a local Swift module under `modules/`). |
 | `AppDateProvider` (`contexts/AppDateContext.tsx`) | `today` Date + `todayKey` string | Refreshes at local midnight so date-rotated content (the daily reading, daily quote, featured speaker) advances without an app restart. Don't read `new Date()` directly in screens — use `useAppDate()`. |
 
 ### Theming
@@ -64,16 +64,15 @@ Other top-level routes: `app/select-date.tsx`, `app/favorites.tsx`, `app/qa-logs
 
 ### Subscription / paywall flow (Android only)
 
-The combination of trial + lifetime + grandfather is non-trivial. The authoritative explainer is `SubscriptionContext.tsx`. Key concepts:
+The combination of lifetime access, legacy subscriptions, and grandfathering is managed by `SubscriptionContext.tsx`. Key concepts:
 
 - **`hasLifetimeAccess`** — detected via the local `paid-app-detector` Swift module on iOS (always true) and via RevenueCat entitlements on Android.
 - **`hasSubAndLifetime`** — Android edge case where a legacy annual subscriber was manually granted lifetime in the RC dashboard during the 2.6.6 transition. Triggers **Modal A** (`SubscriberToLifetimeModal`).
 - **Grandfather grant** — on Android, `lib/grandfather.ts` calls a Supabase edge function (`supabase/functions/grant-grandfather-lifetime`) that promotes eligible users to lifetime. On success, `showGrandfatherModal` flips true and **Modal B** (`GrandfatheredLifetimeModal`) fires.
 - **Both Modal A and Modal B are gated to `Platform.OS === "android"`.** They never render on iOS.
-- **Trial** — `utils/trialTimer.ts`. 3-day window, started on first launch when no lifetime/subscription exists.
 - **Gate decision** — `utils/accessControl.ts.getRequiredGate(...)` is the single source of truth.
 
-The QA panel (`app/qa-logs.tsx`) exposes overrides for almost all of this state (lifetime override, trial reset, grandfather simulate, modal previews) — that's the primary surface for testing edge cases.
+The Developer Console (`app/qa-logs.tsx`) contains only the developer-device setting and a non-destructive replay of the current onboarding journey.
 
 ### Notifications
 
@@ -102,4 +101,4 @@ Daily reminder time + enabled flag live in `useSettings`. `utils/notificationSyn
 - `docs/visual-redesign-change-spec.md`, `docs/speakers-build-spec.md`, `THEME_ELEMENTS_AND_COLORS.md`, `TYPOGRAPHY_AUDIT.md`, `WEB_STYLE_GUIDE.md` are design references; useful for understanding intent but check the code for what actually shipped.
 - `modules/paid-app-detector` is a local Expo native module (Swift / Kotlin). Editing it requires a native rebuild — OTA won't pick up native changes.
 - The `crashes/` directory is committed crash reports, not source.
-- iOS = paid download, no IAP. Don't add subscription / trial UI for iOS.
+- iOS = paid download, no IAP. Don't add purchase UI for iOS.

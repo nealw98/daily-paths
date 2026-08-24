@@ -16,9 +16,6 @@ export const ANALYTICS_EVENTS = {
   // Subscription & paywall events
   SUBSCRIPTION_STARTED: 'subscription_started',
   SUBSCRIPTION_CANCELLED: 'subscription_cancelled',
-  TRIAL_STARTED: 'trial_started',
-  TRIAL_ENDED: 'trial_ended',
-  TRIAL_DAY_REACHED: 'trial_day_reached',
   PAYWALL_SHOWN: 'paywall_shown',
   PAYWALL_PURCHASE_COMPLETED: 'paywall_purchase_completed',
   PAYWALL_PURCHASE_CANCELLED: 'paywall_purchase_cancelled',

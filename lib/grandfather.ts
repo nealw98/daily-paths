@@ -5,7 +5,8 @@ import { qaLog } from "../utils/qaLog";
 import { trackEvent } from "../utils/trackEvent";
 import { ANALYTICS_EVENTS } from "../utils/analytics";
 import { getRawEntitlements } from "./subscription";
-import { getLegacyTrialMarker } from "../utils/trialTimer";
+import { getLegacyInstallEvidence } from "../utils/legacyInstallEvidence";
+import { getGrandfatherOverride } from "../utils/grandfatherOverride";
 
 /**
  * Grandfather flow for pre-2.7 Android users.
@@ -15,9 +16,8 @@ import { getLegacyTrialMarker } from "../utils/trialTimer";
  * non-subscribers. After a grant, RevenueCat remains the source of truth for
  * access.
  *
- * The legacy 2.6.x trial marker is one signal; the edge function also accepts
- * a null marker and falls back to RC `first_seen` for users whose AsyncStorage
- * was wiped (see `grant-grandfather-lifetime/index.ts`).
+ * A historical 2.6.x install timestamp identifies devices that used the app
+ * before the lifetime paywall was introduced.
  *
  * Modal decisioning lives on the server (`which-modal` / `acknowledge-modal`)
  * — no local seen flags here.
@@ -41,15 +41,20 @@ export async function attemptGrandfatherGrantIfEligible(): Promise<boolean> {
     return false;
   }
 
+  if (await getGrandfatherOverride()) {
+    qaLog("grandfather", "Skipping grandfather attempt: preview override active");
+    return false;
+  }
+
   try {
-    // No legacy marker means this device never opened 2.6.x — they can't be
+    // No historical timestamp means this device never opened 2.6.x — it can't be
     // a grandfather candidate. Short-circuit before the network call to
     // shave ~400ms off first-install splash time. The server's `first_seen`
     // fallback path is no longer exercised (we never want to grandfather a
     // user whose only "evidence" is a stale anonymous RC user record).
-    const legacyMarker = await getLegacyTrialMarker();
-    if (!legacyMarker.hasValidMarker) {
-      qaLog("grandfather", "Skipping grandfather attempt: no legacy marker on device");
+    const legacyInstall = await getLegacyInstallEvidence();
+    if (!legacyInstall.isValid) {
+      qaLog("grandfather", "Skipping grandfather attempt: no legacy install evidence on device");
       return false;
     }
 
@@ -84,13 +89,14 @@ export async function attemptGrandfatherGrantIfEligible(): Promise<boolean> {
 
     qaLog("grandfather", "Attempting grandfather grant", {
       appUserId,
-      hasLocalMarker: legacyMarker.hasValidMarker,
+      hasLocalInstallEvidence: legacyInstall.isValid,
     });
 
     const { data, error } = await supabase.functions.invoke(FUNCTION_NAME, {
       body: {
         app_user_id: appUserId,
-        legacy_trial_start_date: legacyMarker.trialStartDate ?? null,
+        // Historical server contract name retained for migration compatibility.
+        legacy_trial_start_date: legacyInstall.installedAt ?? null,
       },
     });
 
@@ -105,7 +111,7 @@ export async function attemptGrandfatherGrantIfEligible(): Promise<boolean> {
     qaLog("grandfather", "Edge function result", {
       appUserId,
       granted,
-      legacyTrialStartDate: legacyMarker.trialStartDate,
+      legacyInstallDate: legacyInstall.installedAt,
       data,
     });
 
