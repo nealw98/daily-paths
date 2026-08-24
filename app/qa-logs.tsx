@@ -13,12 +13,12 @@ import {
 import Constants from "expo-constants";
 import * as Updates from "expo-updates";
 import { Ionicons } from "@expo/vector-icons";
+import Clipboard from "@react-native-clipboard/clipboard";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { OnboardingFlow } from "../components/onboarding/OnboardingFlow";
-import { fonts, shadows } from "../constants/theme";
-import { useTheme } from "../hooks/useTheme";
+import { fallbackColors, fonts, shadows } from "../constants/theme";
 import { fetchAccessGrantRows, type AccessGrantRows } from "../lib/accessDiagnostics";
 import { getRawEntitlements, type RawEntitlements } from "../lib/subscription";
 import { isInternalBuild } from "../utils/buildProfile";
@@ -26,7 +26,7 @@ import { isDeveloperDevice, setDeveloperDevice } from "../utils/deviceIdentity";
 import { getGrandfatherOverride, setGrandfatherOverride } from "../utils/grandfatherOverride";
 import { getLegacyInstallEvidence } from "../utils/legacyInstallEvidence";
 import { setLifetimeOverride } from "../utils/paidAppDetector";
-import { qaLog } from "../utils/qaLog";
+import { clearQaLogs, qaLog, useQaLogs } from "../utils/qaLog";
 import {
   clearSubscriptionOverride,
   enableSubscriptionOverride,
@@ -35,7 +35,8 @@ import {
 
 export default function DeveloperConsoleScreen() {
   const router = useRouter();
-  const { colors } = useTheme();
+  const colors = fallbackColors;
+  const logs = useQaLogs();
   const [developerDevice, setDeveloperDeviceState] = useState(false);
   const [savingDeveloperDevice, setSavingDeveloperDevice] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -111,6 +112,24 @@ export default function DeveloperConsoleScreen() {
     setShowOnboarding(true);
   };
 
+  const copyLogs = () => {
+    const text = logs
+      .map((entry) => {
+        const heading = `[${entry.timestamp}] ${entry.scope}: ${entry.message}`;
+        return entry.details ? `${heading}\n${entry.details}` : heading;
+      })
+      .join("\n\n");
+    Clipboard.setString(text || "No troubleshooting logs recorded.");
+    Alert.alert("Logs copied", `${logs.length} log ${logs.length === 1 ? "entry" : "entries"} copied.`);
+  };
+
+  const confirmClearLogs = () => {
+    Alert.alert("Clear troubleshooting log?", "This removes the saved log from this device.", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Clear", style: "destructive", onPress: clearQaLogs },
+    ]);
+  };
+
   const handleGrandfatherOverride = async (value: boolean) => {
     setIgnoreGrandfatherState(value);
     await setGrandfatherOverride(value);
@@ -168,7 +187,7 @@ export default function DeveloperConsoleScreen() {
         </View>
         <TouchableOpacity
           onPress={() => router.back()}
-          style={[styles.closeButton, { backgroundColor: colors.cardBackground }]}
+          style={[styles.closeButton, { backgroundColor: "#FFFFFF" }]}
           accessibilityRole="button"
           accessibilityLabel="Close developer console"
         >
@@ -180,7 +199,7 @@ export default function DeveloperConsoleScreen() {
         style={[
           styles.card,
           shadows.ambient,
-          { backgroundColor: colors.cardBackground, borderColor: colors.border },
+          { backgroundColor: "#FFFFFF", borderColor: colors.border },
         ]}
       >
         <View style={styles.toggleRow}>
@@ -201,6 +220,8 @@ export default function DeveloperConsoleScreen() {
         </View>
       </View>
 
+      {developerDevice ? (
+        <>
       <View style={styles.sectionHeaderRow}>
         <Text style={[styles.sectionHeaderLabel, { color: colors.textSecondary }]}>REAL ACCESS STATUS</Text>
         <TouchableOpacity onPress={refreshAccessStatus} disabled={accessLoading}>
@@ -213,7 +234,7 @@ export default function DeveloperConsoleScreen() {
         style={[
           styles.card,
           shadows.ambient,
-          { backgroundColor: colors.cardBackground, borderColor: colors.border },
+          { backgroundColor: "#FFFFFF", borderColor: colors.border },
         ]}
       >
         <AccessStatusRow label="Grandfathered access" value={grandfatherStatus} colors={colors} />
@@ -228,7 +249,7 @@ export default function DeveloperConsoleScreen() {
         style={[
           styles.card,
           shadows.ambient,
-          { backgroundColor: colors.cardBackground, borderColor: colors.border },
+          { backgroundColor: "#FFFFFF", borderColor: colors.border },
         ]}
       >
         <View style={styles.toggleRow}>
@@ -240,7 +261,6 @@ export default function DeveloperConsoleScreen() {
           </View>
           <Switch
             value={ignoreGrandfather}
-            disabled={!forcedDeveloperBuild}
             onValueChange={handleGrandfatherOverride}
             trackColor={{ false: colors.mist, true: colors.deepTeal }}
             thumbColor={colors.pearl}
@@ -251,12 +271,11 @@ export default function DeveloperConsoleScreen() {
           <View style={styles.rowCopy}>
             <Text style={[styles.rowTitle, { color: colors.text }]}>Ignore purchase and entitlements</Text>
             <Text style={[styles.rowDescription, { color: colors.textSecondary }]}>
-              Temporarily makes the preview behave as an unentitled user. Your real purchase remains untouched.
+              Temporarily makes this developer device behave as an unentitled user. Your real purchase remains untouched.
             </Text>
           </View>
           <Switch
             value={ignoreAccess}
-            disabled={!forcedDeveloperBuild}
             onValueChange={handleAccessOverride}
             trackColor={{ false: colors.mist, true: colors.deepTeal }}
             thumbColor={colors.pearl}
@@ -271,7 +290,7 @@ export default function DeveloperConsoleScreen() {
         style={[
           styles.actionCard,
           shadows.ambient,
-          { backgroundColor: colors.cardBackground, borderColor: colors.border },
+          { backgroundColor: "#FFFFFF", borderColor: colors.border },
         ]}
         accessibilityRole="button"
         accessibilityLabel="Run onboarding again"
@@ -287,6 +306,49 @@ export default function DeveloperConsoleScreen() {
         </View>
         <Ionicons name="chevron-forward" size={21} color={colors.textSecondary} />
       </TouchableOpacity>
+
+      <View style={styles.sectionHeaderRow}>
+        <Text style={[styles.sectionHeaderLabel, { color: colors.textSecondary }]}>TROUBLESHOOTING LOG</Text>
+        <View style={styles.logActions}>
+          <TouchableOpacity onPress={copyLogs} accessibilityRole="button" accessibilityLabel="Copy troubleshooting log">
+            <Text style={[styles.refreshText, { color: colors.deepTeal }]}>Copy</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={confirmClearLogs} accessibilityRole="button" accessibilityLabel="Clear troubleshooting log">
+            <Text style={[styles.refreshText, { color: colors.danger }]}>Clear</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+      <View
+        style={[
+          styles.logCard,
+          shadows.ambient,
+          { backgroundColor: "#FFFFFF", borderColor: colors.border },
+        ]}
+      >
+        {logs.length === 0 ? (
+          <Text style={[styles.emptyLog, { color: colors.textSecondary }]}>No troubleshooting entries yet.</Text>
+        ) : (
+          logs.slice(0, 50).map((entry, index) => (
+            <View key={`${entry.id}-${entry.timestamp}`}>
+              {index > 0 ? <View style={[styles.logDivider, { backgroundColor: colors.border }]} /> : null}
+              <Text style={[styles.logMeta, { color: colors.textSecondary }]}>
+                {new Date(entry.timestamp).toLocaleString()} · {entry.scope}
+              </Text>
+              <Text style={[styles.logMessage, { color: colors.text }]}>{entry.message}</Text>
+              {entry.details ? (
+                <Text style={[styles.logDetails, { color: colors.textSecondary }]} numberOfLines={6}>
+                  {entry.details}
+                </Text>
+              ) : null}
+            </View>
+          ))
+        )}
+        {logs.length > 50 ? (
+          <Text style={[styles.moreLogs, { color: colors.textSecondary }]}>Showing the 50 most recent entries. Copy includes all {logs.length}.</Text>
+        ) : null}
+      </View>
+        </>
+      ) : null}
 
       <Text style={[styles.buildInfo, { color: colors.textSecondary }]}>
         Version {appVersion} · Build {buildNumber}
@@ -315,7 +377,7 @@ function AccessStatusRow({
 }: {
   label: string;
   value: string;
-  colors: ReturnType<typeof useTheme>["colors"];
+  colors: typeof fallbackColors;
 }) {
   return (
     <View style={styles.statusRow}>
@@ -407,6 +469,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
+  logActions: { flexDirection: "row", alignItems: "center", gap: 18 },
   statusRow: { paddingVertical: 4 },
   statusLabel: {
     fontFamily: fonts.bodyFamily,
@@ -428,6 +491,43 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 18,
     padding: 16,
+  },
+  logCard: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 18,
+    padding: 16,
+  },
+  emptyLog: {
+    fontFamily: fonts.bodyFamily,
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: "center",
+    paddingVertical: 12,
+  },
+  logDivider: { height: StyleSheet.hairlineWidth, marginVertical: 13 },
+  logMeta: {
+    fontFamily: fonts.bodyFamilyMedium,
+    fontSize: 11,
+    lineHeight: 16,
+    marginBottom: 3,
+  },
+  logMessage: {
+    fontFamily: fonts.bodyFamilySemiBold,
+    fontSize: 14,
+    lineHeight: 19,
+  },
+  logDetails: {
+    fontFamily: fonts.bodyFamily,
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 5,
+  },
+  moreLogs: {
+    fontFamily: fonts.bodyFamily,
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 16,
+    textAlign: "center",
   },
   iconTile: {
     width: 48,
