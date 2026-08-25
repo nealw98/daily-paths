@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import { Stack, useRouter } from "expo-router";
 import { useFonts } from "expo-font";
 import {
@@ -27,7 +27,16 @@ import { fallbackColors } from "../constants/theme";
 import { SettingsProvider } from "../hooks/useSettings";
 import { CloudSyncGate } from "../hooks/useCloudSync";
 import { SubscriptionProvider, useSubscriptionContext } from "../contexts/SubscriptionContext";
-import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity, Platform } from "react-native";
+import {
+  View,
+  ActivityIndicator,
+  AppState,
+  type AppStateStatus,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  Platform,
+} from "react-native";
 import * as Notifications from "expo-notifications";
 import * as SplashScreen from "expo-splash-screen";
 import * as Updates from "expo-updates";
@@ -98,6 +107,9 @@ export default function RootLayout() {
   const [updateReady, setUpdateReady] = useState(false);
   const [restarting, setRestarting] = useState(false);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const updateCheckInFlight = useRef(false);
+  const lastUpdateCheckAt = useRef(0);
+  const appState = useRef<AppStateStatus>(AppState.currentState);
   console.log("[STARTUP] State initialized");
 
   console.log("[STARTUP] Loading fonts...");
@@ -146,34 +158,61 @@ export default function RootLayout() {
     }
   }, [fontsLoaded]);
 
-  // Check for OTA updates once on startup; if downloaded, prompt to restart.
-  useEffect(() => {
-    qaLog("Updates", "Check starting", { __DEV__ });
-    if (__DEV__) return; // skip in dev client
-    let cancelled = false;
-    (async () => {
-      try {
-        qaLog("Updates", "Checking for updates...");
-        const result = await Updates.checkForUpdateAsync();
-        qaLog("Updates", "Check result", { isAvailable: result.isAvailable });
-        if (result.isAvailable) {
-          qaLog("Updates", "Downloading update...");
-          await Updates.fetchUpdateAsync();
-          qaLog("Updates", "Download complete, ready to restart");
-          if (!cancelled) {
-            setUpdateReady(true);
-          }
-        } else {
-          qaLog("Updates", "App is up to date");
-        }
-      } catch (err) {
-        qaLog("Updates", "Check/fetch failed", { error: String(err) });
+  const checkForUpdate = useCallback(async (
+    source: "startup" | "foreground",
+    force = false,
+  ) => {
+    if (__DEV__ || updateCheckInFlight.current) return;
+
+    const now = Date.now();
+    if (!force && now - lastUpdateCheckAt.current < 30_000) return;
+
+    lastUpdateCheckAt.current = now;
+    updateCheckInFlight.current = true;
+    try {
+      qaLog("Updates", "Checking for updates", { source });
+      const result = await Updates.checkForUpdateAsync();
+      qaLog("Updates", "Check result", {
+        source,
+        isAvailable: result.isAvailable,
+      });
+      if (result.isAvailable) {
+        qaLog("Updates", "Downloading update", { source });
+        await Updates.fetchUpdateAsync();
+        qaLog("Updates", "Download complete, ready to restart", { source });
+        setUpdateReady(true);
+      } else {
+        qaLog("Updates", "App is up to date", { source });
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    } catch (err) {
+      qaLog("Updates", "Check/fetch failed", {
+        source,
+        error: String(err),
+      });
+    } finally {
+      updateCheckInFlight.current = false;
+    }
   }, []);
+
+  // Check at startup and whenever an existing session returns to the
+  // foreground. This lets active installs discover an OTA without requiring
+  // the user to terminate and relaunch the app.
+  useEffect(() => {
+    void checkForUpdate("startup", true);
+
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      const previousState = appState.current;
+      appState.current = nextState;
+      if (
+        nextState === "active" &&
+        (previousState === "inactive" || previousState === "background")
+      ) {
+        void checkForUpdate("foreground");
+      }
+    });
+
+    return () => subscription.remove();
+  }, [checkForUpdate]);
 
   // When a notification is tapped, navigate to the reading screen for today.
   useEffect(() => {
@@ -298,7 +337,7 @@ function SubscriptionTree({
       {updateReady && (
         <View style={styles.updateBanner}>
           <Text style={styles.updateText}>
-            Update available. Restart to apply.
+            An update is ready.
           </Text>
           <View style={styles.updateActions}>
             <TouchableOpacity
@@ -316,7 +355,7 @@ function SubscriptionTree({
                   { color: colors.deepTeal },
                 ]}
               >
-                {restarting ? "Restarting..." : "Restart"}
+                {restarting ? "Applying…" : "Apply"}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
