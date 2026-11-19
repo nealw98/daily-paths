@@ -1096,8 +1096,11 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   inlineItalic: {
+    // The italic face is a separate font file, so no fontStyle here. Adding
+    // fontStyle: "italic" on top of an italic-only family makes iOS resolve
+    // a different face at layout vs draw time, which clipped the end of
+    // paragraphs containing *italics* at large Dynamic Type sizes.
     fontFamily: fonts.loraItalic,
-    fontStyle: "italic",
   },
   section: {
     marginTop: 8,
