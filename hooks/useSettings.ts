@@ -3,7 +3,6 @@ import { Alert, AppState, Linking, Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   ensureNotificationPermissions,
-  cancelDailyReminder,
   getNotificationPermissionState,
 } from "../utils/dailyReminder";
 import { scheduleWeekOfNotifications } from "../utils/notificationSync";
@@ -225,7 +224,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
     async (enabled: boolean) => {
       if (!enabled) {
         await updateSettings({ dailyReminderEnabled: false });
-        await cancelDailyReminder();
+        // Clears the schedule (queued behind any run already in progress).
+        await scheduleWeekOfNotifications();
         return false;
       }
 

@@ -8,7 +8,6 @@ import {
   type CachedReading,
 } from "../utils/readingCache";
 import { qaLog } from "../utils/qaLog";
-import { scheduleWeekOfNotifications } from "../utils/notificationSync";
 
 const PREFETCH_WINDOW_DAYS = 6; // today + next 6 days
 const prefetchedDateKeys = new Set<string>();
@@ -63,11 +62,11 @@ async function prefetchUpcomingReadings(anchorDate: Date) {
     if (prefetchedDateKeys.has(key)) {
       continue;
     }
-    prefetchedDateKeys.add(key);
 
     try {
       const cached = await getCachedReading(target);
       if (cached?.reading) {
+        prefetchedDateKeys.add(key);
         qaLog("reading-prefetch", "Skip prefetch; already cached", {
           key,
           id: cached.reading.id,
@@ -126,6 +125,8 @@ async function prefetchUpcomingReadings(anchorDate: Date) {
         reading: transformed,
         updatedAt: remoteUpdatedAt,
       });
+      // Only mark done after a successful write, so failed fetches retry.
+      prefetchedDateKeys.add(key);
 
       qaLog("reading-prefetch", "Prefetched and cached", {
         key,
@@ -154,16 +155,10 @@ export function useReading(date: Date) {
   }, [date]);
 
   // Prefetch today + a short horizon so users can read offline.
-  // After prefetch completes, schedule notifications so they pick up all 7 days.
+  // (Notification scheduling is owned by useSettings and uses the thoughts
+  // table, so it no longer waits on this prefetch.)
   useEffect(() => {
-    prefetchUpcomingReadings(date).then(() => {
-      const isToday = formatDateLocal(date) === formatDateLocal(new Date());
-      if (isToday) {
-        scheduleWeekOfNotifications().catch(err =>
-          console.warn('[useReading] Failed to schedule notifications after prefetch:', err)
-        );
-      }
-    });
+    prefetchUpcomingReadings(date);
   }, [date]);
 
   async function fetchReading() {
@@ -277,15 +272,7 @@ export function useReading(date: Date) {
             reading: transformedReading,
             updatedAt: remoteUpdatedAt,
           });
-          
-          // Update notification with new thought if this is today's reading
-          const isToday = formatDateLocal(date) === formatDateLocal(new Date());
-          if (isToday && transformedReading.thoughtForDay) {
-            scheduleWeekOfNotifications().catch(err =>
-              console.warn('[useReading] Failed to schedule notifications:', err)
-            );
-          }
-          
+
           qaLog("reading", "Reading fetched and cached", {
             ...ctx,
             id: transformedReading.id,

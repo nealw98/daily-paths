@@ -55,7 +55,8 @@ Other top-level routes: `app/select-date.tsx`, `app/favorites.tsx`, `app/qa-logs
 
 ### Data layer
 
-- **Daily reading** (`hooks/useReading.ts` + `utils/readingCache.ts`): bundled JSON content, no remote read. Date keyed by `todayKey`.
+- **Daily reading** (`hooks/useReading.ts` + `utils/readingCache.ts`): fetched from the Supabase `readings` table by scheduled `day_of_year`, cached on device, with a 7-day prefetch for offline reading. Date keyed by `todayKey`.
+- **Thoughts for the Day** (`utils/thoughtsCache.ts`): all 366 `thought_for_day` strings in one query, cached and refreshed at most daily. Feeds the notification scheduler.
 - **Speakers** (`hooks/useSpeakers.tsx`): list pulled from Supabase, audio downloaded on demand via `hooks/useSpeakerDownload.ts`. Featured-speaker rotation in `hooks/useFeaturedSpeaker.ts`. Resume position + completion tracking — see `memory/project_speaker_resume.md`.
 - **Journal / Notebook** (`hooks/useJournalStorage.ts`, `useLocalJournalEntries.ts`): on-device storage; the v2 schema is in `database/migration_journal_v2.sql`.
 - **Personal prayers** (`hooks/usePersonalPrayers.ts`): on-device.
@@ -76,7 +77,7 @@ The Developer Console (`app/qa-logs.tsx`) contains only the developer-device set
 
 ### Notifications
 
-Daily reminder time + enabled flag live in `useSettings`. `utils/notificationSync.ts` reconciles the OS schedule with settings; `utils/dailyReminder.ts` produces the next-fire datetime. The notification handler is set once at module load in `app/_layout.tsx`.
+Daily reminder time + enabled flag live in `useSettings`, which also owns scheduling: it reschedules on launch, on every foreground, and on any switch/time change, and tracks OS permission (`notificationsBlocked` / `dailyReminderActive`). `utils/notificationSync.ts` (`scheduleWeekOfNotifications`, single-flight) rebuilds 28 one-time notifications from saved settings, each carrying that day's Thought; `utils/dailyReminder.ts` holds the permission helpers and fallback phrasings. The notification handler is set once at module load in `app/_layout.tsx`.
 
 `components/NotificationCoachmark.tsx` + `hooks/useNotificationCoachmark.ts` is the spotlight-tooltip nudge that appears on the reading screen when the daily reminder is off and the user has scrolled to the bottom. It's measurement-driven (`measureInWindow` + a `requestAnimationFrame` re-measure to handle iOS layout-commit timing).
 
