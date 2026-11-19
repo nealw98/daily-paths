@@ -71,6 +71,9 @@ export const ANALYTICS_EVENTS = {
   NOTIFICATION_COACHMARK_SHOWN: 'notification_coachmark_shown',
   NOTIFICATION_COACHMARK_DISMISSED: 'notification_coachmark_dismissed',
   NOTIFICATION_TOGGLE_CHANGED: 'notification_toggle_changed',
+  /** User tried to turn the daily reminder on but the OS has notifications
+   *  blocked for the app, so we pointed them at system Settings. */
+  NOTIFICATION_PERMISSION_DENIED: 'notification_permission_denied',
 } as const;
 
 // Navigation method types

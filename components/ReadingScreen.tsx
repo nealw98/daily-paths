@@ -23,7 +23,6 @@ import { DailyReading } from "../types/readings";
 import { BookmarkToast } from "./BookmarkToast";
 import { ReadingFeedback } from "./ReadingFeedback";
 import { getScheduledDayOfYear } from "../utils/dateUtils";
-import { scheduleWeekOfNotifications } from "../utils/notificationSync";
 import { SanctuaryCard } from "./ui/Sanctuary";
 import { TealHeader } from "./shared/TealHeader";
 import { NotificationCoachmark } from "./NotificationCoachmark";
@@ -142,7 +141,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   const [isSwiping, setIsSwiping] = useState(false);
   const lastTapRef = useRef<number | null>(null);
 
-  const { settings, setTextSize, setDailyReminderEnabled, setDailyReminderTime } = useSettings();
+  const { settings, setTextSize, setDailyReminderEnabled, setDailyReminderTime, dailyReminderActive } = useSettings();
   const { typography } = useTypography();
   const coachmark = useNotificationCoachmark({
     enabled: settings.dailyReminderEnabled,
@@ -396,11 +395,13 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
   };
 
   const handleReminderToggle = async (enabled: boolean) => {
-    await setDailyReminderEnabled(enabled);
+    const isOn = await setDailyReminderEnabled(enabled);
 
     if (enabled) {
-      await scheduleWeekOfNotifications();
-      setToastMessage(`You'll receive the Thought for the Day at ${formatTimeDisplay(reminderDate)}`);
+      // If the OS blocked notifications, useSettings already showed an alert.
+      if (isOn) {
+        setToastMessage(`You'll receive the Thought for the Day at ${formatTimeDisplay(reminderDate)}`);
+      }
     } else {
       setToastMessage("Thought for the Day notifications turned off");
       setShowTimePicker(false);
@@ -764,14 +765,14 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                   </View>
                   <Switch
                     style={styles.notificationSwitch}
-                    value={settings.dailyReminderEnabled}
+                    value={dailyReminderActive}
                     onValueChange={handleReminderToggle}
                     trackColor={{ false: colors.surfaceContainerHighest, true: colors.primaryContainer }}
                     thumbColor="#FFFFFF"
                   />
                 </View>
 
-                {settings.dailyReminderEnabled ? (
+                {dailyReminderActive ? (
                   <TouchableOpacity
                     activeOpacity={0.8}
                     onPress={() => {
@@ -807,7 +808,7 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                   </TouchableOpacity>
                 ) : null}
 
-                {showTimePicker && settings.dailyReminderEnabled ? (
+                {showTimePicker && dailyReminderActive ? (
                   <View style={styles.notificationTimePicker}>
                     <DateTimePicker
                       value={tempReminderDate ?? reminderDate}
@@ -820,7 +821,6 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                           if (event.type === "set" && selectedDate) {
                             (async () => {
                               await setDailyReminderTime(formatTimeStorage(selectedDate));
-                              await scheduleWeekOfNotifications();
                               setToastMessage(`You'll receive the Thought for the Day at ${formatTimeDisplay(selectedDate)}`);
                             })();
                           }
@@ -859,7 +859,6 @@ export const ReadingScreen: React.FC<ReadingScreenProps> = ({
                             setShowTimePicker(false);
                             setTempReminderDate(null);
                             await setDailyReminderTime(formatTimeStorage(finalDate));
-                            await scheduleWeekOfNotifications();
                             setToastMessage(`You'll receive the Thought for the Day at ${formatTimeDisplay(finalDate)}`);
                           }}
                           style={[styles.notificationTimeButton, { backgroundColor: colors.primaryContainer }]}

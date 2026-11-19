@@ -28,21 +28,42 @@ export function pickLapsedPhrasing(date: Date): string {
 }
 
 /**
- * Ask the user for notification permissions if we don't already have them.
- * Returns true if we can schedule alerts, false otherwise.
+ * - granted: we can deliver alerts (provisional counts as granted).
+ * - undetermined: the OS will still show a permission prompt.
+ * - blocked: the OS won't prompt again; only the system Settings app can
+ *   turn notifications back on (e.g. the user denied the prompt, or chose
+ *   "Turn Off" on a delivered notification).
  */
-export async function ensureNotificationPermissions(): Promise<boolean> {
-  const settings = await Notifications.getPermissionsAsync();
+export type NotificationPermissionState = "granted" | "undetermined" | "blocked";
 
-  if (settings.granted || settings.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL) {
-    return true;
+function toPermissionState(
+  response: Notifications.NotificationPermissionsStatus
+): NotificationPermissionState {
+  if (
+    response.granted ||
+    response.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL
+  ) {
+    return "granted";
   }
+  return response.canAskAgain ? "undetermined" : "blocked";
+}
+
+/** Read the current OS permission state without prompting. */
+export async function getNotificationPermissionState(): Promise<NotificationPermissionState> {
+  return toPermissionState(await Notifications.getPermissionsAsync());
+}
+
+/**
+ * Ask the user for notification permission if the OS still allows a prompt.
+ * Returns "granted" if we can schedule alerts, otherwise "blocked" — meaning
+ * the user must enable notifications in the system Settings app.
+ */
+export async function ensureNotificationPermissions(): Promise<"granted" | "blocked"> {
+  const current = await getNotificationPermissionState();
+  if (current !== "undetermined") return current;
 
   const request = await Notifications.requestPermissionsAsync();
-  return (
-    request.granted ||
-    request.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL
-  );
+  return toPermissionState(request) === "granted" ? "granted" : "blocked";
 }
 
 /**

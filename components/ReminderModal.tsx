@@ -5,7 +5,6 @@ import { fonts } from "../constants/theme";
 import { useTheme } from "../hooks/useTheme";
 import { useTypography } from "../hooks/useTypography";
 import { useSettings } from "../hooks/useSettings";
-import { scheduleWeekOfNotifications } from "../utils/notificationSync";
 import { useAnalytics } from "../utils/analytics";
 
 function parseTimeToDate(time: string): Date {
@@ -43,7 +42,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
 }) => {
   const { colors, isDark } = useTheme();
   const { typography } = useTypography();
-  const { settings, setDailyReminderEnabled, setDailyReminderTime } = useSettings();
+  const { settings, setDailyReminderEnabled, setDailyReminderTime, dailyReminderActive } = useSettings();
   const { trackReminderSet, trackReminderChanged, trackReminderDisabled } = useAnalytics();
 
   // Dynamic sizes — scale from bodyLargeFontSize so baseline at medium
@@ -84,11 +83,11 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
   );
 
   const handleReminderToggle = async (enabled: boolean) => {
-    await setDailyReminderEnabled(enabled);
+    const isOn = await setDailyReminderEnabled(enabled);
 
-    // Update notification with thought if enabling
     if (enabled) {
-      await scheduleWeekOfNotifications();
+      // If the OS blocked notifications, useSettings already showed an alert.
+      if (!isOn) return;
       trackReminderSet(settings.dailyReminderTime);
     } else {
       trackReminderDisabled();
@@ -141,17 +140,17 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                 <Text style={[styles.rowLabel, { fontSize: bodyFontSize, color: colors.ink }]}>Enable daily notification</Text>
               </View>
               <Switch
-                value={settings.dailyReminderEnabled}
+                value={dailyReminderActive}
                 onValueChange={handleReminderToggle}
                 trackColor={{ false: colors.mist, true: colors.deepTeal }}
-                thumbColor={settings.dailyReminderEnabled ? colors.pearl : '#f4f3f4'}
+                thumbColor={dailyReminderActive ? colors.pearl : '#f4f3f4'}
               />
             </View>
 
             <View
               style={[
                 styles.timeRow,
-                !settings.dailyReminderEnabled && styles.timeRowDisabled,
+                !dailyReminderActive && styles.timeRowDisabled,
               ]}
             >
               <View style={styles.rowText}>
@@ -161,9 +160,9 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
               <View style={styles.timeStepperContainer}>
                 <TouchableOpacity
                   activeOpacity={0.7}
-                  disabled={!settings.dailyReminderEnabled}
+                  disabled={!dailyReminderActive}
                   onPress={() => {
-                    if (settings.dailyReminderEnabled) {
+                    if (dailyReminderActive) {
                       setTempReminderDate(reminderDate);
                       setShowTimePicker(true);
                     }
@@ -173,7 +172,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                     style={[
                       styles.timeValue,
                       { fontSize: bodyFontSize, color: colors.ink },
-                      !settings.dailyReminderEnabled && styles.timeValueDisabled,
+                      !dailyReminderActive && styles.timeValueDisabled,
                     ]}
                   >
                     {formatTimeDisplay(reminderDate)}
@@ -182,7 +181,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
               </View>
             </View>
 
-            {showTimePicker && settings.dailyReminderEnabled ? (
+            {showTimePicker && dailyReminderActive ? (
               <View style={styles.timePickerContainer}>
                 <DateTimePicker
                   value={tempReminderDate ?? reminderDate}
@@ -198,7 +197,6 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                           const oldTime = settings.dailyReminderTime;
                           const newTime = formatTimeStorage(selectedDate);
                           await setDailyReminderTime(newTime);
-                          await scheduleWeekOfNotifications();
                           trackReminderChanged(oldTime, newTime);
                           if (onShowToast) {
                             onShowToast(`You'll receive the Thought for the Day at ${formatTimeDisplay(selectedDate)}`);
@@ -231,7 +229,6 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                         setShowTimePicker(false);
                         setTempReminderDate(null);
                         await setDailyReminderTime(newTime);
-                        await scheduleWeekOfNotifications();
                         trackReminderChanged(oldTime, newTime);
                         if (onShowToast) {
                           onShowToast(`You'll receive the Thought for the Day at ${formatTimeDisplay(finalDate)}`);

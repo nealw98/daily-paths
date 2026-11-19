@@ -1,7 +1,14 @@
 import React from "react";
-import { Platform } from "react-native";
+import { Alert, AppState, Linking, Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { ensureNotificationPermissions, cancelDailyReminder } from "../utils/dailyReminder";
+import {
+  ensureNotificationPermissions,
+  cancelDailyReminder,
+  getNotificationPermissionState,
+} from "../utils/dailyReminder";
+import { scheduleWeekOfNotifications } from "../utils/notificationSync";
+import { trackEvent } from "../utils/trackEvent";
+import { ANALYTICS_EVENTS } from "../utils/analytics";
 
 console.log("[STARTUP] useSettings.ts module loading...");
 
@@ -34,8 +41,36 @@ interface SettingsContextValue {
   setTextSize: (size: TextSize) => Promise<void>;
   setThemeId: (themeId: string) => Promise<void>;
   setColorScheme: (scheme: ColorScheme) => Promise<void>;
-  setDailyReminderEnabled: (enabled: boolean) => Promise<void>;
+  /**
+   * True when the OS has notifications blocked for the app and won't show a
+   * permission prompt again. Re-checked on every foreground.
+   */
+  notificationsBlocked: boolean;
+  /**
+   * What reminder switches should display: the stored preference, unless the
+   * OS is blocking notifications.
+   */
+  dailyReminderActive: boolean;
+  /**
+   * Turns the reminder on or off and reschedules notifications. Resolves to
+   * whether the reminder ended up on. If the OS has notifications blocked, an
+   * alert offering to open system Settings is shown and this resolves false.
+   */
+  setDailyReminderEnabled: (enabled: boolean) => Promise<boolean>;
+  /** Saves the reminder time and reschedules notifications. */
   setDailyReminderTime: (time: string) => Promise<void>;
+}
+
+function showNotificationsBlockedAlert() {
+  const where = Platform.OS === "ios" ? "iOS Settings" : "your phone's Settings";
+  Alert.alert(
+    "Notifications are turned off",
+    `Notifications for Daily Paths are turned off in ${where}. To get the Thought for the Day, turn on notifications for Daily Paths there.`,
+    [
+      { text: "Not Now", style: "cancel" },
+      { text: "Open Settings", onPress: () => Linking.openSettings() },
+    ]
+  );
 }
 
 const SettingsContext = React.createContext<SettingsContextValue | undefined>(
@@ -99,6 +134,10 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
   console.log("[STARTUP] SettingsProvider rendering...");
   const [settings, setSettings] = React.useState<AppSettings>(defaultSettings);
   const [loading, setLoading] = React.useState(true);
+  const [notificationsBlocked, setNotificationsBlocked] = React.useState(false);
+  // Latest settings, readable synchronously so updates can be computed and
+  // persisted before anything that reads them back from storage runs.
+  const settingsRef = React.useRef<AppSettings>(defaultSettings);
 
   React.useEffect(() => {
     console.log("[STARTUP] SettingsProvider useEffect running - loading settings...");
@@ -108,6 +147,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
         const loaded = await loadSettings();
         console.log("[STARTUP] Settings loaded successfully:", loaded);
         if (mounted) {
+          settingsRef.current = loaded;
           setSettings(loaded);
           setLoading(false);
         }
@@ -122,15 +162,37 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const updateSettings = React.useCallback(
     async (partial: Partial<AppSettings>) => {
-      setSettings((prev) => {
-        const next = { ...prev, ...partial };
-        // Fire and forget save
-        saveSettings(next);
-        return next;
-      });
+      const next = { ...settingsRef.current, ...partial };
+      settingsRef.current = next;
+      setSettings(next);
+      // Awaited so the notification scheduler, which reads settings from
+      // storage, never sees the previous values.
+      await saveSettings(next);
     },
     []
   );
+
+  // Keep the switch honest about OS-level permission, and keep the schedule
+  // fresh: re-check on launch and every time the app comes to the foreground.
+  React.useEffect(() => {
+    if (loading) return;
+    const refresh = async () => {
+      try {
+        const state = await getNotificationPermissionState();
+        setNotificationsBlocked(state === "blocked");
+        if (state === "granted" && settingsRef.current.dailyReminderEnabled) {
+          await scheduleWeekOfNotifications();
+        }
+      } catch (e) {
+        console.warn("[Settings] Failed to refresh notification state", e);
+      }
+    };
+    refresh();
+    const sub = AppState.addEventListener("change", (next) => {
+      if (next === "active") refresh();
+    });
+    return () => sub.remove();
+  }, [loading]);
 
   const setTextSize = React.useCallback(
     async (size: TextSize) => {
@@ -150,24 +212,37 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
   const setColorScheme = React.useCallback(
     async (scheme: ColorScheme) => {
       if (scheme === "system") {
-        await updateSettings({ ...settings, colorScheme: "system" });
+        await updateSettings({ colorScheme: "system" });
       } else {
         const themeId = scheme === "dark" ? "ocean-dark" : "ocean-light";
         await updateSettings({ colorScheme: scheme, themeId });
       }
     },
-    [updateSettings, settings]
+    [updateSettings]
   );
 
   const setDailyReminderEnabled = React.useCallback(
     async (enabled: boolean) => {
-      if (enabled) {
-        const ok = await ensureNotificationPermissions();
-        await updateSettings({ dailyReminderEnabled: ok });
-      } else {
-        await cancelDailyReminder();
+      if (!enabled) {
         await updateSettings({ dailyReminderEnabled: false });
+        await cancelDailyReminder();
+        return false;
       }
+
+      const permission = await ensureNotificationPermissions();
+      if (permission !== "granted") {
+        setNotificationsBlocked(true);
+        trackEvent(ANALYTICS_EVENTS.NOTIFICATION_PERMISSION_DENIED, {
+          platform: Platform.OS,
+        }, true);
+        showNotificationsBlockedAlert();
+        return false;
+      }
+
+      setNotificationsBlocked(false);
+      await updateSettings({ dailyReminderEnabled: true });
+      await scheduleWeekOfNotifications();
+      return true;
     },
     [updateSettings]
   );
@@ -175,7 +250,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
   const setDailyReminderTime = React.useCallback(
     async (time: string) => {
       await updateSettings({ dailyReminderTime: time });
-      // Actual scheduling is handled by callers via scheduleWeekOfNotifications()
+      await scheduleWeekOfNotifications();
     },
     [updateSettings]
   );
@@ -187,10 +262,21 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({
       setTextSize,
       setThemeId,
       setColorScheme,
+      notificationsBlocked,
+      dailyReminderActive: settings.dailyReminderEnabled && !notificationsBlocked,
       setDailyReminderEnabled,
       setDailyReminderTime,
     }),
-    [settings, loading, setTextSize, setThemeId, setColorScheme, setDailyReminderEnabled, setDailyReminderTime]
+    [
+      settings,
+      loading,
+      notificationsBlocked,
+      setTextSize,
+      setThemeId,
+      setColorScheme,
+      setDailyReminderEnabled,
+      setDailyReminderTime,
+    ]
   );
 
   return React.createElement(SettingsContext.Provider, { value }, children);
