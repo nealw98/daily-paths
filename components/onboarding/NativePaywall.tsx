@@ -89,6 +89,7 @@ export function NativePaywall({
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [reviewIndex, setReviewIndex] = useState(0);
+  const [interactive, setInteractive] = useState(false);
   const showPreviewControls = isInternalBuild();
   const { refresh, refreshLifetimeAccess } = useSubscriptionContext();
   const {
@@ -137,6 +138,7 @@ export function NativePaywall({
   useEffect(() => {
     if (!visible) {
       shownForOpen.current = false;
+      setInteractive(false);
       return;
     }
     if (shownForOpen.current) return;
@@ -297,8 +299,10 @@ export function NativePaywall({
       animationType="slide"
       presentationStyle="fullScreen"
       onRequestClose={handleClose}
+      onShow={() => setInteractive(true)}
+      onDismiss={() => setInteractive(false)}
     >
-      <View style={styles.root}>
+      <View style={styles.root} pointerEvents={interactive ? "auto" : "none"}>
         <StatusBar style="light" backgroundColor={colors.secondary} />
         <SafeAreaView edges={["top"]} style={styles.headerSafeArea}>
           <View style={styles.header}>

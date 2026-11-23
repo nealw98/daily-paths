@@ -411,7 +411,7 @@ function ToolkitPage({
       </ScrollView>
       <View style={styles.pinnedActionArea}>
         <PrimaryButton
-          label="Continue"
+          label="Unlock the app"
           onPress={onUnlock}
         />
       </View>
