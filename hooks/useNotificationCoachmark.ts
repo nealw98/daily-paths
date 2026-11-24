@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ComponentRef } from "react";
 import {
   LayoutChangeEvent,
   NativeScrollEvent,
@@ -33,7 +33,7 @@ interface UseNotificationCoachmarkResult {
   visible: boolean;
   anchor: CoachmarkAnchor | null;
   onDismiss: (reason: "got_it") => void;
-  registerToggleRef: (ref: View | null) => void;
+  registerToggleRef: (ref: ComponentRef<typeof View> | null) => void;
   scrollProps: ScrollProps;
 }
 
@@ -51,7 +51,7 @@ export function useNotificationCoachmark(
   const [visible, setVisible] = useState(false);
   const [anchor, setAnchor] = useState<CoachmarkAnchor | null>(null);
 
-  const toggleViewRef = useRef<View | null>(null);
+  const toggleViewRef = useRef<ComponentRef<typeof View> | null>(null);
   const atBottomRef = useRef(false);
   const contentSizeRef = useRef({ height: 0 });
   const layoutSizeRef = useRef({ height: 0 });
@@ -220,7 +220,7 @@ export function useNotificationCoachmark(
     [measureToggle]
   );
 
-  const registerToggleRef = useCallback((ref: View | null) => {
+  const registerToggleRef = useCallback((ref: ComponentRef<typeof View> | null) => {
     toggleViewRef.current = ref;
   }, []);
 

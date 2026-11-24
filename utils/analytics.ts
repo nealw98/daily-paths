@@ -116,7 +116,7 @@ export function useAnalytics() {
   const hasIdentified = useRef(false);
   const hasTrackedAppOpen = useRef(false);
   const currentReadingView = useRef<ReadingViewState | null>(null);
-  const appState = useRef<AppStateStatus>(AppState.currentState);
+  const appState = useRef<AppStateStatus>(AppState.currentState as AppStateStatus);
   const [isDeveloper, setIsDeveloper] = useState(false);
   const themeModeRef = useRef<ThemeMode>('system');
 

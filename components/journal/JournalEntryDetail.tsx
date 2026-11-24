@@ -67,7 +67,7 @@ export const JournalEntryDetail: React.FC<JournalEntryDetailProps> = ({
   const auxFontSize = Math.round(typography.bodyLargeFontSize * (15 / 19));
   const auxLineHeight = Math.round(auxFontSize * (20 / 15));
   const [saving, setSaving] = useState(false);
-  const textInputRef = useRef<TextInput>(null);
+  const textInputRef = useRef<React.ComponentRef<typeof TextInput>>(null);
 
   const entryType = (entry.entry_type || "journal") as EntryType;
   const catConfig = getCategoryById(entryType);

@@ -109,7 +109,7 @@ export default function RootLayout() {
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const updateCheckInFlight = useRef(false);
   const lastUpdateCheckAt = useRef(0);
-  const appState = useRef<AppStateStatus>(AppState.currentState);
+  const appState = useRef<AppStateStatus>(AppState.currentState as AppStateStatus);
   console.log("[STARTUP] State initialized");
 
   console.log("[STARTUP] Loading fonts...");

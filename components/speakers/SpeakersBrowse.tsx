@@ -52,7 +52,7 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
   const [sortMode, setSortMode] = useState<SortMode>("newest");
   const [sortSheetOpen, setSortSheetOpen] = useState(false);
   const [sortAnchor, setSortAnchor] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
-  const sortButtonRef = React.useRef<View>(null);
+  const sortButtonRef = React.useRef<React.ComponentRef<typeof View>>(null);
   const [refreshing, setRefreshing] = useState(false);
   const handleRefresh = async () => {
     setRefreshing(true);

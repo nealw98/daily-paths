@@ -32,7 +32,9 @@
       }
     },
     "android": {
-      "blockedPermissions": ["android.permission.RECORD_AUDIO"],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#F7FAFA"
@@ -75,7 +77,8 @@
           "iCloudContainerEnvironment": "Production",
           "iCloudContainerIdentifier": "iCloud.com.nealwagner.dailypaths"
         }
-      ]
+      ],
+      "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": true

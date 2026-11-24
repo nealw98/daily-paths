@@ -31,7 +31,7 @@ export const QuoteWatermarkPattern: React.FC<QuoteWatermarkPatternProps> = ({
 
 const styles = StyleSheet.create({
   fill: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   row: {
     position: "absolute",

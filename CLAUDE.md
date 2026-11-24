@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Stack
 
-Expo (SDK 54) + React Native 0.81 + expo-router 6 + TypeScript (strict). Hermes + new architecture enabled. Supabase for the only remote data we hold (speakers, gratitude quotes, journal quotes, app feedback, grandfather edge function). Mixpanel + an in-app QA log for analytics. RevenueCat for purchases (Android only — iOS is a paid download with no IAP).
+Expo (SDK 58) + React Native 0.88 + React 19.3 + expo-router 58 + TypeScript 6 (strict). Hermes + new architecture (mandatory). Built with Xcode 27 / the iOS 27 SDK, which the iPhone Duo needs to run full-screen. Supabase for the only remote data we hold (speakers, gratitude quotes, journal quotes, app feedback, grandfather edge function). Mixpanel + an in-app QA log for analytics. RevenueCat for purchases (Android only — iOS is a paid download with no IAP).
 
 There is no test runner configured; verification is `npx tsc --noEmit` plus running the app in a simulator / dev client. Don't add Jest unless asked.
 

@@ -27,7 +27,7 @@ export const GratitudeEntry: React.FC<GratitudeEntryProps> = ({
   const { colors } = useTheme();
   const [items, setItems] = useState<string[]>(initialItems);
   const [inputText, setInputText] = useState("");
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<React.ComponentRef<typeof TextInput>>(null);
 
   useEffect(() => {
     setItems(initialItems);

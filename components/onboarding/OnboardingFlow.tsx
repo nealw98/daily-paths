@@ -69,7 +69,7 @@ export function OnboardingFlow({
   const [reduceMotion, setReduceMotion] = useState(false);
   const [paywallOrigin, setPaywallOrigin] = useState<Page | null>(initialPaywallOrigin);
   const previewProgress = useRef(new Animated.Value(0)).current;
-  const cardRef = useRef<View>(null);
+  const cardRef = useRef<React.ComponentRef<typeof View>>(null);
   const lastTrackedPage = useRef<Page | null>(null);
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const {
@@ -167,7 +167,7 @@ export function OnboardingFlow({
 
   return (
     <View style={styles.root}>
-      <StatusBar style="light" backgroundColor={colors.secondary} />
+      <StatusBar style="light" />
       {page === "reflections" ? (
         <ReflectionsPage
           cardRef={cardRef}
@@ -275,7 +275,7 @@ function ReflectionsPage({
   onContinue,
   onSkip,
 }: {
-  cardRef: React.RefObject<View | null>;
+  cardRef: React.RefObject<React.ComponentRef<typeof View> | null>;
   onExit?: () => void;
   onOpenPreview: () => void;
   onContinue: () => void;

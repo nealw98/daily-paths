@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { StyleSheet, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect } from "expo-router";
 import { useNavigation } from "expo-router";
 import { useTheme } from "../../hooks/useTheme";
 import { useJournalStorage, type JournalEntry, type EntryType } from "../../hooks/useJournalStorage";

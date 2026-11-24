@@ -56,7 +56,7 @@ export const NotificationCoachmark: React.FC<NotificationCoachmarkProps> = ({
   const { colors } = useTheme();
   const opacity = useRef(new Animated.Value(0)).current;
   const [rendered, setRendered] = useState(false);
-  const overlayRef = useRef<View>(null);
+  const overlayRef = useRef<React.ComponentRef<typeof View>>(null);
   const [overlayOffset, setOverlayOffset] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
@@ -154,7 +154,7 @@ export const NotificationCoachmark: React.FC<NotificationCoachmarkProps> = ({
       ref={overlayRef}
       collapsable={false}
       pointerEvents="box-none"
-      style={[StyleSheet.absoluteFillObject, { opacity, zIndex: 999 }]}
+      style={[StyleSheet.absoluteFill, { opacity, zIndex: 999 }]}
     >
       {/* Inert dim segments — absorb taps, take no action. */}
       <View

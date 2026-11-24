@@ -94,7 +94,7 @@ export function installGlobalErrorHandler() {
   installed = true;
 
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const ErrorUtils = (global as any).ErrorUtils;
+  const ErrorUtils = (globalThis as any).ErrorUtils;
   const previousHandler = ErrorUtils?.getGlobalHandler?.();
 
   if (ErrorUtils?.setGlobalHandler) {

@@ -94,9 +94,9 @@ export const SettingsContent: React.FC<{
   const [feedbackContact, setFeedbackContact] = useState("");
   const [isSharing, setIsSharing] = useState(false);
   const router = useRouter();
-  const scrollViewRef = React.useRef<ScrollView>(null);
-  const textSizeRef = React.useRef<View>(null);
-  const reminderRef = React.useRef<View>(null);
+  const scrollViewRef = React.useRef<React.ComponentRef<typeof ScrollView>>(null);
+  const textSizeRef = React.useRef<React.ComponentRef<typeof View>>(null);
+  const reminderRef = React.useRef<React.ComponentRef<typeof View>>(null);
 
   const expoConfig: any = Constants.expoConfig ?? {};
   const appVersion =

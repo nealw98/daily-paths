@@ -38,7 +38,7 @@ export const JournalSearch: React.FC<JournalSearchProps> = ({
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<JournalEntry[]>([]);
   const [searched, setSearched] = useState(false);
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<React.ComponentRef<typeof TextInput>>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const handleSearch = useCallback(
@@ -188,7 +188,7 @@ export const JournalSearch: React.FC<JournalSearchProps> = ({
                 No entries found for "{query}"
               </Text>
             </View>
-          ) : null
+          ) : undefined
         }
       />
     </SafeAreaView>

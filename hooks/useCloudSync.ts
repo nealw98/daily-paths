@@ -21,7 +21,7 @@ async function reloadForRemoteChanges(): Promise<boolean> {
 
 export function useCloudSync() {
   const started = useRef(false);
-  const prevState = useRef<AppStateStatus>(AppState.currentState);
+  const prevState = useRef<AppStateStatus>(AppState.currentState as AppStateStatus);
   const reloadStarted = useRef(false);
 
   useEffect(() => {

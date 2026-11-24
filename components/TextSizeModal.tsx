@@ -60,7 +60,7 @@ export const TextSizeModal: React.FC<TextSizeModalProps> = ({
   const sliderLabelFontSize = typography.bodySmallFontSize;
   const themeOptionFontSize = Math.round(typography.bodyLargeFontSize * (14 / 19));
   const slideAnim = React.useRef(new Animated.Value(0)).current;
-  const scrollRef = React.useRef<ScrollView>(null);
+  const scrollRef = React.useRef<React.ComponentRef<typeof ScrollView>>(null);
   const [showExtended, setShowExtended] = React.useState(false);
 
   // When extended shows, scroll to top so "Theme" stays visible for tap-to-hide

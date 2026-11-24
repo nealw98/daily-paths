@@ -14,7 +14,7 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect } from "expo-router";
 import Constants from "expo-constants";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -87,7 +87,7 @@ export default function MoreTab() {
   const { status, hasLifetimeAccess } = useSubscription();
   const { updateThemeMode } = useAnalytics();
   const router = useRouter();
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
 
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [showRateModal, setShowRateModal] = useState(false);

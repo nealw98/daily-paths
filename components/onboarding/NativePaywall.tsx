@@ -82,7 +82,7 @@ export function NativePaywall({
 }: NativePaywallProps) {
   const { width } = useWindowDimensions();
   const reviewWidth = width;
-  const reviewScrollRef = useRef<ScrollView>(null);
+  const reviewScrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const shownForOpen = useRef(false);
   const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage | null>(null);
   const [loadingPackage, setLoadingPackage] = useState(false);
@@ -303,7 +303,7 @@ export function NativePaywall({
       onDismiss={() => setInteractive(false)}
     >
       <View style={styles.root} pointerEvents={interactive ? "auto" : "none"}>
-        <StatusBar style="light" backgroundColor={colors.secondary} />
+        <StatusBar style="light" />
         <SafeAreaView edges={["top"]} style={styles.headerSafeArea}>
           <View style={styles.header}>
             {showPreviewControls ? (
