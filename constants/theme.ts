@@ -723,6 +723,37 @@ export const layout = {
   },
 };
 
+/**
+ * Type scale for the wide layout (iPad and the open Duo), from
+ * docs/widescreen-2.9/SPEC.md §3. Use these and nothing else on wide
+ * screens. Reading, prayer and entry text are NOT here: they follow the
+ * Text Size setting through useTypography() (typography.body).
+ */
+export const wideType = {
+  /** Reading title, Today's hero card. */
+  bigTitle: { fontFamily: fonts.cormorantGaramondSemiBold, fontSize: 40, lineHeight: 44 },
+  /** Screen titles (h1). */
+  screenTitle: { fontFamily: fonts.cormorantGaramondSemiBold, fontSize: 34, lineHeight: 40 },
+  /** Pane titles on the right side. */
+  paneTitle: { fontFamily: fonts.cormorantGaramondSemiBold, fontSize: 28, lineHeight: 34 },
+  /** Card titles. */
+  cardTitle: { fontFamily: fonts.cormorantGaramondSemiBold, fontSize: 22, lineHeight: 26 },
+  /** Quotes (card-title size, medium italic). */
+  quote: { fontFamily: fonts.cormorantGaramondMediumItalic, fontSize: 22, lineHeight: 26 },
+  /** Prompts and previews. */
+  preview: { fontFamily: fonts.loraItalic, fontSize: 15, lineHeight: 22 },
+  /** Row titles, buttons, questions, Back. */
+  row: { fontFamily: fonts.bodyFamilySemiBold, fontSize: 16, lineHeight: 22 },
+  /** Secondary text and filter labels. */
+  secondary: { fontFamily: fonts.bodyFamily, fontSize: 14, lineHeight: 20 },
+  /** Links (secondary size, semibold). */
+  link: { fontFamily: fonts.bodyFamilySemiBold, fontSize: 14, lineHeight: 20 },
+  /** Small capitals and list dates. Add textTransform for caps. */
+  smallCaps: { fontFamily: fonts.bodyFamilyBold, fontSize: 12, lineHeight: 16, letterSpacing: 0.8 },
+  /** Tab rail labels. */
+  railLabel: { fontFamily: fonts.bodyFamilySemiBold, fontSize: 11, lineHeight: 14 },
+};
+
 export const typography = {
   h1: {
     fontFamily: fonts.headerFamilyBoldItalic,

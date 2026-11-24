@@ -40,3 +40,17 @@ export function useOpenLayout(): boolean {
   const { width, height } = useWindowDimensions();
   return isOpenCanvas(width, height);
 }
+
+// The two-pane wide layout (docs/widescreen-2.9/SPEC.md): an open canvas
+// that is also expanded-width — the open Duo held sideways, or an iPad in
+// landscape. The open Duo upright (669pt) and an upright 11" iPad (820pt)
+// keep the phone screens beside the rail, as Hands Off does: half of those
+// widths is too narrow for either pane.
+export function isWideLayout(width: number, height: number): boolean {
+  return isOpenCanvas(width, height) && width >= EXPANDED_MIN_WIDTH;
+}
+
+export function useWideLayout(): boolean {
+  const { width, height } = useWindowDimensions();
+  return isWideLayout(width, height);
+}

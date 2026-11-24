@@ -34,6 +34,9 @@ import { useFeaturedSpeaker } from "../../hooks/useFeaturedSpeaker";
 import { computeJournalStreak } from "../../utils/journalStreak";
 import { getScheduledDayOfYear } from "../../utils/dateUtils";
 import { isInternalBuild } from "../../utils/buildProfile";
+import { useWideLayout } from "../../hooks/useLayoutMode";
+import { TodayWide } from "../../components/wide/TodayWide";
+import { PRAYERS, type Prayer } from "../../constants/prayers";
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -94,6 +97,14 @@ function getReflectionImageForDate(date: Date) {
   return REFLECTION_IMAGES[idx];
 }
 
+// Today's prayer on the wide Today card: the built-in prayers in turn, one
+// per day, keyed to the same local day-of-year as the reflection image.
+function getPrayerForDate(date: Date): Prayer | null {
+  if (PRAYERS.length === 0) return null;
+  const idx = getScheduledDayOfYear(date) % PRAYERS.length;
+  return PRAYERS[idx];
+}
+
 export default function HomeTab() {
   const { colors } = useTheme();
   const { settings } = useSettings();
@@ -111,6 +122,8 @@ export default function HomeTab() {
   const [reflectionImageOverride, setReflectionImageOverride] = useState<number | null>(null);
   const showPreviewControls = isInternalBuild();
   const [devPaywallFlowVisible, setDevPaywallFlowVisible] = useState(false);
+  const wide = useWideLayout();
+  const prayerOfTheDay = useMemo(() => getPrayerForDate(today), [today]);
 
   useEffect(() => {
     AsyncStorage.getItem(QA_REFLECTION_IMAGE_OVERRIDE_KEY)
@@ -259,6 +272,57 @@ export default function HomeTab() {
         onCancel={() => setJournalEntryType(null)}
         onSwitchEntryType={setJournalEntryType}
       />
+    );
+  }
+
+  const devPaywallModal = (
+    <Modal
+      visible={devPaywallFlowVisible}
+      animationType="slide"
+      presentationStyle="fullScreen"
+      onRequestClose={() => setDevPaywallFlowVisible(false)}
+    >
+      <OnboardingFlow
+        initialPaywallOrigin="toolkit"
+        onAccessGranted={() => setDevPaywallFlowVisible(false)}
+      />
+    </Modal>
+  );
+
+  if (wide) {
+    return (
+      <>
+        <TodayWide
+          greeting={getGreeting()}
+          dateLabel={today.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+          shortDateLabel={today.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+          heroImage={heroImage}
+          reading={reading}
+          readingLoading={readingLoading}
+          onOpenReading={() => router.push("/(tabs)/reading")}
+          onOpenTool={setJournalEntryType}
+          prayer={prayerOfTheDay}
+          onOpenPrayer={(prayer) =>
+            router.navigate({ pathname: "/(tabs)/prayers", params: { prayerId: prayer.id } })
+          }
+          featuredSpeaker={featuredSpeaker ?? null}
+          onOpenSpeaker={(speaker) =>
+            router.navigate({ pathname: "/(tabs)/speakers", params: { speakerId: speaker.id } })
+          }
+          devAction={showPreviewControls ? (
+            <TouchableOpacity
+              activeOpacity={0.75}
+              onPress={() => setDevPaywallFlowVisible(true)}
+              style={[styles.devPaywallButton, { borderColor: colors.outlineVariant }]}
+              accessibilityRole="button"
+              accessibilityLabel="Open paywall for testing"
+            >
+              <Text style={[styles.devPaywallText, { color: colors.onSurfaceVariant }]}>Paywall</Text>
+            </TouchableOpacity>
+          ) : null}
+        />
+        {devPaywallModal}
+      </>
     );
   }
 
@@ -619,17 +683,7 @@ export default function HomeTab() {
         {/* Bottom spacing */}
         <View style={{ height: 32 }} />
       </ScrollView>
-      <Modal
-        visible={devPaywallFlowVisible}
-        animationType="slide"
-        presentationStyle="fullScreen"
-        onRequestClose={() => setDevPaywallFlowVisible(false)}
-      >
-        <OnboardingFlow
-          initialPaywallOrigin="toolkit"
-          onAccessGranted={() => setDevPaywallFlowVisible(false)}
-        />
-      </Modal>
+      {devPaywallModal}
     </SafeAreaView>
   );
 }

@@ -37,7 +37,7 @@ import { useNotificationCoachmark } from "../hooks/useNotificationCoachmark";
  * Returns an array of strings and nested <Text> nodes that can be used
  * as the children of a <Text> component.
  */
-const renderInlineMarkdown = (text: string, italicStyle: any) => {
+export const renderInlineMarkdown = (text: string, italicStyle: any) => {
   const parts: React.ReactNode[] = [];
   const regex = /(\*([^*]+)\*|_([^_]+)_)/g;
 

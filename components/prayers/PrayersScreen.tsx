@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useLocalSearchParams } from "expo-router";
 import { Ionicons, MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useTheme } from "../../hooks/useTheme";
@@ -56,6 +57,12 @@ export const PrayersScreen: React.FC = () => {
   const [builtinOverrides, setBuiltinOverrides] = useState<Record<string, BuiltInPrayerOverride>>({});
   const [hiddenBuiltinPrayerIds, setHiddenBuiltinPrayerIds] = useState<string[]>([]);
   const scrollRef = useRef<any>(null);
+
+  // Opened from Today's prayer card with ?prayerId=… : open that prayer.
+  const { prayerId } = useLocalSearchParams<{ prayerId?: string }>();
+  useEffect(() => {
+    if (prayerId) setExpandedPrayer(prayerId);
+  }, [prayerId]);
 
   // Sizing for Edit/Delete/Cancel/Save labels — scales with the global
   // text-size setting instead of the old static 14/18.

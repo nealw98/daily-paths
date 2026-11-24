@@ -28,6 +28,8 @@ import { useReadingDate } from "../../contexts/ReadingDateContext";
 import { useTheme } from "../../hooks/useTheme";
 import * as Notifications from "expo-notifications";
 import { SanctuaryButton } from "../../components/ui/Sanctuary";
+import { useWideLayout } from "../../hooks/useLayoutMode";
+import { ReadingWide } from "../../components/wide/ReadingWide";
 
 function addDays(date: Date, amount: number): Date {
   const next = new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -53,6 +55,7 @@ export default function ReadingDetail() {
   const [showJournalPicker, setShowJournalPicker] = useState(false);
   const [journalEntryType, setJournalEntryType] = useState<EntryType | null>(null);
   const handledJumpTokenRef = useRef<string | null>(null);
+  const wide = useWideLayout();
 
   // Journal entry creation
   const { createEntry } = useJournalStorage();
@@ -341,6 +344,22 @@ export default function ReadingDetail() {
           />
         </View>
       </View>
+    );
+  } else if (wide) {
+    content = (
+      <ReadingWide
+        reading={reading}
+        onPreviousDay={handlePreviousDay}
+        onNextDay={handleNextDay}
+        canGoPrevious={canGoPrevious}
+        canGoNext={canGoNext}
+        onOpenDatePicker={handleOpenDatePicker}
+        onOpenFavorites={handleOpenFavorites}
+        isBookmarked={isBookmarked}
+        onBookmarkToggle={handleBookmarkToggle}
+        onShare={handleShare}
+        onWriteAboutThis={() => setJournalEntryType("journal")}
+      />
     );
   } else {
     content = (
