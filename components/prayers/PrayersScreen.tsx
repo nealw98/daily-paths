@@ -29,6 +29,10 @@ import { JournalCategoryPicker } from "../journal/JournalCategoryPicker";
 import { JournalEntryEditor } from "../journal/JournalEntryEditor";
 import { FieldShell, SanctuaryButton, SanctuaryCard } from "../ui/Sanctuary";
 import { notifyUserDataChanged } from "../../lib/syncEvents";
+import { useWideLayout } from "../../hooks/useLayoutMode";
+import { useAppDate } from "../../contexts/AppDateContext";
+import { getPrayerForDate } from "../../utils/prayerOfTheDay";
+import { PrayersWide, type PrayerKind } from "../wide/PrayersWide";
 
 const BUILTIN_PRAYER_OVERRIDES_KEY = "@daily_paths_builtin_prayer_overrides_v1";
 const HIDDEN_BUILTIN_PRAYERS_KEY = "@daily_paths_hidden_builtin_prayers_v1";
@@ -57,6 +61,9 @@ export const PrayersScreen: React.FC = () => {
   const [builtinOverrides, setBuiltinOverrides] = useState<Record<string, BuiltInPrayerOverride>>({});
   const [hiddenBuiltinPrayerIds, setHiddenBuiltinPrayerIds] = useState<string[]>([]);
   const scrollRef = useRef<any>(null);
+  const wide = useWideLayout();
+  const { today } = useAppDate();
+  const prayerOfTheDay = useMemo(() => getPrayerForDate(today), [today]);
 
   // Opened from Today's prayer card with ?prayerId=… : open that prayer.
   const { prayerId } = useLocalSearchParams<{ prayerId?: string }>();
@@ -539,6 +546,36 @@ export const PrayersScreen: React.FC = () => {
       </SanctuaryCard>
     );
   };
+
+  if (wide && !journalEntryType) {
+    // Saves an edit from the wide layout's form (the phone uses the inline
+    // editor's state and handleSaveEdit).
+    const saveWideEdit = async (kind: PrayerKind, id: string, title: string, text: string) => {
+      if (kind === "builtin") {
+        const nextOverrides = { ...builtinOverrides, [id]: { title: title.trim(), text: text.trim() } };
+        setBuiltinOverrides(nextOverrides);
+        await AsyncStorage.setItem(BUILTIN_PRAYER_OVERRIDES_KEY, JSON.stringify(nextOverrides));
+        notifyUserDataChanged();
+      } else {
+        await updatePrayer(id, title, text);
+      }
+    };
+    return (
+      <PrayersWide
+        builtInPrayers={builtInPrayers}
+        personalPrayers={personalPrayers}
+        initialPrayerId={prayerId}
+        prayerOfTheDayId={prayerOfTheDay?.id}
+        onViewed={(prayer) => trackPrayerViewed(prayer.id, prayer.title)}
+        onShare={handleSharePrayer}
+        onAdd={addPrayer}
+        onUpdate={saveWideEdit}
+        onDelete={(kind, prayer) =>
+          kind === "builtin" ? handleDeleteBuiltin(prayer) : handleDelete(prayer as PersonalPrayer)
+        }
+      />
+    );
+  }
 
   if (journalEntryType) {
     return (

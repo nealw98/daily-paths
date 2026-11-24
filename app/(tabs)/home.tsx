@@ -36,7 +36,7 @@ import { getScheduledDayOfYear } from "../../utils/dateUtils";
 import { isInternalBuild } from "../../utils/buildProfile";
 import { useWideLayout } from "../../hooks/useLayoutMode";
 import { TodayWide } from "../../components/wide/TodayWide";
-import { PRAYERS, type Prayer } from "../../constants/prayers";
+import { getPrayerForDate } from "../../utils/prayerOfTheDay";
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -95,14 +95,6 @@ function getReflectionImageForDate(date: Date) {
   const dayIndex = getScheduledDayOfYear(date);
   const idx = ((dayIndex % REFLECTION_IMAGES.length) + REFLECTION_IMAGES.length) % REFLECTION_IMAGES.length;
   return REFLECTION_IMAGES[idx];
-}
-
-// Today's prayer on the wide Today card: the built-in prayers in turn, one
-// per day, keyed to the same local day-of-year as the reflection image.
-function getPrayerForDate(date: Date): Prayer | null {
-  if (PRAYERS.length === 0) return null;
-  const idx = getScheduledDayOfYear(date) % PRAYERS.length;
-  return PRAYERS[idx];
 }
 
 export default function HomeTab() {
