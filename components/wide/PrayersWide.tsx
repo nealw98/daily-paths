@@ -18,13 +18,11 @@ import { useTypography } from "../../hooks/useTypography";
 import type { Prayer } from "../../constants/prayers";
 
 /**
- * Prayers in the wide layout (docs/widescreen-2.9/13–17). Left: "Write your
+ * Prayers in the wide layout (docs/widescreen-2.9/13–15). Left: "Write your
  * own", then the prayers with 2-line previews. Right: the open prayer, top-
- * aligned with the list, with expand and share; or the write/edit form.
- * Expand hides the list so the prayer fills the screen: short prayers sit
- * centered at a larger size, long ones (Just for Today) run in two columns
- * and scroll only when the Text Size setting makes them too tall. The
- * expanded state is kept while switching prayers.
+ * aligned with the list, with share; or the write/edit form. There is no
+ * expanded view (dropped by Neal, Nov 24): the pane already shows every
+ * prayer in full and scrolls when it is long.
  * PrayersScreen owns the data and storage and passes them in.
  */
 export type PrayerKind = "builtin" | "personal";
@@ -49,26 +47,6 @@ type Mode = { type: "view" } | { type: "write" } | { type: "edit"; item: Item };
 
 const paragraphs = (text: string) =>
   text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
-
-// Long prayers get two columns when expanded.
-const isLong = (text: string) => paragraphs(text).length >= 4 || text.length > 700;
-
-// Split paragraphs into two columns, choosing the break that makes the
-// longer column as short as possible (each paragraph also costs a gap).
-function twoColumns(paras: string[]): [string[], string[]] {
-  const PARAGRAPH_COST = 40; // roughly the characters a paragraph gap takes up
-  const cost = (ps: string[]) => ps.reduce((n, p) => n + p.length + PARAGRAPH_COST, 0);
-  let best = paras.length;
-  let bestMax = Infinity;
-  for (let cut = 1; cut < paras.length; cut++) {
-    const longer = Math.max(cost(paras.slice(0, cut)), cost(paras.slice(cut)));
-    if (longer < bestMax) {
-      bestMax = longer;
-      best = cut;
-    }
-  }
-  return [paras.slice(0, best), paras.slice(best)];
-}
 
 const clear = (hex: string) => (/^#[0-9a-f]{6}$/i.test(hex) ? `${hex}00` : "transparent");
 
@@ -97,7 +75,6 @@ export function PrayersWide({
 
   const [selectedId, setSelectedId] = useState<string | undefined>(initialPrayerId ?? prayerOfTheDayId);
   const [mode, setMode] = useState<Mode>({ type: "view" });
-  const [expanded, setExpanded] = useState(false);
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
 
@@ -120,7 +97,6 @@ export function PrayersWide({
     setTitle("");
     setText("");
     setMode({ type: "write" });
-    setExpanded(false);
   };
   const startEdit = (item: Item) => {
     setTitle(item.title);
@@ -161,14 +137,6 @@ export function PrayersWide({
         <Text style={[wideType.paneTitle, styles.paneTitle, { color: colors.onSurface }]}>{item.title}</Text>
       </View>
       <View style={styles.headerButtons}>
-        <Pressable
-          onPress={() => setExpanded((e) => !e)}
-          accessibilityRole="button"
-          accessibilityLabel={expanded ? "Collapse prayer" : "Expand prayer"}
-          style={iconButton}
-        >
-          <MaterialIcons name={expanded ? "close-fullscreen" : "open-in-full"} size={16} color={colors.primary} />
-        </Pressable>
         <Pressable onPress={() => onShare(item)} accessibilityRole="button" accessibilityLabel="Share" style={iconButton}>
           <MaterialIcons name={Platform.OS === "ios" ? "ios-share" : "share"} size={17} color={colors.primary} />
         </Pressable>
@@ -180,63 +148,6 @@ export function PrayersWide({
     item.source ? (
       <Text style={[wideType.secondary, { color: colors.onSurfaceVariant }]}>{item.source}</Text>
     ) : null;
-
-  // --- Expanded: the prayer fills the screen ---
-  if (expanded && selected && mode.type === "view") {
-    const long = isLong(selected.text);
-    const paras = paragraphs(selected.text);
-    const [left, right] = twoColumns(paras);
-    const longText = {
-      fontFamily: fonts.loraRegular,
-      fontSize: Math.round(prayerSize * (17 / 18)),
-      lineHeight: Math.round(prayerSize * (17 / 18) * 1.45),
-      color: colors.onSurface,
-      marginBottom: 10,
-    };
-    return (
-      <View style={[styles.root, { backgroundColor: colors.surface, paddingTop: insets.top + 6 }]}>
-        <View style={[card, styles.expandedCard]}>
-          {header(selected)}
-          {long ? (
-            <ScrollView style={styles.flex} contentContainerStyle={styles.expandedScroll} showsVerticalScrollIndicator={false}>
-              <View style={styles.columns}>
-                <View style={styles.flex}>
-                  {left.map((p, i) => <Text key={i} style={longText}>{p}</Text>)}
-                </View>
-                <View style={styles.flex}>
-                  {right.map((p, i) => <Text key={i} style={longText}>{p}</Text>)}
-                </View>
-              </View>
-              {source(selected)}
-            </ScrollView>
-          ) : (
-            <ScrollView style={styles.flex} contentContainerStyle={styles.centered} showsVerticalScrollIndicator={false}>
-              {paras.map((p, i) => (
-                <Text
-                  key={i}
-                  style={{
-                    fontFamily: fonts.loraRegular,
-                    fontSize: Math.round(prayerSize * (22 / 18)),
-                    lineHeight: Math.round(prayerSize * (22 / 18) * 1.75),
-                    color: colors.onSurface,
-                    textAlign: "center",
-                    marginBottom: 16,
-                  }}
-                >
-                  {p}
-                </Text>
-              ))}
-              {selected.source ? (
-                <Text style={[wideType.secondary, styles.expandedSource, { color: colors.onSurfaceVariant }]}>
-                  {selected.source}
-                </Text>
-              ) : null}
-            </ScrollView>
-          )}
-        </View>
-      </View>
-    );
-  }
 
   // --- Two panes ---
   const writing = mode.type !== "view";
@@ -467,9 +378,4 @@ const styles = StyleSheet.create({
   },
   saveButton: { flex: 1, height: 48, borderRadius: 14, alignItems: "center", justifyContent: "center" },
 
-  expandedCard: { flex: 1, paddingTop: 26, paddingHorizontal: 36, gap: 20, overflow: "hidden" },
-  expandedScroll: { paddingBottom: 26 },
-  columns: { flexDirection: "row", gap: 44 },
-  centered: { flexGrow: 1, alignItems: "center", justifyContent: "center", paddingBottom: 60 },
-  expandedSource: { marginTop: 2, textAlign: "center" },
 });
