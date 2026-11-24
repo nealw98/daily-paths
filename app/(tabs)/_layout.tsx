@@ -6,6 +6,7 @@ import { MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
 import { fonts } from "../../constants/theme";
 import { useTheme } from "../../hooks/useTheme";
 import { SpeakersProvider } from "../../hooks/useSpeakers";
+import { useTabsInRail } from "../../components/layout/SideInsetGuard";
 
 /**
  * Tab navigation layout.
@@ -17,6 +18,9 @@ import { SpeakersProvider } from "../../hooks/useSpeakers";
 export default function TabLayout() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  // On the Duo and on iPad-sized windows the root SideInsetGuard draws the
+  // tab rail instead, so the bottom bar steps aside. Phones are unchanged.
+  const tabsInRail = useTabsInRail();
   const activeColor = colors.secondary;
   const inactiveColor = colors.onSurfaceVariant;
   const activeIconColor = colors.secondary;
@@ -78,6 +82,7 @@ export default function TabLayout() {
   return (
     <SpeakersProvider>
     <Tabs
+      tabBar={tabsInRail ? () => null : undefined}
       screenOptions={{
         headerShown: false,
         tabBarStyle: {

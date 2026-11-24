@@ -51,9 +51,15 @@ import { ReadingDateProvider } from "../contexts/ReadingDateContext";
 import { useAnalytics } from "../utils/analytics";
 import Constants from "expo-constants";
 import { OnboardingFlow } from "../components/onboarding/OnboardingFlow";
+import SideInsetGuard, { MainNav } from "../components/layout/SideInsetGuard";
+import { watchDisplayOrientationRule } from "../lib/orientation";
 
 console.log("[STARTUP] _layout.tsx module loading...");
 console.log("[STARTUP] Platform:", Platform.OS, Platform.Version);
+
+// Phones stay portrait; the Duo's displays and iPad rotate freely. The rule
+// lives in lib/orientation and re-applies itself on fold/unfold and rotation.
+watchDisplayOrientationRule();
 
 // Keep the native splash visible until the subscription gate resolves
 // before either onboarding or the entitled app is ready to render.
@@ -331,7 +337,9 @@ function SubscriptionTree({
   }, [loading]);
 
   return (
+    <SideInsetGuard>
     <View style={{ flex: 1 }}>
+      {showMainStack && !showOnboarding ? <MainNav /> : null}
       {showMainStack ? <CloudSyncGate /> : null}
       <PendingModalPresenter />
       {updateReady && (
@@ -382,6 +390,7 @@ function SubscriptionTree({
         <View style={styles.androidGatePlaceholder} />
       )}
     </View>
+    </SideInsetGuard>
   );
 }
 

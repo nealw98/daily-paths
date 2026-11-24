@@ -4,11 +4,12 @@
     "slug": "daily-paths",
     "scheme": "dailypaths",
     "version": "2.9.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
+      "requireFullScreen": false,
       "bundleIdentifier": "com.nealwagner.dailypaths",
       "buildNumber": "55",
       "appStoreUrl": "https://apps.apple.com/app/id6755981862",
@@ -78,7 +79,8 @@
           "iCloudContainerIdentifier": "iCloud.com.nealwagner.dailypaths"
         }
       ],
-      "expo-status-bar"
+      "expo-status-bar",
+      "./plugins/withFontScaleConfigChange"
     ],
     "experiments": {
       "typedRoutes": true
