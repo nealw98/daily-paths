@@ -35,7 +35,7 @@ type Props = {
   personalPrayers: Prayer[];
   /** Open this prayer first (from Today's prayer card). */
   initialPrayerId?: string;
-  /** Built-in prayer shown on Today's card; labelled "Today's prayer". */
+  /** Built-in prayer shown on Today's card; opens first when nothing else is asked for. */
   prayerOfTheDayId?: string;
   onViewed: (prayer: Prayer) => void;
   onShare: (prayer: Prayer) => void;
@@ -140,8 +140,8 @@ export function PrayersWide({
   };
 
   const prayerSize = typography.body.fontSize;
-  const label = (item: Item) =>
-    item.kind === "personal" ? "Your prayer" : item.id === prayerOfTheDayId ? "Today's prayer" : null;
+  // Today's prayer opens first but carries no label (Neal, Nov 24).
+  const label = (item: Item) => (item.kind === "personal" ? "Your prayer" : null);
 
   const iconButton = [
     styles.iconButton,
