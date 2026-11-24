@@ -192,7 +192,11 @@ export default function TabLayout() {
       <Tabs.Screen
         name="reading"
         options={{
-          href: null,
+          // Opened from Today, not from the bar. Not `href: null`: since
+          // expo-router 58 that marks the tab hidden, and a hidden tab
+          // redirects away, so the Reading would bounce back to Today.
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: "none" },
           title: "Reflection",
         }}
       />
