@@ -17,7 +17,6 @@ import { fonts, layout, rule, typography } from "../../constants/theme";
 import type { Speaker } from "../../types/speakers";
 import { FieldShell, SanctuaryCard } from "../ui/Sanctuary";
 import { EqualizerBars } from "./EqualizerBars";
-import { useWideLayout } from "../../hooks/useLayoutMode";
 import { SortSheet, type SortMode as SortSheetMode } from "./SortSheet";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
@@ -51,7 +50,6 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
   selectedSpeakerId = null,
 }) => {
   const { colors, isDark } = useTheme();
-  const wide = useWideLayout();
   const { settings } = useSettings();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("newest");
@@ -116,32 +114,24 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
 
   // ─── Render: Speaker Card ───────────────────────────────────────────────
 
-  // Wide screens match the wide Today rows: a small rounded teal pip, a thin
-  // border and a teal chevron. Phones keep the full-height teal block, which
-  // matches the phone Today.
+  // Rows match the Today rows: a small rounded teal pip with a play glyph,
+  // a thin border and a teal chevron.
   const renderCard = ({ item: speaker }: { item: Speaker }) => (
     <TouchableOpacity
-      style={[styles.cardTouchable, wide && styles.cardTouchableWide]}
+      style={styles.cardTouchable}
       onPress={() => onSelectSpeaker(speaker, false)}
       activeOpacity={0.8}
     >
       <View
         style={[
           styles.cardInner,
-          { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.mist },
-          wide && [styles.cardInnerWide, { borderColor: colors.surfaceContainerHighest }],
+          { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.surfaceContainerHighest },
           speaker.id === selectedSpeakerId && { borderWidth: 1.5, borderColor: colors.secondary },
         ]}
       >
-        {wide ? (
-          <View style={[styles.cardIconPipWide, { backgroundColor: colors.secondary }]}>
-            <Ionicons name="play" size={20} color={colors.onSecondary} style={styles.playNudge} />
-          </View>
-        ) : (
-          <View style={[styles.cardIconPip, { backgroundColor: colors.secondary }]}>
-            <Ionicons name="play-circle" size={38} color={colors.onSecondary} />
-          </View>
-        )}
+        <View style={[styles.cardIconPip, { backgroundColor: colors.secondary }]}>
+          <Ionicons name="play" size={20} color={colors.onSecondary} style={styles.playNudge} />
+        </View>
         <View style={styles.cardBody}>
           <View style={styles.nameRow}>
             <Text style={[styles.speakerName, { color: colors.onSurface, fontSize: cardTitleFontSize, lineHeight: cardTitleLineHeight }]}>
@@ -174,11 +164,7 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
             )}
           </View>
         </View>
-        {wide ? (
-          <MaterialIcons name="chevron-right" size={22} color={colors.secondary} />
-        ) : (
-          <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceVariant} />
-        )}
+                <MaterialIcons name="chevron-right" size={22} color={colors.secondary} />
       </View>
     </TouchableOpacity>
   );
@@ -391,63 +377,31 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
   },
 
+  // Rows match the Today rows (components/wide/TodayWide.tsx).
   cardTouchable: {
-    marginBottom: layout.spacing.lg,
-    borderRadius: 10,
-    shadowColor: "#000000",
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    marginBottom: 10,
+    borderRadius: layout.borderRadiusLarge,
   },
   cardInner: {
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 0.5,
-    borderRadius: 10,
-    paddingRight: 16,
-    paddingLeft: 0,
-    paddingVertical: 0,
-    minHeight: 100,
+    borderWidth: 1,
+    borderRadius: layout.borderRadiusLarge,
+    paddingHorizontal: 14,
     overflow: "hidden",
   },
   cardIconPip: {
-    width: 90,
-    alignSelf: "stretch",
-    borderTopLeftRadius: 9,
-    borderBottomLeftRadius: 9,
-    borderTopRightRadius: 0,
-    borderBottomRightRadius: 0,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 16,
-  },
-  cardBody: {
-    flex: 1,
-    gap: 3,
-    paddingVertical: 16,
-  },
-  // Wide screens: the wide Today row (components/wide/TodayWide.tsx).
-  cardTouchableWide: {
-    marginBottom: 10,
-    borderRadius: layout.borderRadiusLarge,
-    shadowOpacity: 0,
-    elevation: 0,
-  },
-  cardInnerWide: {
-    borderWidth: 1,
-    borderRadius: layout.borderRadiusLarge,
-    paddingLeft: 14,
-    paddingRight: 14,
-    minHeight: 0,
-  },
-  cardIconPipWide: {
     width: 44,
     height: 44,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 14,
+  },
+  cardBody: {
+    flex: 1,
+    gap: 3,
+    paddingVertical: 16,
   },
   // The play triangle sits optically left of centre.
   playNudge: { marginLeft: 2 },
