@@ -452,21 +452,11 @@ export default function HomeTab() {
               <View
                 style={[
                   styles.toolRowInner,
-                  { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.mist },
+                  { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.surfaceContainerHighest },
                 ]}
               >
-                <View
-                  style={[
-                    styles.toolIconPip,
-                    { backgroundColor: colors.secondary },
-                  ]}
-                >
-                  <Ionicons
-                    name={cat.icon as any}
-                    size={38}
-                    color="#FFFFFF"
-                    style={{ fontWeight: "900" }}
-                  />
+                <View style={[styles.toolIconPip, { backgroundColor: colors.secondary }]}>
+                  <Ionicons name={cat.icon as any} size={22} color={colors.onSecondary} />
                 </View>
                 <View style={styles.toolText}>
                   <Text style={[notebookLabelType, { color: colors.onSurface }]}>
@@ -478,13 +468,8 @@ export default function HomeTab() {
                   >
                     {cat.description}
                   </Text>
-                  <View style={[styles.ctaRow, styles.toolCtaRow]}>
-                    <Text style={[readMoreType, { color: colors.accent }]}>
-                      Open
-                    </Text>
-                    <MaterialIcons name="chevron-right" size={20} color={colors.accent} />
-                  </View>
                 </View>
+                <MaterialIcons name="chevron-right" size={22} color={colors.secondary} />
               </View>
             </TouchableOpacity>
           ))}
@@ -523,22 +508,11 @@ export default function HomeTab() {
             <View
               style={[
                 styles.toolRowInner,
-                styles.prayersTile,
-                { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.mist },
+                { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.surfaceContainerHighest },
               ]}
             >
-              <View
-                style={[
-                  styles.toolIconPip,
-                  { backgroundColor: colors.secondary },
-                ]}
-              >
-                <MaterialCommunityIcons
-                  name="hands-pray"
-                  size={38}
-                  color="#FFFFFF"
-                  style={{ fontWeight: "900" }}
-                />
+              <View style={[styles.toolIconPip, { backgroundColor: colors.secondary }]}>
+                <MaterialCommunityIcons name="hands-pray" size={22} color={colors.onSecondary} />
               </View>
               <View style={styles.toolText}>
                 <Text style={[notebookLabelType, { color: colors.onSurface }]}>
@@ -547,13 +521,8 @@ export default function HomeTab() {
                 <Text style={[...notebookTagType, { color: colors.onSurfaceVariant }]} numberOfLines={2}>
                   A collection of prayers — and a place to add your own.
                 </Text>
-                <View style={[styles.ctaRow, styles.toolCtaRow]}>
-                  <Text style={[readMoreType, { color: colors.accent }]}>
-                    Open
-                  </Text>
-                  <MaterialIcons name="chevron-right" size={20} color={colors.accent} />
-                </View>
               </View>
+              <MaterialIcons name="chevron-right" size={22} color={colors.secondary} />
             </View>
           </TouchableOpacity>
         </View>
@@ -784,10 +753,6 @@ const styles = StyleSheet.create({
     gap: 2,
     marginTop: 16,
   },
-  // Tool/prayer cards: tighter spacing so the teal icon band stays square.
-  toolCtaRow: {
-    marginTop: 0,
-  },
   // Section titles — vertical margins come from sectionRhythm (dynamic).
   sectionTitleLayout: {
     marginHorizontal: layout.spacing.lgPlus,
@@ -797,35 +762,25 @@ const styles = StyleSheet.create({
   toolsList: {
     paddingHorizontal: layout.spacing.md,
   },
+  // Tool and prayer rows match the wide Today rows (components/wide/TodayWide.tsx):
+  // a small rounded teal pip, a thin border and a teal chevron.
   toolRow: {
-    borderRadius: 10,
-    shadowColor: "#000000",
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    borderRadius: layout.borderRadiusLarge,
   },
   toolRowInner: {
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 0.5,
-    borderRadius: 10,
-    paddingRight: 16,
-    paddingLeft: 0,
-    paddingVertical: 0,
-    minHeight: 100,
-    overflow: "hidden",
+    gap: 14,
+    borderWidth: 1,
+    borderRadius: layout.borderRadiusLarge,
+    paddingHorizontal: 14,
   },
   toolIconPip: {
-    width: 115,
-    alignSelf: "stretch",
-    borderTopLeftRadius: 9,
-    borderBottomLeftRadius: 9,
-    borderTopRightRadius: 0,
-    borderBottomRightRadius: 0,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 16,
   },
   toolText: {
     flex: 1,
@@ -838,10 +793,6 @@ const styles = StyleSheet.create({
   },
 
   // Prayers
-  prayersTile: {
-    padding: 16,
-    paddingHorizontal: 16,
-  },
   prayersCard: {
     marginHorizontal: layout.spacing.md,
     borderRadius: layout.borderRadius,
