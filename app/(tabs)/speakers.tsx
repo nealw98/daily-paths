@@ -18,6 +18,8 @@ import { JournalEntryEditor } from "../../components/journal/JournalEntryEditor"
 import type { Speaker } from "../../types/speakers";
 import type { EntryType } from "../../constants/journalCategories";
 import { useJournalStorage } from "../../hooks/useJournalStorage";
+import { useWideLayout } from "../../hooks/useLayoutMode";
+import { SpeakersWide } from "../../components/wide/SpeakersWide";
 
 type SpeakerView = "browse" | "detail";
 
@@ -40,6 +42,7 @@ export default function SpeakersTab() {
 
   // Audio player lives at the tab level so playback persists across views and tabs
   const player = useAudioPlayer();
+  const wide = useWideLayout();
 
   const [view, setView] = useState<SpeakerView>("browse");
   const [showJournalPicker, setShowJournalPicker] = useState(false);
@@ -179,6 +182,26 @@ export default function SpeakersTab() {
         }}
         onCancel={() => setJournalEntryType(null)}
         onSwitchEntryType={setJournalEntryType}
+      />
+    );
+  }
+
+  // ─── Wide layout (iPad, open Duo): list and player side by side ───────
+
+  if (wide) {
+    return (
+      <SpeakersWide
+        speakers={speakers}
+        loading={loading}
+        error={error}
+        onRefresh={refresh}
+        downloadedIds={downloadedIds}
+        selectedSpeaker={selectedSpeaker}
+        autoPlay={autoPlay}
+        onSelectSpeaker={handleSelectSpeaker}
+        onStop={handleStop}
+        player={player}
+        canDownload={canDownload}
       />
     );
   }

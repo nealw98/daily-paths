@@ -32,6 +32,8 @@ interface SpeakersBrowseProps {
   downloadedIds: Set<string>;
   nowPlayingSpeakerId?: string | null;
   isPlaying?: boolean;
+  /** Wide layout only: outline the talk open in the right pane. */
+  selectedSpeakerId?: string | null;
 }
 
 // ─── Component ─────────────────────────────────────────────────────────────
@@ -45,6 +47,7 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
   downloadedIds,
   nowPlayingSpeakerId,
   isPlaying,
+  selectedSpeakerId = null,
 }) => {
   const { colors } = useTheme();
   const { settings } = useSettings();
@@ -121,6 +124,7 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
         style={[
           styles.cardInner,
           { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.mist },
+          speaker.id === selectedSpeakerId && { borderWidth: 1.5, borderColor: colors.secondary },
         ]}
       >
         <View style={[styles.cardIconPip, { backgroundColor: colors.secondary }]}>
@@ -274,6 +278,8 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
       <FlatList
         data={filteredAndSorted}
         renderItem={renderCard}
+        // Rows show the playing state and (wide layout) the open talk.
+        extraData={`${selectedSpeakerId}|${nowPlayingSpeakerId}|${isPlaying}`}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={listHeader}
         ListEmptyComponent={ListEmpty}

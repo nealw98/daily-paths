@@ -25,7 +25,8 @@ import { useAppFeedback } from "../../hooks/useAppFeedback";
 import { useAnalytics } from "../../utils/analytics";
 import { shareApp, openAppStoreForRating } from "../../utils/rateShareTracking";
 import { qaLog } from "../../utils/qaLog";
-import { fonts, typography, shadows } from "../../constants/theme";
+import { fonts, typography, shadows, wideType } from "../../constants/theme";
+import { useWideLayout } from "../../hooks/useLayoutMode";
 import { TealHeader } from "../../components/shared/TealHeader";
 import { PageTitle } from "../../components/ui/PageTitle";
 import { useSubscription } from "../../hooks/useSubscription";
@@ -56,6 +57,9 @@ export default function MoreTab() {
   const { colors } = useTheme();
   const { typography: dynamicTypography } = useTypography();
   const insets = useSafeAreaInsets();
+  // Wide layout (iPad, open Duo): one centered column with the same
+  // sections, under a plain title (rail tabs have no header bar).
+  const wide = useWideLayout();
   const { settings, setThemeId, setColorScheme, setTextSize } =
     useSettings();
 
@@ -190,14 +194,20 @@ export default function MoreTab() {
       style={[styles.container, { backgroundColor: colors.surface }]}
       edges={[]}
     >
-      <TealHeader />
+      {wide ? null : <TealHeader />}
 
       <ScrollView
         ref={scrollRef}
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          wide && [styles.wideColumn, { paddingTop: insets.top + 14 }],
+        ]}
         showsVerticalScrollIndicator={false}
       >
+        {wide ? (
+          <Text style={[wideType.screenTitle, { color: colors.onSurface }]}>Settings</Text>
+        ) : null}
         {/* ── Appearance ────────────────────────────────── */}
         <Text allowFontScaling={false} style={[styles.sectionLabel, styles.firstSectionLabel, sectionTitleType, { color: colors.onSurface }]}>Appearance</Text>
         <View style={[styles.card, { backgroundColor: colors.surfaceContainerLowest }]}>
@@ -508,6 +518,11 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  wideColumn: {
+    width: "100%",
+    maxWidth: 560,
+    alignSelf: "center",
   },
   scrollContent: {
     flexGrow: 1,
