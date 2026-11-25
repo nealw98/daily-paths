@@ -29,7 +29,8 @@
         ],
         "com.apple.developer.ubiquity-container-identifiers": [
           "iCloud.com.nealwagner.dailypaths"
-        ]
+        ],
+        "com.apple.developer.declared-age-range": true
       }
     },
     "android": {

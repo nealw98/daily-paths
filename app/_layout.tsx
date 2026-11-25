@@ -52,6 +52,7 @@ import { useAnalytics } from "../utils/analytics";
 import Constants from "expo-constants";
 import { OnboardingFlow } from "../components/onboarding/OnboardingFlow";
 import SideInsetGuard, { MainNav } from "../components/layout/SideInsetGuard";
+import { AgeAssuranceGate } from "../components/AgeAssuranceGate";
 import { watchDisplayOrientationRule } from "../lib/orientation";
 
 console.log("[STARTUP] _layout.tsx module loading...");
@@ -341,6 +342,8 @@ function SubscriptionTree({
     <View style={{ flex: 1 }}>
       {showMainStack && !showOnboarding ? <MainNav /> : null}
       {showMainStack ? <CloudSyncGate /> : null}
+      {/* Store age assurance (Texas SB 2420 and later states); see utils/ageAssurance.ts. */}
+      {showMainStack ? <AgeAssuranceGate /> : null}
       <PendingModalPresenter />
       {updateReady && (
         <View style={styles.updateBanner}>

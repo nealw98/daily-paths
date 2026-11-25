@@ -25,6 +25,8 @@ import { isDeveloperDevice, setDeveloperDevice } from "../utils/deviceIdentity";
 import { getLegacyInstallEvidence } from "../utils/legacyInstallEvidence";
 import { clearQaLogs, qaLog, useQaLogs } from "../utils/qaLog";
 
+import { previewAgeNotice, runAgeCheckNow } from "../components/AgeAssuranceGate";
+
 export default function DeveloperConsoleScreen() {
   const router = useRouter();
   const colors = fallbackColors;
@@ -239,6 +241,52 @@ export default function DeveloperConsoleScreen() {
           <Text style={[styles.rowTitle, { color: colors.text }]}>Run onboarding again</Text>
           <Text style={[styles.rowDescription, { color: colors.textSecondary }]}>
             Opens the complete onboarding and paywall journey from page 1. Your access is not changed.
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={21} color={colors.textSecondary} />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        activeOpacity={0.78}
+        onPress={runAgeCheckNow}
+        style={[
+          styles.actionCard,
+          shadows.ambient,
+          { backgroundColor: "#FFFFFF", borderColor: colors.border },
+        ]}
+        accessibilityRole="button"
+        accessibilityLabel="Run the age check now"
+      >
+        <View style={[styles.iconTile, { backgroundColor: colors.secondaryContainer }]}>
+          <Ionicons name="shield-checkmark-outline" size={24} color={colors.deepTeal} />
+        </View>
+        <View style={styles.rowCopy}>
+          <Text style={[styles.rowTitle, { color: colors.text }]}>Run the age check now</Text>
+          <Text style={[styles.rowDescription, { color: colors.textSecondary }]}>
+            Asks the App Store or Google Play for this account's age signal now, skipping the once-a-day limit. The result appears in the log below (outcome only, never the age).
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={21} color={colors.textSecondary} />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        activeOpacity={0.78}
+        onPress={() => previewAgeNotice("parentApproval")}
+        style={[
+          styles.actionCard,
+          shadows.ambient,
+          { backgroundColor: "#FFFFFF", borderColor: colors.border },
+        ]}
+        accessibilityRole="button"
+        accessibilityLabel="Preview the parent-approval notice"
+      >
+        <View style={[styles.iconTile, { backgroundColor: colors.secondaryContainer }]}>
+          <Ionicons name="people-outline" size={24} color={colors.deepTeal} />
+        </View>
+        <View style={styles.rowCopy}>
+          <Text style={[styles.rowTitle, { color: colors.text }]}>Preview the parent-approval notice</Text>
+          <Text style={[styles.rowDescription, { color: colors.textSecondary }]}>
+            Shows the notice a minor sees when a parent hasn't approved Daily Paths. Tap Check again to run the real check and dismiss it.
           </Text>
         </View>
         <Ionicons name="chevron-forward" size={21} color={colors.textSecondary} />
