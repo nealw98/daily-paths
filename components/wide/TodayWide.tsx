@@ -187,8 +187,9 @@ export function TodayWide({
                   </Text>
                 </View>
                 <View style={styles.listenRow}>
-                  <View style={[styles.playDot, { backgroundColor: colors.secondaryContainer }]}>
-                    <Ionicons name="play" size={14} color={colors.onSecondaryContainer} />
+                  {/* The card is dark green in both themes, so the dot is a fixed light tint. */}
+                  <View style={[styles.playDot, styles.playDotFill]}>
+                    <Ionicons name="play" size={14} color={colors.primaryFixed} />
                   </View>
                   <Text style={[wideType.link, styles.onDark]}>Listen</Text>
                 </View>
@@ -281,6 +282,7 @@ const styles = StyleSheet.create({
   onDarkMuted: { color: "rgba(255,255,255,0.8)" },
   speakerMeta: { marginTop: 4 },
   listenRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  playDotFill: { backgroundColor: "rgba(255,255,255,0.9)" },
   playDot: {
     width: 30,
     height: 30,

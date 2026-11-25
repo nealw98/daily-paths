@@ -68,7 +68,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
   player,
   canDownload,
 }) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { typography: typ } = useTypography();
   const { settings } = useSettings();
   const { trackSpeakerAudioPlayed, trackSpeakerAudioPaused } = useAnalytics();
@@ -253,6 +253,7 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
                 style={[
                   styles.quoteCardInner,
                   { backgroundColor: colors.surfaceContainerLowest },
+                  isDark && { borderColor: colors.surfaceContainerHighest },
                 ]}
               >
                 <View style={[styles.quoteAccent, { backgroundColor: colors.deepTeal }]} />
@@ -280,9 +281,10 @@ export const SpeakerDetail: React.FC<SpeakerDetailProps> = ({
           <View
             style={[
               styles.playerCardInner,
-              {
-                backgroundColor: "#dfe8e4",
-              },
+              // The light mint fill is the shipped light look; Dark uses theme tokens.
+              isDark
+                ? { backgroundColor: colors.surfaceContainerHigh, borderColor: colors.surfaceContainerHighest }
+                : { backgroundColor: "#dfe8e4" },
             ]}
           >
           {/* Stop + Download indicator */}

@@ -49,7 +49,7 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
   isPlaying,
   selectedSpeakerId = null,
 }) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { settings } = useSettings();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("newest");
@@ -214,7 +214,13 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
         elevated
       >
         <View style={styles.searchRow}>
-          <FieldShell style={styles.searchContainer}>
+          <FieldShell
+            style={[
+              styles.searchContainer,
+              // The light mint fill is the shipped light look; Dark uses the field token.
+              { backgroundColor: isDark ? colors.surfaceContainerHigh : "#dfe8e4" },
+            ]}
+          >
             <Ionicons
               name="search"
               size={Math.round(18 * scale)}
@@ -341,7 +347,6 @@ const styles = StyleSheet.create({
     minWidth: 0,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#dfe8e4",
     paddingVertical: 8,
     paddingHorizontal: 10,
   },

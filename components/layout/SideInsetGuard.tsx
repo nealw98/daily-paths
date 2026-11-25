@@ -32,8 +32,9 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { StyleSheet, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 import { useTheme } from "../../hooks/useTheme";
-import { isOpenCanvas } from "../../hooks/useLayoutMode";
+import { isOpenCanvas, isWideLayout } from "../../hooks/useLayoutMode";
 import { reassertDisplayOrientationRule } from "../../lib/orientation";
 import NavigationRail, { RAIL_WIDTH } from "../navigation/NavigationRail";
 
@@ -78,7 +79,7 @@ export function MainNav() {
 export default function SideInsetGuard({ children }: { children: React.ReactNode }) {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const [navOn, setNavOn] = useState(false);
   const navCtx = useMemo(() => ({ setOn: setNavOn }), []);
   const side = stripSide(insets);
@@ -118,6 +119,9 @@ export default function SideInsetGuard({ children }: { children: React.ReactNode
             {/* The edge rail takes real layout width beside the content. */}
             {showEdgeRail && <NavigationRail placement="edge" />}
           </View>
+          {/* Wide screens have no teal header under the status bar, so its
+              text follows the theme (light text on Dark). Phones are unchanged. */}
+          {navOn && isWideLayout(width, height) ? <StatusBar style={isDark ? "light" : "dark"} /> : null}
           {/* The strip rail sits inside the strip, which content never uses. */}
           {showStripRail && side && (
             <View

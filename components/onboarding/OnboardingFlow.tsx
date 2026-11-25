@@ -9,7 +9,6 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useWindowDimensions,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -31,6 +30,7 @@ import {
 import { useAnalytics } from "../../utils/analytics";
 import { qaLog } from "../../utils/qaLog";
 import { NativePaywall } from "./NativePaywall";
+import { CenteredWindow, useCenteredWindow } from "../layout/CenteredWindow";
 
 const SAMPLE_IMAGE = require("../../assets/reflections/reflections-41.webp");
 
@@ -70,8 +70,11 @@ export function OnboardingFlow({
   const [paywallOrigin, setPaywallOrigin] = useState<Page | null>(initialPaywallOrigin);
   const previewProgress = useRef(new Animated.Value(0)).current;
   const cardRef = useRef<React.ComponentRef<typeof View>>(null);
+  const rootRef = useRef<React.ComponentRef<typeof View>>(null);
   const lastTrackedPage = useRef<Page | null>(null);
-  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  // The flow's own size: the whole window on phones, the centered window on
+  // wide screens. The preview overlay grows to fill it.
+  const { width: windowWidth, height: windowHeight } = useCenteredWindow();
   const {
     trackOnboardingStepViewed,
     trackOnboardingSampleOpened,
@@ -95,9 +98,13 @@ export function OnboardingFlow({
   }, []);
 
   const openPreview = useCallback(() => {
-    if (!cardRef.current || previewVisible) return;
-    cardRef.current.measureInWindow((left, top, width, height) => {
-      setCardRect({ left, top, width, height });
+    const card = cardRef.current;
+    const root = rootRef.current;
+    if (!card || !root || previewVisible) return;
+    // The overlay is positioned inside the flow's root, so measure the card
+    // relative to it (the root is offset on wide screens and the Duo).
+    root.measureInWindow((rootLeft, rootTop) => card.measureInWindow((left, top, width, height) => {
+      setCardRect({ left: left - rootLeft, top: top - rootTop, width, height });
       previewProgress.setValue(reduceMotion ? 1 : 0);
       setPreviewVisible(true);
       qaLog("onboarding", "Sample reflection opened");
@@ -111,7 +118,7 @@ export function OnboardingFlow({
           }).start();
         });
       }
-    });
+    }));
   }, [previewProgress, previewVisible, reduceMotion, trackOnboardingSampleOpened]);
 
   const closePreview = useCallback(() => {
@@ -166,7 +173,8 @@ export function OnboardingFlow({
   };
 
   return (
-    <View style={styles.root}>
+    <CenteredWindow>
+    <View ref={rootRef} style={styles.root}>
       <StatusBar style="light" />
       {page === "reflections" ? (
         <ReflectionsPage
@@ -247,6 +255,7 @@ export function OnboardingFlow({
         </Animated.View>
       ) : null}
     </View>
+    </CenteredWindow>
   );
 }
 

@@ -9,7 +9,6 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useWindowDimensions,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -33,6 +32,7 @@ import { useAnalytics } from "../../utils/analytics";
 import { qaLog } from "../../utils/qaLog";
 import { setLifetimeOverride } from "../../utils/paidAppDetector";
 import { isInternalBuild } from "../../utils/buildProfile";
+import { CenteredWindow, useCenteredWindow } from "../layout/CenteredWindow";
 
 const TARGET_OFFERING_ID = "android_unlock";
 const FALLBACK_PRICE = "$4.99";
@@ -80,7 +80,9 @@ export function NativePaywall({
   onClose,
   onAccessGranted,
 }: NativePaywallProps) {
-  const { width } = useWindowDimensions();
+  // On wide screens the paywall sits in the same centered window as
+  // onboarding, so the review carousel pages by the window's width.
+  const { wide, width } = useCenteredWindow();
   const reviewWidth = width;
   const reviewScrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const shownForOpen = useRef(false);
@@ -296,12 +298,15 @@ export function NativePaywall({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      // Wide: fade in place over the onboarding window rather than sliding
+      // the whole backdrop up.
+      animationType={wide ? "fade" : "slide"}
       presentationStyle="fullScreen"
       onRequestClose={handleClose}
       onShow={() => setInteractive(true)}
       onDismiss={() => setInteractive(false)}
     >
+      <CenteredWindow>
       <View style={styles.root} pointerEvents={interactive ? "auto" : "none"}>
         <StatusBar style="light" />
         <SafeAreaView edges={["top"]} style={styles.headerSafeArea}>
@@ -443,6 +448,7 @@ export function NativePaywall({
           </View>
         </SafeAreaView>
       </View>
+      </CenteredWindow>
     </Modal>
   );
 }
