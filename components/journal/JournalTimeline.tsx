@@ -42,6 +42,10 @@ interface JournalTimelineProps {
   onDeleteEntry: (entryId: string) => void;
   onRefresh: () => void;
   onCreateEntry: () => void;
+  /** Wide layout only: outline the entry open in the right pane. */
+  selectedEntryId?: string | null;
+  /** Wide layout only: outline "+ New entry" while its pane is open. */
+  newEntrySelected?: boolean;
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -218,6 +222,8 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
   onDeleteEntry,
   onRefresh,
   onCreateEntry,
+  selectedEntryId = null,
+  newEntrySelected = false,
 }) => {
   const { colors } = useTheme();
   const { typography } = useTypography();
@@ -285,7 +291,15 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
         onPress={() => onSelectEntry(entry)}
         activeOpacity={0.7}
       >
-        <SanctuaryCard tone="lowest" style={styles.entryCard} contentStyle={styles.entryInner} elevated>
+        <SanctuaryCard
+          tone="lowest"
+          style={[
+            styles.entryCard,
+            entry.id === selectedEntryId && { borderWidth: 1.5, borderColor: colors.secondary },
+          ]}
+          contentStyle={styles.entryInner}
+          elevated
+        >
           <View style={styles.entryRow}>
             <View style={styles.entryTypeColumn}>
               <View
@@ -388,7 +402,10 @@ export const JournalTimeline: React.FC<JournalTimelineProps> = ({
           <View style={styles.timelineEntryContent}>
             <SanctuaryCard
               tone="lowest"
-              style={styles.newEntryCard}
+              style={[
+                styles.newEntryCard,
+                newEntrySelected && { borderWidth: 1.5, borderColor: colors.secondary },
+              ]}
               contentStyle={styles.newEntryCardContent}
               elevated
             >

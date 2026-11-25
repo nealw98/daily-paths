@@ -14,6 +14,8 @@ import { JournalEntryDetail } from "../../components/journal/JournalEntryDetail"
 import { JournalCategoryPicker } from "../../components/journal/JournalCategoryPicker";
 import { TealHeader } from "../../components/shared/TealHeader";
 import { PageTitle } from "../../components/ui/PageTitle";
+import { useWideLayout } from "../../hooks/useLayoutMode";
+import { NotebookWide } from "../../components/wide/NotebookWide";
 
 type JournalView = "timeline" | "editor" | "detail";
 
@@ -47,6 +49,7 @@ export default function JournalTab() {
     }, [refreshEntries])
   );
 
+  const wide = useWideLayout();
   const [view, setView] = useState<JournalView>("timeline");
   const viewRef = useRef(view);
   useEffect(() => { viewRef.current = view; }, [view]);
@@ -190,6 +193,23 @@ export default function JournalTab() {
   }, [selectedIndex, entries]);
 
   // ─── Render Current View ─────────────────────────────────
+
+  // Wide layout (iPad, open Duo): timeline and entry pane side by side.
+  if (wide) {
+    return (
+      <NotebookWide
+        subtitle={notebookSubtitle}
+        entries={entries}
+        loading={loading}
+        error={error}
+        onRefresh={handleRefreshTimeline}
+        onViewed={(entry) => trackEntryViewed(entry.entry_type, entry.id)}
+        createEntry={createEntry}
+        updateEntry={updateEntry}
+        deleteEntry={deleteEntry}
+      />
+    );
+  }
 
   if (view === "editor") {
     return (
