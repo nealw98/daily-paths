@@ -9,7 +9,7 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "../../hooks/useTheme";
 import { useSettings, getTextSizeMetrics } from "../../hooks/useSettings";
 import { useTypography } from "../../hooks/useTypography";
@@ -17,6 +17,7 @@ import { fonts, layout, rule, typography } from "../../constants/theme";
 import type { Speaker } from "../../types/speakers";
 import { FieldShell, SanctuaryCard } from "../ui/Sanctuary";
 import { EqualizerBars } from "./EqualizerBars";
+import { useWideLayout } from "../../hooks/useLayoutMode";
 import { SortSheet, type SortMode as SortSheetMode } from "./SortSheet";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
@@ -50,6 +51,7 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
   selectedSpeakerId = null,
 }) => {
   const { colors, isDark } = useTheme();
+  const wide = useWideLayout();
   const { settings } = useSettings();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("newest");
@@ -114,9 +116,12 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
 
   // ─── Render: Speaker Card ───────────────────────────────────────────────
 
+  // Wide screens match the wide Today rows: a small rounded teal pip, a thin
+  // border and a teal chevron. Phones keep the full-height teal block, which
+  // matches the phone Today.
   const renderCard = ({ item: speaker }: { item: Speaker }) => (
     <TouchableOpacity
-      style={[styles.cardTouchable]}
+      style={[styles.cardTouchable, wide && styles.cardTouchableWide]}
       onPress={() => onSelectSpeaker(speaker, false)}
       activeOpacity={0.8}
     >
@@ -124,12 +129,19 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
         style={[
           styles.cardInner,
           { backgroundColor: colors.surfaceContainerLowest, borderColor: colors.mist },
+          wide && [styles.cardInnerWide, { borderColor: colors.surfaceContainerHighest }],
           speaker.id === selectedSpeakerId && { borderWidth: 1.5, borderColor: colors.secondary },
         ]}
       >
-        <View style={[styles.cardIconPip, { backgroundColor: colors.secondary }]}>
-          <Ionicons name="play-circle" size={38} color={colors.onSecondary} />
-        </View>
+        {wide ? (
+          <View style={[styles.cardIconPipWide, { backgroundColor: colors.secondary }]}>
+            <Ionicons name="play" size={20} color={colors.onSecondary} style={styles.playNudge} />
+          </View>
+        ) : (
+          <View style={[styles.cardIconPip, { backgroundColor: colors.secondary }]}>
+            <Ionicons name="play-circle" size={38} color={colors.onSecondary} />
+          </View>
+        )}
         <View style={styles.cardBody}>
           <View style={styles.nameRow}>
             <Text style={[styles.speakerName, { color: colors.onSurface, fontSize: cardTitleFontSize, lineHeight: cardTitleLineHeight }]}>
@@ -162,7 +174,11 @@ export const SpeakersBrowse: React.FC<SpeakersBrowseProps> = ({
             )}
           </View>
         </View>
-        <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceVariant} />
+        {wide ? (
+          <MaterialIcons name="chevron-right" size={22} color={colors.secondary} />
+        ) : (
+          <Ionicons name="chevron-forward" size={18} color={colors.onSurfaceVariant} />
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -411,6 +427,30 @@ const styles = StyleSheet.create({
     gap: 3,
     paddingVertical: 16,
   },
+  // Wide screens: the wide Today row (components/wide/TodayWide.tsx).
+  cardTouchableWide: {
+    marginBottom: 10,
+    borderRadius: layout.borderRadiusLarge,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  cardInnerWide: {
+    borderWidth: 1,
+    borderRadius: layout.borderRadiusLarge,
+    paddingLeft: 14,
+    paddingRight: 14,
+    minHeight: 0,
+  },
+  cardIconPipWide: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 14,
+  },
+  // The play triangle sits optically left of centre.
+  playNudge: { marginLeft: 2 },
 
   // ─── Speaker Info ──────────────────────────────────────────────────────────
   speakerName: {
