@@ -358,7 +358,7 @@ export default function ReadingDetail() {
         isBookmarked={isBookmarked}
         onBookmarkToggle={handleBookmarkToggle}
         onShare={handleShare}
-        onWriteAboutThis={() => setJournalEntryType("journal")}
+        onWriteAboutThis={() => router.push("/hub/journal" as never)}
       />
     );
   } else {

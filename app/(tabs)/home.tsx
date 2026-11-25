@@ -292,7 +292,7 @@ export default function HomeTab() {
           reading={reading}
           readingLoading={readingLoading}
           onOpenReading={() => router.push("/(tabs)/reading")}
-          onOpenTool={setJournalEntryType}
+          onOpenTool={(type) => router.push(`/hub/${type}` as never)}
           prayer={prayerOfTheDay}
           onOpenPrayer={(prayer) =>
             router.navigate({ pathname: "/(tabs)/prayers", params: { prayerId: prayer.id } })

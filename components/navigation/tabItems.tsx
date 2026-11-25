@@ -45,6 +45,9 @@ export const TAB_ITEMS: TabItem[] = [
   },
 ];
 
-export function isTabActive(item: TabItem, pathname: string): boolean {
+// A journaling hub (/hub/…) belongs to the tab it was opened from: Notebook
+// when `from=notebook`, otherwise Today.
+export function isTabActive(item: TabItem, pathname: string, from?: string): boolean {
+  if (pathname.startsWith("/hub/")) return item.path === (from === "notebook" ? "/journal" : "/home");
   return pathname === item.path || (item.also ?? []).includes(pathname);
 }

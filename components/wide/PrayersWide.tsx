@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
   caps: { textTransform: "uppercase" },
   pressed: { opacity: 0.8 },
 
-  listColumn: { flex: 0.92, gap: 8 },
+  listColumn: { flexGrow: 0.92, flexBasis: 0, minWidth: 0, gap: 8 },
   titleRow: { height: 44, justifyContent: "center" },
   writeRow: {
     flexDirection: "row",
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
   listRow: { paddingVertical: 9, paddingHorizontal: 14, borderRadius: layout.borderRadius, gap: 1 },
   fade: { position: "absolute", left: 0, right: 0, bottom: 0, height: 50 },
 
-  paneColumn: { flex: 1.08, paddingTop: 46, gap: 14 },
+  paneColumn: { flexGrow: 1.08, flexBasis: 0, minWidth: 0, paddingTop: 46, gap: 14 },
   paneScroll: { paddingBottom: 24 },
   card: {
     borderWidth: 1,

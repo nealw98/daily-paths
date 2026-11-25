@@ -15,7 +15,7 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router, usePathname } from "expo-router";
+import { router, useGlobalSearchParams, usePathname } from "expo-router";
 import { fonts } from "../../constants/theme";
 import { useTheme } from "../../hooks/useTheme";
 import { MEDIUM_MIN_WIDTH } from "../../hooks/useLayoutMode";
@@ -44,6 +44,7 @@ export default function NavigationRail({
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const pathname = usePathname();
+  const { from } = useGlobalSearchParams<{ from?: string }>();
   const strip = placement === "strip";
   // The cover is the only Duo display whose short side is under 600pt.
   const cover = strip && Math.min(width, height) < MEDIUM_MIN_WIDTH;
@@ -81,7 +82,7 @@ export default function NavigationRail({
       ]}
     >
       {TAB_ITEMS.map((item) => {
-        const active = isTabActive(item, pathname);
+        const active = isTabActive(item, pathname, typeof from === "string" ? from : undefined);
         const ink = active ? colors.primaryContainer : colors.onSurfaceVariant;
         return (
           <Pressable
