@@ -16,6 +16,7 @@ import { TealHeader } from "../../components/shared/TealHeader";
 import { PageTitle } from "../../components/ui/PageTitle";
 import { useWideLayout } from "../../hooks/useLayoutMode";
 import { NotebookWide } from "../../components/wide/NotebookWide";
+import { usePaneMemory } from "../../utils/paneMemory";
 
 type JournalView = "timeline" | "editor" | "detail";
 
@@ -50,6 +51,8 @@ export default function JournalTab() {
   );
 
   const wide = useWideLayout();
+  // Keeps the wide pane (and a half-written entry) across a rotate or fold.
+  const paneMemory = usePaneMemory();
   const [view, setView] = useState<JournalView>("timeline");
   const viewRef = useRef(view);
   useEffect(() => { viewRef.current = view; }, [view]);
@@ -207,6 +210,7 @@ export default function JournalTab() {
         createEntry={createEntry}
         updateEntry={updateEntry}
         deleteEntry={deleteEntry}
+        memory={paneMemory}
       />
     );
   }

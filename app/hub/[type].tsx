@@ -4,6 +4,7 @@ import { JOURNAL_CATEGORIES, type EntryType } from "../../constants/journalCateg
 import { useWideLayout } from "../../hooks/useLayoutMode";
 import { useJournalStorage } from "../../hooks/useJournalStorage";
 import { HubWide } from "../../components/wide/HubWide";
+import { usePaneMemory } from "../../utils/paneMemory";
 import { JournalEntryEditor } from "../../components/journal/JournalEntryEditor";
 
 /**
@@ -18,11 +19,13 @@ export default function HubRoute() {
   const { type } = useLocalSearchParams<{ type?: string }>();
   const router = useRouter();
   const wide = useWideLayout();
+  // Keeps the wide pane (and a half-written entry) across a rotate or fold.
+  const paneMemory = usePaneMemory();
   const { createEntry } = useJournalStorage();
   const entryType = (JOURNAL_CATEGORIES.find((c) => c.id === type)?.id ?? "journal") as EntryType;
   const goBack = () => (router.canGoBack() ? router.back() : router.navigate("/home"));
 
-  if (wide) return <HubWide key={entryType} entryType={entryType} />;
+  if (wide) return <HubWide key={entryType} entryType={entryType} memory={paneMemory} />;
   return (
     <JournalEntryEditor
       key={entryType}

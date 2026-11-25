@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useRef } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { layout, wideType } from "../../constants/theme";
@@ -7,7 +7,8 @@ import type { JournalEntry } from "../../hooks/useJournalStorage";
 import { JOURNAL_CATEGORIES, getCategoryColor, type EntryType } from "../../constants/journalCategories";
 import { EntryTypeIcon } from "../../utils/entryTypeIcon";
 import { JournalTimeline } from "../journal/JournalTimeline";
-import { EntryPane, confirmDiscard, type PaneMode } from "./EntryPane";
+import { EntryPane, confirmDiscard, forgetKeptDraft, type PaneMode } from "./EntryPane";
+import { useRememberedState, type PaneMemory } from "../../utils/paneMemory";
 
 /**
  * The Notebook in the wide layout (docs/widescreen-2.9/05–07). Left: the
@@ -27,6 +28,8 @@ type Props = {
   createEntry: (type: EntryType, content: string, structured: Record<string, any> | null) => Promise<JournalEntry | null>;
   updateEntry: (id: string, content: string, structured: Record<string, any> | null) => Promise<unknown>;
   deleteEntry: (id: string) => Promise<unknown>;
+  /** Keeps the open pane across the wide ↔ phone layout switch. */
+  memory?: PaneMemory;
 };
 
 type Right = { type: "choose" } | PaneMode;
@@ -41,10 +44,15 @@ export function NotebookWide({
   createEntry,
   updateEntry,
   deleteEntry,
+  memory,
 }: Props) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const [right, setRight] = useState<Right>({ type: "choose" });
+  const [right, setRightState] = useRememberedState<Right>(memory, "notebook.right", { type: "choose" });
+  const setRight = (next: Right) => {
+    forgetKeptDraft(memory);
+    setRightState(next);
+  };
   const dirty = useRef(false);
   const onDirtyChange = useCallback((d: boolean) => {
     dirty.current = d;
@@ -117,6 +125,7 @@ export function NotebookWide({
             }}
             showTypeIcon
             onDirtyChange={onDirtyChange}
+            memory={memory}
           />
         )}
       </View>

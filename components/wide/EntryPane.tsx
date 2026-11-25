@@ -20,6 +20,7 @@ import {
   emptyDraft,
   type JournalDraft,
 } from "../../utils/journalEntryPayload";
+import type { PaneMemory } from "../../utils/paneMemory";
 
 /**
  * The right-hand entry pane shared by the journaling hubs (08–12) and the
@@ -48,7 +49,22 @@ type Props = {
   onDelete?: (entry: JournalEntry) => Promise<unknown>;
   /** Tells the parent whether there is unsaved writing. */
   onDirtyChange?: (dirty: boolean) => void;
+  /** Keeps a half-written draft across the wide ↔ phone layout switch. */
+  memory?: PaneMemory;
 };
+
+// The one draft slot kept in PaneMemory: the form it belongs to, and its text.
+const DRAFT_SLOT = "entryPane.draft";
+type DraftSlot = { key: string; draft: JournalDraft };
+
+/**
+ * Drops the kept draft. Parents call it whenever they change the pane's
+ * mode (open, save, cancel, discard): only a layout switch, which changes
+ * no mode, should bring a draft back.
+ */
+export function forgetKeptDraft(memory: PaneMemory | undefined) {
+  memory?.delete(DRAFT_SLOT);
+}
 
 /** Ask before throwing away unsaved writing. */
 export function confirmDiscard(dirty: boolean, proceed: () => void) {
@@ -78,6 +94,7 @@ function EntryPaneInner({
   showTypeIcon = false,
   onDelete,
   onDirtyChange,
+  memory,
 }: Props) {
   const { colors } = useTheme();
   const { typography } = useTypography();
@@ -90,9 +107,18 @@ function EntryPaneInner({
   const { quote: gratitudeQuote } = useDailyGratitudeQuote({ enabled: entryType === "gratitude" });
   const { quote: journalQuote } = useDailyJournalQuote({ enabled: entryType === "journal" });
 
-  const [draft, setDraft] = useState<JournalDraft>(() =>
-    mode.type === "edit" ? draftFromEntry(mode.entry) : emptyDraft(entryType),
-  );
+  const slotKey = modeKey(mode);
+  const [draft, setDraftState] = useState<JournalDraft>(() => {
+    const kept = memory?.get(DRAFT_SLOT) as DraftSlot | undefined;
+    if (kept?.key === slotKey) return kept.draft;
+    return mode.type === "edit" ? draftFromEntry(mode.entry) : emptyDraft(entryType);
+  });
+  const setDraft = (next: React.SetStateAction<JournalDraft>) =>
+    setDraftState((prev) => {
+      const value = typeof next === "function" ? next(prev) : next;
+      memory?.set(DRAFT_SLOT, { key: slotKey, draft: value } satisfies DraftSlot);
+      return value;
+    });
   const [saving, setSaving] = useState(false);
   const writing = mode.type !== "view";
   const hasContent = draftHasContent(entryType, draft);

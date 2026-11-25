@@ -33,6 +33,7 @@ import { useWideLayout } from "../../hooks/useLayoutMode";
 import { useAppDate } from "../../contexts/AppDateContext";
 import { getPrayerForDate } from "../../utils/prayerOfTheDay";
 import { PrayersWide, type PrayerKind } from "../wide/PrayersWide";
+import { usePaneMemory } from "../../utils/paneMemory";
 
 const BUILTIN_PRAYER_OVERRIDES_KEY = "@daily_paths_builtin_prayer_overrides_v1";
 const HIDDEN_BUILTIN_PRAYERS_KEY = "@daily_paths_hidden_builtin_prayers_v1";
@@ -62,6 +63,8 @@ export const PrayersScreen: React.FC = () => {
   const [hiddenBuiltinPrayerIds, setHiddenBuiltinPrayerIds] = useState<string[]>([]);
   const scrollRef = useRef<any>(null);
   const wide = useWideLayout();
+  // Keeps the wide layout's selection and form across a rotate or fold.
+  const paneMemory = usePaneMemory();
   const { today } = useAppDate();
   const prayerOfTheDay = useMemo(() => getPrayerForDate(today), [today]);
 
@@ -565,6 +568,7 @@ export const PrayersScreen: React.FC = () => {
         builtInPrayers={builtInPrayers}
         personalPrayers={personalPrayers}
         initialPrayerId={prayerId}
+        memory={paneMemory}
         prayerOfTheDayId={prayerOfTheDay?.id}
         onViewed={(prayer) => trackPrayerViewed(prayer.id, prayer.title)}
         onShare={handleSharePrayer}

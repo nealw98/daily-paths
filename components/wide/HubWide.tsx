@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef } from "react";
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -8,8 +8,9 @@ import { useTheme } from "../../hooks/useTheme";
 import { useJournalStorage, type JournalEntry } from "../../hooks/useJournalStorage";
 import { getCategoryById, type EntryType } from "../../constants/journalCategories";
 import { entryPreview } from "../../utils/journalEntryPayload";
+import { useRememberedState, type PaneMemory } from "../../utils/paneMemory";
 import { BackLink } from "./BackLink";
-import { EntryPane, confirmDiscard, type PaneMode } from "./EntryPane";
+import { EntryPane, confirmDiscard, forgetKeptDraft, type PaneMode } from "./EntryPane";
 
 /**
  * A journaling hub in the wide layout (docs/widescreen-2.9/08–12):
@@ -30,14 +31,18 @@ const PAST_ENTRIES_SHOWN = 4;
 const shortDate = (iso: string) =>
   new Date(iso).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 
-export function HubWide({ entryType }: { entryType: EntryType }) {
+export function HubWide({ entryType, memory }: { entryType: EntryType; memory?: PaneMemory }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { entries, createEntry, updateEntry, deleteEntry } = useJournalStorage();
   const label = getCategoryById(entryType)?.label ?? "Journal";
 
-  const [mode, setMode] = useState<PaneMode>({ type: "new", entryType });
+  const [mode, setModeState] = useRememberedState<PaneMode>(memory, `hub.${entryType}.mode`, { type: "new", entryType });
+  const setMode = (next: PaneMode) => {
+    forgetKeptDraft(memory);
+    setModeState(next);
+  };
   const dirty = useRef(false);
   const onDirtyChange = useCallback((d: boolean) => {
     dirty.current = d;
@@ -130,6 +135,7 @@ export function HubWide({ entryType }: { entryType: EntryType }) {
               setMode({ type: "new", entryType });
             }}
             onDirtyChange={onDirtyChange}
+            memory={memory}
           />
         </View>
       </View>

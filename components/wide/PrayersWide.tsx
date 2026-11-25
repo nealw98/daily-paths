@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -16,6 +16,7 @@ import { fonts, layout, wideType } from "../../constants/theme";
 import { useTheme } from "../../hooks/useTheme";
 import { useTypography } from "../../hooks/useTypography";
 import type { Prayer } from "../../constants/prayers";
+import { useRememberedState, type PaneMemory } from "../../utils/paneMemory";
 
 /**
  * Prayers in the wide layout (docs/widescreen-2.9/13–15). Left: "Write your
@@ -41,6 +42,8 @@ type Props = {
   onUpdate: (kind: PrayerKind, id: string, title: string, text: string) => Promise<void>;
   /** Asks first, then deletes. */
   onDelete: (kind: PrayerKind, prayer: Prayer) => void;
+  /** Keeps the selection and any open form across the wide ↔ phone layout switch. */
+  memory?: PaneMemory;
 };
 
 type Mode = { type: "view" } | { type: "write" } | { type: "edit"; item: Item };
@@ -60,6 +63,7 @@ export function PrayersWide({
   onAdd,
   onUpdate,
   onDelete,
+  memory,
 }: Props) {
   const { colors } = useTheme();
   const { typography } = useTypography();
@@ -73,17 +77,24 @@ export function PrayersWide({
     [personalPrayers, builtInPrayers],
   );
 
-  const [selectedId, setSelectedId] = useState<string | undefined>(initialPrayerId ?? prayerOfTheDayId);
-  const [mode, setMode] = useState<Mode>({ type: "view" });
-  const [title, setTitle] = useState("");
-  const [text, setText] = useState("");
+  const [selectedId, setSelectedId] = useRememberedState<string | undefined>(
+    memory,
+    "prayers.selectedId",
+    initialPrayerId ?? prayerOfTheDayId,
+  );
+  const [mode, setMode] = useRememberedState<Mode>(memory, "prayers.mode", { type: "view" });
+  const [title, setTitle] = useRememberedState(memory, "prayers.title", "");
+  const [text, setText] = useRememberedState(memory, "prayers.text", "");
 
+  // Open the prayer Today's card asked for, once per request: a remount after
+  // a layout switch must not pull the reader back to it.
   useEffect(() => {
-    if (initialPrayerId) {
+    if (initialPrayerId && memory?.get("prayers.openedFor") !== initialPrayerId) {
+      memory?.set("prayers.openedFor", initialPrayerId);
       setSelectedId(initialPrayerId);
       setMode({ type: "view" });
     }
-  }, [initialPrayerId]);
+  }, [initialPrayerId, memory, setSelectedId, setMode]);
 
   // A deleted or hidden prayer falls back to the first in the list.
   const selected = items.find((p) => p.id === selectedId) ?? items[0];
