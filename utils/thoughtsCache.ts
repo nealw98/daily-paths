@@ -6,8 +6,8 @@ import { qaLog } from "./qaLog";
  * Every reading's Thought for the Day, keyed by scheduled day_of_year.
  *
  * Readings are static and keyed by day of year, so one small query (~15 KB)
- * lets every scheduled notification — including the lapsed window weeks
- * out — carry the real Thought instead of a generic fallback phrasing.
+ * lets every notification in the active window carry the real Thought,
+ * even for days the reading cache hasn't prefetched.
  */
 const STORAGE_KEY = "thoughts_for_day_v1";
 const REFRESH_INTERVAL_MS = 24 * 60 * 60 * 1000;

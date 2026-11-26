@@ -10,12 +10,21 @@ import {
 } from './dailyReminder';
 
 /**
- * How many days ahead to schedule one-time notifications. Each day gets
- * that day's Thought for the Day from the thoughts table (see
- * thoughtsCache.ts), so even a user who stops opening the app keeps
- * getting real Thoughts for four weeks. The rotating fallback phrasing is
- * used only if neither the thoughts table nor the reading cache has that
- * day's Thought.
+ * Active window: the first N days of the schedule. Each gets that day's
+ * Thought for the Day from the thoughts table (see thoughtsCache.ts), or
+ * from the reading cache if the table isn't available. The rotating
+ * phrasing is used here only if neither source has that day's Thought.
+ *
+ * The schedule is rebuilt on every launch and foreground, so anyone who
+ * opens the app at least once a week only ever gets real Thoughts.
+ */
+const ACTIVE_DAYS = 7;
+
+/**
+ * Lapsed window: the days after the active window, up to SCHEDULE_DAYS.
+ * These are reached only by someone who hasn't opened the app for a week,
+ * and deliberately get the rotating "come back" phrasings instead of a
+ * Thought, to nudge them back into the app.
  */
 const SCHEDULE_DAYS = 28;
 
@@ -81,9 +90,16 @@ async function runSchedule(): Promise<void> {
     const days: { date: Date; body: string }[] = [];
     let withThought = 0;
     let withFallback = 0;
+    let lapsed = 0;
     for (let i = 0; i < SCHEDULE_DAYS; i++) {
       const date = new Date();
       date.setDate(date.getDate() + i);
+
+      if (i >= ACTIVE_DAYS) {
+        days.push({ date, body: pickLapsedPhrasing(date) });
+        lapsed++;
+        continue;
+      }
 
       let thought = thoughts?.[getScheduledDayOfYear(date)];
       if (!thought) {
@@ -110,6 +126,7 @@ async function runSchedule(): Promise<void> {
       time: reminderTime,
       withThought,
       withFallback,
+      lapsed,
       thoughtsTableLoaded: !!thoughts,
     });
   } catch (error) {

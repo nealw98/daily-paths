@@ -77,7 +77,7 @@ The Developer Console (`app/qa-logs.tsx`) contains only the developer-device set
 
 ### Notifications
 
-Daily reminder time + enabled flag live in `useSettings`, which also owns scheduling: it reschedules on launch, on every foreground, and on any switch/time change, and tracks OS permission (`notificationsBlocked` / `dailyReminderActive`). `utils/notificationSync.ts` (`scheduleWeekOfNotifications`, single-flight) rebuilds 28 one-time notifications from saved settings, each carrying that day's Thought; `utils/dailyReminder.ts` holds the permission helpers and fallback phrasings. The notification handler is set once at module load in `app/_layout.tsx`.
+Daily reminder time + enabled flag live in `useSettings`, which also owns scheduling: it reschedules on launch, on every foreground, and on any switch/time change, and tracks OS permission (`notificationsBlocked` / `dailyReminderActive`). `utils/notificationSync.ts` (`scheduleWeekOfNotifications`, single-flight) rebuilds 28 one-time notifications from saved settings: days 1–7 carry that day's Thought, days 8–28 deliberately use rotating "come back" phrasings for users who stopped opening the app (intended behavior — don't change it to Thoughts); `utils/dailyReminder.ts` holds the permission helpers and fallback phrasings. The notification handler is set once at module load in `app/_layout.tsx`.
 
 `components/NotificationCoachmark.tsx` + `hooks/useNotificationCoachmark.ts` is the spotlight-tooltip nudge that appears on the reading screen when the daily reminder is off and the user has scrolled to the bottom. It's measurement-driven (`measureInWindow` + a `requestAnimationFrame` re-measure to handle iOS layout-commit timing).
 

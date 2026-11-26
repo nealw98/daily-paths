@@ -1,9 +1,10 @@
 import * as Notifications from "expo-notifications";
 
 /**
- * Rotating fallback phrasings for a scheduled reminder, used only when no
- * Thought for the Day is available for that date (thoughts table never
- * fetched and no cached reading).
+ * Rotating "come back" phrasings. Used for every day in the lapsed window
+ * (day 8 onward after the last app open), and in the active window only
+ * when no Thought for the Day is available for that date (thoughts table
+ * never fetched and no cached reading). See notificationSync.ts.
  */
 export const LAPSED_PHRASINGS = [
   "A new path is waiting for you today.",
