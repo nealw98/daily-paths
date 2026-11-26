@@ -8,7 +8,9 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "test:sync": "node --experimental-strip-types --test tests/syncMerge.test.ts"
+    "test:sync": "node --experimental-strip-types --test tests/syncMerge.test.ts",
+    "ota:production": "node scripts/publish-ota.js production",
+    "ota:preview": "node scripts/publish-ota.js preview"
   },
   "dependencies": {
     "@expo-google-fonts/cormorant-garamond": "^0.4.1",

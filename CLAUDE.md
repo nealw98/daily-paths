@@ -15,13 +15,14 @@ npm run start                                    # expo start (Metro / dev serve
 npm run ios                                      # build & run iOS dev client
 npm run android                                  # build & run Android dev client
 npx tsc --noEmit                                 # typecheck (only verification we run)
-eas update --branch preview --message "..."      # OTA to the preview channel
-eas update --branch production --message "..."   # OTA to production (rare; coordinate first)
+npm run ota:preview -- "..."                     # OTA to the preview channel (builds, checks keys, publishes)
+npm run ota:production -- "..."                  # OTA to production (rare; coordinate first)
+npm run ota:production -- --dry-run              # build + key check only, publishes nothing
 eas build --profile preview --platform ios       # native build for preview
 eas build --profile production --platform all    # native build for store submission
 ```
 
-Env values live in `eas.json` per profile (`development` / `preview` / `production`). Local dev expects an `.env` mirroring `env.example.txt`. Supabase client falls back to a clearly-throwing proxy when env vars are missing — see `lib/supabase.ts`.
+Env values live in `eas.json` per profile (`development` / `preview` / `production`), but **only native builds read them**. OTA updates get their values from the expo.dev environment variables for `preview` / `production`, which are kept as plain-text copies of the eas.json values. When an `EXPO_PUBLIC_*` value is added or changed in eas.json, change it on expo.dev too (never as "Secret": secret values can't be used for a locally built update). Never publish with raw `eas update`; use `npm run ota:*` (`scripts/publish-ota.js`), which refuses to publish if any value the code reads is missing from the bundle. A Nov 2026 OTA shipped without the Mixpanel token this way and silenced analytics. Local dev expects an `.env` mirroring `env.example.txt`. Supabase client falls back to a clearly-throwing proxy when env vars are missing — see `lib/supabase.ts`.
 
 Two release surfaces exist independently:
 - **Native builds** are gated by `app.json` `ios.buildNumber` / `android.versionCode` and EAS profiles.
